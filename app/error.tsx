@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export default function GlobalError({
   error,
   reset,
@@ -8,21 +10,22 @@ export default function GlobalError({
   reset: () => void;
 }>) {
   return (
-    <div className="status-card">
-      <h2>Unable to render this page</h2>
-      <p className="status-copy">
-        The request failed while loading Struct-backed content. Try the request
-        again, or verify the API credentials if the error persists.
+    <div className="rounded-lg border p-6">
+      <h2 className="text-lg font-semibold">Unable to render this page</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        The request failed while loading content. Try again or verify your API
+        credentials.
       </p>
-      <div className="pill-row">
-        <button className="pill" onClick={reset} type="button">
-          Retry request
-        </button>
-        {error.digest ? (
-          <span className="pill mono">Digest: {error.digest}</span>
-        ) : null}
+      <div className="mt-4 flex items-center gap-3">
+        <Button onClick={reset} type="button">
+          Retry
+        </Button>
+        {error.digest && (
+          <span className="font-mono text-xs text-muted-foreground">
+            Digest: {error.digest}
+          </span>
+        )}
       </div>
     </div>
   );
 }
-

@@ -1,107 +1,70 @@
+import { BeamsBackground } from "@/components/beams-background";
+import { SearchInput } from "@/components/search-input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { getLeaderboard, searchTraders } from "@/lib/struct/queries";
 import type { Metadata } from "next";
 
-import { MarketCard } from "@/components/market-card";
-import { SetupState } from "@/components/setup-state";
-import { hasStructConfig } from "@/lib/env";
-import { getFeaturedMarkets } from "@/lib/struct/queries";
-
-export const runtime = "nodejs";
-export const revalidate = 300;
-
 export const metadata: Metadata = {
-  title: "Markets",
-  description:
-    "Browse SEO-rendered Polymarket markets powered by server-side Struct SDK requests.",
+	title: "Markets",
+	description: "Browse SEO-rendered Polymarket markets powered by server-side Struct SDK requests.",
 };
 
-const featureItems = [
-  {
-    title: "Server-side data access",
-    description:
-      "Every Struct SDK call stays inside Next server components, so the API key never ships to the browser.",
-  },
-  {
-    title: "Crawler-friendly HTML",
-    description:
-      "Primary routes render meaningful content on the server for fast indexing and stable social previews.",
-  },
-  {
-    title: "Selective hydration",
-    description:
-      "The app starts as HTML-first and only adds client code when an interaction actually needs it.",
-  },
-];
-
-export default async function HomePage() {
-  const configured = hasStructConfig();
-  const markets = configured ? await getFeaturedMarkets() : [];
-
-  return (
-    <>
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow">Server Rendered with Struct</span>
-          <h1>Polymarket pages that keep the secret on the server.</h1>
-          <p>
-            This starter uses Next.js App Router with `@structbuild/sdk`
-            initialized on the server only. The result is indexable HTML, clean
-            metadata, and a hidden API key.
-          </p>
-          <div className="pill-row">
-            <span className="pill">SSR for public pages</span>
-            <span className="pill">SDK boundary in server modules</span>
-            <span className="pill">Metadata, robots, and sitemap included</span>
-          </div>
-        </div>
-        <aside className="feature-panel">
-          <div className="feature-item">
-            <span className="eyebrow">Architecture</span>
-            <h2>Built for discovery, not browser-side secret leakage.</h2>
-          </div>
-          <div className="feature-list">
-            {featureItems.map((item) => (
-              <div className="feature-item" key={item.title}>
-                <strong>{item.title}</strong>
-                <span className="section-copy">{item.description}</span>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </section>
-
-      <section className="surface-panel">
-        <div className="section-header">
-          <div>
-            <h2>Featured Markets</h2>
-            <p>
-              The home page fetches market data in a server component and emits
-              ready-to-index HTML.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {!configured ? (
-        <SetupState
-          title="Configure Struct to unlock live market data"
-          description="The app is wired for the SDK already. Add the environment values below and the homepage will start rendering live Polymarket markets."
-        />
-      ) : markets.length === 0 ? (
-        <section className="status-card">
-          <h2>No markets returned</h2>
-          <p className="status-copy">
-            Struct is configured, but the featured markets request returned no
-            data. Check the API key, venue access, or upstream availability.
-          </p>
-        </section>
-      ) : (
-        <section className="market-grid" aria-label="Featured markets">
-          {markets.map((market) => (
-            <MarketCard key={market.id} market={market} />
-          ))}
-        </section>
-      )}
-    </>
-  );
+function truncateAddress(address: string) {
+	return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+function getTraderDisplayName(trader: { address: string; name?: string | null; pseudonym?: string | null }) {
+	return trader.name ?? trader.pseudonym ?? truncateAddress(trader.address);
+}
+
+type Props = {
+	searchParams: Promise<{ q?: string }>;
+};
+
+export default async function HomePage({ searchParams }: Props) {
+	const { q } = await searchParams;
+	const hasQuery = q != null && q.trim().length >= 2;
+
+	const [leaderboard, searchResults] = await Promise.all([
+		hasQuery ? Promise.resolve([]) : getLeaderboard(),
+		hasQuery ? searchTraders(q) : Promise.resolve([]),
+	]);
+
+	return (
+		<div className="flex items-center justify-center flex-col gap-4 h-full w-full">
+			<BeamsBackground />
+			<div className="max-w-lg w-full relative mb-16">
+				<div className="text-center mb-8 space-y-2">
+					<h1 className="text-4xl font-medium">Analyze any trader</h1>
+					<p className="text-base text-muted-foreground">Enter a trader&apos;s address or username to get started</p>
+				</div>
+				<SearchInput />
+				<div className="mt-3 absolute left-1/2 -translate-x-1/2 flex justify-center items-start content-start flex-wrap gap-1.5 max-w-lg w-full">
+					{hasQuery
+						? searchResults.slice(0, 10).map((trader) => (
+								<Button key={trader.address} size="sm" variant="outline" className="backdrop-blur-sm opacity-80 text-foreground/80 hover:opacity-100">
+									<Avatar size="xs">
+										{trader.profile_image && <AvatarImage src={trader.profile_image} />}
+										<AvatarFallback>{getTraderDisplayName(trader).slice(0, 2).toUpperCase()}</AvatarFallback>
+									</Avatar>
+									<span>{getTraderDisplayName(trader)}</span>
+								</Button>
+							))
+						: leaderboard.slice(0, 10).map((entry) => (
+								<Button key={entry.trader.address} size="sm" variant="outline" className="backdrop-blur-sm opacity-80 text-foreground/80 hover:opacity-100">
+									<Avatar size="xs">
+										{entry.trader.profile_image && <AvatarImage src={entry.trader.profile_image} />}
+										<AvatarFallback>{getTraderDisplayName(entry.trader).slice(0, 2).toUpperCase()}</AvatarFallback>
+									</Avatar>
+									<span>{getTraderDisplayName(entry.trader)}</span>
+								</Button>
+							))}
+					{hasQuery && searchResults.length === 0 && (
+						<p className="text-sm text-muted-foreground">No traders found for &ldquo;{q}&rdquo;</p>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
