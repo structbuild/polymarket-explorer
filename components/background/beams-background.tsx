@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const Beams = dynamic(() => import("@/components/Beams"), { ssr: false });
+const Beams = dynamic(() => import("@/components/background/Beams"), { ssr: false });
 
 export function BeamsBackground() {
 	return (
