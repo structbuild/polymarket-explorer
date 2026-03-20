@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getSiteUrl } from "@/lib/env";
-import { getLeaderboard } from "@/lib/struct/queries";
+import { getLeaderboard } from "@/lib/polymarket/leaderboard";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl().origin;

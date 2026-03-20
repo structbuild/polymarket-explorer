@@ -48,7 +48,7 @@ export function TraderInfo({ address, profile }: TraderInfoProps) {
 			<InfoRow label="Created At" value={createdAt} />
 			<div className="flex flex-col gap-px">
 				<p className="text-sm text-foreground/90 sm:text-base">Bio</p>
-				<p className="text-sm break-words sm:text-base">{profile?.bio || "No bio"}</p>
+				<p className="text-sm wrap-break-word sm:text-base">{profile?.bio || "No bio"}</p>
 			</div>
 			<Separator className="my-2" />
 		</div>

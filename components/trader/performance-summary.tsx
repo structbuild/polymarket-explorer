@@ -32,11 +32,27 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: Per
 						</p>
 					</div>
 				</div>
-				{bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{bestTradeMarket.question}</p>}
+				{bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground wrap-break-word sm:truncate">{bestTradeMarket.question}</p>}
 				<Separator className="my-2" />
 			</div>
-			<InfoRow label="Best Day" value={`${formatNumber(streaks.bestDay.pnl, { currency: true, compact: true })}, ${streaks.bestDay.date}`} />
-			<InfoRow label="Worst Day" value={`${formatNumber(streaks.worstDay.pnl, { currency: true, compact: true })}, ${streaks.worstDay.date}`} />
+			<InfoRow
+				label="Best Day"
+				value={
+					<>
+						<span className="text-emerald-500">{formatNumber(streaks.bestDay.pnl, { currency: true, compact: true })}</span>
+						{streaks.bestDay.date && <span className="font-normal text-muted-foreground">, {streaks.bestDay.date}</span>}
+					</>
+				}
+			/>
+			<InfoRow
+				label="Worst Day"
+				value={
+					<>
+						<span className="text-red-500">{formatNumber(streaks.worstDay.pnl, { currency: true, compact: true })}</span>
+						{streaks.worstDay.date && <span className="font-normal text-muted-foreground">, {streaks.worstDay.date}</span>}
+					</>
+				}
+			/>
 			<InfoRow label="Longest Win Streak" value={`${streaks.longestWin}d`} />
 			<InfoRow label="Longest Loss Streak" value={`${streaks.longestLoss}d`} />
 			<InfoRow

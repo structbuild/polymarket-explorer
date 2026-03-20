@@ -57,30 +57,6 @@ export const getFeaturedMarkets = cache(async (): Promise<MarketSummary[]> => {
 	}
 });
 
-export const getLeaderboard = cache(async (): Promise<GlobalPnlTrader[]> => {
-	const client = getStructClient();
-
-	if (!client) {
-		return [];
-	}
-
-	try {
-		const response = await client.trader.getGlobalPnl({
-			timeframe: "1d",
-			sort_by: "pnl_usd",
-			sort_direction: "desc",
-			limit: 25,
-		});
-		const isAddress = (v?: string | null) => v != null && /^0x[0-9a-fA-F]{6,}/.test(v);
-		return response.data.filter((entry) => {
-			const name = entry.trader.name ?? entry.trader.pseudonym;
-			return name && !isAddress(name);
-		});
-	} catch (error) {
-		logStructError("getLeaderboard", error);
-		return [];
-	}
-});
 
 export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	const client = getStructClient();

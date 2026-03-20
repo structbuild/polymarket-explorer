@@ -147,7 +147,7 @@ export function SearchDialog() {
 					<SheetContent
 						side="bottom"
 						showCloseButton={false}
-						className="min-h-[40vh] gap-0 overflow-hidden rounded-t-2xl border-x border-t p-0 pb-[env(safe-area-inset-bottom)]"
+						className="min-h-[40vh] max-h-[95vh] gap-0 overflow-hidden rounded-t-2xl border-x border-t p-0 pb-[env(safe-area-inset-bottom)]"
 					>
 						<SheetTitle className="sr-only">Search traders</SheetTitle>
 						<div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted" />
