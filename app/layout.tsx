@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { getSiteUrl } from "@/lib/env";
 import { Header } from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
 	metadataBase: getSiteUrl(),
@@ -41,10 +42,12 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning className="h-full">
 			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh antialiased font-sans`}>
 				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-					<main className="flex flex-col min-h-svh">
-						<Header />
-						{children}
-					</main>
+					<TooltipProvider>
+						<main className="flex flex-col min-h-svh">
+							<Header />
+							{children}
+						</main>
+					</TooltipProvider>
 					<Footer />
 				</ThemeProvider>
 			</body>

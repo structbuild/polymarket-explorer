@@ -60,12 +60,14 @@ export function formatNumber(value: number, options: FormatNumberOptions = {}) {
 		if (tier) {
 			const scaled = value / tier.threshold;
 			const fixed = decimals ?? (Math.abs(scaled) >= 100 ? 0 : Math.abs(scaled) >= 10 ? 1 : 2);
-			const formatted = scaled.toFixed(fixed);
-			return `${currency ? "$" : ""}${formatted}${tier.suffix}`;
+			const formatted = Math.abs(scaled).toFixed(fixed);
+			const sign = value < 0 ? "-" : "";
+			return `${sign}${currency ? "$" : ""}${formatted}${tier.suffix}`;
 		}
 
 		const fixed = decimals ?? (absValue >= 100 ? 0 : absValue >= 10 ? 1 : 2);
-		return `${currency ? "$" : ""}${value.toFixed(fixed)}`;
+		const sign = value < 0 ? "-" : "";
+		return `${sign}${currency ? "$" : ""}${absValue.toFixed(fixed)}`;
 	}
 
 	if (currency) {

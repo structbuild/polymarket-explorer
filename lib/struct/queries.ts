@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { GlobalPnlTrader, MarketMetadata, PnlCandleEntry, Trader, UserProfile } from "@structbuild/sdk";
+import type { GlobalPnlTrader, MarketMetadata, Trader, UserProfile } from "@structbuild/sdk";
 import { cache } from "react";
 
 import { getStructClient } from "@/lib/struct/client";
@@ -177,42 +177,3 @@ export const getMarketsByConditionIds = cache(async (conditionIds: string[]): Pr
 	}
 });
 
-export const getTraderPnlCandles = cache(async (address: string): Promise<PnlCandleEntry[] | null> => {
-	const client = getStructClient();
-
-	if (!client || !address.trim()) {
-		return null;
-	}
-
-	try {
-		const response = await client.trader.getTraderPnlCandles({ address, resolution: "1h" });
-		return response.data;
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return null;
-		}
-
-		logStructError(`getTraderPnlCandles:${address}`, error);
-		throw error;
-	}
-});
-
-export const getTraderDailyPnlCandles = cache(async (address: string): Promise<PnlCandleEntry[] | null> => {
-	const client = getStructClient();
-
-	if (!client || !address.trim()) {
-		return null;
-	}
-
-	try {
-		const response = await client.trader.getTraderPnlCandles({ address, resolution: "1d" });
-		return response.data;
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return null;
-		}
-
-		logStructError(`getTraderDailyPnlCandles:${address}`, error);
-		throw error;
-	}
-});

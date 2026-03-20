@@ -1,6 +1,6 @@
 "use client"
 
-import type { PnlCandleEntry } from "@structbuild/sdk"
+import type { DailyPnlEntry } from "@/lib/polymarket/pnl"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 
@@ -43,7 +43,7 @@ function intensityClass(pnl: number, maxAbs: number) {
 	return "bg-red-500/20"
 }
 
-export function PnlCalendar({ data }: { data: PnlCandleEntry[] }) {
+export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 	const pnlByDate = useMemo(() => {
 		const map = new Map<string, number>()
 		for (const entry of data) {
@@ -113,7 +113,7 @@ export function PnlCalendar({ data }: { data: PnlCandleEntry[] }) {
 
 					const key = `${viewYear}-${viewMonth}-${day}`
 					const pnl = pnlByDate.get(key)
-					const hasData = pnl !== undefined
+					const hasData = pnl !== undefined && pnl !== 0
 
 					return (
 						<div

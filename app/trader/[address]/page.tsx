@@ -1,13 +1,16 @@
+import TraderPositions from "@/components/trader/positions";
 import { PerformanceSummary } from "@/components/trader/performance-summary";
 import { PnlCalendar } from "@/components/trader/pnl-calendar";
 import { PnlChart } from "@/components/trader/pnl-chart";
 import { TraderHeader } from "@/components/trader/trader-header";
 import { TraderInfo } from "@/components/trader/trader-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMarketsByConditionIds, getTraderDailyPnlCandles, getTraderPnlCandles, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
+import { computeStreaks, getTraderDailyPnl, getTraderPnlCandles } from "@/lib/polymarket/pnl";
+import { getMarketsByConditionIds, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { getTraderDisplayName } from "@/lib/utils";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import TraderActivity from "@/components/trader/activity";
 
 export const revalidate = 300;
 
@@ -43,11 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function TraderPage({ params }: Props) {
 	const { address } = await params;
 
-	const [profile, pnlSummary, pnlCandles, dailyCandles] = await Promise.all([
+	const [profile, pnlSummary, pnlCandles, dailyPnl] = await Promise.all([
 		getTraderProfile(address),
 		getTraderPnlSummary(address),
 		getTraderPnlCandles(address),
-		getTraderDailyPnlCandles(address),
+		getTraderDailyPnl(address),
 	]);
 
 	if (!profile && !pnlSummary) {
@@ -58,6 +61,7 @@ export default async function TraderPage({ params }: Props) {
 	const tradeMarkets = await getMarketsByConditionIds(tradeConditionIds);
 	const bestTradeMarket = tradeMarkets?.find((m) => m.condition_id === pnlSummary?.best_trade_condition_id);
 
+	const streaks = computeStreaks(dailyPnl);
 	const displayName = getTraderDisplayName({ address, name: profile?.name, pseudonym: profile?.pseudonym });
 
 	return (
@@ -75,28 +79,34 @@ export default async function TraderPage({ params }: Props) {
 							totalVolumeUsd={pnlSummary?.total_volume_usd}
 						/>
 						<div className="p-6 rounded-lg bg-card">
-							<PnlChart data={pnlCandles ?? []} />
+							<PnlChart data={pnlCandles} />
 						</div>
 						<div className="p-6 rounded-lg bg-card">
-							<PnlCalendar data={dailyCandles ?? []} />
+							<PnlCalendar data={dailyPnl} />
 						</div>
 					</div>
 
 					<div className="w-1/3 h-full space-y-4">
-						<PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} />
+						<PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} streaks={streaks} />
 						<TraderInfo address={address} profile={profile} />
 					</div>
 				</div>
 
                 <Tabs>
-                    <TabsList variant="text">
-                        <TabsTrigger className="" value="active">Active Positions</TabsTrigger>
-                        <TabsTrigger value="closed">Closed Positions</TabsTrigger>
-                        <TabsTrigger value="activity">Recent Trades</TabsTrigger>
+                    <TabsList variant="text" className="mb-2">
+                        <TabsTrigger className="text-xl!" value="active">Active</TabsTrigger>
+                        <TabsTrigger className="text-xl!" value="closed">Closed</TabsTrigger>
+                        <TabsTrigger className="text-xl!" value="activity">Activity</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="active"></TabsContent>
-                    <TabsContent value="closed"></TabsContent>
-                    <TabsContent value="activity"></TabsContent>
+                    <TabsContent value="active">
+						<TraderPositions />
+					</TabsContent>
+                    <TabsContent value="closed">
+						<TraderPositions />
+					</TabsContent>
+                    <TabsContent value="activity">
+						<TraderActivity />
+					</TabsContent>
                 </Tabs>
 			</div>
 		</div>

@@ -1,7 +1,6 @@
 "use client"
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import type { PnlCandleEntry } from "@structbuild/sdk"
 
 import {
 	ChartContainer,
@@ -9,7 +8,7 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart"
-import { StructLogo } from "@/components/ui/svgs/struct-logo"
+import type { PnlDataPoint } from "@/lib/polymarket/pnl"
 import { formatNumber } from "@/lib/utils"
 
 const chartConfig = {
@@ -26,7 +25,7 @@ function formatDate(ts: number) {
 	})
 }
 
-export function PnlChart({ data }: { data: PnlCandleEntry[] }) {
+export function PnlChart({ data }: { data: PnlDataPoint[] }) {
 	if (data.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
@@ -35,7 +34,7 @@ export function PnlChart({ data }: { data: PnlCandleEntry[] }) {
 		)
 	}
 
-	const lastPnl = data[data.length - 1].pnl
+	const lastPnl = data[data.length - 1].p
 	const isPositive = lastPnl >= 0
 
 	return (
@@ -47,7 +46,6 @@ export function PnlChart({ data }: { data: PnlCandleEntry[] }) {
 				</p>
 			</div>
 			<div className="relative">
-				<StructLogo className="absolute inset-0 m-auto h-14 opacity-[0.07] pointer-events-none z-10" />
 				<ChartContainer config={chartConfig} className="min-h-[250px] w-full">
 					<AreaChart accessibilityLayer data={data}>
 						<defs>
@@ -71,12 +69,13 @@ export function PnlChart({ data }: { data: PnlCandleEntry[] }) {
 							tickMargin={8}
 							tickFormatter={(v) => formatNumber(v, { compact: true, currency: true })}
 							width={60}
+							domain={["dataMin", "dataMax"]}
 						/>
 						<ChartTooltip
 							content={
 								<ChartTooltipContent
 									labelFormatter={(_, payload) => {
-										const entry = payload[0]?.payload as PnlCandleEntry | undefined
+										const entry = payload[0]?.payload as PnlDataPoint | undefined
 										if (!entry) return ""
 										return new Date(entry.t * 1000).toLocaleDateString("en-US", {
 											month: "long",
@@ -89,7 +88,7 @@ export function PnlChart({ data }: { data: PnlCandleEntry[] }) {
 							}
 						/>
 						<Area
-							dataKey="pnl"
+							dataKey="p"
 							type="monotone"
 							fill="url(#pnlGradient)"
 							stroke="var(--color-pnl)"
