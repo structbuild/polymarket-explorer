@@ -2,7 +2,7 @@
 
 import type { DailyPnlEntry } from "@/lib/polymarket/pnl"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -61,6 +61,7 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 	const [viewYear, setViewYear] = useState(latestDate.getFullYear())
 	const [viewMonth, setViewMonth] = useState(latestDate.getMonth())
 	const [selectedKey, setSelectedKey] = useState<string | null>(null)
+	const [isTouchDevice, setIsTouchDevice] = useState(false)
 
 	const cells = useMemo(() => getMonthGrid(viewYear, viewMonth), [viewYear, viewMonth])
 
@@ -89,6 +90,18 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 	const currentYear = now.getFullYear()
 	const currentMonth = now.getMonth()
 	const isAtCurrentMonth = viewYear === currentYear && viewMonth === currentMonth
+
+	useEffect(() => {
+		const mediaQuery = window.matchMedia("(hover: none) and (pointer: coarse)")
+		const updateDeviceType = () => setIsTouchDevice(mediaQuery.matches)
+
+		updateDeviceType()
+		mediaQuery.addEventListener("change", updateDeviceType)
+
+		return () => {
+			mediaQuery.removeEventListener("change", updateDeviceType)
+		}
+	}, [])
 
 	function navigate(delta: number) {
 		let m = viewMonth + delta
@@ -134,25 +147,19 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 					const entry = pnlByDate.get(key)
 					const pnl = entry?.pnl
 					const hasData = pnl !== undefined && pnl !== 0
+					const cellClassName = cn(
+						"group relative flex aspect-square flex-col items-center justify-center rounded-md text-[11px] transition-colors sm:text-xs",
+						hasData ? intensityClass(pnl, maxAbs) : "bg-muted/50",
+						isTouchDevice && hasData && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+						isTouchDevice && activeSelectedKey === key && hasData && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
+					)
 
-					return (
-						<button
-							type="button"
-							key={key}
-							onClick={() => hasData && setSelectedKey(key)}
-							disabled={!hasData}
-							aria-pressed={activeSelectedKey === key}
-							className={cn(
-								"group relative flex aspect-square flex-col items-center justify-center rounded-md text-[11px] transition-colors sm:text-xs",
-								hasData ? intensityClass(pnl, maxAbs) : "bg-muted/50",
-								hasData && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-								activeSelectedKey === key && hasData && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
-							)}
-						>
+					const content = (
+						<>
 							<span className="font-medium">{day}</span>
 							{hasData && (
 								<>
-									<span className="mt-1 size-1 rounded-full bg-current/70 sm:hidden" />
+									{isTouchDevice && <span className="mt-1 size-1 rounded-full bg-current/70" />}
 									<div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground opacity-0 transition-opacity sm:group-hover:opacity-100">
 										<span className={pnl >= 0 ? "text-emerald-500" : "text-red-500"}>
 											{formatNumber(pnl, { currency: true, compact: true })}
@@ -161,12 +168,33 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 									</div>
 								</>
 							)}
+						</>
+					)
+
+					if (!isTouchDevice) {
+						return (
+							<div key={key} className={cellClassName}>
+								{content}
+							</div>
+						)
+					}
+
+					return (
+						<button
+							type="button"
+							key={key}
+							onClick={() => hasData && setSelectedKey(key)}
+							disabled={!hasData}
+							aria-pressed={activeSelectedKey === key}
+							className={cellClassName}
+						>
+							{content}
 						</button>
 					)
 				})}
 			</div>
 
-			{selectedEntry && (
+			{isTouchDevice && selectedEntry && (
 				<div className="mt-4 flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm">
 					<span className="text-muted-foreground">{selectedEntry.label}</span>
 					<span className={selectedEntry.pnl >= 0 ? "font-medium text-emerald-500" : "font-medium text-red-500"}>
