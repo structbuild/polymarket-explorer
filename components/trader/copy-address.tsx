@@ -36,9 +36,9 @@ export function CopyAddress({ address }: { address: string }) {
 	};
 
 	return (
-		<Button size="sm" variant="secondary" className="group" onClick={handleCopy}>
+		<Button size="sm" variant="secondary" className="group max-w-full" onClick={handleCopy} title={address}>
 			{isCopied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
-			{truncateAddress(address)}
+			<span className="max-w-[8rem] truncate sm:max-w-none">{truncateAddress(address, 4)}</span>
 		</Button>
 	);
 }

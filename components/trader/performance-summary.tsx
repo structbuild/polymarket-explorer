@@ -13,26 +13,26 @@ type PerformanceSummaryProps = {
 
 export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: PerformanceSummaryProps) {
 	return (
-		<div className="p-6 rounded-lg bg-card">
-			<p className="text-base text-foreground">Performance Summary</p>
+		<div className="rounded-lg bg-card p-4 sm:p-6">
+			<p className="text-sm text-foreground sm:text-base">Performance Summary</p>
 			<Separator className="my-2" />
 			<InfoRow label="Traded" value={pnlSummary?.markets_traded ?? 0} />
 			<InfoRow label="Wins" value={pnlSummary?.markets_won ?? 0} />
 			<InfoRow label="Avg. Hold Time" value={formatDuration(pnlSummary?.avg_hold_time_seconds ?? 0)} />
 			<InfoRow label="Realized PnL" value={formatNumber(pnlSummary?.pnl_usd ?? 0, { currency: true, compact: true })} />
 			<div>
-				<div className="flex items-center gap-2 justify-between">
-					<p className="text-base text-foreground/90">Best Win</p>
-					<div className="flex items-center gap-1.5">
+				<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+					<p className="text-sm text-foreground/90 sm:text-base">Best Win</p>
+					<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
 						{bestTradeMarket && (
 							<img src={bestTradeMarket.image_url ?? ""} alt={bestTradeMarket.question ?? ""} className="size-4 rounded-sm" />
 						)}
-						<p className="text-base font-medium">
+						<p className="text-sm font-medium sm:text-base">
 							{formatNumber(pnlSummary?.best_trade_pnl_usd ?? 0, { currency: true, compact: true })}
 						</p>
 					</div>
 				</div>
-				{bestTradeMarket && <p className="text-sm text-muted-foreground truncate">{bestTradeMarket.question}</p>}
+				{bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{bestTradeMarket.question}</p>}
 				<Separator className="my-2" />
 			</div>
 			<InfoRow label="Best Day" value={`${formatNumber(streaks.bestDay.pnl, { currency: true, compact: true })}, ${streaks.bestDay.date}`} />

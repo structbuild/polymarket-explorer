@@ -40,15 +40,15 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning className="h-full">
-			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh antialiased font-sans`}>
+			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh overflow-x-hidden antialiased font-sans`}>
 				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 					<TooltipProvider>
-						<main className="flex flex-col min-h-svh">
+						<div className="flex min-h-svh flex-col">
 							<Header />
-							{children}
-						</main>
+							<main className="flex min-h-0 flex-1 flex-col">{children}</main>
+							<Footer />
+						</div>
 					</TooltipProvider>
-					<Footer />
 				</ThemeProvider>
 			</body>
 		</html>

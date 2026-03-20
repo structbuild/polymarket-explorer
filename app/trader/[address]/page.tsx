@@ -65,10 +65,10 @@ export default async function TraderPage({ params }: Props) {
 	const displayName = getTraderDisplayName({ address, name: profile?.name, pseudonym: profile?.pseudonym });
 
 	return (
-		<div className="flex justify-center w-full min-h-svh">
-			<div className="flex flex-col gap-10 max-w-7xl p-6 pt-0 w-full">
-				<div className="flex gap-6 items-start">
-					<div className="w-2/3 space-y-4">
+		<div className="flex w-full justify-center">
+			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
+				<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+					<div className="min-w-0 space-y-4 lg:w-2/3">
 						<TraderHeader
 							address={address}
 							displayName={displayName}
@@ -78,36 +78,45 @@ export default async function TraderPage({ params }: Props) {
 							totalSells={pnlSummary?.total_sells}
 							totalVolumeUsd={pnlSummary?.total_volume_usd}
 						/>
-						<div className="p-6 rounded-lg bg-card">
+						<div className="rounded-lg bg-card p-4 sm:p-6">
 							<PnlChart data={pnlCandles} />
 						</div>
-						<div className="p-6 rounded-lg bg-card">
+						<div className="rounded-lg bg-card p-4 sm:p-6">
 							<PnlCalendar data={dailyPnl} />
 						</div>
 					</div>
 
-					<div className="w-1/3 h-full space-y-4">
+					<div className="min-w-0 space-y-4 lg:w-1/3">
 						<PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} streaks={streaks} />
 						<TraderInfo address={address} profile={profile} />
 					</div>
 				</div>
 
-                <Tabs>
-                    <TabsList variant="text" className="mb-2">
-                        <TabsTrigger className="text-xl!" value="active">Active</TabsTrigger>
-                        <TabsTrigger className="text-xl!" value="closed">Closed</TabsTrigger>
-                        <TabsTrigger className="text-xl!" value="activity">Activity</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="active">
+				<Tabs defaultValue="active">
+					<TabsList
+						variant="text"
+						className="mb-1 flex w-full justify-start gap-5 overflow-x-auto pb-2 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+					>
+						<TabsTrigger className="text-base! sm:text-xl!" value="active">
+							Active
+						</TabsTrigger>
+						<TabsTrigger className="text-base! sm:text-xl!" value="closed">
+							Closed
+						</TabsTrigger>
+						<TabsTrigger className="text-base! sm:text-xl!" value="activity">
+							Activity
+						</TabsTrigger>
+					</TabsList>
+					<TabsContent value="active">
 						<TraderPositions />
 					</TabsContent>
-                    <TabsContent value="closed">
+					<TabsContent value="closed">
 						<TraderPositions />
 					</TabsContent>
-                    <TabsContent value="activity">
+					<TabsContent value="activity">
 						<TraderActivity />
 					</TabsContent>
-                </Tabs>
+				</Tabs>
 			</div>
 		</div>
 	);

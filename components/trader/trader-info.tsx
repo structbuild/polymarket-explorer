@@ -10,13 +10,23 @@ type TraderInfoProps = {
 };
 
 export function TraderInfo({ address, profile }: TraderInfoProps) {
+	const createdAtTimestamp = profile?.created_at != null ? Number(profile.created_at) : null;
+	const createdAt =
+		createdAtTimestamp != null && Number.isFinite(createdAtTimestamp)
+			? new Date(createdAtTimestamp * 1000).toLocaleDateString("en-US", {
+					year: "numeric",
+					month: "long",
+					day: "numeric",
+				})
+			: "-";
+
 	return (
-		<div className="p-6 rounded-lg bg-card">
-			<p className="text-base text-foreground">Trader Information</p>
+		<div className="rounded-lg bg-card p-4 sm:p-6">
+			<p className="text-sm text-foreground sm:text-base">Trader Information</p>
 			<Separator className="my-2" />
-			<InfoRow label="Address" value={truncateAddress(address, 12)} />
-			<InfoRow label="Username" value={profile?.name} />
-			<InfoRow label="Pseudonym" value={profile?.pseudonym ?? 0} />
+			<InfoRow label="Address" value={<span className="font-mono text-xs sm:text-sm">{truncateAddress(address, 4)}</span>} />
+			<InfoRow label="Username" value={profile?.name ?? "-"} />
+			<InfoRow label="Pseudonym" value={profile?.pseudonym ?? "-"} />
 			<InfoRow label="Verified" value={profile?.verified_badge ? "Yes" : "No"} />
 			<InfoRow label="X (Twitter)">
 				{profile?.x_username ? (
@@ -24,28 +34,21 @@ export function TraderInfo({ address, profile }: TraderInfoProps) {
 						href={`https://x.com/${profile.x_username}`}
 						rel="noreferrer"
 						target="_blank"
-						className="flex items-center gap-1 text-base font-medium hover:underline"
+						className="flex items-center gap-1 break-all text-sm font-medium hover:underline sm:justify-end sm:text-base"
 					>
 						{profile.x_username}
 						<ExternalLinkIcon className="size-4" />
 					</a>
 				) : (
-					<p className="text-base font-medium">-</p>
+					<p className="text-sm font-medium sm:text-base">-</p>
 				)}
 			</InfoRow>
 			<InfoRow label="Creator" value={profile?.is_creator ? "Yes" : "No"} />
 			<InfoRow label="Moderator" value={profile?.is_mod ? "Yes" : "No"} />
-			<InfoRow
-				label="Created At"
-				value={new Date(profile?.created_at ?? 0 * 1000).toLocaleDateString("en-US", {
-					year: "numeric",
-					month: "long",
-					day: "numeric",
-				})}
-			/>
+			<InfoRow label="Created At" value={createdAt} />
 			<div className="flex flex-col gap-px">
-				<p className="text-base text-foreground/90">Bio</p>
-				<p className="text-base">{profile?.bio || "No bio"}</p>
+				<p className="text-sm text-foreground/90 sm:text-base">Bio</p>
+				<p className="text-sm break-words sm:text-base">{profile?.bio || "No bio"}</p>
 			</div>
 			<Separator className="my-2" />
 		</div>

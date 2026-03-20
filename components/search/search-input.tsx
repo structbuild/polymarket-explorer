@@ -50,10 +50,15 @@ export function SearchInput() {
 			<Input
 				value={value}
 				onChange={handleChange}
-				className="backdrop-blur-sm h-full w-full border bg-card rounded-xl pl-5 pr-14 py-4 text-base! focus-visible:ring-0 focus-visible:ring-offset-0"
-				placeholder="Search traders..."
+				className="h-full w-full rounded-xl border bg-card/85 py-4 pl-4 pr-12 text-sm! backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-offset-0 sm:pl-5 sm:pr-14 sm:text-base!"
+				placeholder="Search by trader or wallet..."
 			/>
-			<Button type="button" onClick={() => pushQuery(value)} className="size-10! absolute right-1 top-1/2 -translate-y-1/2 rounded-xl">
+			<Button
+				type="button"
+				onClick={() => pushQuery(value)}
+				className="absolute right-1 top-1/2 size-10! -translate-y-1/2 rounded-xl"
+				aria-label="Search traders"
+			>
 				<SearchIcon className="size-4" />
 			</Button>
 		</div>
