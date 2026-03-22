@@ -40,6 +40,7 @@ export const getTraderDailyPnl = cache(async (address: string): Promise<DailyPnl
 export type DayRecord = {
 	pnl: number;
 	date: string;
+	t: number | null;
 };
 
 export type PnlStreaks = {
@@ -50,19 +51,27 @@ export type PnlStreaks = {
 	worstDay: DayRecord;
 };
 
+export type PnlChartAnnotation = {
+	kind: "best" | "worst";
+	date: string;
+	dailyPnl: number;
+	t: number;
+	p: number;
+};
+
 export function computeStreaks(data: DailyPnlEntry[]): PnlStreaks {
 	let longestWin = 0;
 	let longestLoss = 0;
 	let currentStreak = 0;
-	let bestDay: DayRecord = { pnl: 0, date: "" };
-	let worstDay: DayRecord = { pnl: 0, date: "" };
+	let bestDay: DayRecord = { pnl: 0, date: "", t: null };
+	let worstDay: DayRecord = { pnl: 0, date: "", t: null };
 
 	for (const entry of data) {
 		if (entry.pnl > bestDay.pnl) {
-			bestDay = { pnl: entry.pnl, date: formatDayDate(entry.t) };
+			bestDay = { pnl: entry.pnl, date: formatDayDate(entry.t), t: entry.t };
 		}
 		if (entry.pnl < worstDay.pnl) {
-			worstDay = { pnl: entry.pnl, date: formatDayDate(entry.t) };
+			worstDay = { pnl: entry.pnl, date: formatDayDate(entry.t), t: entry.t };
 		}
 
 		if (entry.pnl === 0) continue;
@@ -77,6 +86,39 @@ export function computeStreaks(data: DailyPnlEntry[]): PnlStreaks {
 	}
 
 	return { longestWin, longestLoss, current: currentStreak, bestDay, worstDay };
+}
+
+export function getPnlChartAnnotations(candles: PnlDataPoint[], streaks: PnlStreaks): PnlChartAnnotation[] {
+	const pnlByTimestamp = new Map<number, number>();
+	for (const candle of candles) {
+		pnlByTimestamp.set(candle.t, candle.p);
+	}
+
+	const annotations: PnlChartAnnotation[] = [];
+	const dayRecords = [
+		{ kind: "best" as const, day: streaks.bestDay },
+		{ kind: "worst" as const, day: streaks.worstDay },
+	];
+
+	for (const { kind, day } of dayRecords) {
+		if (day.t === null) continue;
+		if (kind === "best" && day.pnl <= 0) continue;
+		if (kind === "worst" && day.pnl >= 0) continue;
+
+		const cumulativePnl = pnlByTimestamp.get(day.t);
+		if (cumulativePnl === undefined) continue;
+
+		annotations.push({
+			kind,
+			date: day.date,
+			dailyPnl: day.pnl,
+			t: day.t,
+			p: cumulativePnl,
+		});
+	}
+
+	annotations.sort((a, b) => a.t - b.t);
+	return annotations;
 }
 
 function formatDayDate(t: number): string {

@@ -128,3 +128,8 @@
     -webkit-text-size-adjust: 100%;
   }
 }
+
+.chart-annotation-label-svg {
+  display: none;
+}
+

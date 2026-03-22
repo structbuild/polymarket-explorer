@@ -1,11 +1,11 @@
 import TraderPositions from "@/components/trader/positions";
 import { PerformanceSummary } from "@/components/trader/performance-summary";
 import { PnlCalendar } from "@/components/trader/pnl-calendar";
-import { PnlChart } from "@/components/trader/pnl-chart";
+import { PnlCard } from "@/components/trader/pnl-card";
 import { TraderHeader } from "@/components/trader/trader-header";
 import { TraderInfo } from "@/components/trader/trader-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { computeStreaks, getTraderDailyPnl, getTraderPnlCandles } from "@/lib/polymarket/pnl";
+import { computeStreaks, getPnlChartAnnotations, getTraderDailyPnl, getTraderPnlCandles } from "@/lib/polymarket/pnl";
 import { getMarketsByConditionIds, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { getTraderDisplayName } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -62,6 +62,7 @@ export default async function TraderPage({ params }: Props) {
 	const bestTradeMarket = tradeMarkets?.find((m) => m.condition_id === pnlSummary?.best_trade_condition_id);
 
 	const streaks = computeStreaks(dailyPnl);
+	const chartAnnotations = getPnlChartAnnotations(pnlCandles, streaks);
 	const displayName = getTraderDisplayName({ address, name: profile?.name, pseudonym: profile?.pseudonym });
 
 	return (
@@ -78,9 +79,7 @@ export default async function TraderPage({ params }: Props) {
 							totalSells={pnlSummary?.total_sells}
 							totalVolumeUsd={pnlSummary?.total_volume_usd}
 						/>
-						<div className="rounded-lg bg-card p-4 sm:p-6">
-							<PnlChart data={pnlCandles} />
-						</div>
+						<PnlCard address={address} data={pnlCandles} displayName={displayName} annotations={chartAnnotations} />
 						<div className="rounded-lg bg-card p-4 sm:p-6">
 							<PnlCalendar data={dailyPnl} />
 						</div>

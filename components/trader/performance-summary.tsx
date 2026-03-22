@@ -16,8 +16,8 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: Per
 		<div className="rounded-lg bg-card p-4 sm:p-6">
 			<p className="text-sm text-foreground sm:text-base">Performance Summary</p>
 			<Separator className="my-2" />
-			<InfoRow label="Traded" value={pnlSummary?.markets_traded ?? 0} />
-			<InfoRow label="Wins" value={pnlSummary?.markets_won ?? 0} />
+			<InfoRow label="Markets Traded" value={pnlSummary?.markets_traded ?? 0} />
+			<InfoRow label="Markets Won" value={pnlSummary?.markets_won ?? 0} />
 			<InfoRow label="Avg. Hold Time" value={formatDuration(pnlSummary?.avg_hold_time_seconds ?? 0)} />
 			<InfoRow label="Realized PnL" value={formatNumber(pnlSummary?.pnl_usd ?? 0, { currency: true, compact: true })} />
 			<div>
