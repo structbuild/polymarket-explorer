@@ -22,8 +22,8 @@ importers:
         specifier: ^9.5.0
         version: 9.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(three@0.167.1)
       '@structbuild/sdk':
-        specifier: 0.2.6
-        version: 0.2.6
+        specifier: 0.2.8
+        version: 0.2.8
       '@tanstack/react-hotkeys':
         specifier: ^0.4.2
         version: 0.4.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -729,8 +729,8 @@ packages:
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
-  '@structbuild/sdk@0.2.6':
-    resolution: {integrity: sha512-CvjwoaP9ea7yCIReFI6oWMlrnFx+cOjlaSQWNsAHOYhWmVztbJacMCv7B6MExTIVlUzCW5Mv8ytv2GB2BfTJ/g==}
+  '@structbuild/sdk@0.2.8':
+    resolution: {integrity: sha512-JL7ZEoZXUE/SDY2uffKrnntaDmlnAVgozD9SjPD43c/EXoJ0grrH/r8oCtHbKWTzUkV8JuZ/yoI8qegFhfOGdw==}
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -4117,7 +4117,7 @@ snapshots:
 
   '@standard-schema/spec@1.0.0': {}
 
-  '@structbuild/sdk@0.2.6': {}
+  '@structbuild/sdk@0.2.8': {}
 
   '@swc/helpers@0.5.15':
     dependencies:

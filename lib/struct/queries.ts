@@ -1,12 +1,12 @@
 import "server-only";
 
 import type {
-	GlobalPnlTrader,
 	MarketMetadata,
 	StructClient,
 	Trade,
 	Trader,
 	TraderOutcomePnlEntry,
+	TraderPnlSummary,
 	UserProfile,
 } from "@structbuild/sdk";
 import { cache } from "react";
@@ -174,7 +174,7 @@ export const getTraderProfile = cache(async (address: string): Promise<UserProfi
 	}
 });
 
-export const getTraderPnlSummary = cache(async (address: string): Promise<GlobalPnlTrader | null> => {
+export const getTraderPnlSummary = cache(async (address: string): Promise<TraderPnlSummary | null> => {
 	const client = getStructClient();
 
 	if (!client || !address.trim()) {

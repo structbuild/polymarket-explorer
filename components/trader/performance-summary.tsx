@@ -3,10 +3,10 @@ import { InfoRow } from "@/components/trader/info-row";
 import { Separator } from "@/components/ui/separator";
 import type { PnlStreaks } from "@/lib/polymarket/pnl";
 import { formatDuration, formatNumber } from "@/lib/utils";
-import type { GlobalPnlTrader, MarketMetadata } from "@structbuild/sdk";
+import type { MarketMetadata, TraderPnlSummary } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {
-	pnlSummary: GlobalPnlTrader | null;
+	pnlSummary: TraderPnlSummary | null;
 	bestTradeMarket?: MarketMetadata | null;
 	worstTradeMarket?: MarketMetadata | null;
 	streaks: PnlStreaks;
@@ -20,7 +20,6 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, worstTradeMark
 			<InfoRow label="Markets Traded" value={pnlSummary?.markets_traded ?? 0} />
 			<InfoRow label="Markets Won" value={pnlSummary?.markets_won ?? 0} />
 			<InfoRow label="Avg. Hold Time" value={formatDuration(pnlSummary?.avg_hold_time_seconds ?? 0)} />
-			<InfoRow label="Realized PnL" value={formatNumber(pnlSummary?.pnl_usd ?? 0, { currency: true, compact: true })} />
 			<div>
 				<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
 					<p className="text-sm text-foreground/90 sm:text-base">Best Win</p>
