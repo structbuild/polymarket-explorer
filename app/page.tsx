@@ -11,7 +11,7 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = {
 	title: "Polymarket Explorer — Analyze Any Trader",
 	description:
-		"Search and analyze any Polymarket trader by username or wallet address. View PnL charts, trading history, and performance metrics for top prediction market traders.",
+		"Search and analyze any Polymarket trader by username or wallet address. View PnL charts, trading history, and performance metrics. Powered by Struct.",
 	alternates: {
 		canonical: "/",
 	},

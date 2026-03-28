@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { address } = await params;
 	const profile = await getTraderProfile(address);
 	const displayName = profile ? getTraderDisplayName({ address, name: profile.name, pseudonym: profile.pseudonym }) : address;
-	const description = `Analyze ${displayName}'s Polymarket trading performance — PnL history, win rate, volume, and recent trades.`;
+	const description = `Analyze ${displayName}'s Polymarket trading performance — PnL history, win rate, volume, and recent trades. Powered by Struct.`;
 
 	return {
 		title: `${displayName} — Trader Profile`,

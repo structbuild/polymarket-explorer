@@ -17,20 +17,20 @@ export const metadata: Metadata = {
 		template: "%s | Polymarket Explorer",
 	},
 	description:
-		"Analyze any Polymarket trader's performance, PnL history, and trading activity. Search traders by name or wallet address and explore detailed analytics.",
+		"Analyze any Polymarket trader's performance, PnL history, and trading activity. Built with Struct and Polymarket APIs.",
 	alternates: {
 		canonical: "/",
 	},
 	openGraph: {
 		title: "Polymarket Explorer — Trader Analytics & PnL Tracking",
-		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity. Search traders by name or wallet address.",
+		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity. Powered by Struct.",
 		type: "website",
 		siteName: "Polymarket Explorer",
 	},
 	twitter: {
 		card: "summary_large_image",
 		title: "Polymarket Explorer — Trader Analytics",
-		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity.",
+		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity. Powered by Struct.",
 	},
 };
 
