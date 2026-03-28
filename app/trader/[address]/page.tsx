@@ -71,9 +71,14 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const tradeConditionIds = [pnlSummary?.best_trade_condition_id].filter((id): id is string => !!id);
+	const tradeConditionIds = [
+		...new Set(
+			[pnlSummary?.best_trade_condition_id, pnlSummary?.worst_trade_condition_id].filter((id): id is string => !!id),
+		),
+	];
 	const tradeMarkets = await getMarketsByConditionIds(tradeConditionIds);
 	const bestTradeMarket = tradeMarkets?.find((m) => m.condition_id === pnlSummary?.best_trade_condition_id);
+	const worstTradeMarket = tradeMarkets?.find((m) => m.condition_id === pnlSummary?.worst_trade_condition_id);
 
 	const streaks = computeStreaks(dailyPnl);
 	const chartAnnotations = getPnlChartAnnotations(pnlCandles, streaks);
@@ -101,7 +106,12 @@ export default async function TraderPage({ params, searchParams }: Props) {
 					</div>
 
 					<div className="min-w-0 space-y-4 lg:w-1/3">
-						<PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} streaks={streaks} />
+						<PerformanceSummary
+							pnlSummary={pnlSummary}
+							bestTradeMarket={bestTradeMarket}
+							worstTradeMarket={worstTradeMarket}
+							streaks={streaks}
+						/>
 						<TraderInfo address={address} profile={profile} />
 					</div>
 				</div>
