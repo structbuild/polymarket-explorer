@@ -18,21 +18,23 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-	searchParams: Promise<{ q?: string }>;
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function HomePage({ searchParams }: Props) {
-	const { q } = await searchParams;
+	const qValue = (await searchParams).q;
+	const q = Array.isArray(qValue) ? qValue[0] : qValue;
+	const query = q?.trim() ?? "";
 
-	if (q && isWalletAddress(q)) {
-		redirect(`/trader/${q.trim()}`);
+	if (isWalletAddress(query)) {
+		redirect(`/trader/${query}`);
 	}
 
-	const hasQuery = q != null && q.trim().length >= 2;
+	const hasQuery = query.length >= 2;
 
 	const [leaderboard, searchResults] = await Promise.all([
 		hasQuery ? Promise.resolve([]) : getLeaderboard(),
-		hasQuery ? searchTraders(q) : Promise.resolve([]),
+		hasQuery ? searchTraders(query) : Promise.resolve([]),
 	]);
 
 	const traders = hasQuery ? searchResults.slice(0, 10) : leaderboard.slice(0, 10).map((entry) => ({ ...entry.trader, pnl: entry.pnl }));
@@ -66,12 +68,12 @@ export default async function HomePage({ searchParams }: Props) {
 									<span className="text-emerald-500">+{formatNumber(trader.pnl as number, { compact: true, currency: true })}</span>
 								)}
 							</Link>
-						))}
-						{hasQuery && traders.length === 0 && (
-							<p className="text-center text-sm text-muted-foreground">No traders found for &ldquo;{q}&rdquo;</p>
-						)}
+							))}
+							{hasQuery && traders.length === 0 && (
+								<p className="text-center text-sm text-muted-foreground">No traders found for &ldquo;{query}&rdquo;</p>
+							)}
+						</div>
 					</div>
-				</div>
 			</div>
 		</div>
 	);

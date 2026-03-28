@@ -1,12 +1,38 @@
 import "server-only";
 
-import type { GlobalPnlTrader, MarketMetadata, Trader, UserProfile } from "@structbuild/sdk";
+import type {
+	GlobalPnlTrader,
+	MarketMetadata,
+	StructClient,
+	Trade,
+	Trader,
+	TraderOutcomePnlEntry,
+	UserProfile,
+} from "@structbuild/sdk";
 import { cache } from "react";
 
 import { getStructClient } from "@/lib/struct/client";
-import type { MarketDetail, MarketSummary } from "@/lib/struct/types";
+import type { MarketDetail, MarketSummary, PaginatedResource } from "@/lib/struct/types";
 
 const featuredLimit = 12;
+export const defaultTraderTablePageSize = 25;
+const defaultPositionsLimit = defaultTraderTablePageSize;
+const defaultTradesLimit = defaultTraderTablePageSize;
+const maxTraderSearchQueryLength = 100;
+
+export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
+export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
+
+export type TraderPositionsOptions = Omit<GetTraderOutcomePnlRequest, "address" | "status">;
+export type TraderTradesOptions = Omit<GetTraderTradesRequest, "address">;
+export type TraderTradesPageOptions = Omit<GetTraderTradesRequest, "address">;
+
+type PaginatedApiResponse<T> = {
+	data: T[];
+	pagination?: {
+		pagination_key: string | number | null;
+	};
+};
 
 function toMarket(m: MarketMetadata): MarketSummary {
 	return {
@@ -41,6 +67,36 @@ function logStructError(label: string, error: unknown) {
 	console.error(`Struct SDK request failed: ${label}`, error);
 }
 
+function normalizeTraderSearchQuery(query: string) {
+	return query.trim().replace(/\s+/g, " ").slice(0, maxTraderSearchQueryLength);
+}
+
+function sanitizeLogValue(value: string, maxLength: number = maxTraderSearchQueryLength) {
+	const sanitized = value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
+	return sanitized.length > maxLength ? `${sanitized.slice(0, maxLength)}...` : sanitized;
+}
+
+async function hasMoreResults<T>(
+	response: PaginatedApiResponse<T>,
+	probeNextPage?: () => Promise<PaginatedApiResponse<T>>,
+) {
+	if (response.data.length === 0) {
+		return false;
+	}
+
+	if (!probeNextPage) {
+		return true;
+	}
+
+	try {
+		const nextPage = await probeNextPage();
+		return nextPage.data.length > 0;
+	} catch (error) {
+		logStructError("probePagination", error);
+		return true;
+	}
+}
+
 export const getFeaturedMarkets = cache(async (): Promise<MarketSummary[]> => {
 	const client = getStructClient();
 
@@ -60,19 +116,20 @@ export const getFeaturedMarkets = cache(async (): Promise<MarketSummary[]> => {
 
 export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	const client = getStructClient();
+	const normalizedQuery = normalizeTraderSearchQuery(query);
 
-	if (!client || query.trim().length < 2) {
+	if (!client || normalizedQuery.length < 2) {
 		return [];
 	}
 
 	try {
 		const response = await client.search.search({
-			q: query.trim(),
+			q: normalizedQuery,
 			limit: 25,
 		});
-		return response.data.traders;
+		return response.data.traders ?? [];
 	} catch (error) {
-		logStructError(`searchTraders:${query}`, error);
+		logStructError(`searchTraders:${sanitizeLogValue(normalizedQuery)}`, error);
 		return [];
 	}
 });
@@ -125,7 +182,7 @@ export const getTraderPnlSummary = cache(async (address: string): Promise<Global
 	}
 
 	try {
-		const response = await client.trader.getTraderPnl({ address });
+		const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
 		return response.data;
 	} catch (error) {
 		if (readStatus(error) === 404) {
@@ -153,3 +210,186 @@ export const getMarketsByConditionIds = cache(async (conditionIds: string[]): Pr
 	}
 });
 
+export const getTraderPositions = cache(
+	async (
+		address: string,
+		status: "open" | "closed",
+		options?: TraderPositionsOptions,
+	): Promise<TraderOutcomePnlEntry[]> => {
+		const client = getStructClient();
+
+		if (!client || !address.trim()) {
+			return [];
+		}
+
+		try {
+			const params: GetTraderOutcomePnlRequest = {
+				address,
+				status,
+				limit: defaultPositionsLimit,
+				...options,
+			};
+			const response = await client.trader.getTraderOutcomePnl(params);
+			return response.data;
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return [];
+			}
+
+			logStructError(`getTraderPositions:${address}:${status}`, error);
+			return [];
+		}
+	},
+);
+
+export const getTraderTrades = cache(
+	async (address: string, options?: TraderTradesOptions): Promise<Trade[]> => {
+		const client = getStructClient();
+
+		if (!client || !address.trim()) {
+			return [];
+		}
+
+		try {
+			const params: GetTraderTradesRequest = {
+				address,
+				limit: defaultTradesLimit,
+				sort_desc: true,
+				...options,
+			};
+			const response = await client.trader.getTraderTrades(params);
+			return response.data;
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return [];
+			}
+
+			logStructError(`getTraderTrades:${address}`, error);
+			return [];
+		}
+	},
+);
+
+export const getTraderPositionsPage = cache(
+	async (
+		address: string,
+		status: "open" | "closed",
+		options?: TraderPositionsOptions,
+	): Promise<PaginatedResource<TraderOutcomePnlEntry, number>> => {
+		const client = getStructClient();
+
+		if (!client || !address.trim()) {
+			return {
+				data: [],
+				hasMore: false,
+				nextCursor: null,
+				pageSize: options?.limit ?? defaultPositionsLimit,
+			};
+		}
+
+		const limit = options?.limit ?? defaultPositionsLimit;
+		const offset = options?.offset ?? 0;
+
+		try {
+			const params: GetTraderOutcomePnlRequest = {
+				address,
+				status,
+				limit,
+				...options,
+			};
+			const response = await client.trader.getTraderOutcomePnl(params);
+			const hasMore = await hasMoreResults(response, () =>
+				client.trader.getTraderOutcomePnl({
+					...params,
+					limit: 1,
+					offset: offset + response.data.length,
+				}),
+			);
+			const nextCursor = hasMore ? offset + response.data.length : null;
+
+			return {
+				data: response.data,
+				hasMore,
+				nextCursor,
+				pageSize: limit,
+			};
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return {
+					data: [],
+					hasMore: false,
+					nextCursor: null,
+					pageSize: limit,
+				};
+			}
+
+			logStructError(`getTraderPositionsPage:${address}:${status}`, error);
+			return {
+				data: [],
+				hasMore: false,
+				nextCursor: null,
+				pageSize: limit,
+			};
+		}
+	},
+);
+
+export const getTraderTradesPage = cache(
+	async (address: string, options?: TraderTradesPageOptions): Promise<PaginatedResource<Trade, number>> => {
+		const client = getStructClient();
+
+		if (!client || !address.trim()) {
+			return {
+				data: [],
+				hasMore: false,
+				nextCursor: null,
+				pageSize: options?.limit ?? defaultTradesLimit,
+			};
+		}
+
+		const limit = options?.limit ?? defaultTradesLimit;
+		const offset = options?.offset ?? 0;
+
+		try {
+			const params: GetTraderTradesRequest = {
+				address,
+				limit,
+				sort_desc: true,
+				...options,
+			};
+			const response = await client.trader.getTraderTrades(params);
+			const hasMore = await hasMoreResults(response, () =>
+				client.trader.getTraderTrades({
+					...params,
+					limit: 1,
+					offset: offset + response.data.length,
+				}),
+			);
+			const nextCursor = hasMore ? offset + response.data.length : null;
+
+			return {
+				data: response.data,
+				hasMore,
+				nextCursor,
+				pageSize: limit,
+			};
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return {
+					data: [],
+					hasMore: false,
+					nextCursor: null,
+					pageSize: limit,
+				};
+			}
+
+			logStructError(`getTraderTradesPage:${address}`, error);
+			return {
+				data: [],
+				hasMore: false,
+				nextCursor: null,
+				pageSize: limit,
+			};
+		}
+	},
+);

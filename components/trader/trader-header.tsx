@@ -25,6 +25,7 @@ type TraderHeaderProps = {
 	firstTradeAt?: number | null;
 	totalBuys?: number | null;
 	totalSells?: number | null;
+	totalRedemptions?: number | null;
 	totalVolumeUsd?: number | null;
 };
 
@@ -35,6 +36,7 @@ export function TraderHeader({
 	firstTradeAt,
 	totalBuys,
 	totalSells,
+	totalRedemptions,
 	totalVolumeUsd,
 }: TraderHeaderProps) {
 	const activeSince = firstTradeAt
@@ -58,6 +60,7 @@ export function TraderHeader({
 						<StatItem label="Active Since" value={activeSince} />
 						<StatItem label="Buys" value={totalBuys ?? 0} />
 						<StatItem label="Sells" value={totalSells ?? 0} />
+						<StatItem label="Redemptions" value={totalRedemptions ?? 0} />
 						<StatItem label="Volume" value={formatNumber(totalVolumeUsd ?? 0, { compact: true, currency: true })} />
 					</div>
 				</div>

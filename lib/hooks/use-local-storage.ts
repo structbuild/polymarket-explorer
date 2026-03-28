@@ -1,6 +1,6 @@
 "use client"
 
-import { useSyncExternalStore, type SetStateAction } from "react"
+import { useCallback, useMemo, useSyncExternalStore, type SetStateAction } from "react"
 
 const LOCAL_STORAGE_CHANGE_EVENT = "local-storage-change"
 
@@ -21,22 +21,31 @@ function deserializeJson<T>(value: string): T {
 	return JSON.parse(value) as T
 }
 
-function readLocalStorageValue<T>(
-	key: string,
-	initialValue: T | (() => T),
-	deserialize: (value: string) => T,
-) {
-	const fallbackValue = resolveInitialValue(initialValue)
-
+function readLocalStorageSnapshot(key: string) {
 	if (typeof window === "undefined") {
-		return fallbackValue
+		return null
 	}
 
 	try {
-		const storedValue = window.localStorage.getItem(key)
-		return storedValue === null ? fallbackValue : deserialize(storedValue)
+		return window.localStorage.getItem(key)
 	} catch {
-		return fallbackValue
+		return null
+	}
+}
+
+function deserializeSnapshot<T>(
+	snapshot: string | null,
+	initialValue: T,
+	deserialize: (value: string) => T,
+) {
+	if (snapshot === null) {
+		return initialValue
+	}
+
+	try {
+		return deserialize(snapshot)
+	} catch {
+		return initialValue
 	}
 }
 
@@ -47,52 +56,58 @@ export function useLocalStorage<T>(
 ) {
 	const deserialize = options.deserialize ?? deserializeJson<T>
 	const serialize = options.serialize ?? JSON.stringify
+	const resolvedInitialValue = useMemo(() => resolveInitialValue(initialValue), [initialValue])
 
-	const value = useSyncExternalStore(
-		(onStoreChange) => {
-			if (typeof window === "undefined") {
-				return () => {}
-			}
+	const subscribe = useCallback((onStoreChange: () => void) => {
+		if (typeof window === "undefined") {
+			return () => {}
+		}
 
-			const handleChange = (event: Event) => {
-				if (event instanceof StorageEvent) {
-					if (event.storageArea !== window.localStorage || event.key !== key) {
-						return
-					}
-				} else {
-					const customEvent = event as CustomEvent<LocalStorageChangeDetail>
-
-					if (customEvent.detail?.key !== key) {
-						return
-					}
+		const handleChange = (event: Event) => {
+			if (event instanceof StorageEvent) {
+				if (event.storageArea !== window.localStorage || event.key !== key) {
+					return
 				}
+			} else {
+				const customEvent = event as CustomEvent<LocalStorageChangeDetail>
 
-				onStoreChange()
+				if (customEvent.detail?.key !== key) {
+					return
+				}
 			}
 
-			window.addEventListener("storage", handleChange)
-			window.addEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleChange as EventListener)
+			onStoreChange()
+		}
 
-			return () => {
-				window.removeEventListener("storage", handleChange)
-				window.removeEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleChange as EventListener)
-			}
-		},
-		() => readLocalStorageValue(key, initialValue, deserialize),
-		() => resolveInitialValue(initialValue),
+		window.addEventListener("storage", handleChange)
+		window.addEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleChange as EventListener)
+
+		return () => {
+			window.removeEventListener("storage", handleChange)
+			window.removeEventListener(LOCAL_STORAGE_CHANGE_EVENT, handleChange as EventListener)
+		}
+	}, [key])
+
+	const getSnapshot = useCallback(() => readLocalStorageSnapshot(key), [key])
+
+	const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => null)
+	const value = useMemo(
+		() => deserializeSnapshot(snapshot, resolvedInitialValue, deserialize),
+		[deserialize, resolvedInitialValue, snapshot],
 	)
 
-	const notifyChange = () => {
+	const notifyChange = useCallback(() => {
 		window.dispatchEvent(new CustomEvent<LocalStorageChangeDetail>(LOCAL_STORAGE_CHANGE_EVENT, { detail: { key } }))
-	}
+	}, [key])
 
-	const setValue = (nextValue: SetStateAction<T>) => {
+	const setValue = useCallback((nextValue: SetStateAction<T>) => {
 		if (typeof window === "undefined") {
 			return
 		}
 
+		const currentValue = deserializeSnapshot(getSnapshot(), resolvedInitialValue, deserialize)
 		const resolvedValue = typeof nextValue === "function"
-			? (nextValue as (currentValue: T) => T)(value)
+			? (nextValue as (currentValue: T) => T)(currentValue)
 			: nextValue
 
 		try {
@@ -101,9 +116,9 @@ export function useLocalStorage<T>(
 		} catch {
 			// Ignore storage failures and keep the in-memory UI responsive.
 		}
-	}
+	}, [deserialize, getSnapshot, key, notifyChange, resolvedInitialValue, serialize])
 
-	const removeValue = () => {
+	const removeValue = useCallback(() => {
 		if (typeof window === "undefined") {
 			return
 		}
@@ -114,7 +129,7 @@ export function useLocalStorage<T>(
 		} catch {
 			// Ignore storage failures and keep the in-memory UI responsive.
 		}
-	}
+	}, [key, notifyChange])
 
 	return [value, setValue, removeValue] as const
 }

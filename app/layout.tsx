@@ -8,6 +8,7 @@ import { getSiteUrl } from "@/lib/env";
 import { Header } from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 export const metadata: Metadata = {
 	metadataBase: getSiteUrl(),
@@ -41,15 +42,17 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning className="h-full">
 			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh overflow-x-hidden antialiased font-sans`}>
-				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-					<TooltipProvider>
-						<div className="flex min-h-svh flex-col">
-							<Header />
-							<main className="flex min-h-0 flex-1 flex-col">{children}</main>
-							<Footer />
-						</div>
-					</TooltipProvider>
-				</ThemeProvider>
+				<NuqsAdapter>
+					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+						<TooltipProvider>
+							<div className="flex min-h-svh flex-col">
+								<Header />
+								<main className="flex min-h-0 flex-1 flex-col">{children}</main>
+								<Footer />
+							</div>
+						</TooltipProvider>
+					</ThemeProvider>
+				</NuqsAdapter>
 			</body>
 		</html>
 	);

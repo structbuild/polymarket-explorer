@@ -18,3 +18,11 @@ export type MarketSummary = {
 
 export type MarketDetail = MarketSummary;
 
+export type PageCursor = string | number | null;
+
+export type PaginatedResource<T, TCursor extends PageCursor = PageCursor> = {
+	data: T[];
+	hasMore: boolean;
+	nextCursor: TCursor | null;
+	pageSize: number;
+};

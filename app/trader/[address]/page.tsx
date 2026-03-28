@@ -1,21 +1,21 @@
-import TraderPositions from "@/components/trader/positions";
 import { PerformanceSummary } from "@/components/trader/performance-summary";
 import { PnlCalendar } from "@/components/trader/pnl-calendar";
 import { PnlCard } from "@/components/trader/pnl-card";
 import { TraderHeader } from "@/components/trader/trader-header";
 import { TraderInfo } from "@/components/trader/trader-info";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TraderTabs } from "@/components/trader/trader-tabs";
 import { computeStreaks, getPnlChartAnnotations, getTraderDailyPnl, getTraderPnlCandles } from "@/lib/polymarket/pnl";
-import { getMarketsByConditionIds, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
+import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
+import { defaultTraderTablePageSize, getMarketsByConditionIds, getTraderPnlSummary, getTraderPositionsPage, getTraderProfile, getTraderTradesPage } from "@/lib/struct/queries";
 import { getTraderDisplayName } from "@/lib/utils";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import TraderActivity from "@/components/trader/activity";
 
 export const revalidate = 300;
 
 type Props = {
 	params: Promise<{ address: string }>;
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -43,14 +43,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	};
 }
 
-export default async function TraderPage({ params }: Props) {
+export default async function TraderPage({ params, searchParams }: Props) {
 	const { address } = await params;
+	const { tab, openPage, closedPage, activityPage } = await loadTraderSearchParams(searchParams);
+	const pageSize = defaultTraderTablePageSize;
+	const openOffset = (openPage - 1) * pageSize;
+	const closedOffset = (closedPage - 1) * pageSize;
+	const activityOffset = (activityPage - 1) * pageSize;
 
-	const [profile, pnlSummary, pnlCandles, dailyPnl] = await Promise.all([
+	const [profile, pnlSummary, pnlCandles, dailyPnl, openPositions, closedPositions, trades] = await Promise.all([
 		getTraderProfile(address),
 		getTraderPnlSummary(address),
 		getTraderPnlCandles(address),
 		getTraderDailyPnl(address),
+		tab === "active"
+			? getTraderPositionsPage(address, "open", { limit: pageSize, offset: openOffset })
+			: Promise.resolve(null),
+		tab === "closed"
+			? getTraderPositionsPage(address, "closed", { limit: pageSize, offset: closedOffset })
+			: Promise.resolve(null),
+		tab === "activity"
+			? getTraderTradesPage(address, { limit: pageSize, offset: activityOffset, sort_desc: true })
+			: Promise.resolve(null),
 	]);
 
 	if (!profile && !pnlSummary) {
@@ -77,6 +91,7 @@ export default async function TraderPage({ params }: Props) {
 							firstTradeAt={pnlSummary?.first_trade_at}
 							totalBuys={pnlSummary?.total_buys}
 							totalSells={pnlSummary?.total_sells}
+							totalRedemptions={pnlSummary?.total_redemptions}
 							totalVolumeUsd={pnlSummary?.total_volume_usd}
 						/>
 						<PnlCard address={address} data={pnlCandles} displayName={displayName} annotations={chartAnnotations} />
@@ -91,31 +106,15 @@ export default async function TraderPage({ params }: Props) {
 					</div>
 				</div>
 
-				<Tabs defaultValue="active">
-					<TabsList
-						variant="text"
-						className="mb-1 flex w-full justify-start gap-5 overflow-x-auto pb-2 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-					>
-						<TabsTrigger className="text-base! sm:text-xl!" value="active">
-							Active
-						</TabsTrigger>
-						<TabsTrigger className="text-base! sm:text-xl!" value="closed">
-							Closed
-						</TabsTrigger>
-						<TabsTrigger className="text-base! sm:text-xl!" value="activity">
-							Activity
-						</TabsTrigger>
-					</TabsList>
-					<TabsContent value="active">
-						<TraderPositions />
-					</TabsContent>
-					<TabsContent value="closed">
-						<TraderPositions />
-					</TabsContent>
-					<TabsContent value="activity">
-						<TraderActivity />
-					</TabsContent>
-				</Tabs>
+				<TraderTabs
+					activeTab={tab}
+					openPage={openPage}
+					closedPage={closedPage}
+					activityPage={activityPage}
+					openPositions={openPositions}
+					closedPositions={closedPositions}
+					trades={trades}
+				/>
 			</div>
 		</div>
 	);
