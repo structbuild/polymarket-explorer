@@ -1,12 +1,13 @@
 import { BeamsBackground } from "@/components/background/beams-background";
+import { TopTraders, TopTradersFallback } from "@/components/home/top-traders";
 import { SearchInput } from "@/components/search/search-input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getLeaderboard } from "@/lib/polymarket/leaderboard";
 import { searchTraders } from "@/lib/struct/queries";
-import { formatNumber, getTraderDisplayName, isWalletAddress } from "@/lib/utils";
+import { getTraderDisplayName, isWalletAddress } from "@/lib/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
 	title: "Polymarket Explorer — Analyze Any Trader",
@@ -32,12 +33,7 @@ export default async function HomePage({ searchParams }: Props) {
 
 	const hasQuery = query.length >= 2;
 
-	const [leaderboard, searchResults] = await Promise.all([
-		hasQuery ? Promise.resolve([]) : getLeaderboard(),
-		hasQuery ? searchTraders(query) : Promise.resolve([]),
-	]);
-
-	const traders = hasQuery ? searchResults.slice(0, 10) : leaderboard.slice(0, 10).map((entry) => ({ ...entry.trader, pnl: entry.pnl }));
+	const traders = hasQuery ? (await searchTraders(query)).slice(0, 10) : [];
 
 	return (
 		<div className="relative flex flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
@@ -49,31 +45,33 @@ export default async function HomePage({ searchParams }: Props) {
 				</div>
 				<SearchInput />
 				<div className="mt-4 flex w-full flex-col items-center">
-					{!hasQuery && <p className="mb-2 text-center text-xs font-medium text-muted-foreground/80">Top Traders (Weekly)</p>}
-					<div className="flex w-full flex-wrap justify-center gap-2">
-						{traders.map((trader) => (
-							<Link
-								key={trader.address}
-								href={`/trader/${trader.address}`}
-								className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs text-foreground/90 opacity-80 backdrop-blur-sm transition-colors hover:bg-accent hover:opacity-100 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
-							>
-								{trader.profile_image && (
-									<Avatar size="xs">
-										<AvatarImage src={trader.profile_image} />
-										<AvatarFallback>{getTraderDisplayName(trader).slice(0, 2).toUpperCase()}</AvatarFallback>
-									</Avatar>
-								)}
-								<span className="max-w-44 truncate sm:max-w-[16rem]">{getTraderDisplayName(trader)}</span>
-								{"pnl" in trader && (
-									<span className="text-emerald-500">+{formatNumber(trader.pnl as number, { compact: true, currency: true })}</span>
-								)}
-							</Link>
+					{hasQuery ? (
+						<div className="flex w-full flex-wrap justify-center gap-2">
+							{traders.map((trader) => (
+								<Link
+									key={trader.address}
+									href={`/trader/${trader.address}`}
+									className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs text-foreground/90 opacity-80 backdrop-blur-sm transition-colors hover:bg-accent hover:opacity-100 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
+								>
+									{trader.profile_image && (
+										<Avatar size="xs">
+											<AvatarImage src={trader.profile_image} />
+											<AvatarFallback>{getTraderDisplayName(trader).slice(0, 2).toUpperCase()}</AvatarFallback>
+										</Avatar>
+									)}
+									<span className="max-w-44 truncate sm:max-w-[16rem]">{getTraderDisplayName(trader)}</span>
+								</Link>
 							))}
-							{hasQuery && traders.length === 0 && (
+							{traders.length === 0 && (
 								<p className="text-center text-sm text-muted-foreground">No traders found for &ldquo;{query}&rdquo;</p>
 							)}
 						</div>
-					</div>
+					) : (
+						<Suspense fallback={<TopTradersFallback />}>
+							<TopTraders />
+						</Suspense>
+					)}
+				</div>
 			</div>
 		</div>
 	);

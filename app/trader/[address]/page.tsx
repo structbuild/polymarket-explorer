@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TraderPage({ params, searchParams }: Props) {
 	const { address } = await params;
-	const { tab, openPage, closedPage, activityPage, pnlTimeframe } = await loadTraderSearchParams(searchParams);
+	const { openPage, closedPage, activityPage, pnlTimeframe } = await loadTraderSearchParams(searchParams);
 	const pageSize = defaultTraderTablePageSize;
 	const openOffset = (openPage - 1) * pageSize;
 	const closedOffset = (closedPage - 1) * pageSize;
@@ -58,15 +58,9 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		getTraderPnlSummary(address),
 		getTraderPnlCandles(address, interval, fidelity),
 		getTraderDailyPnl(address),
-		tab === "active"
-			? getTraderPositionsPage(address, "open", { limit: pageSize, offset: openOffset })
-			: Promise.resolve(null),
-		tab === "closed"
-			? getTraderPositionsPage(address, "closed", { limit: pageSize, offset: closedOffset })
-			: Promise.resolve(null),
-		tab === "activity"
-			? getTraderTradesPage(address, { limit: pageSize, offset: activityOffset, sort_desc: true })
-			: Promise.resolve(null),
+		getTraderPositionsPage(address, "open", { limit: pageSize, offset: openOffset }),
+		getTraderPositionsPage(address, "closed", { limit: pageSize, offset: closedOffset }),
+		getTraderTradesPage(address, { limit: pageSize, offset: activityOffset, sort_desc: true }),
 	]);
 
 	if (!profile && !pnlSummary) {
@@ -117,7 +111,6 @@ export default async function TraderPage({ params, searchParams }: Props) {
 				</div>
 
 				<TraderTabs
-					activeTab={tab}
 					openPage={openPage}
 					closedPage={closedPage}
 					activityPage={activityPage}

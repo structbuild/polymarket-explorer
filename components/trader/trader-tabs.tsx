@@ -16,17 +16,15 @@ type Trade = components["schemas"]["PredictionTradeResponse"]
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
 
 type Props = {
-	activeTab: TraderTab
 	openPage: number
 	closedPage: number
 	activityPage: number
-	openPositions: PaginatedResource<TraderOutcomePnlEntry, number> | null
-	closedPositions: PaginatedResource<TraderOutcomePnlEntry, number> | null
-	trades: PaginatedResource<Trade, number> | null
+	openPositions: PaginatedResource<TraderOutcomePnlEntry, number>
+	closedPositions: PaginatedResource<TraderOutcomePnlEntry, number>
+	trades: PaginatedResource<Trade, number>
 }
 
 export function TraderTabs({
-	activeTab,
 	openPage,
 	closedPage,
 	activityPage,
@@ -37,7 +35,7 @@ export function TraderTabs({
 	const [toolbarEl, setToolbarEl] = useState<HTMLDivElement | null>(null)
 	const [isPending, startTransition] = useTransition()
 	const toolbarRef = useCallback((node: HTMLDivElement | null) => setToolbarEl(node), [])
-	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
+	const [{ tab: currentTab }, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
 		scroll: false,
 		shallow: false,
@@ -45,26 +43,26 @@ export function TraderTabs({
 	})
 
 	const setTab = useCallback((nextTab: TraderTab) => {
-		if (nextTab === activeTab) {
+		if (nextTab === currentTab) {
 			return
 		}
 
-		void setSearchParams({ tab: nextTab })
-	}, [activeTab, setSearchParams])
+		void setSearchParams({ tab: nextTab }, { shallow: true })
+	}, [currentTab, setSearchParams])
 
 	const setPage = useCallback((key: "openPage" | "closedPage" | "activityPage", nextPage: number) => {
 		void setSearchParams({ [key]: Math.min(Math.max(nextPage, 1), maxTraderPageNumber) })
 	}, [setSearchParams])
 
 	return (
-		<Tabs value={activeTab} onValueChange={(value) => setTab(value as TraderTab)}>
+		<Tabs value={currentTab} onValueChange={(value) => setTab(value as TraderTab)}>
 			<div className="mb-1 flex items-center gap-5">
 				<TabsList
 					variant="text"
 					className="flex w-full justify-start gap-5 overflow-x-auto pb-2 whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 				>
 					<TabsTrigger className="text-base! sm:text-xl!" value="active">
-						Active
+						Open
 					</TabsTrigger>
 					<TabsTrigger className="text-base! sm:text-xl!" value="closed">
 						Closed
@@ -75,7 +73,7 @@ export function TraderTabs({
 				</TabsList>
 				<div ref={toolbarRef} className="shrink-0 pb-2" />
 			</div>
-			{activeTab === "active" && openPositions ? (
+			{currentTab === "active" ? (
 				<TabsContent value="active">
 					<TraderPositions
 						page={openPositions}
@@ -88,7 +86,7 @@ export function TraderTabs({
 					/>
 				</TabsContent>
 			) : null}
-			{activeTab === "closed" && closedPositions ? (
+			{currentTab === "closed" ? (
 				<TabsContent value="closed">
 					<TraderPositions
 						page={closedPositions}
@@ -101,7 +99,7 @@ export function TraderTabs({
 					/>
 				</TabsContent>
 			) : null}
-			{activeTab === "activity" && trades ? (
+			{currentTab === "activity" ? (
 				<TabsContent value="activity">
 					<TraderActivity
 						page={trades}
