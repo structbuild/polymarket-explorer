@@ -14,8 +14,8 @@ export type DailyPnlEntry = {
 
 const BASE_URL = "https://user-pnl-api.polymarket.com/user-pnl";
 
-async function fetchPnl(address: string, fidelity: string): Promise<PnlDataPoint[]> {
-	const url = `${BASE_URL}?user_address=${address}&interval=all&fidelity=${fidelity}`;
+async function fetchPnl(address: string, interval: string, fidelity: string): Promise<PnlDataPoint[]> {
+	const url = `${BASE_URL}?user_address=${address}&interval=${interval}&fidelity=${fidelity}`;
 	const res = await fetch(url, { next: { revalidate: 300 } });
 
 	if (!res.ok) {
@@ -26,14 +26,14 @@ async function fetchPnl(address: string, fidelity: string): Promise<PnlDataPoint
 	return res.json();
 }
 
-export const getTraderPnlCandles = cache(async (address: string): Promise<PnlDataPoint[]> => {
+export const getTraderPnlCandles = cache(async (address: string, interval = "all", fidelity = "1h"): Promise<PnlDataPoint[]> => {
 	if (!address.trim()) return [];
-	return fetchPnl(address, "1h");
+	return fetchPnl(address, interval, fidelity);
 });
 
 export const getTraderDailyPnl = cache(async (address: string): Promise<DailyPnlEntry[]> => {
 	if (!address.trim()) return [];
-	const data = await fetchPnl(address, "1d");
+	const data = await fetchPnl(address, "all", "1d");
 	return toDailyPnl(data);
 });
 

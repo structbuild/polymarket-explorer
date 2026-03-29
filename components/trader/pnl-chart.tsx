@@ -167,14 +167,18 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 	if (data.length === 0) {
 		return (
 			<div className="overflow-hidden">
-				<div className="mb-4 flex items-start justify-between gap-3">
+				<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div>
 						<p className="mb-1 text-sm text-foreground">Cumulative PnL</p>
 						<p className="text-xl font-medium text-muted-foreground sm:text-2xl">$0.00</p>
 					</div>
-					{action ? <div className="shrink-0" data-share-ignore="true">{action}</div> : null}
+					{action ? (
+						<div className="w-full sm:w-auto sm:shrink-0" data-share-ignore="true">
+							{action}
+						</div>
+					) : null}
 				</div>
-				<div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground sm:h-[300px]">
+				<div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground sm:h-[280px]">
 					No PnL data available
 				</div>
 			</div>
@@ -188,14 +192,18 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 
 	return (
 		<div className="overflow-hidden">
-			<div className="mb-4 flex items-start justify-between gap-3">
+			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div>
 					<p className="mb-1 text-sm text-foreground">Cumulative PnL</p>
 					<p className={`text-xl font-medium sm:text-2xl ${isPositive ? "text-emerald-500" : "text-red-500"}`}>
 						{formatNumber(lastPnl, { currency: true, compact: true })}
 					</p>
 				</div>
-				{action ? <div className="shrink-0" data-share-ignore="true">{action}</div> : null}
+				{action ? (
+					<div className="w-full sm:w-auto sm:shrink-0" data-share-ignore="true">
+						{action}
+					</div>
+				) : null}
 			</div>
 			{hasAnnotations ? (
 				<div

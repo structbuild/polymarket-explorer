@@ -13,7 +13,7 @@ export function InfoRow({ label, value, children, separator = true }: InfoRowPro
 			<div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
 				<p className="text-sm text-foreground/90 sm:text-base">{label}</p>
 				{value !== undefined ? (
-					<div className="text-sm font-medium wrap-break-word sm:text-right sm:text-base">{value}</div>
+					<div className="min-w-0 max-w-full truncate text-sm font-medium sm:text-right sm:text-base">{value}</div>
 				) : (
 					<div className="min-w-0 text-left sm:text-right">{children}</div>
 				)}

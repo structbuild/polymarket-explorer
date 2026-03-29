@@ -8,11 +8,10 @@ import type { MarketMetadata, TraderPnlSummary } from "@structbuild/sdk";
 type PerformanceSummaryProps = {
 	pnlSummary: TraderPnlSummary | null;
 	bestTradeMarket?: MarketMetadata | null;
-	worstTradeMarket?: MarketMetadata | null;
 	streaks: PnlStreaks;
 };
 
-export function PerformanceSummary({ pnlSummary, bestTradeMarket, worstTradeMarket, streaks }: PerformanceSummaryProps) {
+export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: PerformanceSummaryProps) {
 	return (
 		<div className="rounded-lg bg-card p-4 sm:p-6">
 			<p className="text-sm text-foreground sm:text-base">Performance Summary</p>
@@ -34,38 +33,31 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, worstTradeMark
 				</div>
 				{bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground wrap-break-word sm:truncate">{bestTradeMarket.question}</p>}
 				<Separator className="my-2" />
-				<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-					<p className="text-sm text-foreground/90 sm:text-base">Biggest Loss</p>
-					<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
-						{worstTradeMarket && (
-							<img src={worstTradeMarket.image_url ?? ""} alt={worstTradeMarket.question ?? ""} className="size-4 rounded-sm" />
-						)}
-						<p className="text-sm font-medium text-red-500 sm:text-base">
-							{formatNumber(pnlSummary?.worst_trade_pnl_usd ?? 0, { currency: true, compact: true })}
-						</p>
-					</div>
-				</div>
-				{worstTradeMarket && (
-					<p className="mt-1 text-sm text-muted-foreground wrap-break-word sm:truncate">{worstTradeMarket.question}</p>
-				)}
-				<Separator className="my-2" />
 			</div>
 			<InfoRow
 				label="Best Day"
 				value={
-					<>
-						<span className="text-emerald-500">{formatNumber(streaks.bestDay.pnl, { currency: true, compact: true })}</span>
-						{streaks.bestDay.date && <span className="font-normal text-muted-foreground">, {streaks.bestDay.date}</span>}
-					</>
+					streaks.bestDay.pnl === 0 ? (
+						<span className="text-muted-foreground">—</span>
+					) : (
+						<>
+							<span className="text-emerald-500">{formatNumber(streaks.bestDay.pnl, { currency: true, compact: true })}</span>
+							{streaks.bestDay.date && <span className="font-normal text-muted-foreground">, {streaks.bestDay.date}</span>}
+						</>
+					)
 				}
 			/>
 			<InfoRow
 				label="Worst Day"
 				value={
-					<>
-						<span className="text-red-500">{formatNumber(streaks.worstDay.pnl, { currency: true, compact: true })}</span>
-						{streaks.worstDay.date && <span className="font-normal text-muted-foreground">, {streaks.worstDay.date}</span>}
-					</>
+					streaks.worstDay.pnl === 0 ? (
+						<span className="text-muted-foreground">—</span>
+					) : (
+						<>
+							<span className="text-red-500">{formatNumber(streaks.worstDay.pnl, { currency: true, compact: true })}</span>
+							{streaks.worstDay.date && <span className="font-normal text-muted-foreground">, {streaks.worstDay.date}</span>}
+						</>
+					)
 				}
 			/>
 			<InfoRow label="Longest Win Streak" value={`${streaks.longestWin}d`} />

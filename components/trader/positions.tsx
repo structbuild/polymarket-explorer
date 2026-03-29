@@ -115,42 +115,48 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 				)
 			},
 		},
-		status === "open"
-			? {
-					id: "current_value",
-					header: "Current Value",
-					size: 160,
-					cell: ({ row }) => {
-						const entry = row.original
-						const currentVal = entry.current_value
-						const shares = entry.current_shares_balance
-						return (
-							<div>
-								<p>
-									{currentVal != null && currentVal > 0
-										? formatNumber(currentVal, { currency: true, compact: true })
-										: "—"}
-								</p>
-								{shares != null && shares > 0 ? (
-									<p className="text-sm text-muted-foreground">
-										{formatNumber(shares, { decimals: 2 })} shares
+		...(status === "open"
+			? [
+					{
+						id: "current_value",
+						header: "Current Value",
+						size: 160,
+						cell: ({ row }) => {
+							const entry = row.original
+							const currentVal = entry.current_value
+							const shares = entry.current_shares_balance
+
+							if (currentVal === 0) {
+								return (
+									<div>
+										<p>{formatNumber(0, { currency: true })}</p>
+										<p className="text-sm text-muted-foreground">
+											{formatNumber(shares ?? 0, { decimals: 2 })} shares
+										</p>
+									</div>
+								)
+							}
+
+							const showSharesLine = shares != null && shares > 0
+
+							return (
+								<div>
+									<p>
+										{currentVal != null && currentVal > 0
+											? formatNumber(currentVal, { currency: true, compact: true })
+											: "—"}
 									</p>
-								) : null}
-							</div>
-						)
-					},
-				}
-			: {
-					id: "won",
-					header: "Won",
-					size: 100,
-					cell: ({ row }) => {
-						const won = row.original.won
-						if (won === true) return <p className="text-emerald-500">Won</p>
-						if (won === false) return <p className="text-red-500">Lost</p>
-						return <span className="text-muted-foreground">—</span>
-					},
-				},
+									{showSharesLine ? (
+										<p className="text-sm text-muted-foreground">
+											{formatNumber(shares, { decimals: 2 })} shares
+										</p>
+									) : null}
+								</div>
+							)
+						},
+					} satisfies ColumnDef<TraderOutcomePnlEntry, unknown>,
+				]
+			: []),
 		{
 			id: "total_shares_bought",
 			header: "Bought",

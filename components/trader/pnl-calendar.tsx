@@ -156,10 +156,12 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 
 					const content = (
 						<>
-							<span className="font-medium">{day}</span>
-							{hasData && (
+							<span className="text-base font-medium mb-0.5">{day}</span>
+							{hasData && !isTouchDevice && (
 								<>
-									{isTouchDevice && <span className="mt-1 size-1 rounded-full bg-current/70" />}
+									<span className="text-foreground/85 leading-tight sm:text-sm">
+										{formatNumber(pnl, { currency: true, compact: true })}
+									</span>
 									<div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground opacity-0 transition-opacity sm:group-hover:opacity-100">
 										<span className={pnl >= 0 ? "text-emerald-500" : "text-red-500"}>
 											{formatNumber(pnl, { currency: true, compact: true })}

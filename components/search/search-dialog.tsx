@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { getTraderDisplayName, isWalletAddress } from "@/lib/utils";
+import { getTraderDisplayName } from "@/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { LoaderIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
@@ -75,8 +75,8 @@ export function SearchDialog() {
 	}, []);
 
 	const content = (
-		<div className="flex min-h-0 flex-1 flex-col">
-			<div className="flex items-center border-b px-3">
+		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
+			<div className="flex min-w-0 items-center border-b px-3">
 				{isPending ? (
 					<LoaderIcon className="size-4 shrink-0 animate-spin opacity-50" />
 				) : (
@@ -86,7 +86,7 @@ export function SearchDialog() {
 					value={query}
 					onChange={handleChange}
 					placeholder="Search by name or paste an address..."
-					className="h-11 rounded-none border-0 bg-transparent! shadow-none focus-visible:border-transparent focus-visible:ring-0"
+					className="h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent! shadow-none focus-visible:border-transparent focus-visible:ring-0"
 					autoFocus
 				/>
 			</div>
@@ -94,35 +94,25 @@ export function SearchDialog() {
 				{query.trim().length >= 2 && !isPending && results.length === 0 && (
 					<p className="py-6 text-center text-sm text-muted-foreground">No traders found.</p>
 				)}
-				{isWalletAddress(query.trim()) && (
-					<Link
-						href={`/trader/${query.trim()}`}
-						onClick={() => handleOpenChange(false)}
-						className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
-					>
-						<Avatar size="sm">
-							<AvatarFallback>{query.trim().slice(0, 2).toUpperCase()}</AvatarFallback>
-						</Avatar>
-						<div className="min-w-0 flex flex-col">
-							<span className="truncate text-sm font-medium">{query.trim()}</span>
-							<span className="text-xs text-muted-foreground">Go to trader profile</span>
-						</div>
-					</Link>
-				)}
-				{results.map((trader) => (
-					<Link
-						key={trader.address}
-						href={`/trader/${trader.address}`}
-						onClick={() => handleOpenChange(false)}
-						className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
-					>
-						<Avatar size="sm">
-							{trader.profile_image && <AvatarImage src={trader.profile_image} />}
-							<AvatarFallback>{getTraderDisplayName(trader).slice(0, 2).toUpperCase()}</AvatarFallback>
-						</Avatar>
-						<span className="truncate text-sm">{getTraderDisplayName(trader)}</span>
-					</Link>
-				))}
+				{results.map((trader) => {
+					const displayLabel = getTraderDisplayName(trader);
+					return (
+						<Link
+							key={trader.address}
+							href={`/trader/${trader.address}`}
+							onClick={() => handleOpenChange(false)}
+							className="flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
+						>
+							<Avatar size="sm">
+								{trader.profile_image && <AvatarImage src={trader.profile_image} />}
+								<AvatarFallback>{displayLabel.slice(0, 2).toUpperCase()}</AvatarFallback>
+							</Avatar>
+							<span className="min-w-0 flex-1 truncate text-sm" title={displayLabel}>
+								{displayLabel}
+							</span>
+						</Link>
+					);
+				})}
 			</div>
 		</div>
 	);
@@ -156,7 +146,10 @@ export function SearchDialog() {
 				</Sheet>
 			) : (
 				<Dialog open={open} onOpenChange={handleOpenChange}>
-					<DialogContent showCloseButton={false} className="top-[20%] max-w-lg translate-y-0 gap-0 overflow-hidden p-0">
+					<DialogContent
+						showCloseButton={false}
+						className="top-[20%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg"
+					>
 						<DialogTitle className="sr-only">Search traders</DialogTitle>
 						{content}
 					</DialogContent>

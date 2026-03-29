@@ -1,6 +1,6 @@
 import { createLoader, createParser, parseAsStringLiteral } from "nuqs/server";
 
-import { maxTraderPageNumber, traderTabValues } from "./trader-search-params-shared";
+import { maxTraderPageNumber, pnlTimeframeValues, traderTabValues } from "./trader-search-params-shared";
 
 const parseAsPositivePage = createParser<number>({
 	parse(value) {
@@ -17,6 +17,7 @@ const traderSearchParamParsers = {
 	openPage: parseAsPositivePage,
 	closedPage: parseAsPositivePage,
 	activityPage: parseAsPositivePage,
+	pnlTimeframe: parseAsStringLiteral(pnlTimeframeValues).withDefault("all"),
 };
 
 export const loadTraderSearchParams = createLoader(traderSearchParamParsers);

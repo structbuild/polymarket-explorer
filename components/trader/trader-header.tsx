@@ -42,25 +42,32 @@ export function TraderHeader({
 	const activeSince = firstTradeAt
 		? new Date(firstTradeAt * 1000).toLocaleDateString("en-US", {
 				year: "numeric",
-				month: "long",
+				month: "short",
 				day: "numeric",
 			})
 		: "Unknown";
 
 	return (
-		<div className="flex flex-col gap-4 rounded-lg bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+		<div className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
+			<div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
 				<TraderAvatar displayName={displayName} profileImage={profileImage} />
-				<div className="flex min-w-0 flex-col gap-4">
-					<div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-						<h1 className="text-2xl font-medium wrap-break-word">{displayName}</h1>
-						<CopyAddress address={address} />
+				<div className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+					<div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+						<h1
+							className="w-full min-w-0 max-w-full truncate text-2xl font-medium sm:flex-1 sm:min-w-0"
+							title={displayName}
+						>
+							{displayName}
+						</h1>
+						<div className="shrink-0 self-start sm:self-auto">
+							<CopyAddress address={address} />
+						</div>
 					</div>
 					<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-4">
 						<StatItem label="Active Since" value={activeSince} />
-						<StatItem label="Buys" value={totalBuys ?? 0} />
-						<StatItem label="Sells" value={totalSells ?? 0} />
-						<StatItem label="Redemptions" value={totalRedemptions ?? 0} />
+						<StatItem label="Buys" value={formatNumber(totalBuys ?? 0, { decimals: 0 })} />
+						<StatItem label="Sells" value={formatNumber(totalSells ?? 0, { decimals: 0 })} />
+						<StatItem label="Redemptions" value={formatNumber(totalRedemptions ?? 0, { decimals: 0 })} />
 						<StatItem label="Volume" value={formatNumber(totalVolumeUsd ?? 0, { compact: true, currency: true })} />
 					</div>
 				</div>

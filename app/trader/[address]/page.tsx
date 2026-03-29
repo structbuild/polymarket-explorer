@@ -5,6 +5,7 @@ import { TraderHeader } from "@/components/trader/trader-header";
 import { TraderInfo } from "@/components/trader/trader-info";
 import { TraderTabs } from "@/components/trader/trader-tabs";
 import { computeStreaks, getPnlChartAnnotations, getTraderDailyPnl, getTraderPnlCandles } from "@/lib/polymarket/pnl";
+import { PNL_TIMEFRAMES } from "@/lib/polymarket/pnl-timeframes";
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { defaultTraderTablePageSize, getMarketsByConditionIds, getTraderPnlSummary, getTraderPositionsPage, getTraderProfile, getTraderTradesPage } from "@/lib/struct/queries";
 import { getTraderDisplayName } from "@/lib/utils";
@@ -45,16 +46,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TraderPage({ params, searchParams }: Props) {
 	const { address } = await params;
-	const { tab, openPage, closedPage, activityPage } = await loadTraderSearchParams(searchParams);
+	const { tab, openPage, closedPage, activityPage, pnlTimeframe } = await loadTraderSearchParams(searchParams);
 	const pageSize = defaultTraderTablePageSize;
 	const openOffset = (openPage - 1) * pageSize;
 	const closedOffset = (closedPage - 1) * pageSize;
 	const activityOffset = (activityPage - 1) * pageSize;
 
+	const { interval, fidelity } = PNL_TIMEFRAMES[pnlTimeframe];
 	const [profile, pnlSummary, pnlCandles, dailyPnl, openPositions, closedPositions, trades] = await Promise.all([
 		getTraderProfile(address),
 		getTraderPnlSummary(address),
-		getTraderPnlCandles(address),
+		getTraderPnlCandles(address, interval, fidelity),
 		getTraderDailyPnl(address),
 		tab === "active"
 			? getTraderPositionsPage(address, "open", { limit: pageSize, offset: openOffset })
@@ -73,15 +75,14 @@ export default async function TraderPage({ params, searchParams }: Props) {
 
 	const tradeConditionIds = [
 		...new Set(
-			[pnlSummary?.best_trade_condition_id, pnlSummary?.worst_trade_condition_id].filter((id): id is string => !!id),
+			[pnlSummary?.best_trade_condition_id].filter((id): id is string => !!id),
 		),
 	];
 	const tradeMarkets = await getMarketsByConditionIds(tradeConditionIds);
 	const bestTradeMarket = tradeMarkets?.find((m) => m.condition_id === pnlSummary?.best_trade_condition_id);
-	const worstTradeMarket = tradeMarkets?.find((m) => m.condition_id === pnlSummary?.worst_trade_condition_id);
 
 	const streaks = computeStreaks(dailyPnl);
-	const chartAnnotations = getPnlChartAnnotations(pnlCandles, streaks);
+	const chartAnnotations = pnlTimeframe === "all" ? getPnlChartAnnotations(pnlCandles, streaks) : [];
 	const displayName = getTraderDisplayName({ address, name: profile?.name, pseudonym: profile?.pseudonym });
 
 	return (
@@ -99,7 +100,7 @@ export default async function TraderPage({ params, searchParams }: Props) {
 							totalRedemptions={pnlSummary?.total_redemptions}
 							totalVolumeUsd={pnlSummary?.total_volume_usd}
 						/>
-						<PnlCard address={address} data={pnlCandles} displayName={displayName} annotations={chartAnnotations} />
+						<PnlCard address={address} data={pnlCandles} displayName={displayName} annotations={chartAnnotations} timeframe={pnlTimeframe} />
 						<div className="rounded-lg bg-card p-4 sm:p-6">
 							<PnlCalendar data={dailyPnl} />
 						</div>
@@ -109,7 +110,6 @@ export default async function TraderPage({ params, searchParams }: Props) {
 						<PerformanceSummary
 							pnlSummary={pnlSummary}
 							bestTradeMarket={bestTradeMarket}
-							worstTradeMarket={worstTradeMarket}
 							streaks={streaks}
 						/>
 						<TraderInfo address={address} profile={profile} />

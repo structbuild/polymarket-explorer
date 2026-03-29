@@ -12,9 +12,8 @@ import type {
 import { cache } from "react";
 
 import { getStructClient } from "@/lib/struct/client";
-import type { MarketDetail, MarketSummary, PaginatedResource } from "@/lib/struct/types";
+import type { PaginatedResource } from "@/lib/struct/types";
 
-const featuredLimit = 12;
 export const defaultTraderTablePageSize = 25;
 const defaultPositionsLimit = defaultTraderTablePageSize;
 const defaultTradesLimit = defaultTraderTablePageSize;
@@ -24,7 +23,6 @@ export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getT
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
 
 export type TraderPositionsOptions = Omit<GetTraderOutcomePnlRequest, "address" | "status">;
-export type TraderTradesOptions = Omit<GetTraderTradesRequest, "address">;
 export type TraderTradesPageOptions = Omit<GetTraderTradesRequest, "address">;
 
 type PaginatedApiResponse<T> = {
@@ -33,24 +31,6 @@ type PaginatedApiResponse<T> = {
 		pagination_key: string | number | null;
 	};
 };
-
-function toMarket(m: MarketMetadata): MarketSummary {
-	return {
-		id: m.condition_id,
-		slug: m.slug,
-		title: m.question,
-		description: m.description ?? null,
-		probability: m.outcomes?.[0]?.price != null ? Math.round(m.outcomes[0].price * 1000) / 10 : null,
-		volume: m.volume_usd ?? null,
-		endDate: m.end_time != null ? new Date(m.end_time * 1000).toISOString() : null,
-		eventTitle: m.event_title ?? null,
-		conditionId: m.condition_id,
-		outcomes: (m.outcomes ?? []).map((o) => ({
-			label: o.name,
-			probability: o.price != null ? Math.round(o.price * 1000) / 10 : null,
-		})),
-	};
-}
 
 function readStatus(error: unknown) {
 	if (typeof error !== "object" || error === null) {
@@ -97,23 +77,6 @@ async function hasMoreResults<T>(
 	}
 }
 
-export const getFeaturedMarkets = cache(async (): Promise<MarketSummary[]> => {
-	const client = getStructClient();
-
-	if (!client) {
-		return [];
-	}
-
-	try {
-		const response = await client.markets.getMarkets({ limit: featuredLimit });
-		return response.data.map(toMarket);
-	} catch (error) {
-		logStructError("getFeaturedMarkets", error);
-		return [];
-	}
-});
-
-
 export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	const client = getStructClient();
 	const normalizedQuery = normalizeTraderSearchQuery(query);
@@ -126,31 +89,12 @@ export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 		const response = await client.search.search({
 			q: normalizedQuery,
 			limit: 25,
+			type: "traders"
 		});
 		return response.data.traders ?? [];
 	} catch (error) {
 		logStructError(`searchTraders:${sanitizeLogValue(normalizedQuery)}`, error);
 		return [];
-	}
-});
-
-export const getMarketBySlug = cache(async (slug: string): Promise<MarketDetail | null> => {
-	const client = getStructClient();
-
-	if (!client || !slug.trim()) {
-		return null;
-	}
-
-	try {
-		const response = await client.markets.getMarketBySlug({ slug });
-		return toMarket(response.data);
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return null;
-		}
-
-		logStructError(`getMarketBySlug:${slug}`, error);
-		throw error;
 	}
 });
 
@@ -210,66 +154,6 @@ export const getMarketsByConditionIds = cache(async (conditionIds: string[]): Pr
 	}
 });
 
-export const getTraderPositions = cache(
-	async (
-		address: string,
-		status: "open" | "closed",
-		options?: TraderPositionsOptions,
-	): Promise<TraderOutcomePnlEntry[]> => {
-		const client = getStructClient();
-
-		if (!client || !address.trim()) {
-			return [];
-		}
-
-		try {
-			const params: GetTraderOutcomePnlRequest = {
-				address,
-				status,
-				limit: defaultPositionsLimit,
-				...options,
-			};
-			const response = await client.trader.getTraderOutcomePnl(params);
-			return response.data;
-		} catch (error) {
-			if (readStatus(error) === 404) {
-				return [];
-			}
-
-			logStructError(`getTraderPositions:${address}:${status}`, error);
-			return [];
-		}
-	},
-);
-
-export const getTraderTrades = cache(
-	async (address: string, options?: TraderTradesOptions): Promise<Trade[]> => {
-		const client = getStructClient();
-
-		if (!client || !address.trim()) {
-			return [];
-		}
-
-		try {
-			const params: GetTraderTradesRequest = {
-				address,
-				limit: defaultTradesLimit,
-				sort_desc: true,
-				...options,
-			};
-			const response = await client.trader.getTraderTrades(params);
-			return response.data;
-		} catch (error) {
-			if (readStatus(error) === 404) {
-				return [];
-			}
-
-			logStructError(`getTraderTrades:${address}`, error);
-			return [];
-		}
-	},
-);
-
 export const getTraderPositionsPage = cache(
 	async (
 		address: string,
@@ -295,6 +179,8 @@ export const getTraderPositionsPage = cache(
 				address,
 				status,
 				limit,
+				sort_by: status === "open" ? "current_value" : "realized_pnl_usd",
+				sort_direction: "desc",
 				...options,
 			};
 			const response = await client.trader.getTraderOutcomePnl(params);
@@ -306,7 +192,6 @@ export const getTraderPositionsPage = cache(
 				}),
 			);
 			const nextCursor = hasMore ? offset + response.data.length : null;
-
 			return {
 				data: response.data,
 				hasMore,
