@@ -9,7 +9,6 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart"
-import { Badge } from "@/components/ui/badge"
 import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/polymarket/pnl"
 import { cn, formatNumber } from "@/lib/utils"
 
@@ -59,9 +58,6 @@ const annotationConfig = {
 	}
 >
 
-const ANNOTATION_LABEL_WIDTH = 68
-const ANNOTATION_LABEL_HEIGHT = 20
-const ANNOTATION_LABEL_GAP = 8
 type AnnotationDotShapeProps = {
 	annotationKind: PnlChartAnnotation["kind"]
 	cx?: number
@@ -86,61 +82,9 @@ function AnnotationDotShape({
 	}
 
 	const tone = annotationConfig[annotationKind]
-	const labelY = tone.labelPosition === "top"
-		? cy - r - ANNOTATION_LABEL_HEIGHT - ANNOTATION_LABEL_GAP
-		: cy + r + ANNOTATION_LABEL_GAP
-
-	const pillR = ANNOTATION_LABEL_HEIGHT / 2
 
 	return (
-		<g>
-			<circle cx={cx} cy={cy} r={r} fill={fill ?? tone.color} stroke={stroke} strokeWidth={strokeWidth} />
-			<g
-				className="chart-annotation-label-svg"
-				transform={`translate(${cx - ANNOTATION_LABEL_WIDTH / 2} ${labelY})`}
-			>
-				<rect
-					width={ANNOTATION_LABEL_WIDTH}
-					height={ANNOTATION_LABEL_HEIGHT}
-					rx={pillR}
-					ry={pillR}
-					fill={tone.bgRgba}
-					stroke={tone.bgRgba}
-					strokeWidth={1}
-				/>
-				<text
-					x={ANNOTATION_LABEL_WIDTH / 2}
-					y={ANNOTATION_LABEL_HEIGHT / 2}
-					textAnchor="middle"
-					dominantBaseline="central"
-					fill={tone.color}
-					fontSize={12}
-					fontWeight={500}
-					fontFamily="system-ui, -apple-system, sans-serif"
-				>
-					{tone.label}
-				</text>
-			</g>
-			<foreignObject
-				className="chart-annotation-label-html"
-				x={cx - ANNOTATION_LABEL_WIDTH / 2}
-				y={labelY}
-				width={ANNOTATION_LABEL_WIDTH}
-				height={ANNOTATION_LABEL_HEIGHT}
-			>
-					<div
-						className="pointer-events-none flex h-full w-full items-center justify-center"
-						{...({ xmlns: "http://www.w3.org/1999/xhtml" } as HTMLAttributes<HTMLDivElement>)}
-					>
-						<Badge
-							variant={tone.badgeVariant}
-							className="border border-background/80 shadow-sm backdrop-blur-md"
-						>
-							{tone.label}
-						</Badge>
-					</div>
-			</foreignObject>
-		</g>
+		<circle cx={cx} cy={cy} r={r} fill={fill ?? tone.color} stroke={stroke} strokeWidth={strokeWidth} />
 	)
 }
 
@@ -192,24 +136,52 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 
 	return (
 		<div className="overflow-hidden">
-			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
 				<div>
 					<p className="mb-1 text-sm text-foreground">Cumulative PnL</p>
 					<p className={`text-xl font-medium sm:text-2xl ${isPositive ? "text-emerald-500" : "text-red-500"}`}>
 						{formatNumber(lastPnl, { currency: true, compact: true })}
 					</p>
 				</div>
-				{action ? (
-					<div className="w-full sm:w-auto sm:shrink-0" data-share-ignore="true">
-						{action}
-					</div>
-				) : null}
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+					{hasAnnotations ? (
+						<div
+							aria-hidden={!showAnnotations}
+							className={cn(
+								"hidden flex-wrap gap-2 group-data-[share-mode=image]/share-card:flex",
+								showAnnotations ? "opacity-100" : "opacity-0 pointer-events-none"
+							)}
+						>
+							{annotations.map((annotation) => {
+								const tone = annotationConfig[annotation.kind]
+
+								return (
+									<div
+										key={`${annotation.kind}-${annotation.t}`}
+										className={cn("inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs backdrop-blur-md", tone.badgeClassName)}
+									>
+										<span className={cn("font-medium", tone.valueClassName)}>{tone.label}</span>
+										<span className="text-foreground/80">{annotation.date}</span>
+										<span className={cn("font-medium", tone.valueClassName)}>
+											{formatNumber(annotation.dailyPnl, { currency: true, compact: true })}
+										</span>
+									</div>
+								)
+							})}
+						</div>
+					) : null}
+					{action ? (
+						<div className="w-full sm:w-auto sm:shrink-0 group-data-[share-mode=image]/share-card:hidden" data-share-ignore="true">
+							{action}
+						</div>
+					) : null}
+				</div>
 			</div>
 			{hasAnnotations ? (
 				<div
 					aria-hidden={!showAnnotations}
 					className={cn(
-						"grid overflow-hidden transition-[grid-template-rows,margin,opacity] duration-200 ease-out motion-reduce:transition-none",
+						"grid overflow-hidden transition-[grid-template-rows,margin,opacity] duration-200 ease-out motion-reduce:transition-none group-data-[share-mode=image]/share-card:hidden",
 						showAnnotations ? "mb-4 grid-rows-[1fr] opacity-100" : "mb-0 grid-rows-[0fr] opacity-0 pointer-events-none"
 					)}
 				>
@@ -226,7 +198,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 								return (
 									<div
 										key={`${annotation.kind}-${annotation.t}`}
-										className={cn("inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs", tone.badgeClassName)}
+										className={cn("inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs backdrop-blur-md", tone.badgeClassName)}
 									>
 										<span className={cn("font-medium", tone.valueClassName)}>{tone.label}</span>
 										<span className="text-foreground/80">{annotation.date}</span>
@@ -242,7 +214,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 			) : null}
 			<div className="relative">
 				<ChartContainer config={chartConfig} className="h-[220px] min-h-[220px] w-full sm:h-[280px] sm:min-h-[250px]">
-					<AreaChart accessibilityLayer data={data} margin={{ left: -20, right: 60, top: 36, bottom: 36 }}>
+					<AreaChart accessibilityLayer data={data} margin={{ left: -20, right: 60, top: 0, bottom: 0 }}>
 						<defs>
 							<linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
 								<stop offset="0%" stopColor="var(--color-pnl)" stopOpacity={0.3} />

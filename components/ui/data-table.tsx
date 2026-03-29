@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createPortal } from "react-dom"
 import {
 	type ColumnDef,
 	type PaginationState,
@@ -38,8 +37,8 @@ type BaseDataTableProps<TData> = {
 	storageKey?: string
 	defaultColumnVisibility?: VisibilityState
 	emptyMessage?: string
-	toolbarPortal?: HTMLDivElement | null
 	columnLayout?: "auto" | "fixed"
+	toolbarLeft?: React.ReactNode
 }
 
 type ClientPaginationProps = {
@@ -80,10 +79,10 @@ type DataTableViewProps<TData> = BaseDataTableProps<TData> & {
 function DataTableView<TData>({
 	data,
 	emptyMessage = "No data to show.",
-	toolbarPortal,
 	table,
 	pagination,
 	columnLayout = "auto",
+	toolbarLeft,
 }: DataTableViewProps<TData>) {
 	const hasRows = data.length > 0
 	const hideableColumns = table.getAllColumns().filter((col) => col.getCanHide())
@@ -137,9 +136,12 @@ function DataTableView<TData>({
 
 	return (
 		<div className="space-y-3">
-			{toolbar && toolbarPortal
-				? createPortal(toolbar, toolbarPortal)
-				: toolbar && <div className="flex justify-end">{toolbar}</div>}
+			{toolbarLeft || toolbar ? (
+				<div className="flex items-center justify-between gap-4">
+					<div className="min-w-0 flex-1">{toolbarLeft}</div>
+					{toolbar ? <div className="shrink-0">{toolbar}</div> : null}
+				</div>
+			) : null}
 
 			{hasRows ? (
 				<div className="overflow-hidden rounded-lg bg-card">
@@ -262,8 +264,8 @@ function ClientPaginatedDataTable<TData>({
 	defaultPageSize = 25,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
 	emptyMessage,
-	toolbarPortal,
 	columnLayout = "auto",
+	toolbarLeft,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -318,8 +320,8 @@ function ClientPaginatedDataTable<TData>({
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}
-			toolbarPortal={toolbarPortal}
 			columnLayout={columnLayout}
+			toolbarLeft={toolbarLeft}
 			table={table}
 			pagination={{
 				show: totalRows > PAGE_SIZES[0],
@@ -346,8 +348,8 @@ function ServerPaginatedDataTable<TData>({
 	storageKey,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
 	emptyMessage,
-	toolbarPortal,
 	columnLayout = "auto",
+	toolbarLeft,
 	pageIndex,
 	pageSize,
 	hasNextPage,
@@ -380,8 +382,8 @@ function ServerPaginatedDataTable<TData>({
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}
-			toolbarPortal={toolbarPortal}
 			columnLayout={columnLayout}
+			toolbarLeft={toolbarLeft}
 			table={table}
 			pagination={{
 				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],

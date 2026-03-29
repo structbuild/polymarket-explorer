@@ -25,13 +25,6 @@ export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTrade
 export type TraderPositionsOptions = Omit<GetTraderOutcomePnlRequest, "address" | "status">;
 export type TraderTradesPageOptions = Omit<GetTraderTradesRequest, "address">;
 
-type PaginatedApiResponse<T> = {
-	data: T[];
-	pagination?: {
-		pagination_key: string | number | null;
-	};
-};
-
 function readStatus(error: unknown) {
 	if (typeof error !== "object" || error === null) {
 		return null;
@@ -54,27 +47,6 @@ function normalizeTraderSearchQuery(query: string) {
 function sanitizeLogValue(value: string, maxLength: number = maxTraderSearchQueryLength) {
 	const sanitized = value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
 	return sanitized.length > maxLength ? `${sanitized.slice(0, maxLength)}...` : sanitized;
-}
-
-async function hasMoreResults<T>(
-	response: PaginatedApiResponse<T>,
-	probeNextPage?: () => Promise<PaginatedApiResponse<T>>,
-) {
-	if (response.data.length === 0) {
-		return false;
-	}
-
-	if (!probeNextPage) {
-		return true;
-	}
-
-	try {
-		const nextPage = await probeNextPage();
-		return nextPage.data.length > 0;
-	} catch (error) {
-		logStructError("probePagination", error);
-		return true;
-	}
 }
 
 export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
@@ -175,25 +147,21 @@ export const getTraderPositionsPage = cache(
 		const offset = options?.offset ?? 0;
 
 		try {
+			const requestLimit = limit + 1;
 			const params: GetTraderOutcomePnlRequest = {
 				address,
 				status,
-				limit,
+				limit: requestLimit,
 				sort_by: status === "open" ? "current_value" : "realized_pnl_usd",
 				sort_direction: "desc",
 				...options,
 			};
 			const response = await client.trader.getTraderOutcomePnl(params);
-			const hasMore = await hasMoreResults(response, () =>
-				client.trader.getTraderOutcomePnl({
-					...params,
-					limit: 1,
-					offset: offset + response.data.length,
-				}),
-			);
-			const nextCursor = hasMore ? offset + response.data.length : null;
+			const data = response.data.slice(0, limit);
+			const hasMore = response.data.length > limit;
+			const nextCursor = hasMore ? offset + data.length : null;
 			return {
-				data: response.data,
+				data,
 				hasMore,
 				nextCursor,
 				pageSize: limit,
@@ -236,24 +204,20 @@ export const getTraderTradesPage = cache(
 		const offset = options?.offset ?? 0;
 
 		try {
+			const requestLimit = limit + 1;
 			const params: GetTraderTradesRequest = {
 				address,
-				limit,
+				limit: requestLimit,
 				sort_desc: true,
 				...options,
 			};
 			const response = await client.trader.getTraderTrades(params);
-			const hasMore = await hasMoreResults(response, () =>
-				client.trader.getTraderTrades({
-					...params,
-					limit: 1,
-					offset: offset + response.data.length,
-				}),
-			);
-			const nextCursor = hasMore ? offset + response.data.length : null;
+			const data = response.data.slice(0, limit);
+			const hasMore = response.data.length > limit;
+			const nextCursor = hasMore ? offset + data.length : null;
 
 			return {
-				data: response.data,
+				data,
 				hasMore,
 				nextCursor,
 				pageSize: limit,

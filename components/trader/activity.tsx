@@ -3,13 +3,18 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
+import { useTransition } from "react"
+import { useQueryStates } from "nuqs"
 
 import type { PaginatedResource } from "@/lib/struct/types"
+import { traderSearchParamParsers } from "@/lib/trader-search-params"
+import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 import { ExternalLinkIcon } from "lucide-react"
 
 import { Button } from "../ui/button"
 import { DataTable } from "../ui/data-table"
 import { TooltipWrapper } from "../ui/tooltip"
+import { TraderTabs } from "./trader-tabs"
 import { cn, formatNumber } from "@/lib/utils"
 
 type Trade = components["schemas"]["PredictionTradeResponse"]
@@ -213,34 +218,39 @@ const columns: ColumnDef<Trade, unknown>[] = [
 type Props = {
 	page: PaginatedResource<Trade, number>
 	pageNumber: number
-	toolbarPortal?: HTMLDivElement | null
-	isLoading?: boolean
-	onNextPage: () => void
-	onPreviousPage: () => void
 }
 
-export default function TraderActivity({ page, pageNumber, toolbarPortal, isLoading, onNextPage, onPreviousPage }: Props) {
+export default function TraderActivity({ page, pageNumber }: Props) {
+	const [isPending, startTransition] = useTransition()
+	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
+		history: "push",
+		scroll: false,
+		shallow: false,
+		startTransition,
+	})
+
 	return (
 		<DataTable
+			toolbarLeft={<TraderTabs />}
 			columns={columns}
 			data={page.data}
 			storageKey="activity-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No trades to show."
-			toolbarPortal={toolbarPortal}
 			columnLayout="fixed"
 			paginationMode="server"
 			pageIndex={pageNumber - 1}
 			pageSize={page.pageSize}
 			hasNextPage={page.hasMore}
-			isLoading={isLoading}
+			isLoading={isPending}
 			onPageIndexChange={(nextPageIndex) => {
-				if (nextPageIndex > pageNumber - 1) {
-					onNextPage()
+				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxTraderPageNumber)
+
+				if (nextPageNumber === pageNumber) {
 					return
 				}
 
-				onPreviousPage()
+				void setSearchParams({ activityPage: nextPageNumber })
 			}}
 		/>
 	)

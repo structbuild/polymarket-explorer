@@ -3,12 +3,16 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
-import { useMemo } from "react"
+import { useMemo, useTransition } from "react"
+import { useQueryStates } from "nuqs"
 
 import type { PaginatedResource } from "@/lib/struct/types"
+import { traderSearchParamParsers } from "@/lib/trader-search-params"
+import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 
 import { Badge } from "../ui/badge"
 import { DataTable } from "../ui/data-table"
+import { TraderTabs } from "./trader-tabs"
 import { cn, formatNumber } from "@/lib/utils"
 
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
@@ -213,44 +217,45 @@ type Props = {
 	page: PaginatedResource<TraderOutcomePnlEntry, number>
 	pageNumber: number
 	status: "open" | "closed"
-	toolbarPortal?: HTMLDivElement | null
-	isLoading?: boolean
-	onNextPage: () => void
-	onPreviousPage: () => void
 }
 
 export default function TraderPositions({
 	page,
 	pageNumber,
 	status,
-	toolbarPortal,
-	isLoading,
-	onNextPage,
-	onPreviousPage,
 }: Props) {
 	const columns = useMemo(() => buildColumns(status), [status])
+	const [isPending, startTransition] = useTransition()
+	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
+		history: "push",
+		scroll: false,
+		shallow: false,
+		startTransition,
+	})
+	const pageKey = status === "open" ? "openPage" : "closedPage"
 
 	return (
 		<DataTable
+			toolbarLeft={<TraderTabs />}
 			columns={columns}
 			data={page.data}
 			storageKey="positions-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No positions to show."
-			toolbarPortal={toolbarPortal}
 			columnLayout="fixed"
 			paginationMode="server"
 			pageIndex={pageNumber - 1}
 			pageSize={page.pageSize}
 			hasNextPage={page.hasMore}
-			isLoading={isLoading}
+			isLoading={isPending}
 			onPageIndexChange={(nextPageIndex) => {
-				if (nextPageIndex > pageNumber - 1) {
-					onNextPage()
+				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxTraderPageNumber)
+
+				if (nextPageNumber === pageNumber) {
 					return
 				}
 
-				onPreviousPage()
+				void setSearchParams({ [pageKey]: nextPageNumber })
 			}}
 		/>
 	)

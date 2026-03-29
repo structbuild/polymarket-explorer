@@ -27,6 +27,9 @@ export function SearchDialog() {
 	const [isMobile, setIsMobile] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const requestIdRef = useRef(0);
+	const cachedResultsRef = useRef(new Map<string, TraderResult[]>());
+	const inFlightRequestsRef = useRef(new Map<string, Promise<TraderResult[]>>());
 
 	useHotkey("Mod+K", (event) => {
 		event.preventDefault();
@@ -47,11 +50,38 @@ export function SearchDialog() {
 	}, []);
 
 	const handleOpenChange = useCallback((nextOpen: boolean) => {
+		requestIdRef.current += 1;
 		setOpen(nextOpen);
 		if (!nextOpen) {
 			setQuery("");
 			setResults([]);
 		}
+	}, []);
+
+	const loadResults = useCallback((trimmed: string) => {
+		const cachedResults = cachedResultsRef.current.get(trimmed);
+
+		if (cachedResults) {
+			return Promise.resolve(cachedResults);
+		}
+
+		const inFlightRequest = inFlightRequestsRef.current.get(trimmed);
+
+		if (inFlightRequest) {
+			return inFlightRequest;
+		}
+
+		const nextRequest = searchTradersAction(trimmed)
+			.then((data) => {
+				cachedResultsRef.current.set(trimmed, data);
+				return data;
+			})
+			.finally(() => {
+				inFlightRequestsRef.current.delete(trimmed);
+			});
+
+		inFlightRequestsRef.current.set(trimmed, nextRequest);
+		return nextRequest;
 	}, []);
 
 	const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,17 +92,34 @@ export function SearchDialog() {
 
 		const trimmed = value.trim();
 		if (trimmed.length < 2) {
+			requestIdRef.current += 1;
 			setResults([]);
 			return;
 		}
 
 		timeoutRef.current = setTimeout(() => {
+			const requestId = requestIdRef.current + 1;
+			requestIdRef.current = requestId;
+
 			startTransition(async () => {
-				const data = await searchTradersAction(trimmed);
-				setResults(data);
+				try {
+					const data = await loadResults(trimmed);
+
+					if (requestId !== requestIdRef.current) {
+						return;
+					}
+
+					setResults(data);
+				} catch {
+					if (requestId !== requestIdRef.current) {
+						return;
+					}
+
+					setResults([]);
+				}
 			});
 		}, DEBOUNCE_MS);
-	}, []);
+	}, [loadResults]);
 
 	const content = (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
