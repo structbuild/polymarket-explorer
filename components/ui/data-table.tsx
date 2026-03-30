@@ -39,6 +39,7 @@ type BaseDataTableProps<TData> = {
 	emptyMessage?: string
 	columnLayout?: "auto" | "fixed"
 	toolbarLeft?: React.ReactNode
+	toolbarRight?: React.ReactNode
 }
 
 type ClientPaginationProps = {
@@ -83,6 +84,7 @@ function DataTableView<TData>({
 	pagination,
 	columnLayout = "auto",
 	toolbarLeft,
+	toolbarRight,
 }: DataTableViewProps<TData>) {
 	const hasRows = data.length > 0
 	const hideableColumns = table.getAllColumns().filter((col) => col.getCanHide())
@@ -136,10 +138,15 @@ function DataTableView<TData>({
 
 	return (
 		<div className="space-y-3">
-			{toolbarLeft || toolbar ? (
+			{toolbarLeft || toolbarRight || toolbar ? (
 				<div className="flex items-center justify-between gap-4">
 					<div className="min-w-0 flex-1">{toolbarLeft}</div>
-					{toolbar ? <div className="shrink-0">{toolbar}</div> : null}
+					{(toolbarRight || toolbar) ? (
+						<div className="flex shrink-0 items-center gap-3">
+							{toolbarRight}
+							{toolbar}
+						</div>
+					) : null}
 				</div>
 			) : null}
 
@@ -266,6 +273,7 @@ function ClientPaginatedDataTable<TData>({
 	emptyMessage,
 	columnLayout = "auto",
 	toolbarLeft,
+	toolbarRight,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -323,6 +331,7 @@ function ClientPaginatedDataTable<TData>({
 			emptyMessage={emptyMessage}
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
+			toolbarRight={toolbarRight}
 			table={table}
 			pagination={{
 				show: totalRows > PAGE_SIZES[0],
@@ -351,6 +360,7 @@ function ServerPaginatedDataTable<TData>({
 	emptyMessage,
 	columnLayout = "auto",
 	toolbarLeft,
+	toolbarRight,
 	pageIndex,
 	pageSize,
 	hasNextPage,
@@ -386,6 +396,7 @@ function ServerPaginatedDataTable<TData>({
 			emptyMessage={emptyMessage}
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
+			toolbarRight={toolbarRight}
 			table={table}
 			pagination={{
 				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],

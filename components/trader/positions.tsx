@@ -3,7 +3,7 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
-import { useMemo, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { useQueryStates } from "nuqs"
 
 import type { PaginatedResource } from "@/lib/struct/types"
@@ -11,6 +11,7 @@ import { traderSearchParamParsers } from "@/lib/trader-search-params"
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 
 import { Badge } from "../ui/badge"
+import { Checkbox } from "../ui/checkbox"
 import { DataTable } from "../ui/data-table"
 import { TooltipWrapper } from "../ui/tooltip"
 import { InfoIcon } from "lucide-react"
@@ -59,7 +60,8 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 			size: 520,
 			cell: ({ row }) => {
 				const entry = row.original
-				const title = entry.title ?? "Unknown Market"
+				const isUnknownMarket = !entry.title
+				const title = entry.title || "Unknown Market"
 				const sharesLine = formatSharesLine(entry)
 				return (
 					<div className="flex items-center gap-3">
@@ -70,7 +72,15 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 						)}
 						<div className="min-w-0 flex-1 space-y-0.5">
 							<p className="truncate text-base font-medium" title={title}>
-								{title}
+								{isUnknownMarket ? (
+									<TooltipWrapper content="Polymarket Gamma has no data on this market/position">
+										<span className="cursor-help border-b border-dotted border-muted-foreground/50">
+											{title}
+										</span>
+									</TooltipWrapper>
+								) : (
+									title
+								)}
 							</p>
 							<div className="flex flex-wrap items-center gap-1.5">
 								{entry.outcome ? (
@@ -103,9 +113,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 			size: 140,
 			cell: ({ row }) => {
 				const entry = row.original
+				const isEntryUnknown = entry.avg_entry_price === 0 || entry.avg_entry_price == null
+
 				return (
 					<p>
-						{formatPriceCents(entry.avg_entry_price)}{" "}
+						{isEntryUnknown ? (
+							<TooltipWrapper content="This position may be split/merged/transferred hence the entry is unknown">
+								<span className="cursor-help border-b border-dotted border-muted-foreground/50">—</span>
+							</TooltipWrapper>
+						) : (
+							formatPriceCents(entry.avg_entry_price)
+						)}{" "}
 						<span className="text-muted-foreground">/</span>{" "}
 						{formatPriceCents(entry.current_price ?? entry.avg_exit_price)}
 					</p>
@@ -256,11 +274,33 @@ export default function TraderPositions({
 	})
 	const pageKey = status === "open" ? "openPage" : "closedPage"
 
+	const [hideUnknown, setHideUnknown] = useState(false)
+
+	const hasUnknownMarkets = page.data.some((entry) => !entry.title)
+
+	const data = useMemo(() => {
+		if (hideUnknown) {
+			return page.data.filter((entry) => entry.title)
+		}
+		return page.data
+	}, [page.data, hideUnknown])
+
+	const toolbarRight = hasUnknownMarkets || hideUnknown ? (
+		<label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+			<Checkbox
+				checked={hideUnknown}
+				onCheckedChange={(val) => setHideUnknown(!!val)}
+			/>
+			Hide unknown markets
+		</label>
+	) : null
+
 	return (
 		<DataTable
 			toolbarLeft={<TraderTabs />}
+			toolbarRight={toolbarRight}
 			columns={columns}
-			data={page.data}
+			data={data}
 			storageKey="positions-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No positions to show."

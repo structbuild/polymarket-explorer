@@ -159,16 +159,22 @@ export const getTraderPositionsPage = unstable_cache(
 
 		const limit = options?.limit ?? defaultPositionsLimit;
 		const offset = options?.offset ?? 0;
+		const restOptions = { ...(options ?? {}) };
+		const sort_by = restOptions.sort_by;
+		const sort_direction = restOptions.sort_direction;
+		delete restOptions.limit;
+		delete restOptions.sort_by;
+		delete restOptions.sort_direction;
 
 		try {
 			const requestLimit = limit + 1;
 			const params: GetTraderOutcomePnlRequest = {
 				address,
 				status,
+				...restOptions,
 				limit: requestLimit,
-				sort_by: status === "open" ? "current_value" : "realized_pnl_usd",
-				sort_direction: "desc",
-				...options,
+				sort_by: sort_by ?? (status === "open" ? "current_value" : "realized_pnl_usd"),
+				sort_direction: sort_direction ?? "desc",
 			};
 			const response = await client.trader.getTraderOutcomePnl(params);
 			const data = response.data.slice(0, limit);
@@ -218,14 +224,18 @@ export const getTraderTradesPage = unstable_cache(
 
 		const limit = options?.limit ?? defaultTradesLimit;
 		const offset = options?.offset ?? 0;
+		const restOptions = { ...(options ?? {}) };
+		const sort_desc = restOptions.sort_desc;
+		delete restOptions.limit;
+		delete restOptions.sort_desc;
 
 		try {
 			const requestLimit = limit + 1;
 			const params: GetTraderTradesRequest = {
 				address,
+				...restOptions,
 				limit: requestLimit,
-				sort_desc: true,
-				...options,
+				sort_desc: sort_desc ?? true,
 			};
 			const response = await client.trader.getTraderTrades(params);
 			const data = response.data.slice(0, limit);
