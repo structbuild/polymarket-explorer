@@ -9,6 +9,7 @@ import type {
 	TraderPnlSummary,
 	UserProfile,
 } from "@structbuild/sdk";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { getStructClient } from "@/lib/struct/client";
@@ -18,6 +19,7 @@ export const defaultTraderTablePageSize = 25;
 const defaultPositionsLimit = defaultTraderTablePageSize;
 const defaultTradesLimit = defaultTraderTablePageSize;
 const maxTraderSearchQueryLength = 100;
+const traderQueryRevalidateSeconds = 300;
 
 export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
@@ -70,63 +72,75 @@ export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	}
 });
 
-export const getTraderProfile = cache(async (address: string): Promise<UserProfile | null> => {
-	const client = getStructClient();
+export const getTraderProfile = unstable_cache(
+	async (address: string): Promise<UserProfile | null> => {
+		const client = getStructClient();
 
-	if (!client || !address.trim()) {
-		return null;
-	}
-
-	try {
-		const response = await client.trader.getTraderProfile({ address });
-		return response.data;
-	} catch (error) {
-		if (readStatus(error) === 404) {
+		if (!client || !address.trim()) {
 			return null;
 		}
 
-		logStructError(`getTraderProfile:${address}`, error);
-		throw error;
-	}
-});
+		try {
+			const response = await client.trader.getTraderProfile({ address });
+			return response.data;
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return null;
+			}
 
-export const getTraderPnlSummary = cache(async (address: string): Promise<TraderPnlSummary | null> => {
-	const client = getStructClient();
+			logStructError(`getTraderProfile:${address}`, error);
+			throw error;
+		}
+	},
+	["struct-trader-profile"],
+	{ revalidate: traderQueryRevalidateSeconds },
+);
 
-	if (!client || !address.trim()) {
-		return null;
-	}
+export const getTraderPnlSummary = unstable_cache(
+	async (address: string): Promise<TraderPnlSummary | null> => {
+		const client = getStructClient();
 
-	try {
-		const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
-		return response.data;
-	} catch (error) {
-		if (readStatus(error) === 404) {
+		if (!client || !address.trim()) {
 			return null;
 		}
 
-		logStructError(`getTraderPnlSummary:${address}`, error);
-		throw error;
-	}
-});
+		try {
+			const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
+			return response.data;
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return null;
+			}
 
-export const getMarketsByConditionIds = cache(async (conditionIds: string[]): Promise<MarketMetadata[] | null> => {
-	const client = getStructClient();
+			logStructError(`getTraderPnlSummary:${address}`, error);
+			throw error;
+		}
+	},
+	["struct-trader-pnl-summary"],
+	{ revalidate: traderQueryRevalidateSeconds },
+);
 
-	if (!client || conditionIds.length === 0) {
-		return null;
-	}
+export const getMarketsByConditionIds = unstable_cache(
+	async (conditionIds: string[]): Promise<MarketMetadata[] | null> => {
+		const client = getStructClient();
 
-	try {
-		const response = await client.markets.getMarkets({ condition_ids: conditionIds.join(",") });
-		return response.data;
-	} catch (error) {
-		logStructError(`getMarketsByConditionIds:${conditionIds.join(",")}`, error);
-		return [];
-	}
-});
+		if (!client || conditionIds.length === 0) {
+			return null;
+		}
 
-export const getTraderPositionsPage = cache(
+		try {
+			const response = await client.markets.getMarkets({ condition_ids: conditionIds.join(",") });
+			return response.data;
+		} catch (error) {
+			logStructError(`getMarketsByConditionIds:${conditionIds.join(",")}`, error);
+			return [];
+		}
+	},
+	["struct-markets-by-condition-ids"],
+	{ revalidate: traderQueryRevalidateSeconds },
+);
+
+export const getTraderPositionsPage = unstable_cache(
 	async (
 		address: string,
 		status: "open" | "closed",
@@ -185,9 +199,11 @@ export const getTraderPositionsPage = cache(
 			};
 		}
 	},
+	["struct-trader-positions-page"],
+	{ revalidate: traderQueryRevalidateSeconds },
 );
 
-export const getTraderTradesPage = cache(
+export const getTraderTradesPage = unstable_cache(
 	async (address: string, options?: TraderTradesPageOptions): Promise<PaginatedResource<Trade, number>> => {
 		const client = getStructClient();
 
@@ -241,4 +257,6 @@ export const getTraderTradesPage = cache(
 			};
 		}
 	},
+	["struct-trader-trades-page"],
+	{ revalidate: traderQueryRevalidateSeconds },
 );
