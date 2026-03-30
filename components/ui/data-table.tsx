@@ -126,7 +126,7 @@ function DataTableView<TData>({
 							/>
 							{typeof column.columnDef.header === "string"
 								? column.columnDef.header
-								: column.id}
+								: (column.columnDef.meta as { title?: string } | undefined)?.title ?? column.id}
 						</label>
 					))}
 				</div>
@@ -295,6 +295,7 @@ function ClientPaginatedDataTable<TData>({
 		})
 	}, [data.length])
 
+	// eslint-disable-next-line
 	const table = useReactTable({
 		data,
 		columns,
@@ -361,6 +362,7 @@ function ServerPaginatedDataTable<TData>({
 		defaultColumnVisibility,
 	)
 
+	// eslint-disable-next-line
 	const table = useReactTable({
 		data,
 		columns,

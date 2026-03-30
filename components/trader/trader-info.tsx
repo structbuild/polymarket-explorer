@@ -10,16 +10,6 @@ type TraderInfoProps = {
 };
 
 export function TraderInfo({ address, profile }: TraderInfoProps) {
-	const createdAtTimestamp = profile?.created_at != null ? Number(profile.created_at) : null;
-	const createdAt =
-		createdAtTimestamp != null && Number.isFinite(createdAtTimestamp)
-			? new Date(createdAtTimestamp * 1000).toLocaleDateString("en-US", {
-					year: "numeric",
-					month: "long",
-					day: "numeric",
-				})
-			: "-";
-
 	return (
 		<div className="rounded-lg bg-card p-4 sm:p-6">
 			<p className="text-sm text-foreground sm:text-base">Trader Information</p>
@@ -45,7 +35,6 @@ export function TraderInfo({ address, profile }: TraderInfoProps) {
 			</InfoRow>
 			<InfoRow label="Creator" value={profile?.is_creator ? "Yes" : "No"} />
 			<InfoRow label="Moderator" value={profile?.is_mod ? "Yes" : "No"} />
-			<InfoRow label="Created At" value={createdAt} />
 			<div className="flex flex-col gap-px">
 				<p className="text-sm text-foreground/90 sm:text-base">Bio</p>
 				<p className="text-sm wrap-break-word sm:text-base">{profile?.bio || "No bio"}</p>

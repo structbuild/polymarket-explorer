@@ -34,12 +34,16 @@ function intensityClass(pnl: number, maxAbs: number) {
 	const ratio = Math.abs(pnl) / maxAbs
 
 	if (pnl > 0) {
-		if (ratio > 0.66) return "bg-emerald-500/70 text-white"
-		if (ratio > 0.33) return "bg-emerald-500/40"
+		if (ratio > 0.8) return "bg-emerald-500/90 text-white"
+		if (ratio > 0.6) return "bg-emerald-500/70 text-white"
+		if (ratio > 0.4) return "bg-emerald-500/50"
+		if (ratio > 0.2) return "bg-emerald-500/35"
 		return "bg-emerald-500/20"
 	}
-	if (ratio > 0.66) return "bg-red-500/70 text-white"
-	if (ratio > 0.33) return "bg-red-500/40"
+	if (ratio > 0.8) return "bg-red-500/90 text-white"
+	if (ratio > 0.6) return "bg-red-500/70 text-white"
+	if (ratio > 0.4) return "bg-red-500/50"
+	if (ratio > 0.2) return "bg-red-500/35"
 	return "bg-red-500/20"
 }
 
@@ -65,12 +69,21 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 
 	const cells = useMemo(() => getMonthGrid(viewYear, viewMonth), [viewYear, viewMonth])
 
-	const maxAbs = useMemo(() => {
+	const { maxAbs, bestKey, worstKey } = useMemo(() => {
+		let bestK: string | null = null
+		let worstK: string | null = null
+		let bestPnl = -Infinity
+		let worstPnl = Infinity
+		for (const [key, entry] of pnlByDate) {
+			if (entry.pnl > bestPnl) { bestPnl = entry.pnl; bestK = key }
+			if (entry.pnl < worstPnl) { worstPnl = entry.pnl; worstK = key }
+		}
 		let max = 0
-		for (const entry of pnlByDate.values()) {
+		for (const [key, entry] of pnlByDate) {
+			if (key === bestK || key === worstK) continue
 			if (Math.abs(entry.pnl) > max) max = Math.abs(entry.pnl)
 		}
-		return max
+		return { maxAbs: max, bestKey: bestPnl > 0 ? bestK : null, worstKey: worstPnl < 0 ? worstK : null }
 	}, [pnlByDate])
 
 	const monthKeys = useMemo(() => {
@@ -149,7 +162,11 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 					const hasData = pnl !== undefined && pnl !== 0
 					const cellClassName = cn(
 						"group relative flex aspect-square flex-col items-center justify-center rounded-md text-[11px] transition-colors sm:text-xs",
-						hasData ? intensityClass(pnl, maxAbs) : "bg-muted/50",
+						hasData
+						? key === bestKey ? "bg-emerald-500 text-white"
+						: key === worstKey ? "bg-red-500 text-white"
+						: intensityClass(pnl, maxAbs)
+						: "bg-muted/50",
 						isTouchDevice && hasData && "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
 						isTouchDevice && activeSelectedKey === key && hasData && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
 					)
@@ -159,7 +176,7 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 							<span className="text-base font-medium mb-0.5">{day}</span>
 							{hasData && !isTouchDevice && (
 								<>
-									<span className="text-foreground/85 leading-tight sm:text-sm">
+									<span className={cn("leading-tight sm:text-sm", key === bestKey || key === worstKey ? "text-white" : "text-foreground/85")}>
 										{formatNumber(pnl, { currency: true, compact: true })}
 									</span>
 									<div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground opacity-0 transition-opacity sm:group-hover:opacity-100">

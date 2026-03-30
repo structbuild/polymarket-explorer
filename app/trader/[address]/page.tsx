@@ -157,7 +157,7 @@ function TraderInsightsFallback() {
 			</div>
 			<div className="rounded-lg bg-card p-4 sm:p-6">
 				<div className="mb-4 h-4 w-24 animate-pulse rounded bg-muted" />
-				<div className="aspect-[7/6] animate-pulse rounded-md bg-muted" />
+				<div className="aspect-7/6 animate-pulse rounded-md bg-muted" />
 			</div>
 		</>
 	);

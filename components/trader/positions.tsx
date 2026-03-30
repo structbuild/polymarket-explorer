@@ -12,6 +12,8 @@ import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 
 import { Badge } from "../ui/badge"
 import { DataTable } from "../ui/data-table"
+import { TooltipWrapper } from "../ui/tooltip"
+import { InfoIcon } from "lucide-react"
 import { TraderTabs } from "./trader-tabs"
 import { cn, formatNumber } from "@/lib/utils"
 
@@ -71,7 +73,19 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 								{title}
 							</p>
 							<div className="flex flex-wrap items-center gap-1.5">
-								{entry.outcome ? <Badge variant="secondary">{entry.outcome}</Badge> : null}
+								{entry.outcome ? (
+									<Badge
+										variant={
+											entry.outcome_index === 0
+												? "positive"
+												: entry.outcome_index === 1
+													? "negative"
+													: "secondary"
+										}
+									>
+										{entry.outcome}
+									</Badge>
+								) : null}
 								{sharesLine ? (
 									<p className="truncate text-sm text-muted-foreground" title={sharesLine}>
 										{sharesLine}
@@ -100,7 +114,15 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "realized_pnl",
-			header: "Realized PnL",
+			meta: { title: "Realized PnL" },
+			header: () => (
+				<div className="flex items-center gap-1.5">
+					Realized PnL
+					<TooltipWrapper content="Realized PnL is calculated based on shares bought, sold, and redeemed. If you haven't sold or redeemed any shares, your realized PnL will be negative.">
+						<InfoIcon className="size-4 text-muted-foreground" />
+					</TooltipWrapper>
+				</div>
+			),
 			size: 180,
 			cell: ({ row }) => {
 				const entry = row.original

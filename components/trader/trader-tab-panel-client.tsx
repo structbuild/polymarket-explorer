@@ -4,9 +4,13 @@ import type { components } from "@structbuild/sdk"
 import dynamic from "next/dynamic"
 
 import type { PaginatedResource } from "@/lib/struct/types"
+import {
+	loadTraderActivity,
+	loadTraderPositions,
+} from "./trader-tab-panel-loaders"
 
-const TraderActivity = dynamic(() => import("./activity"))
-const TraderPositions = dynamic(() => import("./positions"))
+const TraderActivity = dynamic(loadTraderActivity)
+const TraderPositions = dynamic(loadTraderPositions)
 
 type Trade = components["schemas"]["PredictionTradeResponse"]
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
