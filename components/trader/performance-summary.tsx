@@ -24,22 +24,26 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: Per
 			<div>
 				<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
 					<p className="text-sm text-foreground/90 sm:text-base">Best Win</p>
-					<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
-						{bestTradeMarket && (
-							<img src={bestTradeMarket.image_url ?? ""} alt={bestTradeMarket.question ?? ""} className="size-4 rounded-sm" />
-						)}
-						<p className="text-sm font-medium text-emerald-500 sm:text-base">
-							{formatNumber(pnlSummary?.best_trade_pnl_usd ?? 0, { currency: true, compact: true })}
-						</p>
-					</div>
+					{(pnlSummary?.best_trade_pnl_usd ?? 0) <= 0 ? (
+						<span className="text-sm font-medium text-muted-foreground sm:text-base">—</span>
+					) : (
+						<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
+							{bestTradeMarket && (
+								<img src={bestTradeMarket.image_url ?? ""} alt={bestTradeMarket.question ?? ""} className="size-4 rounded-sm" />
+							)}
+							<p className="text-sm font-medium text-emerald-500 sm:text-base">
+								{formatNumber(pnlSummary?.best_trade_pnl_usd ?? 0, { currency: true, compact: true })}
+							</p>
+						</div>
+					)}
 				</div>
-				{bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground wrap-break-word sm:truncate">{bestTradeMarket.question}</p>}
+				{(pnlSummary?.best_trade_pnl_usd ?? 0) > 0 && bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground wrap-break-word sm:truncate">{bestTradeMarket.question}</p>}
 				<Separator className="my-2" />
 			</div>
 			<InfoRow
 				label="Best Day"
 				value={
-					streaks.bestDay.pnl === 0 ? (
+					streaks.bestDay.pnl <= 0 ? (
 						<span className="text-muted-foreground">—</span>
 					) : (
 						<>

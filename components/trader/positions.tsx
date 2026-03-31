@@ -14,7 +14,8 @@ import { Badge } from "../ui/badge"
 import { Checkbox } from "../ui/checkbox"
 import { DataTable } from "../ui/data-table"
 import { TooltipWrapper } from "../ui/tooltip"
-import { InfoIcon } from "lucide-react"
+import { ExternalLinkIcon, InfoIcon } from "lucide-react"
+import { Button } from "../ui/button"
 import { TraderTabs } from "./trader-tabs"
 import { cn, formatNumber } from "@/lib/utils"
 
@@ -248,6 +249,31 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 			cell: ({ row }) => {
 				const val = row.original.redemption_usd
 				return <p>{val != null && val > 0 ? formatNumber(val, { currency: true, compact: true }) : "—"}</p>
+			},
+		},
+		{
+			id: "link",
+			header: "",
+			size: 64,
+			enableHiding: false,
+			cell: ({ row }) => {
+				const slug = row.original.market_slug
+				if (!slug) return null
+				return (
+					<div className="flex justify-end">
+						<TooltipWrapper content="View on Polymarket">
+							<a
+								href={`https://polymarket.com/market/${slug}`}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
+									<ExternalLinkIcon className="size-4" />
+								</Button>
+							</a>
+						</TooltipWrapper>
+					</div>
+				)
 			},
 		},
 	]
