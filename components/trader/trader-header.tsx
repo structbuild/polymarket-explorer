@@ -1,4 +1,5 @@
 import { CopyAddress } from "@/components/trader/copy-address";
+import { CopyLink } from "@/components/trader/copy-link";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/utils";
@@ -84,9 +85,10 @@ export function TraderHeader({
 				</div>
 			</div>
 
-			<div className="flex w-full items-center justify-stretch gap-2 lg:w-auto lg:justify-end">
+			<div className="grid grid-cols-2 gap-2 lg:flex lg:w-auto lg:justify-end">
+				<CopyLink />
 				<Button
-					className="w-full sm:w-fit"
+					className="w-full lg:w-fit"
 					size="lg"
 					nativeButton={false}
 					render={<a href={`https://polymarket.com/${address}`} rel="noreferrer" target="_blank" />}
