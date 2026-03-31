@@ -17,6 +17,11 @@ export function isWalletAddress(value: string) {
 	return /^0x[0-9a-fA-F]{40}$/.test(value.trim());
 }
 
+export function normalizeWalletAddress(value: string) {
+	const trimmed = value.trim();
+	return isWalletAddress(trimmed) ? trimmed.toLowerCase() : null;
+}
+
 export function formatDuration(seconds: number): string {
 	if (!seconds || seconds < 0) return "0s";
 	const d = Math.floor(seconds / 86400);

@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { isWalletAddress } from "@/lib/utils";
+import { isWalletAddress, normalizeWalletAddress } from "@/lib/utils";
 import { SearchIcon } from "lucide-react";
+import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -18,10 +19,12 @@ export function SearchInput() {
 	const pushQuery = useCallback(
 		(query: string) => {
 			const trimmed = query.trim();
+
 			if (isWalletAddress(trimmed)) {
-				router.push(`/trader/${trimmed}`);
+				router.push(`/trader/${normalizeWalletAddress(trimmed) ?? trimmed}` as Route);
 				return;
 			}
+
 			if (trimmed.length >= 2) {
 				router.replace(`/?q=${encodeURIComponent(trimmed)}`);
 			} else if (trimmed.length === 0) {

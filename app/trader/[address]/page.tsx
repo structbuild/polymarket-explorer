@@ -22,13 +22,22 @@ import {
 	PNL_TIMEFRAMES,
 	type PnlTimeframe,
 } from "@/lib/polymarket/pnl-timeframes";
+import {
+	getTraderOgImageAlt,
+	getTraderOgImageUrl,
+	getTraderPageDescription,
+	getTraderPageTitle,
+	getTraderSocialTitle,
+	loadTraderOpenGraphIdentity,
+	traderOgImageSize,
+} from "@/lib/trader-open-graph";
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import {
 	getMarketsByConditionIds,
 	getTraderPnlSummary,
 	getTraderProfile,
 } from "@/lib/struct/queries";
-import { getTraderDisplayName } from "@/lib/utils";
+import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import type {
 	MarketMetadata,
 	TraderPnlSummary,
@@ -53,26 +62,43 @@ type TraderInsightsData = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-	const { address } = await params;
-	const profile = await getTraderProfile(address);
-	const displayName = profile ? getTraderDisplayName({ address, name: profile.name, pseudonym: profile.pseudonym }) : address;
-	const description = `Analyze ${displayName}'s Polymarket trading performance - PnL history, win rate, volume, and recent trades. Powered by Struct.`;
+	const { address: rawAddress } = await params;
+	const address = normalizeWalletAddress(rawAddress);
+
+	if (!address) {
+		notFound();
+	}
+
+	const { displayName } = await loadTraderOpenGraphIdentity(address);
+	const description = getTraderPageDescription(displayName);
+	const socialTitle = getTraderSocialTitle(displayName);
+	const ogImage = getTraderOgImageUrl(address);
+	const ogAlt = getTraderOgImageAlt(displayName);
 
 	return {
-		title: `${displayName} - Trader Profile`,
+		title: getTraderPageTitle(displayName),
 		description,
 		alternates: {
 			canonical: `/trader/${address}`,
 		},
 		openGraph: {
-			title: `${displayName} - Polymarket Trader`,
+			title: socialTitle,
 			description,
 			type: "profile",
+			images: [
+				{
+					url: ogImage,
+					width: traderOgImageSize.width,
+					height: traderOgImageSize.height,
+					alt: ogAlt,
+				},
+			],
 		},
 		twitter: {
-			card: "summary",
-			title: `${displayName} - Polymarket Trader`,
+			card: "summary_large_image",
+			title: socialTitle,
 			description,
+			images: [ogImage],
 		},
 	};
 }
@@ -343,7 +369,13 @@ function TraderOverviewFallback() {
 }
 
 export default async function TraderPage({ params, searchParams }: Props) {
-	const { address } = await params;
+	const { address: rawAddress } = await params;
+	const address = normalizeWalletAddress(rawAddress);
+
+	if (!address) {
+		notFound();
+	}
+
 	const { tab, openPage, closedPage, activityPage, pnlTimeframe } = await loadTraderSearchParams(searchParams);
 
 	const profilePromise = getTraderProfile(address);

@@ -14,6 +14,7 @@ import { cache } from "react";
 
 import { getStructClient } from "@/lib/struct/client";
 import type { PaginatedResource } from "@/lib/struct/types";
+import { normalizeWalletAddress } from "@/lib/utils";
 
 export const defaultTraderTablePageSize = 25;
 const defaultPositionsLimit = defaultTraderTablePageSize;
@@ -72,11 +73,11 @@ export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	}
 });
 
-export const getTraderProfile = unstable_cache(
+const getTraderProfileCached = unstable_cache(
 	async (address: string): Promise<UserProfile | null> => {
 		const client = getStructClient();
 
-		if (!client || !address.trim()) {
+		if (!client) {
 			return null;
 		}
 
@@ -96,11 +97,21 @@ export const getTraderProfile = unstable_cache(
 	{ revalidate: traderQueryRevalidateSeconds },
 );
 
-export const getTraderPnlSummary = unstable_cache(
+export async function getTraderProfile(address: string): Promise<UserProfile | null> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) {
+		return null;
+	}
+
+	return getTraderProfileCached(normalizedAddress);
+}
+
+const getTraderPnlSummaryCached = unstable_cache(
 	async (address: string): Promise<TraderPnlSummary | null> => {
 		const client = getStructClient();
 
-		if (!client || !address.trim()) {
+		if (!client) {
 			return null;
 		}
 
@@ -119,6 +130,16 @@ export const getTraderPnlSummary = unstable_cache(
 	["struct-trader-pnl-summary"],
 	{ revalidate: traderQueryRevalidateSeconds },
 );
+
+export async function getTraderPnlSummary(address: string): Promise<TraderPnlSummary | null> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) {
+		return null;
+	}
+
+	return getTraderPnlSummaryCached(normalizedAddress);
+}
 
 export const getMarketsByConditionIds = unstable_cache(
 	async (conditionIds: string[]): Promise<MarketMetadata[] | null> => {
@@ -140,24 +161,28 @@ export const getMarketsByConditionIds = unstable_cache(
 	{ revalidate: traderQueryRevalidateSeconds },
 );
 
-export const getTraderPositionsPage = unstable_cache(
+function emptyTraderPositionsPage(limit: number): PaginatedResource<TraderOutcomePnlEntry, number> {
+	return {
+		data: [],
+		hasMore: false,
+		nextCursor: null,
+		pageSize: limit,
+	};
+}
+
+const getTraderPositionsPageCached = unstable_cache(
 	async (
 		address: string,
 		status: "open" | "closed",
 		options?: TraderPositionsOptions,
 	): Promise<PaginatedResource<TraderOutcomePnlEntry, number>> => {
 		const client = getStructClient();
+		const limit = options?.limit ?? defaultPositionsLimit;
 
-		if (!client || !address.trim()) {
-			return {
-				data: [],
-				hasMore: false,
-				nextCursor: null,
-				pageSize: options?.limit ?? defaultPositionsLimit,
-			};
+		if (!client) {
+			return emptyTraderPositionsPage(limit);
 		}
 
-		const limit = options?.limit ?? defaultPositionsLimit;
 		const offset = options?.offset ?? 0;
 		const restOptions = { ...(options ?? {}) };
 		const sort_by = restOptions.sort_by;
@@ -188,41 +213,50 @@ export const getTraderPositionsPage = unstable_cache(
 			};
 		} catch (error) {
 			if (readStatus(error) === 404) {
-				return {
-					data: [],
-					hasMore: false,
-					nextCursor: null,
-					pageSize: limit,
-				};
+				return emptyTraderPositionsPage(limit);
 			}
 
 			logStructError(`getTraderPositionsPage:${address}:${status}`, error);
-			return {
-				data: [],
-				hasMore: false,
-				nextCursor: null,
-				pageSize: limit,
-			};
+			return emptyTraderPositionsPage(limit);
 		}
 	},
 	["struct-trader-positions-page"],
 	{ revalidate: traderQueryRevalidateSeconds },
 );
 
-export const getTraderTradesPage = unstable_cache(
+export async function getTraderPositionsPage(
+	address: string,
+	status: "open" | "closed",
+	options?: TraderPositionsOptions,
+): Promise<PaginatedResource<TraderOutcomePnlEntry, number>> {
+	const normalizedAddress = normalizeWalletAddress(address);
+	const limit = options?.limit ?? defaultPositionsLimit;
+
+	if (!normalizedAddress) {
+		return emptyTraderPositionsPage(limit);
+	}
+
+	return getTraderPositionsPageCached(normalizedAddress, status, options);
+}
+
+function emptyTraderTradesPage(limit: number): PaginatedResource<Trade, number> {
+	return {
+		data: [],
+		hasMore: false,
+		nextCursor: null,
+		pageSize: limit,
+	};
+}
+
+const getTraderTradesPageCached = unstable_cache(
 	async (address: string, options?: TraderTradesPageOptions): Promise<PaginatedResource<Trade, number>> => {
 		const client = getStructClient();
+		const limit = options?.limit ?? defaultTradesLimit;
 
-		if (!client || !address.trim()) {
-			return {
-				data: [],
-				hasMore: false,
-				nextCursor: null,
-				pageSize: options?.limit ?? defaultTradesLimit,
-			};
+		if (!client) {
+			return emptyTraderTradesPage(limit);
 		}
 
-		const limit = options?.limit ?? defaultTradesLimit;
 		const offset = options?.offset ?? 0;
 		const restOptions = { ...(options ?? {}) };
 		const sort_desc = restOptions.sort_desc;
@@ -250,23 +284,27 @@ export const getTraderTradesPage = unstable_cache(
 			};
 		} catch (error) {
 			if (readStatus(error) === 404) {
-				return {
-					data: [],
-					hasMore: false,
-					nextCursor: null,
-					pageSize: limit,
-				};
+				return emptyTraderTradesPage(limit);
 			}
 
 			logStructError(`getTraderTradesPage:${address}`, error);
-			return {
-				data: [],
-				hasMore: false,
-				nextCursor: null,
-				pageSize: limit,
-			};
+			return emptyTraderTradesPage(limit);
 		}
 	},
 	["struct-trader-trades-page"],
 	{ revalidate: traderQueryRevalidateSeconds },
 );
+
+export async function getTraderTradesPage(
+	address: string,
+	options?: TraderTradesPageOptions,
+): Promise<PaginatedResource<Trade, number>> {
+	const normalizedAddress = normalizeWalletAddress(address);
+	const limit = options?.limit ?? defaultTradesLimit;
+
+	if (!normalizedAddress) {
+		return emptyTraderTradesPage(limit);
+	}
+
+	return getTraderTradesPageCached(normalizedAddress, options);
+}

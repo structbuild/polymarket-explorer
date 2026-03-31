@@ -3,8 +3,8 @@ import { TopTraders, TopTradersFallback } from "@/components/home/top-traders";
 import { SearchInput } from "@/components/search/search-input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { searchTraders } from "@/lib/struct/queries";
-import { getTraderDisplayName, isWalletAddress } from "@/lib/utils";
-import type { Metadata } from "next";
+import { getTraderDisplayName, isWalletAddress, normalizeWalletAddress } from "@/lib/utils";
+import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -28,7 +28,7 @@ export default async function HomePage({ searchParams }: Props) {
 	const query = q?.trim() ?? "";
 
 	if (isWalletAddress(query)) {
-		redirect(`/trader/${query}`);
+		redirect(`/trader/${normalizeWalletAddress(query) ?? query}`);
 	}
 
 	const hasQuery = query.length >= 2;
@@ -47,21 +47,25 @@ export default async function HomePage({ searchParams }: Props) {
 				<div className="mt-4 flex w-full flex-col items-center">
 					{hasQuery ? (
 						<div className="flex w-full flex-wrap justify-center gap-2">
-							{traders.map((trader) => (
-								<Link
-									key={trader.address}
-									href={`/trader/${trader.address}`}
-									className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs text-foreground/90 opacity-80 backdrop-blur-sm transition-colors hover:bg-accent hover:opacity-100 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
-								>
-									{trader.profile_image && (
-										<Avatar size="xs">
-											<AvatarImage src={trader.profile_image} />
-											<AvatarFallback>{getTraderDisplayName(trader).slice(0, 2).toUpperCase()}</AvatarFallback>
-										</Avatar>
-									)}
-									<span className="max-w-44 truncate sm:max-w-[16rem]">{getTraderDisplayName(trader)}</span>
-								</Link>
-							))}
+							{traders.map((trader) => {
+								const traderHref = `/trader/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
+
+								return (
+									<Link
+										key={trader.address}
+										href={traderHref}
+										className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs text-foreground/90 opacity-80 backdrop-blur-sm transition-colors hover:bg-accent hover:opacity-100 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
+									>
+										{trader.profile_image && (
+											<Avatar size="xs">
+												<AvatarImage src={trader.profile_image} />
+												<AvatarFallback>{getTraderDisplayName(trader).slice(0, 2).toUpperCase()}</AvatarFallback>
+											</Avatar>
+										)}
+										<span className="max-w-44 truncate sm:max-w-[16rem]">{getTraderDisplayName(trader)}</span>
+									</Link>
+								);
+							})}
 							{traders.length === 0 && (
 								<p className="text-center text-sm text-muted-foreground">No traders found for &ldquo;{query}&rdquo;</p>
 							)}

@@ -2,6 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 
+import { normalizeWalletAddress } from "@/lib/utils";
+
 export type PnlDataPoint = {
 	t: number;
 	p: number;
@@ -26,16 +28,30 @@ async function fetchPnl(address: string, interval: string, fidelity: string): Pr
 	return res.json();
 }
 
-export const getTraderPnlCandles = cache(async (address: string, interval = "all", fidelity = "1h"): Promise<PnlDataPoint[]> => {
-	if (!address.trim()) return [];
+const getTraderPnlCandlesCached = cache(async (address: string, interval = "all", fidelity = "1h"): Promise<PnlDataPoint[]> => {
 	return fetchPnl(address, interval, fidelity);
 });
 
-export const getTraderDailyPnl = cache(async (address: string): Promise<DailyPnlEntry[]> => {
-	if (!address.trim()) return [];
+export async function getTraderPnlCandles(address: string, interval = "all", fidelity = "1h"): Promise<PnlDataPoint[]> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) return [];
+
+	return getTraderPnlCandlesCached(normalizedAddress, interval, fidelity);
+}
+
+const getTraderDailyPnlCached = cache(async (address: string): Promise<DailyPnlEntry[]> => {
 	const data = await fetchPnl(address, "all", "1d");
 	return toDailyPnl(data);
 });
+
+export async function getTraderDailyPnl(address: string): Promise<DailyPnlEntry[]> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) return [];
+
+	return getTraderDailyPnlCached(normalizedAddress);
+}
 
 export type DayRecord = {
 	pnl: number;

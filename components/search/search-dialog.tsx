@@ -5,9 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { getTraderDisplayName } from "@/lib/utils";
+import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { LoaderIcon, SearchIcon } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
@@ -143,10 +144,12 @@ export function SearchDialog() {
 				)}
 				{results.map((trader) => {
 					const displayLabel = getTraderDisplayName(trader);
+					const traderHref = `/trader/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
+
 					return (
 						<Link
 							key={trader.address}
-							href={`/trader/${trader.address}`}
+							href={traderHref}
 							onClick={() => handleOpenChange(false)}
 							className="flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
 						>
