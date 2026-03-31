@@ -176,7 +176,7 @@ function TraderHeaderFallback() {
 							<div className="h-8 w-28 animate-pulse rounded-md bg-muted" />
 						</div>
 						<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-4">
-							{Array.from({ length: 5 }, (_, index) => (
+							{Array.from({ length: 8 }, (_, index) => (
 								<div key={index} className="space-y-2">
 									<div className="h-3 w-16 animate-pulse rounded bg-muted" />
 									<div className="h-5 w-20 animate-pulse rounded bg-muted" />
@@ -284,37 +284,42 @@ async function TraderOverviewSection({
 	});
 
 	return (
-		<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-			<div className="min-w-0 space-y-4 lg:w-2/3">
-				<TraderHeader
-					address={address}
-					displayName={displayName}
-					profileImage={profile?.profile_image}
-					firstTradeAt={pnlSummary?.first_trade_at}
-					totalBuys={pnlSummary?.total_buys}
-					totalSells={pnlSummary?.total_sells}
-					totalRedemptions={pnlSummary?.total_redemptions}
-					totalVolumeUsd={pnlSummary?.total_volume_usd}
-				/>
-				<Suspense fallback={<TraderInsightsFallback />}>
-					<TraderInsightsSection
-						address={address}
-						displayName={displayName}
-						timeframe={timeframe}
-						insightsPromise={insightsPromise}
-					/>
-				</Suspense>
-			</div>
+		<div className="space-y-4">
+			<TraderHeader
+				address={address}
+				displayName={displayName}
+				profileImage={profile?.profile_image}
+				firstTradeAt={pnlSummary?.first_trade_at}
+				lastTradeAt={pnlSummary?.last_trade_at}
+				totalBuys={pnlSummary?.total_buys}
+				totalSells={pnlSummary?.total_sells}
+				totalRedemptions={pnlSummary?.total_redemptions}
+				totalMerges={pnlSummary?.total_merges}
+				totalVolumeUsd={pnlSummary?.total_volume_usd}
+				totalFees={pnlSummary?.total_fees}
+			/>
+			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+				<div className="min-w-0 space-y-4 lg:w-2/3">
+					<Suspense fallback={<TraderInsightsFallback />}>
+						<TraderInsightsSection
+							address={address}
+							displayName={displayName}
+							timeframe={timeframe}
+							insightsPromise={insightsPromise}
+						/>
+					</Suspense>
+				</div>
 
-			<div className="min-w-0 space-y-4 lg:w-1/3">
-				<Suspense fallback={<TraderPerformanceSummaryFallback />}>
-					<TraderPerformanceSummarySection
-						pnlSummary={pnlSummary}
-						insightsPromise={insightsPromise}
-						bestTradeMarketPromise={bestTradeMarketPromise}
-					/>
-				</Suspense>
-				<TraderInfo address={address} profile={profile} />
+				<div className="min-w-0 space-y-4 lg:w-1/3">
+					<Suspense fallback={<TraderPerformanceSummaryFallback />}>
+						<TraderPerformanceSummarySection
+							pnlSummary={pnlSummary}
+							insightsPromise={insightsPromise}
+							bestTradeMarketPromise={bestTradeMarketPromise}
+						/>
+					</Suspense>
+					<TraderInfo address={address} profile={profile} />
+				</div>
 			</div>
 		</div>
 	);
@@ -322,14 +327,16 @@ async function TraderOverviewSection({
 
 function TraderOverviewFallback() {
 	return (
-		<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-			<div className="min-w-0 space-y-4 lg:w-2/3">
-				<TraderHeaderFallback />
-				<TraderInsightsFallback />
-			</div>
-			<div className="min-w-0 space-y-4 lg:w-1/3">
-				<TraderPerformanceSummaryFallback />
-				<TraderInfoFallback />
+		<div className="space-y-4">
+			<TraderHeaderFallback />
+			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+				<div className="min-w-0 space-y-4 lg:w-2/3">
+					<TraderInsightsFallback />
+				</div>
+				<div className="min-w-0 space-y-4 lg:w-1/3">
+					<TraderPerformanceSummaryFallback />
+					<TraderInfoFallback />
+				</div>
 			</div>
 		</div>
 	);

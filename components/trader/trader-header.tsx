@@ -23,52 +23,63 @@ type TraderHeaderProps = {
 	displayName: string;
 	profileImage?: string | null;
 	firstTradeAt?: number | null;
+	lastTradeAt?: number | null;
 	totalBuys?: number | null;
 	totalSells?: number | null;
 	totalRedemptions?: number | null;
+	totalMerges?: number | null;
 	totalVolumeUsd?: number | null;
+	totalFees?: number | null;
 };
+
+function formatTimestamp(ts?: number | null): string {
+	if (!ts) return "Unknown";
+	return new Date(ts * 1000).toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
+}
 
 export function TraderHeader({
 	address,
 	displayName,
 	profileImage,
 	firstTradeAt,
+	lastTradeAt,
 	totalBuys,
 	totalSells,
 	totalRedemptions,
+	totalMerges,
 	totalVolumeUsd,
+	totalFees,
 }: TraderHeaderProps) {
-	const activeSince = firstTradeAt
-		? new Date(firstTradeAt * 1000).toLocaleDateString("en-US", {
-				year: "numeric",
-				month: "short",
-				day: "numeric",
-			})
-		: "Unknown";
+	const activeSince = formatTimestamp(firstTradeAt);
+	const lastActive = formatTimestamp(lastTradeAt);
 
 	return (
 		<div className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
 			<div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
 				<TraderAvatar displayName={displayName} profileImage={profileImage} />
 				<div className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden">
-					<div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+					<div className="flex min-w-0 items-center gap-2">
 						<h1
-							className="w-full min-w-0 max-w-full truncate text-2xl font-medium sm:flex-1 sm:min-w-0"
+							className="min-w-0 truncate text-2xl font-medium"
 							title={displayName}
 						>
 							{displayName}
 						</h1>
-						<div className="shrink-0 self-start sm:self-auto">
-							<CopyAddress address={address} />
-						</div>
+						<CopyAddress address={address} />
 					</div>
 					<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-4">
 						<StatItem label="Active Since" value={activeSince} />
+						<StatItem label="Last Active" value={lastActive} />
 						<StatItem label="Buys" value={formatNumber(totalBuys ?? 0, { decimals: 0 })} />
 						<StatItem label="Sells" value={formatNumber(totalSells ?? 0, { decimals: 0 })} />
 						<StatItem label="Redemptions" value={formatNumber(totalRedemptions ?? 0, { decimals: 0 })} />
+						<StatItem label="Merges" value={formatNumber(totalMerges ?? 0, { decimals: 0 })} />
 						<StatItem label="Volume" value={formatNumber(totalVolumeUsd ?? 0, { compact: true, currency: true })} />
+						<StatItem label="Fees" value={formatNumber(totalFees ?? 0, { compact: true, currency: true })} />
 					</div>
 				</div>
 			</div>
