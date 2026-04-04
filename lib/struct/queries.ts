@@ -308,3 +308,32 @@ export async function getTraderTradesPage(
 
 	return getTraderTradesPageCached(normalizedAddress, options);
 }
+
+export const getRewardsMarkets = unstable_cache(
+	async (): Promise<MarketMetadata[]> => {
+		const client = getStructClient();
+
+		if (!client) {
+			return [];
+		}
+
+		try {
+			const response = await client.markets.getMarkets({
+				has_rewards: true,
+				status: "open",
+				limit: 100,
+			});
+			return response.data.filter(
+				(market) =>
+					(market.clob_rewards
+						?.map((reward) => reward.rewards_daily_rate)
+						?.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0) > 0.5,
+			);
+		} catch (error) {
+			logStructError("getRewardsMarkets", error);
+			return [];
+		}
+	},
+	["struct-rewards-markets"],
+	{ revalidate: traderQueryRevalidateSeconds },
+);
