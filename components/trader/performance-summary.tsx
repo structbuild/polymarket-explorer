@@ -2,7 +2,7 @@
 import { InfoRow } from "@/components/trader/info-row";
 import { Separator } from "@/components/ui/separator";
 import type { PnlStreaks } from "@/lib/polymarket/pnl";
-import { formatDuration, formatNumber } from "@/lib/utils";
+import { formatDuration, formatNumber } from "@/lib/format";
 import type { MarketMetadata, TraderPnlSummary } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {

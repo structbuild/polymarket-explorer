@@ -5,47 +5,12 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { getMonthGrid, intensityClass } from "@/lib/calendar-utils"
+import { formatDateShort, pnlColorClass } from "@/lib/format"
+import { formatNumber } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { formatNumber } from "@/lib/utils"
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-
-function getMonthGrid(year: number, month: number) {
-	const firstDay = new Date(year, month, 1)
-	const lastDay = new Date(year, month + 1, 0)
-	const daysInMonth = lastDay.getDate()
-
-	let startDow = firstDay.getDay() - 1
-	if (startDow < 0) startDow = 6
-
-	const cells: (number | null)[] = Array.from<null>({ length: startDow }).fill(null)
-	for (let d = 1; d <= daysInMonth; d++) {
-		cells.push(d)
-	}
-	while (cells.length % 7 !== 0) {
-		cells.push(null)
-	}
-
-	return cells
-}
-
-function intensityClass(pnl: number, maxAbs: number) {
-	if (maxAbs === 0) return "bg-muted"
-	const ratio = Math.abs(pnl) / maxAbs
-
-	if (pnl > 0) {
-		if (ratio > 0.8) return "bg-emerald-500/90 text-white"
-		if (ratio > 0.6) return "bg-emerald-500/70 text-white"
-		if (ratio > 0.4) return "bg-emerald-500/50"
-		if (ratio > 0.2) return "bg-emerald-500/35"
-		return "bg-emerald-500/20"
-	}
-	if (ratio > 0.8) return "bg-red-500/90 text-white"
-	if (ratio > 0.6) return "bg-red-500/70 text-white"
-	if (ratio > 0.4) return "bg-red-500/50"
-	if (ratio > 0.2) return "bg-red-500/35"
-	return "bg-red-500/20"
-}
 
 export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 	const pnlByDate = useMemo(() => {
@@ -55,7 +20,7 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 			const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 			map.set(key, {
 				pnl: (map.get(key)?.pnl ?? 0) + entry.pnl,
-				label: date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+				label: formatDateShort(entry.t),
 			})
 		}
 		return map
@@ -180,7 +145,7 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 										{formatNumber(pnl, { currency: true, compact: true })}
 									</span>
 									<div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground opacity-0 transition-opacity sm:group-hover:opacity-100">
-										<span className={pnl >= 0 ? "text-emerald-500" : "text-red-500"}>
+										<span className={pnlColorClass(pnl)}>
 											{formatNumber(pnl, { currency: true, compact: true })}
 										</span>
 										<span className="ml-1 text-muted-foreground">{entry?.label}</span>
@@ -216,7 +181,7 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 			{isTouchDevice && selectedEntry && (
 				<div className="mt-4 flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm">
 					<span className="text-muted-foreground">{selectedEntry.label}</span>
-					<span className={selectedEntry.pnl >= 0 ? "font-medium text-emerald-500" : "font-medium text-red-500"}>
+					<span className={cn("font-medium", pnlColorClass(selectedEntry.pnl))}>
 						{formatNumber(selectedEntry.pnl, { currency: true, compact: true })}
 					</span>
 				</div>

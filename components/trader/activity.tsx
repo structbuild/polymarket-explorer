@@ -4,93 +4,25 @@
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
 import { useTransition } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
 
+import { refreshTraderTabAction } from "@/app/actions"
 import type { PaginatedResource } from "@/lib/struct/types"
 import { traderSearchParamParsers } from "@/lib/trader-search-params"
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
-import { ExternalLinkIcon } from "lucide-react"
+import { ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
 
 import { Button } from "../ui/button"
 import { DataTable } from "../ui/data-table"
 import { TooltipWrapper } from "../ui/tooltip"
 import { TraderTabs } from "./trader-tabs"
-import { cn, formatNumber } from "@/lib/utils"
+import { formatNumber } from "@/lib/format"
+import { cn } from "@/lib/utils"
+import { formatTimeAgo, formatPriceCents } from "@/lib/format"
+import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils"
 
 type Trade = components["schemas"]["PredictionTradeResponse"]
-
-function formatTimeAgo(timestampSeconds: number) {
-	const now = Date.now()
-	const diffMs = now - timestampSeconds * 1000
-	const diffSeconds = Math.floor(diffMs / 1000)
-
-	if (diffSeconds < 60) return `${diffSeconds}s`
-	const diffMinutes = Math.floor(diffSeconds / 60)
-	if (diffMinutes < 60) return `${diffMinutes}m`
-	const diffHours = Math.floor(diffMinutes / 60)
-	if (diffHours < 24) return `${diffHours}h`
-	const diffDays = Math.floor(diffHours / 24)
-	if (diffDays < 30) return `${diffDays}d`
-	const diffMonths = Math.floor(diffDays / 30)
-	if (diffMonths < 12) return `${diffMonths}mo`
-	return `${Math.floor(diffDays / 365)}y`
-}
-
-function formatPriceCents(price: number) {
-	return `${(price * 100).toFixed(1)}¢`
-}
-
-function normalizeTradeType(value: string | null | undefined) {
-	return value?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") ?? ""
-}
-
-function isOrderFilledTrade(trade: Trade) {
-	const tradeType = normalizeTradeType(trade.trade_type)
-	return tradeType === "orderfilled" || tradeType === "ordersmatched" || tradeType === "0"
-}
-
-function normalizeTradeSide(value: string | null | undefined) {
-	return value?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") ?? ""
-}
-
-function isBuyTrade(trade: Trade) {
-	const side = normalizeTradeSide(trade.side)
-	return side === "buy" || side === "0"
-}
-
-function getActivityLabel(trade: Trade) {
-	const tradeType = normalizeTradeType(trade.trade_type)
-
-	if (tradeType === "redemption" || tradeType === "1") {
-		return "Redeemed"
-	}
-
-	if (tradeType === "merge" || tradeType === "2") {
-		return "Merged"
-	}
-
-	if (!trade.trade_type) {
-		return "Activity"
-	}
-
-	if (/^\d+$/.test(trade.trade_type)) {
-		return `Type ${trade.trade_type}`
-	}
-
-	return trade.trade_type.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2")
-}
-
-function getCashflowClassName(amount: number) {
-	if (amount > 0) {
-		return "text-emerald-500"
-	}
-
-	if (amount < 0) {
-		return "text-red-500"
-	}
-
-	return ""
-}
 
 const defaultColumnVisibility: VisibilityState = {
 	fee: false,
@@ -177,7 +109,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 			return isOrderFilled ? (
 				<p>{formatNumber(trade.usd_amount, { currency: true, compact: true })}</p>
 			) : (
-				<p className={cn(getCashflowClassName(trade.usd_amount))}>
+				<p className={cn(trade.usd_amount > 0 ? "text-emerald-500" : trade.usd_amount < 0 ? "text-red-500" : "")}>
 					{trade.usd_amount > 0 ? "+" : ""}
 					{formatNumber(trade.usd_amount, { currency: true, compact: true })}
 				</p>
@@ -221,6 +153,8 @@ type Props = {
 }
 
 export default function TraderActivity({ page, pageNumber }: Props) {
+	const pathname = usePathname()
+	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
 	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
@@ -232,6 +166,22 @@ export default function TraderActivity({ page, pageNumber }: Props) {
 	return (
 		<DataTable
 			toolbarLeft={<TraderTabs />}
+			toolbarRight={
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							startTransition(async () => {
+								await refreshTraderTabAction(pathname, "activity")
+								router.refresh()
+							})
+						}}
+					disabled={isPending}
+				>
+					<RefreshCwIcon data-icon="inline-start" />
+					Refresh
+				</Button>
+			}
 			columns={columns}
 			data={page.data}
 			storageKey="activity-table"

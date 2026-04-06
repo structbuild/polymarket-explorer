@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { formatDateShort } from "@/lib/format";
 import { normalizeWalletAddress } from "@/lib/utils";
 
 export type PnlDataPoint = {
@@ -84,10 +85,10 @@ export function computeStreaks(data: DailyPnlEntry[]): PnlStreaks {
 
 	for (const entry of data) {
 		if (entry.pnl > bestDay.pnl) {
-			bestDay = { pnl: entry.pnl, date: formatDayDate(entry.t), t: entry.t };
+			bestDay = { pnl: entry.pnl, date: formatDateShort(entry.t), t: entry.t };
 		}
 		if (entry.pnl < worstDay.pnl) {
-			worstDay = { pnl: entry.pnl, date: formatDayDate(entry.t), t: entry.t };
+			worstDay = { pnl: entry.pnl, date: formatDateShort(entry.t), t: entry.t };
 		}
 
 		if (entry.pnl === 0) continue;
@@ -135,10 +136,6 @@ export function getPnlChartAnnotations(candles: PnlDataPoint[], streaks: PnlStre
 
 	annotations.sort((a, b) => a.t - b.t);
 	return annotations;
-}
-
-function formatDayDate(t: number): string {
-	return new Date(t * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function toDailyPnl(data: PnlDataPoint[]): DailyPnlEntry[] {

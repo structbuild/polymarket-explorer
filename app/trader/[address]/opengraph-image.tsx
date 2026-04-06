@@ -2,7 +2,8 @@ import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
 import { loadTraderOpenGraphData, traderOgImageSize } from "@/lib/trader-open-graph";
 import type { PnlDataPoint } from "@/lib/polymarket/pnl";
-import { formatDuration, formatNumber, normalizeWalletAddress, truncateAddress } from "@/lib/utils";
+import { formatDateShort, formatDuration, formatNumber } from "@/lib/format";
+import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 export const runtime = "nodejs";
 export const revalidate = 7200;
@@ -266,15 +267,6 @@ function getSignedTone(value: number) {
 	return value >= 0 ? palette.positive : palette.negative;
 }
 
-function formatHeaderTimestamp(ts?: number | null): string {
-	if (!ts) return "Unknown";
-	return new Date(ts * 1000).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-}
-
 function renderStatItem(label: string, value: string) {
 	return (
 		<div
@@ -347,8 +339,8 @@ export default async function OpenGraphImage({ params }: Props) {
 	const chart = buildChartGeometry(pnlCandles);
 	const headlinePnl = chart?.lastPoint.value ?? 0;
 
-	const activeSince = formatHeaderTimestamp(pnlSummary?.first_trade_at);
-	const lastActive = formatHeaderTimestamp(pnlSummary?.last_trade_at);
+	const activeSince = formatDateShort(pnlSummary?.first_trade_at) || "Unknown";
+	const lastActive = formatDateShort(pnlSummary?.last_trade_at) || "Unknown";
 	const totalVolume = formatNumber(pnlSummary?.total_volume_usd ?? 0, { compact: true, currency: true });
 	const totalFees = formatNumber(pnlSummary?.total_fees ?? 0, { compact: true, currency: true });
 	const totalBuys = formatNumber(pnlSummary?.total_buys ?? 0, { decimals: 0 });

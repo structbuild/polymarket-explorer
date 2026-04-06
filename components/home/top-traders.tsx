@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getLeaderboard } from "@/lib/polymarket/leaderboard";
-import { formatNumber, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
+import { formatNumber } from "@/lib/format";
+import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import type { Route } from "next";
 import Link from "next/link";
 

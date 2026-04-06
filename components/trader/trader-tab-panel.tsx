@@ -1,4 +1,8 @@
-import type { TraderTab } from "@/lib/trader-search-params-shared"
+import type {
+	TraderPositionSortBy,
+	TraderSortDirection,
+	TraderTab,
+} from "@/lib/trader-search-params-shared"
 import {
 	defaultTraderTablePageSize,
 	getTraderPositionsPage,
@@ -13,6 +17,8 @@ type TraderTabPanelData =
 			kind: "positions"
 			status: "open" | "closed"
 			pageNumber: number
+			sortBy: TraderPositionSortBy
+			sortDirection: TraderSortDirection
 			page: Awaited<ReturnType<typeof getTraderPositionsPage>>
 	  }
 	| {
@@ -27,6 +33,10 @@ type LoadTraderTabPanelDataProps = {
 	openPage: number
 	closedPage: number
 	activityPage: number
+	openSortBy: TraderPositionSortBy
+	openSortDirection: TraderSortDirection
+	closedSortBy: TraderPositionSortBy
+	closedSortDirection: TraderSortDirection
 }
 
 export function loadTraderTabPanelData({
@@ -35,6 +45,10 @@ export function loadTraderTabPanelData({
 	openPage,
 	closedPage,
 	activityPage,
+	openSortBy,
+	openSortDirection,
+	closedSortBy,
+	closedSortDirection,
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
 	const pageSize = defaultTraderTablePageSize
 
@@ -43,10 +57,14 @@ export function loadTraderTabPanelData({
 			return getTraderPositionsPage(address, "closed", {
 				limit: pageSize,
 				offset: (closedPage - 1) * pageSize,
+				sort_by: closedSortBy,
+				sort_direction: closedSortDirection,
 			}).then((page) => ({
 				kind: "positions" as const,
 				status: "closed" as const,
 				pageNumber: closedPage,
+				sortBy: closedSortBy,
+				sortDirection: closedSortDirection,
 				page,
 			}))
 		case "activity":
@@ -64,10 +82,14 @@ export function loadTraderTabPanelData({
 			return getTraderPositionsPage(address, "open", {
 				limit: pageSize,
 				offset: (openPage - 1) * pageSize,
+				sort_by: openSortBy,
+				sort_direction: openSortDirection,
 			}).then((page) => ({
 				kind: "positions" as const,
 				status: "open" as const,
 				pageNumber: openPage,
+				sortBy: openSortBy,
+				sortDirection: openSortDirection,
 				page,
 			}))
 	}

@@ -3,6 +3,10 @@
 import type { components } from "@structbuild/sdk"
 import dynamic from "next/dynamic"
 
+import type {
+	TraderPositionSortBy,
+	TraderSortDirection,
+} from "@/lib/trader-search-params-shared"
 import type { PaginatedResource } from "@/lib/struct/types"
 import {
 	loadTraderActivity,
@@ -20,6 +24,8 @@ type TraderTabPanelClientProps =
 			kind: "positions"
 			status: "open" | "closed"
 			pageNumber: number
+			sortBy: TraderPositionSortBy
+			sortDirection: TraderSortDirection
 			page: PaginatedResource<TraderOutcomePnlEntry, number>
 	  }
 	| {
@@ -38,6 +44,8 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 			page={props.page}
 			pageNumber={props.pageNumber}
 			status={props.status}
+			sortBy={props.sortBy}
+			sortDirection={props.sortDirection}
 		/>
 	)
 }

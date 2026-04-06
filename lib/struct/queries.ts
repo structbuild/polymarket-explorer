@@ -21,6 +21,8 @@ const defaultPositionsLimit = defaultTraderTablePageSize;
 const defaultTradesLimit = defaultTraderTablePageSize;
 const maxTraderSearchQueryLength = 100;
 const traderQueryRevalidateSeconds = 300;
+export const structTraderPositionsCacheTag = "struct-trader-positions-page";
+export const structTraderTradesCacheTag = "struct-trader-trades-page";
 
 export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
@@ -161,7 +163,7 @@ export const getMarketsByConditionIds = unstable_cache(
 	{ revalidate: traderQueryRevalidateSeconds },
 );
 
-function emptyTraderPositionsPage(limit: number): PaginatedResource<TraderOutcomePnlEntry, number> {
+function emptyPage<T>(limit: number): PaginatedResource<T, number> {
 	return {
 		data: [],
 		hasMore: false,
@@ -180,7 +182,7 @@ const getTraderPositionsPageCached = unstable_cache(
 		const limit = options?.limit ?? defaultPositionsLimit;
 
 		if (!client) {
-			return emptyTraderPositionsPage(limit);
+			return emptyPage<TraderOutcomePnlEntry>(limit);
 		}
 
 		const offset = options?.offset ?? 0;
@@ -213,14 +215,14 @@ const getTraderPositionsPageCached = unstable_cache(
 			};
 		} catch (error) {
 			if (readStatus(error) === 404) {
-				return emptyTraderPositionsPage(limit);
+				return emptyPage<TraderOutcomePnlEntry>(limit);
 			}
 
 			logStructError(`getTraderPositionsPage:${address}:${status}`, error);
-			return emptyTraderPositionsPage(limit);
+			return emptyPage<TraderOutcomePnlEntry>(limit);
 		}
 	},
-	["struct-trader-positions-page"],
+	[structTraderPositionsCacheTag],
 	{ revalidate: traderQueryRevalidateSeconds },
 );
 
@@ -233,20 +235,12 @@ export async function getTraderPositionsPage(
 	const limit = options?.limit ?? defaultPositionsLimit;
 
 	if (!normalizedAddress) {
-		return emptyTraderPositionsPage(limit);
+		return emptyPage<TraderOutcomePnlEntry>(limit);
 	}
 
 	return getTraderPositionsPageCached(normalizedAddress, status, options);
 }
 
-function emptyTraderTradesPage(limit: number): PaginatedResource<Trade, number> {
-	return {
-		data: [],
-		hasMore: false,
-		nextCursor: null,
-		pageSize: limit,
-	};
-}
 
 const getTraderTradesPageCached = unstable_cache(
 	async (address: string, options?: TraderTradesPageOptions): Promise<PaginatedResource<Trade, number>> => {
@@ -254,7 +248,7 @@ const getTraderTradesPageCached = unstable_cache(
 		const limit = options?.limit ?? defaultTradesLimit;
 
 		if (!client) {
-			return emptyTraderTradesPage(limit);
+			return emptyPage<Trade>(limit);
 		}
 
 		const offset = options?.offset ?? 0;
@@ -284,14 +278,14 @@ const getTraderTradesPageCached = unstable_cache(
 			};
 		} catch (error) {
 			if (readStatus(error) === 404) {
-				return emptyTraderTradesPage(limit);
+				return emptyPage<Trade>(limit);
 			}
 
 			logStructError(`getTraderTradesPage:${address}`, error);
-			return emptyTraderTradesPage(limit);
+			return emptyPage<Trade>(limit);
 		}
 	},
-	["struct-trader-trades-page"],
+	[structTraderTradesCacheTag],
 	{ revalidate: traderQueryRevalidateSeconds },
 );
 
@@ -303,7 +297,7 @@ export async function getTraderTradesPage(
 	const limit = options?.limit ?? defaultTradesLimit;
 
 	if (!normalizedAddress) {
-		return emptyTraderTradesPage(limit);
+		return emptyPage<Trade>(limit);
 	}
 
 	return getTraderTradesPageCached(normalizedAddress, options);

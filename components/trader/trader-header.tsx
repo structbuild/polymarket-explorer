@@ -2,7 +2,8 @@ import { CopyAddress } from "@/components/trader/copy-address";
 import { CopyLink } from "@/components/trader/copy-link";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
 import { Button } from "@/components/ui/button";
-import { formatNumber } from "@/lib/utils";
+import { formatDateShort } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { ExternalLinkIcon } from "lucide-react";
 
 type StatItemProps = {
@@ -33,15 +34,6 @@ type TraderHeaderProps = {
 	totalFees?: number | null;
 };
 
-function formatTimestamp(ts?: number | null): string {
-	if (!ts) return "Unknown";
-	return new Date(ts * 1000).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-}
-
 export function TraderHeader({
 	address,
 	displayName,
@@ -55,8 +47,8 @@ export function TraderHeader({
 	totalVolumeUsd,
 	totalFees,
 }: TraderHeaderProps) {
-	const activeSince = formatTimestamp(firstTradeAt);
-	const lastActive = formatTimestamp(lastTradeAt);
+	const activeSince = formatDateShort(firstTradeAt) || "Unknown";
+	const lastActive = formatDateShort(lastTradeAt) || "Unknown";
 
 	return (
 		<div className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between">

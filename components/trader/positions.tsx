@@ -3,9 +3,16 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
-import { useMemo, useState, useTransition } from "react"
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
+import { useCallback, useMemo, useState, useTransition } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
 
+import { refreshTraderTabAction } from "@/app/actions"
+import type {
+	TraderPositionSortBy,
+	TraderSortDirection,
+} from "@/lib/trader-search-params-shared"
 import type { PaginatedResource } from "@/lib/struct/types"
 import { traderSearchParamParsers } from "@/lib/trader-search-params"
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
@@ -14,19 +21,13 @@ import { Badge } from "../ui/badge"
 import { Checkbox } from "../ui/checkbox"
 import { DataTable } from "../ui/data-table"
 import { TooltipWrapper } from "../ui/tooltip"
-import { ExternalLinkIcon, InfoIcon } from "lucide-react"
 import { Button } from "../ui/button"
 import { TraderTabs } from "./trader-tabs"
-import { cn, formatNumber } from "@/lib/utils"
+import { formatNumber } from "@/lib/format"
+import { cn } from "@/lib/utils"
+import { formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
 
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
-
-function formatPriceCents(price: number | null | undefined) {
-	if (price == null || Number.isNaN(price)) {
-		return "—"
-	}
-	return `${(price * 100).toFixed(1)}¢`
-}
 
 function formatSharesLine(row: TraderOutcomePnlEntry) {
 	const bought = row.total_shares_bought ?? 0
@@ -53,11 +54,67 @@ const defaultColumnVisibility: VisibilityState = {
 	redemption_usd: false,
 }
 
-function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntry, unknown>[] {
+type SortableHeaderProps = {
+	children: React.ReactNode
+	sortBy: TraderPositionSortBy
+	currentSortBy: TraderPositionSortBy
+	currentSortDirection: TraderSortDirection
+	onSortChange: (sortBy: TraderPositionSortBy) => void
+}
+
+function SortableHeader({
+	children,
+	sortBy,
+	currentSortBy,
+	currentSortDirection,
+	onSortChange,
+}: SortableHeaderProps) {
+	const isActive = currentSortBy === sortBy
+	const SortIcon = isActive
+		? currentSortDirection === "asc"
+			? ArrowUpIcon
+			: ArrowDownIcon
+		: ArrowUpDownIcon
+
+	return (
+		<button
+			type="button"
+			className={cn(
+				"inline-flex items-center gap-1.5 text-left transition-colors hover:text-foreground",
+				isActive && "text-foreground",
+			)}
+			onClick={() => onSortChange(sortBy)}
+		>
+			<span>{children}</span>
+			<SortIcon className="size-4" />
+		</button>
+	)
+}
+
+function buildColumns(
+	status: "open" | "closed",
+	currentSortBy: TraderPositionSortBy,
+	currentSortDirection: TraderSortDirection,
+	onSortChange: (sortBy: TraderPositionSortBy) => void,
+): ColumnDef<TraderOutcomePnlEntry, unknown>[] {
+	// The backend has no current_price sort key, so this composite column uses the closest
+	// server-supported price field for each tab.
+	const entryCurrentSortBy = status === "closed" ? "avg_exit_price" : "avg_entry_price"
+
 	return [
 		{
 			id: "market",
-			header: "Market",
+			meta: { title: "Market" },
+			header: () => (
+				<SortableHeader
+					sortBy="title"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Market
+				</SortableHeader>
+			),
 			size: 520,
 			cell: ({ row }) => {
 				const entry = row.original
@@ -110,7 +167,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "entry_current",
-			header: "Entry / Current",
+			meta: { title: "Entry / Current" },
+			header: () => (
+				<SortableHeader
+					sortBy={entryCurrentSortBy}
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Entry / Current
+				</SortableHeader>
+			),
 			size: 140,
 			cell: ({ row }) => {
 				const entry = row.original
@@ -135,20 +202,26 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 			id: "realized_pnl",
 			meta: { title: "Realized PnL" },
 			header: () => (
-				<div className="flex items-center gap-1.5">
-					Realized PnL
-					<TooltipWrapper content="Realized PnL is calculated based on shares bought, sold, and redeemed. If you haven't sold or redeemed any shares, your realized PnL will be negative.">
-						<InfoIcon className="size-4 text-muted-foreground" />
-					</TooltipWrapper>
-				</div>
+				<SortableHeader
+					sortBy="realized_pnl_usd"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					<span className="flex items-center gap-1.5">
+						Realized PnL
+						<TooltipWrapper content="Realized PnL is calculated based on shares bought, sold, and redeemed. If you haven't sold or redeemed any shares, your realized PnL will be negative.">
+							<InfoIcon className="size-4 text-muted-foreground" />
+						</TooltipWrapper>
+					</span>
+				</SortableHeader>
 			),
 			size: 180,
 			cell: ({ row }) => {
 				const entry = row.original
 				const pnl = entry.realized_pnl_usd ?? 0
-				const pnlPositive = pnl >= 0
 				return (
-					<p className={cn(pnlPositive ? "text-emerald-500" : "text-red-500")}>
+					<p className={cn(pnlColorClass(pnl))}>
 						{formatNumber(pnl, { currency: true, compact: true })}
 						{entry.realized_pnl_pct != null ? (
 							<span className="text-muted-foreground">
@@ -164,7 +237,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 			? [
 					{
 						id: "current_value",
-						header: "Current Value",
+						meta: { title: "Current Value" },
+						header: () => (
+							<SortableHeader
+								sortBy="current_value"
+								currentSortBy={currentSortBy}
+								currentSortDirection={currentSortDirection}
+								onSortChange={onSortChange}
+							>
+								Current Value
+							</SortableHeader>
+						),
 						size: 160,
 						cell: ({ row }) => {
 							const entry = row.original
@@ -204,7 +287,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 			: []),
 		{
 			id: "total_shares_bought",
-			header: "Bought",
+			meta: { title: "Bought" },
+			header: () => (
+				<SortableHeader
+					sortBy="total_shares_bought"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Bought
+				</SortableHeader>
+			),
 			size: 120,
 			cell: ({ row }) => (
 				<p>{formatNumber(row.original.total_shares_bought ?? 0, { decimals: 2 })}</p>
@@ -212,7 +305,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "total_shares_sold",
-			header: "Sold",
+			meta: { title: "Sold" },
+			header: () => (
+				<SortableHeader
+					sortBy="total_shares_sold"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Sold
+				</SortableHeader>
+			),
 			size: 120,
 			cell: ({ row }) => (
 				<p>{formatNumber(row.original.total_shares_sold ?? 0, { decimals: 2 })}</p>
@@ -220,7 +323,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "total_buy_usd",
-			header: "Buy Vol",
+			meta: { title: "Buy Vol" },
+			header: () => (
+				<SortableHeader
+					sortBy="buy_usd"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Buy Vol
+				</SortableHeader>
+			),
 			size: 130,
 			cell: ({ row }) => (
 				<p>{formatNumber(row.original.total_buy_usd ?? 0, { currency: true, compact: true })}</p>
@@ -228,7 +341,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "total_sell_usd",
-			header: "Sell Vol",
+			meta: { title: "Sell Vol" },
+			header: () => (
+				<SortableHeader
+					sortBy="sell_usd"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Sell Vol
+				</SortableHeader>
+			),
 			size: 130,
 			cell: ({ row }) => (
 				<p>{formatNumber(row.original.total_sell_usd ?? 0, { currency: true, compact: true })}</p>
@@ -236,7 +359,17 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "total_fees",
-			header: "Fees",
+			meta: { title: "Fees" },
+			header: () => (
+				<SortableHeader
+					sortBy="total_fees"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Fees
+				</SortableHeader>
+			),
 			size: 110,
 			cell: ({ row }) => (
 				<p>{formatNumber(row.original.total_fees ?? 0, { currency: true })}</p>
@@ -244,11 +377,48 @@ function buildColumns(status: "open" | "closed"): ColumnDef<TraderOutcomePnlEntr
 		},
 		{
 			id: "redemption_usd",
-			header: "Redemption",
+			meta: { title: "Redemption" },
+			header: () => (
+				<SortableHeader
+					sortBy="redemption_usd"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Redemption
+				</SortableHeader>
+			),
 			size: 130,
 			cell: ({ row }) => {
 				const val = row.original.redemption_usd
 				return <p>{val != null && val > 0 ? formatNumber(val, { currency: true, compact: true }) : "—"}</p>
+			},
+		},
+		{
+			id: "last_trade_at",
+			meta: { title: "Last Active" },
+			header: () => (
+				<SortableHeader
+					sortBy="last_trade_at"
+					currentSortBy={currentSortBy}
+					currentSortDirection={currentSortDirection}
+					onSortChange={onSortChange}
+				>
+					Last Active
+				</SortableHeader>
+			),
+			size: 150,
+			cell: ({ row }) => {
+				const lastTradeAtMs = row.original.last_trade_at
+				const lastTradeAtSec = lastTradeAtMs ? lastTradeAtMs / 1000 : null
+				const time = formatTime(lastTradeAtSec)
+
+				return (
+					<div title={lastTradeAtMs ? new Date(lastTradeAtMs).toLocaleString("en-US") : undefined}>
+						<p>{formatDateShort(lastTradeAtSec)}</p>
+						{time ? <p className="text-sm text-muted-foreground">{time}</p> : null}
+					</div>
+				)
 			},
 		},
 		{
@@ -283,14 +453,19 @@ type Props = {
 	page: PaginatedResource<TraderOutcomePnlEntry, number>
 	pageNumber: number
 	status: "open" | "closed"
+	sortBy: TraderPositionSortBy
+	sortDirection: TraderSortDirection
 }
 
 export default function TraderPositions({
 	page,
 	pageNumber,
 	status,
+	sortBy,
+	sortDirection,
 }: Props) {
-	const columns = useMemo(() => buildColumns(status), [status])
+	const pathname = usePathname()
+	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
 	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
@@ -304,6 +479,31 @@ export default function TraderPositions({
 
 	const hasUnknownMarkets = page.data.some((entry) => !entry.title)
 
+	const handleSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
+		const nextSortDirection: TraderSortDirection =
+			nextSortBy === sortBy && sortDirection === "desc" ? "asc" : "desc"
+
+		if (status === "open") {
+			void setSearchParams({
+				openSortBy: nextSortBy,
+				openSortDirection: nextSortDirection,
+				openPage: 1,
+			})
+			return
+		}
+
+		void setSearchParams({
+			closedSortBy: nextSortBy,
+			closedSortDirection: nextSortDirection,
+			closedPage: 1,
+		})
+	}, [setSearchParams, sortBy, sortDirection, status])
+
+	const columns = useMemo(
+		() => buildColumns(status, sortBy, sortDirection, handleSortChange),
+		[handleSortChange, sortBy, sortDirection, status],
+	)
+
 	const data = useMemo(() => {
 		if (hideUnknown) {
 			return page.data.filter((entry) => entry.title)
@@ -311,15 +511,33 @@ export default function TraderPositions({
 		return page.data
 	}, [page.data, hideUnknown])
 
-	const toolbarRight = hasUnknownMarkets || hideUnknown ? (
-		<label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-			<Checkbox
-				checked={hideUnknown}
-				onCheckedChange={(val) => setHideUnknown(!!val)}
-			/>
-			Hide unknown markets
-		</label>
-	) : null
+	const toolbarRight = (
+		<div className="flex items-center gap-3">
+			{hasUnknownMarkets || hideUnknown ? (
+				<label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+					<Checkbox
+						checked={hideUnknown}
+						onCheckedChange={(val) => setHideUnknown(!!val)}
+					/>
+					Hide unknown markets
+				</label>
+			) : null}
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={() => {
+						startTransition(async () => {
+							await refreshTraderTabAction(pathname, "positions")
+							router.refresh()
+						})
+					}}
+					disabled={isPending}
+				>
+				<RefreshCwIcon data-icon="inline-start" />
+				Refresh
+			</Button>
+		</div>
+	)
 
 	return (
 		<DataTable

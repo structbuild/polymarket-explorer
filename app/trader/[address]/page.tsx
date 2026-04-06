@@ -376,7 +376,17 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const { tab, openPage, closedPage, activityPage, pnlTimeframe } = await loadTraderSearchParams(searchParams);
+	const {
+		tab,
+		openPage,
+		closedPage,
+		activityPage,
+		pnlTimeframe,
+		openSortBy,
+		openSortDirection,
+		closedSortBy,
+		closedSortDirection,
+	} = await loadTraderSearchParams(searchParams);
 
 	const profilePromise = getTraderProfile(address);
 	const pnlSummaryPromise = getTraderPnlSummary(address);
@@ -388,6 +398,10 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		openPage,
 		closedPage,
 		activityPage,
+		openSortBy,
+		openSortDirection,
+		closedSortBy,
+		closedSortDirection,
 	});
 
 	return (
