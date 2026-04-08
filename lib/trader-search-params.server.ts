@@ -1,22 +1,25 @@
 import { createLoader, createParser, parseAsStringLiteral } from "nuqs/server";
 
-import { maxTraderPageNumber, pnlTimeframeValues, traderTabValues } from "./trader-search-params-shared";
+import {
+	defaultTraderPositionSortBy,
+	pnlTimeframeValues,
+	positivePageParserDef,
+	traderPositionSortByValues,
+	traderSortDirectionValues,
+	traderTabValues,
+} from "./trader-search-params-shared";
 
-const parseAsPositivePage = createParser<number>({
-	parse(value) {
-		const parsed = Number.parseInt(value, 10);
-		return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, maxTraderPageNumber) : null;
-	},
-	serialize(value) {
-		return String(value);
-	},
-}).withDefault(1);
+const parseAsPositivePage = createParser<number>(positivePageParserDef).withDefault(1);
 
 const traderSearchParamParsers = {
 	tab: parseAsStringLiteral(traderTabValues).withDefault("active"),
 	openPage: parseAsPositivePage,
 	closedPage: parseAsPositivePage,
 	activityPage: parseAsPositivePage,
+	openSortBy: parseAsStringLiteral(traderPositionSortByValues).withDefault(defaultTraderPositionSortBy.open),
+	openSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
+	closedSortBy: parseAsStringLiteral(traderPositionSortByValues).withDefault(defaultTraderPositionSortBy.closed),
+	closedSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
 	pnlTimeframe: parseAsStringLiteral(pnlTimeframeValues).withDefault("all"),
 };
 

@@ -1,6 +1,6 @@
 "use client"
 
-import type { HTMLAttributes, ReactNode } from "react"
+import type { ReactNode } from "react"
 import { Area, AreaChart, CartesianGrid, ReferenceDot, XAxis, YAxis } from "recharts"
 
 import {
@@ -10,7 +10,9 @@ import {
 	type ChartConfig,
 } from "@/components/ui/chart"
 import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/polymarket/pnl"
-import { cn, formatNumber } from "@/lib/utils"
+import { formatDateCompact, formatDateFull, pnlColorClass } from "@/lib/format"
+import { formatNumber } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 const chartConfig = {
 	pnl: {
@@ -18,13 +20,6 @@ const chartConfig = {
 		color: "var(--chart-1)",
 	},
 } satisfies ChartConfig
-
-function formatDate(ts: number) {
-	return new Date(ts * 1000).toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-	})
-}
 
 const annotationConfig = {
 	best: {
@@ -130,7 +125,6 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 	}
 
 	const lastPnl = data[data.length - 1].p
-	const isPositive = lastPnl >= 0
 	const hasAnnotations = annotations.length > 0
 	const visibleAnnotations = showAnnotations ? annotations : []
 
@@ -139,7 +133,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
 				<div>
 					<p className="mb-1 text-sm text-foreground">Cumulative PnL</p>
-					<p className={`text-xl font-medium sm:text-2xl ${isPositive ? "text-emerald-500" : "text-red-500"}`}>
+					<p className={cn("text-xl font-medium sm:text-2xl", pnlColorClass(lastPnl))}>
 						{formatNumber(lastPnl, { currency: true, compact: true })}
 					</p>
 				</div>
@@ -227,7 +221,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 							tickLine={false}
 							axisLine={false}
 							tickMargin={8}
-							tickFormatter={formatDate}
+							tickFormatter={formatDateCompact}
 							minTickGap={24}
 							tick={{ fontSize: 12 }}
 						/>
@@ -247,11 +241,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 									labelFormatter={(_, payload) => {
 										const entry = payload[0]?.payload as PnlDataPoint | undefined
 										if (!entry) return ""
-										return new Date(entry.t * 1000).toLocaleDateString("en-US", {
-											month: "long",
-											day: "numeric",
-											year: "numeric",
-										})
+										return formatDateFull(entry.t)
 									}}
 									formatter={(value) => formatNumber(value as number, { currency: true })}
 								/>
