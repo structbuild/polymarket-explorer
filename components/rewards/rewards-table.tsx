@@ -2,15 +2,15 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef } from "@tanstack/react-table"
-import type { MarketMetadata } from "@structbuild/sdk"
+import type { MarketResponse } from "@structbuild/sdk"
 import { ExternalLinkIcon } from "lucide-react"
 
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { TooltipWrapper } from "@/components/ui/tooltip"
-import { formatNumber } from "@/lib/utils"
+import { formatNumber } from "@/lib/format"
 
-const columns: ColumnDef<MarketMetadata, unknown>[] = [
+const columns: ColumnDef<MarketResponse, unknown>[] = [
 	{
 		id: "market",
 		header: "Market",
@@ -29,7 +29,7 @@ const columns: ColumnDef<MarketMetadata, unknown>[] = [
 					<div className="min-w-0 flex-1">
 						<p
 							className="line-clamp-2 text-base font-medium wrap-break-word"
-							title={market.question}
+							title={market.question ?? ""}
 						>
 							{market.question}
 						</p>
@@ -51,7 +51,6 @@ const columns: ColumnDef<MarketMetadata, unknown>[] = [
 		enableHiding: false,
 		size: 130,
 		cell: ({ row }) => {
-			// @ts-expect-error - metrics is not typed
 			const val = row.original.metrics?.["24h"]?.volume ?? 0
 			if (val == null) return <p className="text-muted-foreground">—</p>
 			return <p>{formatNumber(val, { currency: true, compact: true })}</p>
@@ -74,7 +73,7 @@ const columns: ColumnDef<MarketMetadata, unknown>[] = [
 		enableHiding: false,
 		size: 120,
 		cell: ({ row }) => {
-			const rate = row.original.clob_rewards.map((reward) => reward.rewards_daily_rate).reduce((a, b) => (a ?? 0) + (b ?? 0), 0)
+			const rate = row.original.clob_rewards?.map((reward) => reward.rewards_daily_rate).reduce((a, b) => (a ?? 0) + (b ?? 0), 0)
 			if (rate == null) return <p className="text-muted-foreground">—</p>
 			return <p className="font-medium text-emerald-500">{formatNumber(rate, { currency: true })}</p>
 		},
@@ -107,7 +106,7 @@ const columns: ColumnDef<MarketMetadata, unknown>[] = [
 ]
 
 type Props = {
-	markets: MarketMetadata[]
+	markets: MarketResponse[]
 }
 
 export function RewardsTable({ markets }: Props) {

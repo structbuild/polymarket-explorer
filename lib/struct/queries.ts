@@ -1,7 +1,7 @@
 import "server-only";
 
 import type {
-	MarketMetadata,
+	MarketResponse,
 	StructClient,
 	Trade,
 	Trader,
@@ -144,7 +144,7 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 }
 
 export const getMarketsByConditionIds = unstable_cache(
-	async (conditionIds: string[]): Promise<MarketMetadata[] | null> => {
+	async (conditionIds: string[]): Promise<MarketResponse[] | null> => {
 		const client = getStructClient();
 
 		if (!client || conditionIds.length === 0) {
@@ -153,10 +153,10 @@ export const getMarketsByConditionIds = unstable_cache(
 
 		try {
 			const response = await client.markets.getMarkets({ condition_ids: conditionIds.join(",") });
-			return response.data;
+			return response.data ?? [];
 		} catch (error) {
 			logStructError(`getMarketsByConditionIds:${conditionIds.join(",")}`, error);
-			return [];
+			return null;
 		}
 	},
 	["struct-markets-by-condition-ids"],
@@ -304,7 +304,7 @@ export async function getTraderTradesPage(
 }
 
 export const getRewardsMarkets = unstable_cache(
-	async (): Promise<MarketMetadata[]> => {
+	async (): Promise<MarketResponse[]> => {
 		const client = getStructClient();
 
 		if (!client) {

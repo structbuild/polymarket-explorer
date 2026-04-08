@@ -3,11 +3,11 @@ import { InfoRow } from "@/components/trader/info-row";
 import { Separator } from "@/components/ui/separator";
 import type { PnlStreaks } from "@/lib/polymarket/pnl";
 import { formatDuration, formatNumber } from "@/lib/format";
-import type { MarketMetadata, TraderPnlSummary } from "@structbuild/sdk";
+import type { MarketResponse, TraderPnlSummary } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {
 	pnlSummary: TraderPnlSummary | null;
-	bestTradeMarket?: MarketMetadata | null;
+	bestTradeMarket?: MarketResponse | null;
 	streaks: PnlStreaks;
 };
 
