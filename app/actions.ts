@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import {
 	searchTraders,
+	structRewardsMarketsCacheTag,
 	structTraderPositionsCacheTag,
 	structTraderTradesCacheTag,
 } from "@/lib/struct/queries";
@@ -25,4 +26,9 @@ export async function refreshTraderTabAction(pathname: string, kind: "positions"
 
 	updateTag(kind === "positions" ? structTraderPositionsCacheTag : structTraderTradesCacheTag);
 	revalidatePath(pathname);
+}
+
+export async function refreshRewardsPageAction() {
+	updateTag(structRewardsMarketsCacheTag);
+	revalidatePath("/rewards");
 }

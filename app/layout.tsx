@@ -32,6 +32,17 @@ export const metadata: Metadata = {
 		title: "Polymarket Explorer — Trader Analytics",
 		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity. Powered by Struct.",
 	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+			"max-image-preview": "large",
+			"max-snippet": -1,
+			"max-video-preview": -1,
+		},
+	},
 };
 
 export default function RootLayout({

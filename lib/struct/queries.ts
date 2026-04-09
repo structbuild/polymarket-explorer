@@ -23,6 +23,7 @@ const maxTraderSearchQueryLength = 100;
 const traderQueryRevalidateSeconds = 300;
 export const structTraderPositionsCacheTag = "struct-trader-positions-page";
 export const structTraderTradesCacheTag = "struct-trader-trades-page";
+export const structRewardsMarketsCacheTag = "struct-rewards-markets";
 
 export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
@@ -317,17 +318,12 @@ export const getRewardsMarkets = unstable_cache(
 				status: "open",
 				limit: 100,
 			});
-			return response.data.filter(
-				(market) =>
-					(market.clob_rewards
-						?.map((reward) => reward.rewards_daily_rate)
-						?.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0) > 0.5,
-			);
+			return response.data;
 		} catch (error) {
 			logStructError("getRewardsMarkets", error);
 			return [];
 		}
 	},
-	["struct-rewards-markets"],
-	{ revalidate: traderQueryRevalidateSeconds },
+	[structRewardsMarketsCacheTag],
+	{ revalidate: traderQueryRevalidateSeconds, tags: [structRewardsMarketsCacheTag] },
 );

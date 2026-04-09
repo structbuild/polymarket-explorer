@@ -26,12 +26,20 @@ export function getStructConfig() {
 }
 
 export function getSiteUrl() {
-  const configured = readString(process.env.NEXT_PUBLIC_SITE_URL);
+  const configured =
+    readString(process.env.NEXT_PUBLIC_SITE_URL) ??
+    readString(process.env.SITE_URL) ??
+    readString(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
+    readString(process.env.VERCEL_URL);
+
+  const normalized =
+    configured && !/^https?:\/\//i.test(configured)
+      ? `https://${configured}`
+      : configured;
 
   try {
-    return new URL(configured ?? defaultSiteUrl);
+    return new URL(normalized ?? defaultSiteUrl);
   } catch {
     return new URL(defaultSiteUrl);
   }
 }
-

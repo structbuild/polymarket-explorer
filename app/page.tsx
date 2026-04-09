@@ -9,18 +9,33 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
-export const metadata: Metadata = {
-	title: "Polymarket Explorer — Analyze Any Trader",
-	description:
-		"Search and analyze any Polymarket trader by username or wallet address. View PnL charts, trading history, and performance metrics. Powered by Struct.",
-	alternates: {
-		canonical: "/",
-	},
-};
-
 type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+	const qValue = (await searchParams).q;
+	const q = Array.isArray(qValue) ? qValue[0] : qValue;
+	const hasQuery = (q?.trim().length ?? 0) >= 2;
+
+	return {
+		title: "Polymarket Explorer — Analyze Any Trader",
+		description:
+			"Search and analyze any Polymarket trader by username or wallet address. View PnL charts, trading history, and performance metrics. Powered by Struct.",
+		alternates: {
+			canonical: "/",
+		},
+		robots: hasQuery
+			? {
+					index: false,
+					follow: true,
+				}
+			: {
+					index: true,
+					follow: true,
+				},
+	};
+}
 
 export default async function HomePage({ searchParams }: Props) {
 	const qValue = (await searchParams).q;
