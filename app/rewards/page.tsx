@@ -5,8 +5,8 @@ import { RewardsTable } from "@/components/rewards/rewards-table";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
 export const metadata: Metadata = {
-	title: "Rewards Markets — Polymarket Explorer",
-	description: "Browse all Polymarket markets with active CLOB rewards. Filter and explore reward rates, liquidity, and more.",
+	title: "Markets with Liquidity Rewards",
+	description: "Browse all Polymarket markets with active liquidity rewards. Filter and explore reward rates, liquidity, and more.",
 	alternates: {
 		canonical: "/rewards",
 	},
