@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
+import { RewardsRefreshButton } from "@/components/rewards/rewards-refresh-button";
 import { RewardsTable } from "@/components/rewards/rewards-table";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
@@ -24,9 +25,12 @@ function RewardsFallback() {
 export default function RewardsPage() {
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-			<div className="mb-6">
-				<h1 className="text-xl font-medium tracking-tight">Markets with Rewards</h1>
-				<p className="mt-1 text-sm text-muted-foreground">View markets with active reward programs by providing liquidity.</p>
+			<div className="mb-6 flex flex-col md:flex-row flex-wrap items-start md:items-end justify-between gap-x-4 gap-y-2">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-xl font-medium tracking-tight">Markets with Rewards</h1>
+					<p className="mt-1 text-sm text-muted-foreground">View markets with active reward programs by providing liquidity.</p>
+				</div>
+				<RewardsRefreshButton />
 			</div>
 			<Suspense fallback={<RewardsFallback />}>
 				<RewardsContent />

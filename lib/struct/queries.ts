@@ -318,7 +318,12 @@ export const getRewardsMarkets = unstable_cache(
 				status: "open",
 				limit: 100,
 			});
-			return response.data;
+			return response.data.filter(
+				(market) =>
+					(market.clob_rewards
+						?.map((reward) => reward.total_daily_rate)
+						?.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0) > 0.5,
+			);
 		} catch (error) {
 			logStructError("getRewardsMarkets", error);
 			return [];

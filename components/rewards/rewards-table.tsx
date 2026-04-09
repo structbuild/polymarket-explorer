@@ -3,11 +3,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { MarketResponse } from "@structbuild/sdk";
-import { ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react";
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { ExternalLinkIcon, InfoIcon } from "lucide-react";
 
-import { refreshRewardsPageAction } from "@/app/actions";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
@@ -203,27 +200,8 @@ type Props = {
 };
 
 export function RewardsTable({ markets }: Props) {
-	const router = useRouter();
-	const [isPending, startTransition] = useTransition();
-
 	return (
 		<DataTable
-			toolbarRight={
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => {
-						startTransition(async () => {
-							await refreshRewardsPageAction();
-							router.refresh();
-						});
-					}}
-					disabled={isPending}
-				>
-					<RefreshCwIcon data-icon="inline-start" />
-					Refresh
-				</Button>
-			}
 			columns={columns}
 			data={markets}
 			storageKey="rewards-table"
