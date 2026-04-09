@@ -1,7 +1,7 @@
 import "server-only";
 
 import type {
-	MarketMetadata,
+	MarketResponse,
 	StructClient,
 	Trade,
 	Trader,
@@ -23,6 +23,7 @@ const maxTraderSearchQueryLength = 100;
 const traderQueryRevalidateSeconds = 300;
 export const structTraderPositionsCacheTag = "struct-trader-positions-page";
 export const structTraderTradesCacheTag = "struct-trader-trades-page";
+export const structRewardsMarketsCacheTag = "struct-rewards-markets";
 
 export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
@@ -144,7 +145,7 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 }
 
 export const getMarketsByConditionIds = unstable_cache(
-	async (conditionIds: string[]): Promise<MarketMetadata[] | null> => {
+	async (conditionIds: string[]): Promise<MarketResponse[] | null> => {
 		const client = getStructClient();
 
 		if (!client || conditionIds.length === 0) {
@@ -153,10 +154,10 @@ export const getMarketsByConditionIds = unstable_cache(
 
 		try {
 			const response = await client.markets.getMarkets({ condition_ids: conditionIds.join(",") });
-			return response.data;
+			return response.data ?? [];
 		} catch (error) {
 			logStructError(`getMarketsByConditionIds:${conditionIds.join(",")}`, error);
-			return [];
+			return null;
 		}
 	},
 	["struct-markets-by-condition-ids"],
@@ -302,3 +303,27 @@ export async function getTraderTradesPage(
 
 	return getTraderTradesPageCached(normalizedAddress, options);
 }
+
+export const getRewardsMarkets = unstable_cache(
+	async (): Promise<MarketResponse[]> => {
+		const client = getStructClient();
+
+		if (!client) {
+			return [];
+		}
+
+		try {
+			const response = await client.markets.getMarkets({
+				has_rewards: true,
+				status: "open",
+				limit: 100,
+			});
+			return response.data;
+		} catch (error) {
+			logStructError("getRewardsMarkets", error);
+			return [];
+		}
+	},
+	[structRewardsMarketsCacheTag],
+	{ revalidate: traderQueryRevalidateSeconds, tags: [structRewardsMarketsCacheTag] },
+);

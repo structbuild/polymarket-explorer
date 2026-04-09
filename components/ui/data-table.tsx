@@ -184,7 +184,14 @@ function DataTableView<TData>({
 							{table.getRowModel().rows.map((row) => (
 								<TableRow key={row.id} className="bg-card text-foreground/90 hover:bg-card">
 									{row.getVisibleCells().map((cell) => (
-										<TableCell key={cell.id} className="px-4 py-2">
+										<TableCell
+											key={cell.id}
+											className={cn(
+												"px-4 py-2",
+												(cell.column.columnDef.meta as { cellClassName?: string } | undefined)
+													?.cellClassName,
+											)}
+										>
 											{flexRender(cell.column.columnDef.cell, cell.getContext())}
 										</TableCell>
 									))}

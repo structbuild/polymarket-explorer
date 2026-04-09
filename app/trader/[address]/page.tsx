@@ -39,7 +39,7 @@ import {
 } from "@/lib/struct/queries";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import type {
-	MarketMetadata,
+	MarketResponse,
 	TraderPnlSummary,
 	UserProfile,
 } from "@structbuild/sdk";
@@ -123,7 +123,7 @@ function loadTraderInsights(address: string, timeframe: PnlTimeframe): Promise<T
 
 function loadBestTradeMarket(
 	pnlSummaryPromise: Promise<TraderPnlSummary | null>,
-): Promise<MarketMetadata | null> {
+): Promise<MarketResponse | null> {
 	return pnlSummaryPromise.then(async (pnlSummary) => {
 		const bestTradeConditionId = pnlSummary?.best_trade_condition_id;
 
@@ -247,7 +247,7 @@ async function TraderPerformanceSummarySection({
 }: {
 	pnlSummary: TraderPnlSummary | null;
 	insightsPromise: Promise<TraderInsightsData>;
-	bestTradeMarketPromise: Promise<MarketMetadata | null>;
+	bestTradeMarketPromise: Promise<MarketResponse | null>;
 }) {
 	const [{ streaks }, bestTradeMarket] = await Promise.all([
 		insightsPromise,
@@ -292,7 +292,7 @@ async function TraderOverviewSection({
 	profilePromise: Promise<UserProfile | null>;
 	pnlSummaryPromise: Promise<TraderPnlSummary | null>;
 	insightsPromise: Promise<TraderInsightsData>;
-	bestTradeMarketPromise: Promise<MarketMetadata | null>;
+	bestTradeMarketPromise: Promise<MarketResponse | null>;
 }) {
 	const [profile, pnlSummary] = await Promise.all([
 		profilePromise,
