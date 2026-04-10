@@ -1,6 +1,6 @@
 "use client"
 
-import type { components } from "@structbuild/sdk"
+import type { Trade, TraderOutcomePnlEntry } from "@structbuild/sdk"
 import dynamic from "next/dynamic"
 
 import type {
@@ -15,9 +15,6 @@ import {
 
 const TraderActivity = dynamic(loadTraderActivity)
 const TraderPositions = dynamic(loadTraderPositions)
-
-type Trade = components["schemas"]["PredictionTradeResponse"]
-type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
 
 type TraderTabPanelClientProps =
 	| {

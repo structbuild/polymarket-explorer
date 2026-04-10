@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
-import type { components } from "@structbuild/sdk";
+import type { Trade } from "@structbuild/sdk";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -22,8 +22,6 @@ import { cn } from "@/lib/utils";
 import { formatTimeAgo, formatPriceCents } from "@/lib/format";
 import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
 
-type Trade = components["schemas"]["PredictionTradeResponse"];
-
 const defaultColumnVisibility: VisibilityState = {
 	fee: false,
 };
@@ -41,15 +39,17 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 480,
 		cell: ({ row }) => {
 			const trade = row.original;
+			const imageUrl = "image_url" in trade ? trade.image_url : null;
+			const question = "question" in trade ? trade.question : null;
 			return (
 				<div className="flex items-center gap-3">
-					{trade.image_url ? (
-						<img className="size-10 rounded-md object-cover" alt="" src={trade.image_url} />
+					{imageUrl ? (
+						<img className="size-10 rounded-md object-cover" alt="" src={imageUrl} />
 					) : (
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}
-					<p className="min-w-0 flex-1 truncate text-base font-medium" title={trade.question ?? "Unknown Market"}>
-						{trade.question ?? "Unknown Market"}
+					<p className="min-w-0 flex-1 truncate text-base font-medium" title={question ?? "Unknown Market"}>
+						{question ?? "Unknown Market"}
 					</p>
 				</div>
 			);
@@ -61,13 +61,16 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 180,
 		cell: ({ row }) => {
 			const trade = row.original;
-			const isOrderFilled = isOrderFilledTrade(trade);
-			const label = isOrderFilled ? `${trade.outcome ?? "—"} / ${formatPriceCents(trade.price)}` : getActivityLabel(trade);
-			return isOrderFilled ? (
-				<p className="truncate" title={label}>
-					{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
-				</p>
-			) : (
+			if (isOrderFilledTrade(trade)) {
+				const label = `${trade.outcome ?? "—"} / ${formatPriceCents(trade.price)}`;
+				return (
+					<p className="truncate" title={label}>
+						{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
+					</p>
+				);
+			}
+			const label = getActivityLabel(trade);
+			return (
 				<p className="truncate text-foreground/80" title={label}>
 					{label}
 				</p>
@@ -80,16 +83,17 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const trade = row.original;
-			const isOrderFilled = isOrderFilledTrade(trade);
-			const isBuy = isBuyTrade(trade);
-			return isOrderFilled ? (
-				<p className={cn(isBuy ? "text-emerald-500" : "text-red-500")}>
-					{isBuy ? "+" : "-"}
-					{formatNumber(trade.shares_amount, { decimals: 2 })}
-				</p>
-			) : (
-				<p className="text-foreground/80">{formatNumber(trade.shares_amount, { decimals: 2 })}</p>
-			);
+			if (isOrderFilledTrade(trade)) {
+				const isBuy = isBuyTrade(trade);
+				return (
+					<p className={cn(isBuy ? "text-emerald-500" : "text-red-500")}>
+						{isBuy ? "+" : "-"}
+						{formatNumber(trade.shares_amount, { decimals: 2 })}
+					</p>
+				);
+			}
+			const sharesAmount = "shares_amount" in trade ? trade.shares_amount : null;
+			return <p className="text-foreground/80">{formatNumber(sharesAmount, { decimals: 2 })}</p>;
 		},
 	},
 	{
@@ -98,13 +102,16 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 120,
 		cell: ({ row }) => {
 			const trade = row.original;
-			const isOrderFilled = isOrderFilledTrade(trade);
-			return isOrderFilled ? (
-				<p>{formatNumber(trade.usd_amount, { currency: true, compact: true })}</p>
-			) : (
-				<p className={cn(trade.usd_amount > 0 ? "text-emerald-500" : trade.usd_amount < 0 ? "text-red-500" : "")}>
-					{trade.usd_amount > 0 ? "+" : ""}
-					{formatNumber(trade.usd_amount, { currency: true, compact: true })}
+			if (isOrderFilledTrade(trade)) {
+				return <p>{formatNumber(trade.usd_amount, { currency: true, compact: true })}</p>;
+			}
+			const usdAmount = "usd_amount" in trade ? trade.usd_amount : null;
+			const isPositive = usdAmount != null && usdAmount > 0;
+			const isNegative = usdAmount != null && usdAmount < 0;
+			return (
+				<p className={cn(isPositive ? "text-emerald-500" : isNegative ? "text-red-500" : "")}>
+					{isPositive ? "+" : ""}
+					{formatNumber(usdAmount, { currency: true, compact: true })}
 				</p>
 			);
 		},
@@ -113,31 +120,41 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		id: "fee",
 		header: "Fee",
 		size: 110,
-		cell: ({ row }) => <p>{formatNumber(row.original.fee, { currency: true })}</p>,
+		cell: ({ row }) => {
+			const trade = row.original;
+			const fee = "fee" in trade ? trade.fee : null;
+			return <p>{formatNumber(fee, { currency: true })}</p>;
+		},
 	},
 	{
 		id: "link",
 		header: "",
 		size: 64,
 		enableHiding: false,
-		cell: ({ row }) => (
-			<div className="flex justify-end">
-				<TooltipWrapper content="View on Polygonscan">
-					<a href={`https://polygonscan.com/tx/${row.original.hash}`} target="_blank" rel="noopener noreferrer">
-						<Button variant="ghost" size="icon" aria-label="View on Polygonscan">
-							<HashIcon className="size-4" />
-						</Button>
-					</a>
-				</TooltipWrapper>
-				<TooltipWrapper content="View on Polymarket">
-					<a href={`https://polymarket.com/market/${row.original.slug}`} target="_blank" rel="noopener noreferrer">
-						<Button variant="ghost" size="icon" aria-label="View on Polymarket">
-							<ExternalLinkIcon className="size-4" />
-						</Button>
-					</a>
-				</TooltipWrapper>
-			</div>
-		),
+		cell: ({ row }) => {
+			const trade = row.original;
+			const slug = "event_slug" in trade ? trade.event_slug : null;
+			return (
+				<div className="flex justify-end">
+					<TooltipWrapper content="View on Polygonscan">
+						<a href={`https://polygonscan.com/tx/${trade.hash}`} target="_blank" rel="noopener noreferrer">
+							<Button variant="ghost" size="icon" aria-label="View on Polygonscan">
+								<HashIcon className="size-4" />
+							</Button>
+						</a>
+					</TooltipWrapper>
+					{slug ? (
+						<TooltipWrapper content="View on Polymarket">
+							<a href={`https://polymarket.com/${slug}`} target="_blank" rel="noopener noreferrer">
+								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
+									<ExternalLinkIcon className="size-4" />
+								</Button>
+							</a>
+						</TooltipWrapper>
+					) : null}
+				</div>
+			);
+		},
 	},
 ];
 

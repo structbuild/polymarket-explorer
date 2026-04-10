@@ -77,8 +77,10 @@ type FormatNumberOptions = {
 	percent?: boolean;
 };
 
-export function formatNumber(value: number, options: FormatNumberOptions = {}) {
+export function formatNumber(value: number | null | undefined, options: FormatNumberOptions = {}) {
 	const { compact = false, decimals, currency = false, percent = false } = options;
+
+	if (value == null || Number.isNaN(value)) return "—";
 
 	if (percent) {
 		const fixed = decimals ?? 1;

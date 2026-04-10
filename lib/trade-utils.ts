@@ -1,24 +1,41 @@
-export function normalizeTradeField(value: string | null | undefined): string {
-	return value?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") ?? ""
+import type { Trade } from "@structbuild/sdk"
+
+export type OrderFilledTradeEvent = Extract<Trade, { trade_type: "OrderFilled" | "OrdersMatched" }>
+
+export function isOrderFilledTrade(trade: Trade): trade is OrderFilledTradeEvent {
+	return trade.trade_type === "OrderFilled" || trade.trade_type === "OrdersMatched"
 }
 
-export function isOrderFilledTrade(trade: { trade_type?: string | null }): boolean {
-	const tradeType = normalizeTradeField(trade.trade_type)
-	return tradeType === "orderfilled" || tradeType === "ordersmatched" || tradeType === "0"
-}
-
-export function isBuyTrade(trade: { side?: string | null }): boolean {
-	const side = normalizeTradeField(trade.side)
+export function isBuyTrade(trade: OrderFilledTradeEvent): boolean {
+	const side = trade.side?.toString().trim().toLowerCase() ?? ""
 	return side === "buy" || side === "0"
 }
 
-export function getActivityLabel(trade: { trade_type?: string | null }): string {
-	const tradeType = normalizeTradeField(trade.trade_type)
+const activityLabels: Record<Trade["trade_type"], string> = {
+	OrderFilled: "Order Filled",
+	OrdersMatched: "Orders Matched",
+	Redemption: "Redeemed",
+	Merge: "Merged",
+	Split: "Split",
+	PositionsConverted: "Converted",
+	Cancelled: "Cancelled",
+	Initialization: "Initialized",
+	Proposal: "Proposed",
+	Dispute: "Disputed",
+	Settled: "Settled",
+	Resolution: "Resolved",
+	ConditionResolution: "Condition Resolved",
+	Reset: "Reset",
+	Flag: "Flagged",
+	Unflag: "Unflagged",
+	Pause: "Paused",
+	Unpause: "Unpaused",
+	ManualResolution: "Manual Resolution",
+	NegRiskOutcomeReported: "NegRisk Outcome Reported",
+	RegisterToken: "Token Registered",
+	Approval: "Approval",
+}
 
-	if (tradeType === "redemption" || tradeType === "1") return "Redeemed"
-	if (tradeType === "merge" || tradeType === "2") return "Merged"
-	if (!trade.trade_type) return "Activity"
-	if (/^\d+$/.test(trade.trade_type)) return `Type ${trade.trade_type}`
-
-	return trade.trade_type.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2")
+export function getActivityLabel(trade: Trade): string {
+	return activityLabels[trade.trade_type] ?? "Activity"
 }
