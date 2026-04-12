@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getSiteUrl } from "@/lib/env";
+import { TAGS_PAGE_SIZE, getPageCount } from "@/lib/pagination";
 import {
 	getAllEventSlugs,
 	getAllMarketSlugs,
@@ -57,15 +58,25 @@ export default async function sitemap({
 
 async function buildStaticSegment(siteUrl: string): Promise<MetadataRoute.Sitemap> {
 	const tags = await getAllTags();
+	const tagsWithSlug = tags.filter((tag) => tag.slug);
 
-	const tagEntries: MetadataRoute.Sitemap = tags
-		.filter((tag) => tag.slug)
-		.map((tag) => ({
-			url: `${siteUrl}/tags/${tag.slug}`,
+	const tagEntries: MetadataRoute.Sitemap = tagsWithSlug.map((tag) => ({
+		url: `${siteUrl}/tags/${tag.slug}`,
+		lastModified: new Date(),
+		changeFrequency: "daily" as const,
+		priority: 0.7,
+	}));
+
+	const tagPageCount = getPageCount(tagsWithSlug.length, TAGS_PAGE_SIZE);
+	const tagPageEntries: MetadataRoute.Sitemap = Array.from(
+		{ length: tagPageCount - 1 },
+		(_, i) => ({
+			url: `${siteUrl}/tags/page/${i + 2}`,
 			lastModified: new Date(),
-			changeFrequency: "daily" as const,
-			priority: 0.7,
-		}));
+			changeFrequency: "weekly" as const,
+			priority: 0.5,
+		}),
+	);
 
 	return [
 		{
@@ -105,6 +116,7 @@ async function buildStaticSegment(siteUrl: string): Promise<MetadataRoute.Sitema
 			priority: 0.6,
 		},
 		...tagEntries,
+		...tagPageEntries,
 	];
 }
 

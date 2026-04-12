@@ -6,9 +6,14 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
-import { MarketCard } from "@/components/market/market-card";
+import { MarketsTable } from "@/components/market/markets-table";
+import { eventMarketToRow } from "@/lib/market-table-map";
 import { formatNumber, formatDateShort } from "@/lib/format";
 import { getSiteUrl } from "@/lib/env";
+import {
+	buildEntityPageTitle,
+	buildPageMetadata,
+} from "@/lib/site-metadata";
 import { getEventBySlug } from "@/lib/struct/market-queries";
 
 export const revalidate = 300;
@@ -30,29 +35,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		notFound();
 	}
 
-	const title = `${event.title} - Prediction Market Odds`;
-	const description = `Follow ${event.title} on Polymarket. ${event.market_count} markets with real-money predictions. Track probabilities, volume, and trader activity.`;
+	const eventName = event.title?.trim() || "Prediction Market Event";
+	const title = buildEntityPageTitle(eventName, "Odds & Markets");
+	const description = `Track ${event.title ?? "this Polymarket event"} with ${event.market_count} related markets, live odds, volume, and trader activity.`;
 	const ogImage = event.image_url ?? `/event/${slug}/opengraph-image`;
 
-	return {
+	return buildPageMetadata({
 		title,
 		description,
-		alternates: {
-			canonical: `/event/${slug}`,
-		},
+		canonical: `/event/${slug}`,
 		openGraph: {
 			type: "article",
-			title,
-			description,
 			images: [{ url: ogImage }],
 		},
 		twitter: {
-			card: "summary_large_image",
-			title,
-			description,
 			images: [ogImage],
 		},
-	};
+	});
 }
 
 export default async function EventPage({ params }: Props) {
@@ -155,26 +154,11 @@ export default async function EventPage({ params }: Props) {
 					</p>
 				)}
 
-				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{event.markets.map((market) => (
-						<MarketCard
-							key={market.condition_id}
-							slug={market.market_slug ?? null}
-							question={market.question ?? null}
-							imageUrl={market.image_url ?? null}
-							outcomes={
-								market.outcomes?.map((o) => ({
-									label: o.name,
-									probability: o.price ?? null,
-								})) ?? []
-							}
-							volumeUsd={null}
-							liquidityUsd={null}
-							status={market.status}
-							endTime={null}
-						/>
-					))}
-				</div>
+				<MarketsTable
+					markets={event.markets.map((m) =>
+						eventMarketToRow(m, event.event_slug ?? null),
+					)}
+				/>
 			</div>
 		</div>
 	);

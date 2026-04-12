@@ -1,8 +1,8 @@
 import { BeamsBackground } from "@/components/background/beams-background";
 import { TopTraders, TopTradersFallback } from "@/components/home/top-traders";
 import { SearchInput } from "@/components/search/search-input";
-import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
 import { searchTraders } from "@/lib/struct/queries";
 import { getTraderDisplayName, isWalletAddress, normalizeWalletAddress } from "@/lib/utils";
 import type { Metadata, Route } from "next";
@@ -20,9 +20,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 	const hasQuery = (q?.trim().length ?? 0) >= 2;
 
 	return {
-		title: "Polymarket Explorer — Analyze Any Trader",
-		description:
-			"Search and analyze any Polymarket trader by username or wallet address. View PnL charts, trading history, and performance metrics. Powered by Struct.",
+		title: { absolute: SITE_NAME },
+		description: SITE_DESCRIPTION,
 		alternates: {
 			canonical: "/",
 		},
@@ -53,9 +52,6 @@ export default async function HomePage({ searchParams }: Props) {
 
 	return (
 		<div className="relative flex flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16">
-			<div className="mx-auto w-full max-w-7xl">
-				<Breadcrumbs items={[{ label: "Home", href: "/" }]} />
-			</div>
 			<div className="flex flex-1 flex-col items-center justify-center">
 				<BeamsBackground />
 				<div className="w-full max-w-xl">

@@ -39,6 +39,7 @@ import {
 } from "@/lib/struct/queries";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
+import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import type {
 	MarketResponse,
@@ -77,15 +78,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const ogImage = getTraderOgImageUrl(address);
 	const ogAlt = getTraderOgImageAlt(displayName);
 
-	return {
+	return buildPageMetadata({
 		title: getTraderPageTitle(displayName),
 		description,
-		alternates: {
-			canonical: `/trader/${address}`,
-		},
+		canonical: `/trader/${address}`,
 		openGraph: {
 			title: socialTitle,
-			description,
 			type: "profile",
 			images: [
 				{
@@ -97,12 +95,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 			],
 		},
 		twitter: {
-			card: "summary_large_image",
 			title: socialTitle,
-			description,
 			images: [ogImage],
 		},
-	};
+	});
 }
 
 function loadTraderInsights(address: string, timeframe: PnlTimeframe): Promise<TraderInsightsData> {

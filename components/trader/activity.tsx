@@ -45,7 +45,11 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		id: "age",
 		header: "Age",
 		size: 80,
-		cell: ({ row }) => <p className="text-sm text-muted-foreground">{formatTimeAgo(row.original.confirmed_at)}</p>,
+		cell: ({ row }) => (
+			<p className="text-sm text-muted-foreground">
+				{row.original.confirmed_at != null ? formatTimeAgo(row.original.confirmed_at) : "—"}
+			</p>
+		),
 	},
 	{
 		id: "market",

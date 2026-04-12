@@ -6,15 +6,14 @@ import { RewardsTable } from "@/components/rewards/rewards-table";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getSiteUrl } from "@/lib/env";
+import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
-export const metadata: Metadata = {
-	title: "Markets with Liquidity Rewards",
-	description: "Browse all Polymarket markets with active liquidity rewards. Filter and explore reward rates, liquidity, and more.",
-	alternates: {
-		canonical: "/rewards",
-	},
-};
+export const metadata: Metadata = buildPageMetadata({
+	title: "Polymarket Liquidity Rewards",
+	description: "Track Polymarket markets with active liquidity rewards, including reward rates, spreads, and liquidity.",
+	canonical: "/rewards",
+});
 
 async function RewardsContent() {
 	const markets = await getRewardsMarkets();
@@ -23,8 +22,8 @@ async function RewardsContent() {
 	const jsonLd = {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
-		name: "Markets with Liquidity Rewards",
-		description: "Browse all Polymarket markets with active liquidity rewards.",
+		name: `Liquidity Rewards — ${SITE_NAME}`,
+		description: `Polymarket markets with active liquidity rewards on ${SITE_NAME}.`,
 		mainEntity: {
 			"@type": "ItemList",
 			numberOfItems: markets.length,

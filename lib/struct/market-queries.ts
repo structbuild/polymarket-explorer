@@ -17,7 +17,9 @@ export const structMarketBySlugCacheTag = "struct-market-by-slug";
 export const structMarketHoldersCacheTag = "struct-market-holders";
 export const structMarketChartCacheTag = "struct-market-chart";
 export const structEventBySlugCacheTag = "struct-event-by-slug";
-export const structAllTagsCacheTag = "struct-all-tags";
+const structAllTagsCacheVersion = "v2";
+
+export const structAllTagsCacheTag = `struct-all-tags-${structAllTagsCacheVersion}`;
 export const structTagBySlugCacheTag = "struct-tag-by-slug";
 export const structMarketsByTagCacheTag = "struct-markets-by-tag";
 export const structEventsByTagCacheTag = "struct-events-by-tag";
@@ -36,7 +38,7 @@ export type PaginatedResult<T> = {
 const defaultPageSize = 24;
 const shortRevalidateSeconds = 300;
 const longRevalidateSeconds = 3600;
-const maxPaginationResults = 5000;
+const maxPaginationRequests = 1000;
 
 function readStatus(error: unknown) {
 	if (typeof error !== "object" || error === null) {
@@ -51,6 +53,14 @@ function readStatus(error: unknown) {
 
 function logStructError(label: string, error: unknown) {
 	console.error(`Struct SDK request failed: ${label}`, error);
+}
+
+function logPaginationLimitReached(label: string) {
+	console.error(`Struct SDK pagination aborted after ${maxPaginationRequests} requests: ${label}`);
+}
+
+function hasTagSlug(tag: Tag): tag is Tag & { slug: string } {
+	return typeof tag.slug === "string" && tag.slug.length > 0;
 }
 
 export const getMarketBySlug = cache(
@@ -170,15 +180,64 @@ export const getAllTags = cache(
 				return [];
 			}
 
+			const results: Tag[] = [];
+			let offset = 0;
+			const batchSize = 250;
+
 			try {
-				const response = await client.tags.getTags({ limit: 250 });
-				return response.data;
+				let requestCount = 0;
+
+				do {
+					if (requestCount >= maxPaginationRequests) {
+						logPaginationLimitReached("getAllTags");
+						break;
+					}
+
+					const response = await client.tags.getTags({ limit: batchSize, offset });
+					results.push(...response.data);
+					requestCount += 1;
+
+					if (response.data.length < batchSize) break;
+
+					offset += batchSize;
+				} while (true);
+
+				return results;
 			} catch (error) {
 				logStructError("getAllTags", error);
-				return [];
+				return results;
 			}
 		},
 		[structAllTagsCacheTag],
+		{ revalidate: longRevalidateSeconds, tags: [structAllTagsCacheTag] },
+	),
+);
+
+export const getTagsPaginated = cache(
+	unstable_cache(
+		async (limit: number = defaultPageSize, offset: number = 0): Promise<PaginatedResult<Tag>> => {
+			const tags = (await getAllTags()).filter(hasTagSlug);
+			const data = tags.slice(offset, offset + limit);
+			const hasMore = offset + limit < tags.length;
+
+			return {
+				data,
+				hasMore,
+				nextCursor: hasMore ? String(offset + limit) : null,
+			};
+		},
+		[structAllTagsCacheTag],
+		{ revalidate: longRevalidateSeconds, tags: [structAllTagsCacheTag] },
+	),
+);
+
+export const getTagCount = cache(
+	unstable_cache(
+		async (): Promise<number> => {
+			const tags = (await getAllTags()).filter(hasTagSlug);
+			return tags.length;
+		},
+		[`struct-tag-count-${structAllTagsCacheVersion}`],
 		{ revalidate: longRevalidateSeconds, tags: [structAllTagsCacheTag] },
 	),
 );
@@ -398,7 +457,15 @@ export const getAllMarketSlugs = cache(
 			const now = new Date();
 
 			try {
+				const seenPaginationKeys = new Set<string>();
+				let requestCount = 0;
+
 				do {
+					if (requestCount >= maxPaginationRequests) {
+						logPaginationLimitReached("getAllMarketSlugs");
+						break;
+					}
+
 					const response = await client.markets.getMarkets({
 						status: "all",
 						sort_by: "volume",
@@ -406,6 +473,7 @@ export const getAllMarketSlugs = cache(
 						limit: 100,
 						...(paginationKey ? { pagination_key: paginationKey } : {}),
 					});
+					requestCount += 1;
 
 					for (const market of response.data) {
 						if (market.market_slug) {
@@ -420,7 +488,10 @@ export const getAllMarketSlugs = cache(
 						: undefined;
 
 					if (!hasMore) break;
-				} while (results.length < maxPaginationResults);
+					if (!paginationKey || seenPaginationKeys.has(paginationKey)) break;
+
+					seenPaginationKeys.add(paginationKey);
+				} while (true);
 
 				return results;
 			} catch (error) {
@@ -447,7 +518,15 @@ export const getAllEventSlugs = cache(
 			const now = new Date();
 
 			try {
+				const seenPaginationKeys = new Set<string>();
+				let requestCount = 0;
+
 				do {
+					if (requestCount >= maxPaginationRequests) {
+						logPaginationLimitReached("getAllEventSlugs");
+						break;
+					}
+
 					const response = await client.events.getEvents({
 						status: "all",
 						sort_by: "volume",
@@ -455,6 +534,7 @@ export const getAllEventSlugs = cache(
 						limit: 100,
 						...(paginationKey ? { pagination_key: paginationKey } : {}),
 					});
+					requestCount += 1;
 
 					for (const event of response.data) {
 						if (event.event_slug) {
@@ -469,7 +549,10 @@ export const getAllEventSlugs = cache(
 						: undefined;
 
 					if (!hasMore) break;
-				} while (results.length < maxPaginationResults);
+					if (!paginationKey || seenPaginationKeys.has(paginationKey)) break;
+
+					seenPaginationKeys.add(paginationKey);
+				} while (true);
 
 				return results;
 			} catch (error) {

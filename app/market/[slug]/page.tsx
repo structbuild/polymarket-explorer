@@ -25,6 +25,10 @@ import {
 	getMarketChart,
 	getMarketHolders,
 } from "@/lib/struct/market-queries";
+import {
+	buildEntityPageTitle,
+	buildPageMetadata,
+} from "@/lib/site-metadata";
 import { cn, getTraderDisplayName } from "@/lib/utils";
 import type {
 	MarketResponse,
@@ -55,19 +59,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		compact: true,
 		currency: true,
 	});
+	const holders = formatNumber(market.total_holders ?? 0, { decimals: 0 });
+	const marketName = market.question ?? market.title ?? "Prediction Market";
+	const leadingOutcome = yesOutcome?.name ?? market.outcomes?.[0]?.name ?? "Leading outcome";
+	const oddsSummary =
+		probability === "N/A"
+			? "Current odds are unavailable"
+			: `${leadingOutcome} trades at ${probability}%`;
 
-	const description = `Current odds: ${yesOutcome?.name ?? market.outcomes?.[0]?.name ?? "Yes"} at ${probability}%. Track real-time predictions, trading volume (${volume}), and ${formatNumber(market.total_holders ?? 0, { decimals: 0 })} holders for this Polymarket market.`;
-
-	return {
-		title: market.question ?? undefined,
-		description,
-		alternates: {
-			canonical: `/market/${slug}`,
-		},
+	return buildPageMetadata({
+		title: buildEntityPageTitle(marketName, "Odds & Volume"),
+		description: `Track live Polymarket odds for ${marketName}. ${oddsSummary}, ${volume} in volume, and ${holders} holders.`,
+		canonical: `/market/${slug}`,
 		openGraph: {
 			type: "article",
-			title: market.question ?? undefined,
-			description,
 			images: [
 				{
 					url: `/market/${slug}/opengraph-image`,
@@ -77,11 +82,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 			],
 		},
 		twitter: {
-			card: "summary_large_image",
-			title: market.question ?? undefined,
-			description,
+			images: [`/market/${slug}/opengraph-image`],
 		},
-	};
+	});
 }
 
 function truncateQuestion(question: string, maxLength: number = 60) {

@@ -3,20 +3,19 @@ import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
-import { MarketCard } from "@/components/market/market-card";
+import { MarketsTable } from "@/components/market/markets-table";
+import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
+import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getTopMarkets } from "@/lib/struct/market-queries";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-	title: "All Prediction Markets - Browse Polymarket Odds",
-	description:
-		"Browse all active prediction markets on Polymarket. Real-time probabilities, trading volume, and liquidity data.",
-	alternates: {
-		canonical: "/markets",
-	},
-};
+export const metadata: Metadata = buildPageMetadata({
+	title: "Prediction Markets",
+	description: "Browse active Polymarket prediction markets with live probabilities, volume, and liquidity data.",
+	canonical: "/markets",
+});
 
 type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -31,8 +30,8 @@ export default async function MarketsPage({ searchParams }: Props) {
 	const jsonLd: Record<string, unknown> = {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
-		name: "All Prediction Markets",
-		description: "Browse active prediction markets sorted by volume.",
+		name: `Markets — ${SITE_NAME}`,
+		description: `Browse active prediction markets sorted by volume on ${SITE_NAME}.`,
 		url: new URL("/markets", siteUrl).toString(),
 		mainEntity: {
 			"@type": "ItemList",
@@ -59,31 +58,18 @@ export default async function MarketsPage({ searchParams }: Props) {
 			<JsonLd data={jsonLd} />
 
 			<div className="mt-6">
-				<h1 className="text-xl font-medium tracking-tight">Markets</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Browse active prediction markets sorted by volume.
-				</p>
-			</div>
-
-			<div className="mt-8 grid gap-4 sm:grid-cols-2">
-				{markets.map((market) => (
-					<MarketCard
-						key={market.condition_id}
-						slug={market.market_slug ?? null}
-						question={market.question ?? null}
-						imageUrl={market.image_url ?? null}
-						outcomes={
-							market.outcomes?.map((o) => ({
-								label: o.name,
-								probability: o.price,
-							})) ?? []
-						}
-						volumeUsd={market.volume_usd ?? null}
-						liquidityUsd={market.liquidity_usd ?? null}
-						status={market.status}
-						endTime={market.end_time ?? null}
-					/>
-				))}
+				<MarketsTable
+					markets={markets.map(marketResponseToRow)}
+					paginationMode="none"
+					toolbarLeft={
+						<div className="mb-3">
+							<h1 className="text-xl font-medium tracking-tight">Markets</h1>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Browse active prediction markets sorted by volume.
+							</p>
+						</div>
+					}
+				/>
 			</div>
 			<PaginationNav
 				basePath="/markets"

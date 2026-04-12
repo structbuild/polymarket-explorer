@@ -5,18 +5,16 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import { getSiteUrl } from "@/lib/env";
+import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getTopEvents } from "@/lib/struct/market-queries";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-	title: "Prediction Market Events - Browse Polymarket",
-	description:
-		"Browse active prediction market events on Polymarket. Multi-outcome topics with volume, liquidity, and real-time odds.",
-	alternates: {
-		canonical: "/events",
-	},
-};
+export const metadata: Metadata = buildPageMetadata({
+	title: "Prediction Market Events",
+	description: "Browse active Polymarket events with live odds, volume, liquidity, and related markets.",
+	canonical: "/events",
+});
 
 type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -31,8 +29,8 @@ export default async function EventsPage({ searchParams }: Props) {
 	const jsonLd: Record<string, unknown> = {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
-		name: "Prediction Market Events",
-		description: "Browse active prediction market events sorted by volume.",
+		name: `Events — ${SITE_NAME}`,
+		description: `Browse active prediction market events sorted by volume on ${SITE_NAME}.`,
 		url: new URL("/events", siteUrl).toString(),
 		mainEntity: {
 			"@type": "ItemList",

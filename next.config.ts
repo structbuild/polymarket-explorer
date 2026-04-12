@@ -9,13 +9,18 @@ const nextConfig: NextConfig = {
         destination: "/traders",
         permanent: true,
       },
+      {
+        source: "/tags/page/1",
+        destination: "/tags",
+        permanent: true,
+      },
     ];
   },
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "polymarket-upload.s3.us-east-2.amazonaws.com",
+        hostname: "*.s3.*.amazonaws.com",
         pathname: "/**",
       },
     ],
