@@ -37,6 +37,8 @@ import {
 	getTraderPnlSummary,
 	getTraderProfile,
 } from "@/lib/struct/queries";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { JsonLd } from "@/components/seo/json-ld";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import type {
 	MarketResponse,
@@ -309,8 +311,21 @@ async function TraderOverviewSection({
 		pseudonym: profile?.pseudonym,
 	});
 
+	const profileJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "ProfilePage",
+		mainEntity: {
+			"@type": "Person",
+			name: displayName,
+			identifier: address,
+			...(profile?.bio ? { description: profile.bio } : {}),
+			...(profile?.profile_image ? { image: profile.profile_image } : {}),
+		},
+	};
+
 	return (
 		<div className="space-y-4">
+			<JsonLd data={profileJsonLd} />
 			<TraderHeader
 				address={address}
 				displayName={displayName}
@@ -404,9 +419,18 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		closedSortDirection,
 	});
 
+	const { displayName } = await loadTraderOpenGraphIdentity(address);
+
 	return (
 		<div className="flex w-full justify-center">
 			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
+				<Breadcrumbs
+					items={[
+						{ label: "Home", href: "/" },
+						{ label: "Traders", href: "/traders" },
+						{ label: displayName, href: `/trader/${address}` },
+					]}
+				/>
 				<Suspense fallback={<TraderOverviewFallback />}>
 					<TraderOverviewSection
 						address={address}

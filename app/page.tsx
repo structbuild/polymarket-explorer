@@ -1,6 +1,7 @@
 import { BeamsBackground } from "@/components/background/beams-background";
 import { TopTraders, TopTradersFallback } from "@/components/home/top-traders";
 import { SearchInput } from "@/components/search/search-input";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { searchTraders } from "@/lib/struct/queries";
 import { getTraderDisplayName, isWalletAddress, normalizeWalletAddress } from "@/lib/utils";
@@ -51,9 +52,13 @@ export default async function HomePage({ searchParams }: Props) {
 	const traders = hasQuery ? (await searchTraders(query)).slice(0, 10) : [];
 
 	return (
-		<div className="relative flex flex-1 flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
-			<BeamsBackground />
-			<div className="w-full max-w-xl">
+		<div className="relative flex flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16">
+			<div className="mx-auto w-full max-w-7xl">
+				<Breadcrumbs items={[{ label: "Home", href: "/" }]} />
+			</div>
+			<div className="flex flex-1 flex-col items-center justify-center">
+				<BeamsBackground />
+				<div className="w-full max-w-xl">
 				<div className="mb-8 space-y-2 text-center sm:mb-10">
 					<h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Analyze any trader</h1>
 					<p className="mx-auto max-w-md text-sm text-muted-foreground sm:text-base">Enter a trader&apos;s address or username to get started</p>
@@ -90,6 +95,7 @@ export default async function HomePage({ searchParams }: Props) {
 							<TopTraders />
 						</Suspense>
 					)}
+				</div>
 				</div>
 			</div>
 		</div>

@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
-import type { Trade } from "@structbuild/sdk";
+import type { components } from "@structbuild/sdk";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -22,11 +22,25 @@ import { cn } from "@/lib/utils";
 import { formatTimeAgo, formatPriceCents } from "@/lib/format";
 import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
 
+type TradeEvent = components["schemas"]["TradeEvent"];
+
+type TradeRow = TradeEvent & {
+	image_url?: string | null;
+	question?: string | null;
+	outcome?: string | null;
+	price?: number | null;
+	shares_amount?: number | null;
+	usd_amount?: number | null;
+	fee?: number | null;
+	slug?: string | null;
+	side?: string | null;
+};
+
 const defaultColumnVisibility: VisibilityState = {
 	fee: false,
 };
 
-const columns: ColumnDef<Trade, unknown>[] = [
+const columns: ColumnDef<TradeRow, unknown>[] = [
 	{
 		id: "age",
 		header: "Age",
@@ -159,7 +173,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 ];
 
 type Props = {
-	page: PaginatedResource<Trade, number>;
+	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
 };
 

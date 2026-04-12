@@ -424,13 +424,20 @@ function buildColumns(
 		{
 			id: "link",
 			header: "",
-			size: 64,
+			size: 96,
 			enableHiding: false,
 			cell: ({ row }) => {
 				const slug = row.original.market_slug
 				if (!slug) return null
 				return (
-					<div className="flex justify-end">
+					<div className="flex justify-end gap-1">
+						<TooltipWrapper content="View market details">
+							<a href={`/market/${slug}`}>
+								<Button variant="ghost" size="icon" aria-label="View market details">
+									<ArrowUpIcon className="size-4 rotate-45" />
+								</Button>
+							</a>
+						</TooltipWrapper>
 						<TooltipWrapper content="View on Polymarket">
 							<a
 								href={`https://polymarket.com/market/${slug}`}

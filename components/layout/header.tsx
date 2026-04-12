@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { SearchDialog } from "@/components/search/search-dialog";
 
@@ -14,8 +15,32 @@ export function Header() {
 					<div className="h-4 w-px bg-border" />
 					<nav className="flex items-center gap-1">
 						<Link
-							href="/rewards"
+							href={"/markets" as Route}
 							className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+						>
+							Markets
+						</Link>
+						<Link
+							href={"/events" as Route}
+							className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+						>
+							Events
+						</Link>
+						<Link
+							href={"/traders" as Route}
+							className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+						>
+							Traders
+						</Link>
+						<Link
+							href={"/tags" as Route}
+							className="hidden rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:block"
+						>
+							Tags
+						</Link>
+						<Link
+							href="/rewards"
+							className="hidden rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:block"
 						>
 							Rewards
 						</Link>

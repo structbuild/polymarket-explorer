@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { getSiteUrl } from "@/lib/env";
 import { Header } from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next";
@@ -51,10 +52,26 @@ export default function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const siteUrl = getSiteUrl().origin;
+
+	const websiteJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		name: "Polymarket Explorer",
+		url: siteUrl,
+		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity.",
+		potentialAction: {
+			"@type": "SearchAction",
+			target: `${siteUrl}/?q={search_term_string}`,
+			"query-input": "required name=search_term_string",
+		},
+	};
+
 	return (
 		<html lang="en" suppressHydrationWarning className="h-full">
 			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh overflow-x-hidden antialiased font-sans`}>
 				<Analytics />
+				<JsonLd data={websiteJsonLd} />
 				<NuqsAdapter>
 					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 						<TooltipProvider>
