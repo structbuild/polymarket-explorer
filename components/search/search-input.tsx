@@ -21,7 +21,7 @@ export function SearchInput() {
 			const trimmed = query.trim();
 
 			if (isWalletAddress(trimmed)) {
-				router.push(`/trader/${normalizeWalletAddress(trimmed) ?? trimmed}` as Route);
+				router.push(`/traders/${normalizeWalletAddress(trimmed) ?? trimmed}` as Route);
 				return;
 			}
 

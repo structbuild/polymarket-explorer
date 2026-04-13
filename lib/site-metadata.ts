@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const SITE_NAME = "Polymarket Explorer";
 
 export const SITE_DESCRIPTION =
-	"Explore Polymarket prediction markets, events, and traders. Browse odds, volume, leaderboards, and detailed trader analytics.";
+	"Explore Polymarket prediction markets and traders. Browse odds, volume, leaderboards, and detailed trader analytics.";
 
 const SEO_TITLE_MAX_LENGTH = 68;
 

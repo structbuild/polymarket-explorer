@@ -3,7 +3,7 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
+import { ArrowUpIcon, ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
 import { useCallback, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
@@ -20,12 +20,12 @@ import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 import { Badge } from "../ui/badge"
 import { Checkbox } from "../ui/checkbox"
 import { DataTable } from "../ui/data-table"
+import { SortableHeader } from "../ui/sortable-header"
 import { TooltipWrapper } from "../ui/tooltip"
 import { Button } from "../ui/button"
 import { TraderTabs } from "./trader-tabs"
-import { formatNumber } from "@/lib/format"
+import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
 
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
 
@@ -52,43 +52,6 @@ const defaultColumnVisibility: VisibilityState = {
 	total_sell_usd: false,
 	total_fees: false,
 	redemption_usd: false,
-}
-
-type SortableHeaderProps = {
-	children: React.ReactNode
-	sortBy: TraderPositionSortBy
-	currentSortBy: TraderPositionSortBy
-	currentSortDirection: TraderSortDirection
-	onSortChange: (sortBy: TraderPositionSortBy) => void
-}
-
-function SortableHeader({
-	children,
-	sortBy,
-	currentSortBy,
-	currentSortDirection,
-	onSortChange,
-}: SortableHeaderProps) {
-	const isActive = currentSortBy === sortBy
-	const SortIcon = isActive
-		? currentSortDirection === "asc"
-			? ArrowUpIcon
-			: ArrowDownIcon
-		: ArrowUpDownIcon
-
-	return (
-		<button
-			type="button"
-			className={cn(
-				"inline-flex items-center gap-1.5 text-left transition-colors hover:text-foreground",
-				isActive && "text-foreground",
-			)}
-			onClick={() => onSortChange(sortBy)}
-		>
-			<span>{children}</span>
-			<SortIcon className="size-4" />
-		</button>
-	)
 }
 
 function buildColumns(
@@ -326,7 +289,7 @@ function buildColumns(
 			meta: { title: "Buy Vol" },
 			header: () => (
 				<SortableHeader
-					sortBy="buy_usd"
+					sortBy="total_buy_usd"
 					currentSortBy={currentSortBy}
 					currentSortDirection={currentSortDirection}
 					onSortChange={onSortChange}
@@ -344,7 +307,7 @@ function buildColumns(
 			meta: { title: "Sell Vol" },
 			header: () => (
 				<SortableHeader
-					sortBy="sell_usd"
+					sortBy="total_sell_usd"
 					currentSortBy={currentSortBy}
 					currentSortDirection={currentSortDirection}
 					onSortChange={onSortChange}
@@ -432,7 +395,7 @@ function buildColumns(
 				return (
 					<div className="flex justify-end gap-1">
 						<TooltipWrapper content="View market details">
-							<a href={`/market/${slug}`}>
+							<a href={`/markets/${slug}`}>
 								<Button variant="ghost" size="icon" aria-label="View market details">
 									<ArrowUpIcon className="size-4 rotate-45" />
 								</Button>

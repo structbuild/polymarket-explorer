@@ -1,11 +1,12 @@
 import "server-only";
 
 import type {
-	Event,
 	GlobalPnlTrader,
 	MarketHoldersResponse,
 	MarketResponse,
+	MarketSortBy,
 	PositionChartOutcome,
+	SortDirection,
 	Tag,
 } from "@structbuild/sdk";
 import { unstable_cache } from "next/cache";
@@ -16,18 +17,14 @@ import { getStructClient } from "@/lib/struct/client";
 export const structMarketBySlugCacheTag = "struct-market-by-slug";
 export const structMarketHoldersCacheTag = "struct-market-holders";
 export const structMarketChartCacheTag = "struct-market-chart";
-export const structEventBySlugCacheTag = "struct-event-by-slug";
 const structAllTagsCacheVersion = "v2";
 
 export const structAllTagsCacheTag = `struct-all-tags-${structAllTagsCacheVersion}`;
 export const structTagBySlugCacheTag = "struct-tag-by-slug";
 export const structMarketsByTagCacheTag = "struct-markets-by-tag";
-export const structEventsByTagCacheTag = "struct-events-by-tag";
 export const structGlobalLeaderboardCacheTag = "struct-global-leaderboard";
 export const structTopMarketsCacheTag = "struct-top-markets";
-export const structTopEventsCacheTag = "struct-top-events";
 export const structAllMarketSlugsCacheTag = "struct-all-market-slugs";
-export const structAllEventSlugsCacheTag = "struct-all-event-slugs";
 
 export type PaginatedResult<T> = {
 	data: T[];
@@ -145,32 +142,6 @@ export const getMarketChart = cache(
 	),
 );
 
-export const getEventBySlug = cache(
-	unstable_cache(
-		async (slug: string): Promise<Event | null> => {
-			const client = getStructClient();
-
-			if (!client) {
-				return null;
-			}
-
-			try {
-				const response = await client.events.getEventBySlug({ slug });
-				return response.data;
-			} catch (error) {
-				if (readStatus(error) === 404) {
-					return null;
-				}
-
-				logStructError(`getEventBySlug:${slug}`, error);
-				return null;
-			}
-		},
-		[structEventBySlugCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structEventBySlugCacheTag] },
-	),
-);
-
 export const getAllTags = cache(
 	unstable_cache(
 		async (): Promise<Tag[]> => {
@@ -270,7 +241,7 @@ export const getTagBySlug = cache(
 
 export const getMarketsByTag = cache(
 	unstable_cache(
-		async (tag: string, limit: number = defaultPageSize, cursor?: string): Promise<PaginatedResult<MarketResponse>> => {
+		async (tag: string, limit: number = defaultPageSize, cursor?: string, sortBy: string = "volume", sortDir: string = "desc"): Promise<PaginatedResult<MarketResponse>> => {
 			const client = getStructClient();
 
 			if (!client) {
@@ -281,8 +252,8 @@ export const getMarketsByTag = cache(
 				const response = await client.markets.getMarkets({
 					tags: tag,
 					limit,
-					sort_by: "volume",
-					sort_dir: "desc",
+					sort_by: sortBy as MarketSortBy,
+					sort_dir: sortDir as SortDirection,
 					status: "open",
 					include_metrics: true,
 					...(cursor ? { pagination_key: cursor } : {}),
@@ -301,36 +272,6 @@ export const getMarketsByTag = cache(
 		},
 		[structMarketsByTagCacheTag],
 		{ revalidate: shortRevalidateSeconds, tags: [structMarketsByTagCacheTag] },
-	),
-);
-
-export const getEventsByTag = cache(
-	unstable_cache(
-		async (tag: string, limit: number = 20): Promise<Event[]> => {
-			const client = getStructClient();
-
-			if (!client) {
-				return [];
-			}
-
-			try {
-				const response = await client.events.getEvents({
-					tags: tag,
-					limit,
-					sort_by: "volume",
-					sort_dir: "desc",
-					status: "open",
-					include_markets: true,
-					include_metrics: true,
-				});
-				return response.data;
-			} catch (error) {
-				logStructError(`getEventsByTag:${tag}`, error);
-				return [];
-			}
-		},
-		[structEventsByTagCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structEventsByTagCacheTag] },
 	),
 );
 
@@ -374,7 +315,7 @@ export const getGlobalLeaderboard = cache(
 
 export const getTopMarkets = cache(
 	unstable_cache(
-		async (limit: number = defaultPageSize, status: string = "open", cursor?: string): Promise<PaginatedResult<MarketResponse>> => {
+		async (limit: number = defaultPageSize, status: string = "open", cursor?: string, sortBy: string = "volume", sortDir: string = "desc"): Promise<PaginatedResult<MarketResponse>> => {
 			const client = getStructClient();
 
 			if (!client) {
@@ -385,8 +326,8 @@ export const getTopMarkets = cache(
 				const response = await client.markets.getMarkets({
 					limit,
 					status: status as "open" | "closed" | "all",
-					sort_by: "volume",
-					sort_dir: "desc",
+					sort_by: sortBy as MarketSortBy,
+					sort_dir: sortDir as SortDirection,
 					include_metrics: true,
 					...(cursor ? { pagination_key: cursor } : {}),
 				});
@@ -404,42 +345,6 @@ export const getTopMarkets = cache(
 		},
 		[structTopMarketsCacheTag],
 		{ revalidate: shortRevalidateSeconds, tags: [structTopMarketsCacheTag] },
-	),
-);
-
-export const getTopEvents = cache(
-	unstable_cache(
-		async (limit: number = defaultPageSize, status: string = "open", cursor?: string): Promise<PaginatedResult<Event>> => {
-			const client = getStructClient();
-
-			if (!client) {
-				return { data: [], hasMore: false, nextCursor: null };
-			}
-
-			try {
-				const response = await client.events.getEvents({
-					limit,
-					status: status as "open" | "closed" | "all",
-					sort_by: "volume",
-					sort_dir: "desc",
-					include_markets: true,
-					include_metrics: true,
-					...(cursor ? { pagination_key: cursor } : {}),
-				});
-				const hasMore = response.pagination?.has_more ?? false;
-				const nextKey = response.pagination?.pagination_key;
-				return {
-					data: response.data,
-					hasMore,
-					nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
-				};
-			} catch (error) {
-				logStructError(`getTopEvents:${status}`, error);
-				return { data: [], hasMore: false, nextCursor: null };
-			}
-		},
-		[structTopEventsCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structTopEventsCacheTag] },
 	),
 );
 
@@ -504,63 +409,3 @@ export const getAllMarketSlugs = cache(
 	),
 );
 
-export const getAllEventSlugs = cache(
-	unstable_cache(
-		async (): Promise<{ slug: string; lastModified: Date }[]> => {
-			const client = getStructClient();
-
-			if (!client) {
-				return [];
-			}
-
-			const results: { slug: string; lastModified: Date }[] = [];
-			let paginationKey: string | undefined;
-			const now = new Date();
-
-			try {
-				const seenPaginationKeys = new Set<string>();
-				let requestCount = 0;
-
-				do {
-					if (requestCount >= maxPaginationRequests) {
-						logPaginationLimitReached("getAllEventSlugs");
-						break;
-					}
-
-					const response = await client.events.getEvents({
-						status: "all",
-						sort_by: "volume",
-						sort_dir: "desc",
-						limit: 100,
-						...(paginationKey ? { pagination_key: paginationKey } : {}),
-					});
-					requestCount += 1;
-
-					for (const event of response.data) {
-						if (event.event_slug) {
-							results.push({ slug: event.event_slug, lastModified: now });
-						}
-					}
-
-					const hasMore = response.pagination?.has_more ?? false;
-					const nextKey = response.pagination?.pagination_key;
-					paginationKey = hasMore && nextKey != null
-						? String(nextKey)
-						: undefined;
-
-					if (!hasMore) break;
-					if (!paginationKey || seenPaginationKeys.has(paginationKey)) break;
-
-					seenPaginationKeys.add(paginationKey);
-				} while (true);
-
-				return results;
-			} catch (error) {
-				logStructError("getAllEventSlugs", error);
-				return results;
-			}
-		},
-		[structAllEventSlugsCacheTag],
-		{ revalidate: longRevalidateSeconds, tags: [structAllEventSlugsCacheTag] },
-	),
-);

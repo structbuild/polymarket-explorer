@@ -21,12 +21,6 @@ export function Header() {
 							Markets
 						</Link>
 						<Link
-							href={"/events" as Route}
-							className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-						>
-							Events
-						</Link>
-						<Link
 							href={"/traders" as Route}
 							className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 						>

@@ -1,5 +1,4 @@
 import type {
-	EventMarket,
 	MarketResponse,
 	MetricsTimeframe,
 	SimpleTimeframeMetrics,
@@ -51,40 +50,3 @@ export function marketResponseToRow(market: MarketResponse): MarketTableRow {
 	};
 }
 
-export function eventMarketToRow(
-	market: EventMarket,
-	parentEventSlug: string | null,
-): MarketTableRow {
-	const metrics: TimeframeMetrics = {};
-	if (market.volume_24hr != null) {
-		metrics["24h"] = {
-			volume: market.volume_24hr,
-			fees: 0,
-			txns: 0,
-			unique_traders: 0,
-		};
-	}
-
-	return {
-		id: market.condition_id,
-		slug: market.market_slug ?? null,
-		question: market.question ?? null,
-		title: market.title ?? null,
-		imageUrl: market.image_url ?? null,
-		outcomes:
-			market.outcomes?.map((o) => ({
-				label: o.name,
-				probability: o.price ?? null,
-			})) ?? [],
-		volumeUsd: market.volume ?? null,
-		liquidityUsd: market.liquidity_usd ?? null,
-		status: market.status,
-		endTime: market.end_time ?? null,
-		category: market.category ?? null,
-		eventSlug: parentEventSlug,
-		totalHolders: null,
-		highestProbability: null,
-		isNegRisk: false,
-		metrics,
-	};
-}

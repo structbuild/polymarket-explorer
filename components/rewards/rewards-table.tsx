@@ -184,7 +184,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 				<div className="flex justify-end gap-1">
 					{marketSlug && (
 						<TooltipWrapper content="View market details">
-							<a href={`/market/${marketSlug}`}>
+							<a href={`/markets/${marketSlug}`}>
 								<Button variant="ghost" size="icon" aria-label="View market details">
 									<ExternalLinkIcon className="size-4 -rotate-45" />
 								</Button>

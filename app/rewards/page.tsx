@@ -32,7 +32,7 @@ async function RewardsContent() {
 				position: index + 1,
 				name: market.question ?? market.title ?? "Market",
 				...(market.market_slug
-					? { url: `${siteUrl}/market/${market.market_slug}` }
+					? { url: `${siteUrl}/markets/${market.market_slug}` }
 					: {}),
 			})),
 		},

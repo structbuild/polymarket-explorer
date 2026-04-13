@@ -53,7 +53,7 @@ export function getTraderOgImageAlt(displayName: string) {
 
 export function getTraderOgImageUrl(address: string) {
 	const normalizedAddress = normalizeWalletAddress(address) ?? address.trim();
-	return new URL(`/trader/${normalizedAddress}/opengraph-image`, getSiteUrl());
+	return new URL(`/traders/${normalizedAddress}/opengraph-image`, getSiteUrl());
 }
 
 const loadTraderOpenGraphIdentityCached = cache(async (address: string): Promise<TraderOpenGraphIdentity> => {

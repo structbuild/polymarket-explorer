@@ -43,7 +43,7 @@ export default async function HomePage({ searchParams }: Props) {
 	const query = q?.trim() ?? "";
 
 	if (isWalletAddress(query)) {
-		redirect(`/trader/${normalizeWalletAddress(query) ?? query}`);
+		redirect(`/traders/${normalizeWalletAddress(query) ?? query}`);
 	}
 
 	const hasQuery = query.length >= 2;
@@ -64,7 +64,7 @@ export default async function HomePage({ searchParams }: Props) {
 					{hasQuery ? (
 						<div className="flex w-full flex-wrap justify-center gap-2">
 							{traders.map((trader) => {
-								const traderHref = `/trader/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
+								const traderHref = `/traders/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
 
 								return (
 									<Link

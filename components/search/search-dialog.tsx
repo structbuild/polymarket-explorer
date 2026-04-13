@@ -144,7 +144,7 @@ export function SearchDialog() {
 				)}
 				{results.map((trader) => {
 					const displayLabel = getTraderDisplayName(trader);
-					const traderHref = `/trader/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
+					const traderHref = `/traders/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
 
 					return (
 						<Link

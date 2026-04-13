@@ -64,7 +64,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 				position: index + 1,
 				name: market.question ?? "Untitled Market",
 				url: market.market_slug
-					? new URL(`/market/${market.market_slug}`, siteUrl).toString()
+					? new URL(`/markets/${market.market_slug}`, siteUrl).toString()
 					: undefined,
 			})),
 		},
@@ -86,9 +86,10 @@ export default async function TagPage({ params, searchParams }: Props) {
 					<MarketsTable
 						markets={markets.map(marketResponseToRow)}
 						paginationMode="none"
+						sortingMode="client"
 						toolbarLeft={
 							<div className="mb-3">
-								<h1 className="text-xl font-medium tracking-tight">{tag.label} Markets</h1>
+								<h1 className="text-xl font-medium tracking-tight capitalize">{tag.label} Markets</h1>
 								<p className="mt-1 text-sm text-muted-foreground">
 									Explore prediction markets related to tag: {tag.label}.
 								</p>
@@ -98,7 +99,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 				) : (
 					<>
 						<div className="mb-6">
-							<h1 className="text-xl font-medium tracking-tight">{tag.label} Markets</h1>
+							<h1 className="text-xl font-medium tracking-tight capitalize">{tag.label} Markets</h1>
 							<p className="mt-1 text-sm text-muted-foreground">
 								Explore prediction markets related to tag: {tag.label}.
 							</p>

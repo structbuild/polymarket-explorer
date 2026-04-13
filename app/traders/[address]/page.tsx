@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	return buildPageMetadata({
 		title: getTraderPageTitle(displayName),
 		description,
-		canonical: `/trader/${address}`,
+		canonical: `/traders/${address}`,
 		openGraph: {
 			title: socialTitle,
 			type: "profile",
@@ -424,7 +424,7 @@ export default async function TraderPage({ params, searchParams }: Props) {
 					items={[
 						{ label: "Home", href: "/" },
 						{ label: "Traders", href: "/traders" },
-						{ label: displayName, href: `/trader/${address}` },
+						{ label: displayName, href: `/traders/${address}` },
 					]}
 				/>
 				<Suspense fallback={<TraderOverviewFallback />}>

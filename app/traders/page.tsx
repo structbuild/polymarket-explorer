@@ -27,7 +27,10 @@ export default async function TradersPage({ searchParams }: Props) {
 	const resolvedSearchParams = await searchParams;
 	const timeframe = parseTraderTimeframe(resolvedSearchParams.timeframe);
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
-	const { data: traders, hasMore, nextCursor } = await getGlobalLeaderboard(timeframe, 100, cursor);
+	const pageParam = typeof resolvedSearchParams.page === "string" ? Number.parseInt(resolvedSearchParams.page, 10) : 1;
+	const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1;
+	const pageSize = 100;
+	const { data: traders, hasMore, nextCursor } = await getGlobalLeaderboard(timeframe, pageSize, cursor);
 	const siteUrl = getSiteUrl();
 
 	const jsonLd: Record<string, unknown> = {
@@ -39,10 +42,10 @@ export default async function TradersPage({ searchParams }: Props) {
 		numberOfItems: traders.length,
 		itemListElement: traders.map((entry, index) => ({
 			"@type": "ListItem",
-			position: index + 1,
+			position: (page - 1) * pageSize + index + 1,
 			name: getTraderDisplayName(entry.trader),
 			url: new URL(
-				`/trader/${normalizeWalletAddress(entry.trader.address) ?? entry.trader.address}`,
+				`/traders/${normalizeWalletAddress(entry.trader.address) ?? entry.trader.address}`,
 				siteUrl,
 			).toString(),
 		})),
@@ -61,6 +64,7 @@ export default async function TradersPage({ searchParams }: Props) {
 			<div className="mt-6">
 				<TradersTable
 					traders={traders}
+					rankOffset={(page - 1) * pageSize}
 					toolbarLeft={
 						<div className="mb-3">
 							<h1 className="text-xl font-medium tracking-tight">Traders</h1>
@@ -75,6 +79,7 @@ export default async function TradersPage({ searchParams }: Props) {
 			<PaginationNav
 				basePath="/traders"
 				baseParams={{ timeframe }}
+				page={page}
 				cursor={cursor ?? null}
 				nextCursor={nextCursor}
 				hasMore={hasMore}

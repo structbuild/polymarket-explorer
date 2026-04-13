@@ -20,7 +20,7 @@ export async function searchTradersAction(query: string) {
 }
 
 export async function refreshTraderTabAction(pathname: string, kind: "positions" | "activity") {
-	if (!pathname.startsWith("/trader/")) {
+	if (!pathname.startsWith("/traders/")) {
 		throw new Error("Invalid trader pathname");
 	}
 

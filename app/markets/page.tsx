@@ -3,13 +3,12 @@ import type { Metadata } from "next";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
-import { MarketsTable } from "@/components/market/markets-table";
+import { SortableMarketsTable } from "@/components/market/sortable-markets-table";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getTopMarkets } from "@/lib/struct/market-queries";
-
-export const revalidate = 300;
+import { loadMarketSearchParams } from "@/lib/market-search-params.server";
 
 export const metadata: Metadata = buildPageMetadata({
 	title: "Prediction Markets",
@@ -22,9 +21,9 @@ type Props = {
 };
 
 export default async function MarketsPage({ searchParams }: Props) {
-	const resolvedSearchParams = await searchParams;
-	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
-	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, "open", cursor);
+	const { sort_by, sort_dir, cursor } = await loadMarketSearchParams(searchParams);
+	const activeCursor = cursor || undefined;
+	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, "open", activeCursor, sort_by, sort_dir);
 	const siteUrl = getSiteUrl();
 
 	const jsonLd: Record<string, unknown> = {
@@ -41,11 +40,15 @@ export default async function MarketsPage({ searchParams }: Props) {
 				position: index + 1,
 				name: market.question ?? "Untitled Market",
 				url: market.market_slug
-					? new URL(`/market/${market.market_slug}`, siteUrl).toString()
+					? new URL(`/markets/${market.market_slug}`, siteUrl).toString()
 					: undefined,
 			})),
 		},
 	};
+
+	const baseParams: Record<string, string> = {};
+	if (sort_by !== "volume") baseParams.sort_by = sort_by;
+	if (sort_dir !== "desc") baseParams.sort_dir = sort_dir;
 
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -58,14 +61,16 @@ export default async function MarketsPage({ searchParams }: Props) {
 			<JsonLd data={jsonLd} />
 
 			<div className="mt-6">
-				<MarketsTable
+				<SortableMarketsTable
 					markets={markets.map(marketResponseToRow)}
 					paginationMode="none"
+					sortBy={sort_by}
+					sortDirection={sort_dir}
 					toolbarLeft={
 						<div className="mb-3">
 							<h1 className="text-xl font-medium tracking-tight">Markets</h1>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Browse active prediction markets sorted by volume.
+								Browse active prediction markets.
 							</p>
 						</div>
 					}
@@ -73,7 +78,8 @@ export default async function MarketsPage({ searchParams }: Props) {
 			</div>
 			<PaginationNav
 				basePath="/markets"
-				cursor={cursor ?? null}
+				baseParams={baseParams}
+				cursor={activeCursor ?? null}
 				nextCursor={nextCursor}
 				hasMore={hasMore}
 			/>

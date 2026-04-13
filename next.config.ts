@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
         destination: "/tags",
         permanent: true,
       },
+      {
+        source: "/market/:slug",
+        destination: "/markets/:slug",
+        permanent: true,
+      },
+      {
+        source: "/trader/:address",
+        destination: "/traders/:address",
+        permanent: true,
+      },
     ];
   },
   images: {

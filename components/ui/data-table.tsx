@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, Fragment, useContext, useEffect, useState } from "react"
 import {
 	type ColumnDef,
 	type PaginationState,
@@ -54,6 +54,8 @@ type BaseDataTableProps<TData> = {
 	toolbarRight?: React.ReactNode
 	timeframes?: readonly MetricsTimeframeChoice[]
 	defaultTimeframe?: MetricsTimeframeChoice
+	controlledTimeframe?: MetricsTimeframeChoice
+	onControlledTimeframeChange?: (value: MetricsTimeframeChoice) => void
 }
 
 type ClientPaginationProps = {
@@ -179,9 +181,9 @@ function DataTableView<TData>({
 					<div className="min-w-0 flex-1">{toolbarLeft}</div>
 					{(toolbarRight || toolbar || timeframeToggle) ? (
 						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end">
-							{toolbarRight}
-							{timeframeToggle}
-							{toolbar}
+							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
+							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
+							{toolbar && <Fragment key="toolbar">{toolbar}</Fragment>}
 						</div>
 					) : null}
 				</div>
@@ -312,7 +314,7 @@ function DataTableView<TData>({
 	)
 }
 
-function useTimeframeState(
+export function useTimeframeState(
 	storageKey: string | undefined,
 	timeframes: readonly MetricsTimeframeChoice[] | undefined,
 	defaultTimeframe: MetricsTimeframeChoice | undefined,
@@ -340,6 +342,8 @@ function ClientPaginatedDataTable<TData>({
 	toolbarRight,
 	timeframes,
 	defaultTimeframe,
+	controlledTimeframe,
+	onControlledTimeframeChange,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -349,7 +353,9 @@ function ClientPaginatedDataTable<TData>({
 		storageKey ? `${storageKey}-page-size` : "__unused_ps__",
 		defaultPageSize,
 	)
-	const [timeframe, setTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const timeframe = controlledTimeframe ?? internalTimeframe
+	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
 	const [pagination, setPagination] = useState<PaginationState>(() => ({ pageIndex: 0, pageSize }))
 
 	useEffect(() => {
@@ -433,12 +439,16 @@ function NonPaginatedDataTable<TData>({
 	toolbarRight,
 	timeframes,
 	defaultTimeframe,
+	controlledTimeframe,
+	onControlledTimeframeChange,
 }: BaseDataTableProps<TData> & NoPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
 		defaultColumnVisibility,
 	)
-	const [timeframe, setTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const timeframe = controlledTimeframe ?? internalTimeframe
+	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
 
 	// eslint-disable-next-line
 	const table = useReactTable({
@@ -488,6 +498,8 @@ function ServerPaginatedDataTable<TData>({
 	toolbarRight,
 	timeframes,
 	defaultTimeframe,
+	controlledTimeframe,
+	onControlledTimeframeChange,
 	pageIndex,
 	pageSize,
 	hasNextPage,
@@ -498,7 +510,9 @@ function ServerPaginatedDataTable<TData>({
 		storageKey ? `${storageKey}-columns` : "__unused__",
 		defaultColumnVisibility,
 	)
-	const [timeframe, setTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const timeframe = controlledTimeframe ?? internalTimeframe
+	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
 
 	// eslint-disable-next-line
 	const table = useReactTable({

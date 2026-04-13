@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Facehash } from "facehash";
 import type { Route } from "next";
 import Link from "next/link";
+import { useMemo } from "react";
 
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,14 +13,15 @@ import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, pnlColorClass } from "@/lib/format";
 import { cn, getTraderDisplayName, normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
-const columns: ColumnDef<GlobalPnlTrader, unknown>[] = [
+function buildColumns(rankOffset: number): ColumnDef<GlobalPnlTrader, unknown>[] {
+	return [
 	{
 		id: "rank",
 		meta: { title: "Rank" },
 		header: "#",
 		size: 64,
 		enableHiding: false,
-		cell: ({ row }) => <p className="text-muted-foreground tabular-nums">{row.index + 1}</p>,
+		cell: ({ row }) => <p className="text-muted-foreground tabular-nums">{rankOffset + row.index + 1}</p>,
 	},
 	{
 		id: "trader",
@@ -51,7 +53,7 @@ const columns: ColumnDef<GlobalPnlTrader, unknown>[] = [
 					)}
 					<div className="min-w-0 flex-1 space-y-0.5">
 						<Link
-							href={`/trader/${address}` as Route}
+							href={`/traders/${address}` as Route}
 							className="block truncate text-left text-base font-medium text-foreground underline-offset-4 hover:underline"
 						>
 							{displayName}
@@ -64,8 +66,8 @@ const columns: ColumnDef<GlobalPnlTrader, unknown>[] = [
 	},
 	{
 		id: "pnl",
-		meta: { title: "PnL" },
-		header: "PnL",
+		meta: { title: "Realized PnL" },
+		header: "Realized PnL",
 		size: 120,
 		enableHiding: false,
 		cell: ({ row }) => {
@@ -118,18 +120,23 @@ const columns: ColumnDef<GlobalPnlTrader, unknown>[] = [
 		),
 	},
 ];
+}
 
 type TradersTableProps = {
 	traders: GlobalPnlTrader[];
+	rankOffset?: number;
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
 };
 
 export function TradersTable({
 	traders,
+	rankOffset = 0,
 	toolbarLeft,
 	toolbarRight,
 }: TradersTableProps) {
+	const columns = useMemo(() => buildColumns(rankOffset), [rankOffset]);
+
 	return (
 		<DataTable
 			paginationMode="none"
