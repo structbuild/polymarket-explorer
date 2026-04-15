@@ -3,6 +3,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { MarketResponse } from "@structbuild/sdk";
+import type { Route } from "next";
+import Link from "next/link";
 import { ExternalLinkIcon, InfoIcon } from "lucide-react";
 
 import { DataTable } from "@/components/ui/data-table";
@@ -33,6 +35,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		meta: { cellClassName: "whitespace-normal" },
 		cell: ({ row }) => {
 			const market = row.original;
+			const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
 			return (
 				<div className="flex items-center gap-3">
 					{market.image_url ? (
@@ -41,9 +44,19 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}
 					<div className="min-w-0 flex-1">
-						<p className="line-clamp-2 text-base font-medium wrap-break-word" title={market.question ?? ""}>
-							{market.question}
-						</p>
+						{href ? (
+							<Link
+								href={href}
+								className="line-clamp-2 text-base font-medium wrap-break-word text-foreground underline-offset-4 hover:underline"
+								title={market.question ?? ""}
+							>
+								{market.question}
+							</Link>
+						) : (
+							<p className="line-clamp-2 text-base font-medium wrap-break-word" title={market.question ?? ""}>
+								{market.question}
+							</p>
+						)}
 					</div>
 				</div>
 			);
@@ -175,31 +188,20 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 	{
 		id: "link",
 		header: "",
-		size: 96,
+		size: 64,
 		enableHiding: false,
 		cell: ({ row }) => {
-			const marketSlug = row.original.market_slug;
 			const eventSlug = row.original.event_slug;
+			if (!eventSlug) return null;
 			return (
-				<div className="flex justify-end gap-1">
-					{marketSlug && (
-						<TooltipWrapper content="View market details">
-							<a href={`/markets/${marketSlug}`}>
-								<Button variant="ghost" size="icon" aria-label="View market details">
-									<ExternalLinkIcon className="size-4 -rotate-45" />
-								</Button>
-							</a>
-						</TooltipWrapper>
-					)}
-					{eventSlug && (
-						<TooltipWrapper content="View on Polymarket">
-							<a href={`https://polymarket.com/event/${eventSlug}`} target="_blank" rel="noopener noreferrer">
-								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
-									<ExternalLinkIcon className="size-4" />
-								</Button>
-							</a>
-						</TooltipWrapper>
-					)}
+				<div className="flex justify-end">
+					<TooltipWrapper content="View on Polymarket">
+						<a href={`https://polymarket.com/event/${eventSlug}`} target="_blank" rel="noopener noreferrer">
+							<Button variant="ghost" size="icon" aria-label="View on Polymarket">
+								<ExternalLinkIcon className="size-4" />
+							</Button>
+						</a>
+					</TooltipWrapper>
 				</div>
 			);
 		},

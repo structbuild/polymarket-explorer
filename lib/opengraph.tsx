@@ -1,4 +1,25 @@
+import sharp from "sharp";
+
 export const ogImageSize = { width: 1200, height: 630 };
+
+export async function loadImageAsDataUrl(
+	src: string | null | undefined,
+	size: number,
+): Promise<string | null> {
+	if (!src) return null;
+
+	try {
+		const response = await fetch(src);
+		if (!response.ok) return null;
+
+		const buffer = Buffer.from(await response.arrayBuffer());
+		const png = await sharp(buffer).resize(size, size, { fit: "cover" }).png().toBuffer();
+		return `data:image/png;base64,${png.toString("base64")}`;
+	} catch (error) {
+		console.error("Failed to load image for OG:", error);
+		return null;
+	}
+}
 
 export const ogPalette = {
 	background: "#0A0A0A",

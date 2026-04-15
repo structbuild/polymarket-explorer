@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
+import type { PositionChartDataPoint } from "@structbuild/sdk";
 import { formatDateShort, formatNumber } from "@/lib/format";
-import { getMarketBySlug } from "@/lib/struct/market-queries";
-import { ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
+import { getMarketBySlug, getMarketChart } from "@/lib/struct/market-queries";
+import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 
 export const runtime = "nodejs";
 export const revalidate = 7200;
@@ -14,18 +15,99 @@ type Props = {
 	params: Promise<{ slug: string }>;
 };
 
-const OUTCOME_COLORS = [
-	"#10b981",
-	"#3b82f6",
-	"#f59e0b",
-	"#8b5cf6",
-	"#ef4444",
-];
+type ChartGeometry = {
+	areaPath: string;
+	linePath: string;
+	minLabel: string;
+	maxLabel: string;
+	lastPoint: { x: number; y: number; value: number };
+};
 
-function getStatusColor(status: string) {
-	if (status === "open") return ogPalette.positive;
-	if (status === "closed") return ogPalette.negative;
-	return ogPalette.mutedForeground;
+function getStatusBadgeStyle(status: string) {
+	if (status === "active") {
+		return { color: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.2)" };
+	}
+	if (status === "closed" || status === "resolved") {
+		return { color: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.2)" };
+	}
+	return { color: ogPalette.foreground, backgroundColor: ogPalette.muted };
+}
+
+function getStatusLabel(status: string) {
+	if (status === "active") return "Active";
+	return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function samplePoints(points: PositionChartDataPoint[], maxPoints: number) {
+	if (points.length <= maxPoints) {
+		return points;
+	}
+
+	const lastIndex = points.length - 1;
+	const step = lastIndex / (maxPoints - 1);
+	const sampled: PositionChartDataPoint[] = [];
+	let previousIndex = -1;
+
+	for (let i = 0; i < maxPoints; i += 1) {
+		const nextIndex = i === maxPoints - 1 ? lastIndex : Math.round(i * step);
+
+		if (nextIndex === previousIndex) {
+			continue;
+		}
+
+		sampled.push(points[nextIndex]);
+		previousIndex = nextIndex;
+	}
+
+	return sampled;
+}
+
+function buildChartGeometry(points: PositionChartDataPoint[]): ChartGeometry | null {
+	const sampled = samplePoints(points, 80);
+
+	if (sampled.length < 2) {
+		return null;
+	}
+
+	const width = 1088;
+	const height = 280;
+	const inset = 14;
+	const values = sampled.map((point) => point.v * 100);
+	const minValue = Math.min(...values);
+	const maxValue = Math.max(...values);
+	const span = maxValue - minValue || 1;
+	const firstX = inset;
+	const lastX = width - inset;
+
+	const xAt = (index: number) => {
+		return firstX + ((lastX - firstX) * index) / (sampled.length - 1);
+	};
+
+	const yAt = (value: number) => {
+		return inset + ((maxValue - value) * (height - inset * 2)) / span;
+	};
+
+	const linePath = sampled
+		.map((point, index) => {
+			const command = index === 0 ? "M" : "L";
+			return `${command} ${xAt(index).toFixed(2)} ${yAt(point.v * 100).toFixed(2)}`;
+		})
+		.join(" ");
+	const bottomY = height - inset;
+	const areaPath = `${linePath} L ${lastX.toFixed(2)} ${bottomY.toFixed(2)} L ${firstX.toFixed(2)} ${bottomY.toFixed(2)} Z`;
+	const lastValue = sampled[sampled.length - 1].v * 100;
+
+	return {
+		areaPath,
+		linePath,
+		minLabel: `${minValue.toFixed(0)}%`,
+		maxLabel: `${maxValue.toFixed(0)}%`,
+		lastPoint: {
+			x: xAt(sampled.length - 1),
+			y: yAt(lastValue),
+			value: lastValue,
+		},
+	};
 }
 
 export default async function OpenGraphImage({ params }: Props) {
@@ -38,12 +120,24 @@ export default async function OpenGraphImage({ params }: Props) {
 
 	const question = market.question ?? market.title ?? slug;
 	const status = market.status ?? "unknown";
-	const volume = formatNumber(market.volume_usd ?? 0, { compact: true, currency: true });
-	const liquidity = formatNumber(market.liquidity_usd ?? 0, { compact: true, currency: true });
-	const holders = formatNumber(market.total_holders ?? 0, { decimals: 0 });
+	const metrics30d = market.metrics?.["30d"];
+	const volume = formatNumber(metrics30d?.volume ?? 0, { compact: true, currency: true });
+	const txns = formatNumber(metrics30d?.txns ?? 0, { decimals: 0 });
+	const traders = formatNumber(metrics30d?.unique_traders ?? 0, { decimals: 0 });
+	const fees = formatNumber(metrics30d?.fees ?? 0, { compact: true, currency: true });
 	const endDate = formatDateShort(market.end_time);
 
 	const outcomes = market.outcomes ?? [];
+	const isResolved = status === "resolved";
+	const displayOutcome = isResolved ? market.winning_outcome ?? outcomes[0] : outcomes[0];
+	const primaryOutcome = outcomes[0];
+	const probability = primaryOutcome?.price ?? 0;
+	const probabilityPct = `${(probability * 100).toFixed(0)}%`;
+
+	const [imageDataUrl, chartOutcomes] = await Promise.all([loadImageAsDataUrl(market.image_url, 192), getMarketChart(market.condition_id)]);
+
+	const primaryChartOutcome = chartOutcomes?.find((o) => o.outcome_index === (primaryOutcome?.outcome_index ?? 0)) ?? chartOutcomes?.[0];
+	const chart = primaryChartOutcome ? buildChartGeometry(primaryChartOutcome.data ?? []) : null;
 
 	return new ImageResponse(
 		<div
@@ -73,40 +167,83 @@ export default async function OpenGraphImage({ params }: Props) {
 				<div
 					style={{
 						display: "flex",
-						alignItems: "flex-start",
+						alignItems: "center",
 						justifyContent: "space-between",
-						gap: 16,
+						gap: 20,
 					}}
 				>
 					<div
 						style={{
 							display: "flex",
-							fontSize: 28,
-							fontWeight: 600,
-							lineHeight: 1.3,
-							maxWidth: 960,
-							overflow: "hidden",
-							textOverflow: "ellipsis",
-						}}
-					>
-						{question}
-					</div>
-					<div
-						style={{
-							display: "flex",
 							alignItems: "center",
-							padding: "6px 14px",
-							borderRadius: 999,
-							fontSize: 14,
-							fontWeight: 600,
-							color: getStatusColor(status),
-							backgroundColor: ogPalette.muted,
-							flexShrink: 0,
-							textTransform: "capitalize",
+							gap: 20,
+							flex: 1,
+							minWidth: 0,
 						}}
 					>
-						{status}
+						{imageDataUrl && (
+							<div
+								style={{
+									display: "flex",
+									width: 96,
+									height: 96,
+									borderRadius: 12,
+									overflow: "hidden",
+									border: "2px solid rgba(255, 255, 255, 0.12)",
+									flexShrink: 0,
+								}}
+							>
+								{/* eslint-disable-next-line @next/next/no-img-element */}
+								<img src={imageDataUrl} width={96} height={96} alt="" style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 12 }} />
+							</div>
+						)}
+						<div
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								flex: 1,
+								minWidth: 0,
+								gap: 6,
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									fontSize: 28,
+									fontWeight: 600,
+									lineHeight: 1.3,
+									maxWidth: 820,
+									overflow: "hidden",
+									textOverflow: "ellipsis",
+								}}
+							>
+								{question}
+							</div>
+						</div>
 					</div>
+					{displayOutcome && (
+						<div
+							style={{
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "flex-end",
+								flexShrink: 0,
+							}}
+						>
+							<div
+								style={{
+									display: "flex",
+									fontSize: 48,
+									fontWeight: 700,
+									lineHeight: 1,
+									marginTop: 6,
+									color: ogPalette.chartLine,
+								}}
+							>
+								{isResolved ? displayOutcome.name : probabilityPct}
+							</div>
+						</div>
+					)}
 				</div>
 			</div>
 
@@ -117,80 +254,38 @@ export default async function OpenGraphImage({ params }: Props) {
 					flexDirection: "column",
 					borderRadius: 16,
 					background: ogPalette.card,
-					padding: "24px 28px",
-					gap: 20,
+					padding: "20px 24px",
 				}}
 			>
-				{outcomes.length > 0 && (
+				{chart ? (
 					<div
 						style={{
 							display: "flex",
 							flexDirection: "column",
-							gap: 12,
-							width: "100%",
+							justifyContent: "center",
+							flex: 1,
 						}}
 					>
-						{outcomes.map((outcome, idx) => {
-							const prob = outcome.price ?? 0;
-							const percent = (prob * 100).toFixed(0);
-							const barWidth = Math.max(prob * 100, 2);
-							const color = OUTCOME_COLORS[idx % OUTCOME_COLORS.length];
-
-							return (
-								<div
-									key={outcome.name}
-									style={{
-										display: "flex",
-										flexDirection: "column",
-										gap: 6,
-									}}
-								>
-									<div
-										style={{
-											display: "flex",
-											justifyContent: "space-between",
-											alignItems: "center",
-											fontSize: 18,
-											fontWeight: 500,
-										}}
-									>
-										<div style={{ display: "flex", color: ogPalette.foreground }}>
-											{outcome.name}
-										</div>
-										<div
-											style={{
-												display: "flex",
-												fontSize: 22,
-												fontWeight: 700,
-												color,
-											}}
-										>
-											{`${percent}%`}
-										</div>
-									</div>
-									<div
-										style={{
-											display: "flex",
-											width: "100%",
-											height: 16,
-											borderRadius: 8,
-											backgroundColor: ogPalette.muted,
-											overflow: "hidden",
-										}}
-									>
-										<div
-											style={{
-												display: "flex",
-												width: `${barWidth}%`,
-												height: "100%",
-												borderRadius: 8,
-												backgroundColor: color,
-											}}
-										/>
-									</div>
-								</div>
-							);
-						})}
+						<svg viewBox="0 0 1088 280" width="1088" height="280">
+							<path d={chart.areaPath} fill={ogPalette.chartArea} />
+							<path d={chart.linePath} fill="none" stroke={ogPalette.chartLine} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+							<circle cx={chart.lastPoint.x} cy={chart.lastPoint.y} r="7" fill={ogPalette.chartLine} stroke="#ffffff" strokeWidth="2.5" />
+						</svg>
+					</div>
+				) : (
+					<div
+						style={{
+							display: "flex",
+							flex: 1,
+							alignItems: "center",
+							justifyContent: "center",
+							borderRadius: 12,
+							border: `1px dashed ${ogPalette.cardBorder}`,
+							fontSize: 18,
+							color: ogPalette.mutedForeground,
+						}}
+					>
+						Probability chart unavailable
 					</div>
 				)}
 			</div>
@@ -211,22 +306,36 @@ export default async function OpenGraphImage({ params }: Props) {
 					style={{
 						display: "flex",
 						flexDirection: "row",
-						gap: 48,
+						alignItems: "center",
+						gap: 16,
 					}}
 				>
-					<OgStatItem label="Volume" value={volume} />
-					<OgStatItem label="Liquidity" value={liquidity} />
-					<OgStatItem label="Holders" value={holders} />
-					<OgStatItem label="End Date" value={endDate} />
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							gap: 32,
+						}}
+					>
+						<OgStatItem label="Volume (30d)" value={volume} />
+						<OgStatItem label="Txns (30d)" value={txns} />
+						<OgStatItem label="Traders (30d)" value={traders} />
+						<OgStatItem label="Fees (30d)" value={fees} />
+						<OgStatItem label="End Date" value={endDate} />
+					</div>
 				</div>
 				<div
 					style={{
 						display: "flex",
+						alignItems: "center",
+						padding: "6px 14px",
+						borderRadius: 999,
 						fontSize: 14,
-						color: ogPalette.mutedForeground,
+						fontWeight: 600,
+						...getStatusBadgeStyle(status),
 					}}
 				>
-					Polymarket Explorer
+					{getStatusLabel(status)}
 				</div>
 			</div>
 		</div>,

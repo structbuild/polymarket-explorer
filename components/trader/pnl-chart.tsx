@@ -57,7 +57,7 @@ type AnnotationDotShapeProps = {
 	annotationKind: PnlChartAnnotation["kind"]
 	cx?: number
 	cy?: number
-	r?: number
+	r?: number | string
 	fill?: string
 	stroke?: string
 	strokeWidth?: number | string
@@ -266,7 +266,6 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 									fill={tone.color}
 									stroke="var(--color-background)"
 									strokeWidth={2.5}
-									isFront
 									ifOverflow="visible"
 									shape={(props) => <AnnotationDotShape {...props} annotationKind={annotation.kind} />}
 								/>

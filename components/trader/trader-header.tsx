@@ -53,7 +53,11 @@ export function TraderHeader({
 	return (
 		<div className="flex min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-card p-4 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
 			<div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-				<TraderAvatar displayName={displayName} profileImage={profileImage} />
+				<TraderAvatar
+					displayName={displayName}
+					profileImage={profileImage}
+					className="size-16! sm:size-24!"
+				/>
 				<div className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden">
 					<div className="flex min-w-0 items-center gap-2">
 						<h1

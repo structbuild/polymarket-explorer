@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  serverExternalPackages: ["sharp"],
   async redirects() {
     return [
       {
@@ -31,6 +32,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.s3.*.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "struct-images.fra1.digitaloceanspaces.com",
         pathname: "/**",
       },
     ],

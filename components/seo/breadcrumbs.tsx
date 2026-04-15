@@ -29,20 +29,27 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
 	return (
 		<>
 			<JsonLd data={jsonLd} />
-			<nav aria-label="Breadcrumb">
-				<ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
+			<nav
+				aria-label="Breadcrumb"
+				className="-mx-4 overflow-x-auto overscroll-x-contain px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+			>
+				<ol className="flex w-max min-w-0 flex-nowrap items-center gap-1.5 text-sm text-muted-foreground">
 					{items.map((item, index) => {
 						const isLast = index === items.length - 1;
 
 						return (
-							<li key={item.href} className="flex items-center gap-1.5">
-								{index > 0 && <span aria-hidden="true">/</span>}
+							<li key={item.href} className="flex shrink-0 items-center gap-1.5">
+								{index > 0 && (
+									<span aria-hidden="true" className="shrink-0">
+										/
+									</span>
+								)}
 								{isLast ? (
-									<span className="text-foreground">{item.label}</span>
+									<span className="whitespace-nowrap text-foreground">{item.label}</span>
 								) : (
 									<Link
 										href={item.href as Route}
-										className="transition-colors hover:text-foreground"
+										className="whitespace-nowrap transition-colors hover:text-foreground"
 									>
 										{item.label}
 									</Link>

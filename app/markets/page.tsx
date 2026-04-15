@@ -21,9 +21,9 @@ type Props = {
 };
 
 export default async function MarketsPage({ searchParams }: Props) {
-	const { sort_by, sort_dir, cursor } = await loadMarketSearchParams(searchParams);
+	const { sort_by, sort_dir, timeframe, cursor } = await loadMarketSearchParams(searchParams);
 	const activeCursor = cursor || undefined;
-	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, "open", activeCursor, sort_by, sort_dir);
+	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, "open", activeCursor, sort_by, sort_dir, timeframe);
 	const siteUrl = getSiteUrl();
 
 	const jsonLd: Record<string, unknown> = {
@@ -49,6 +49,7 @@ export default async function MarketsPage({ searchParams }: Props) {
 	const baseParams: Record<string, string> = {};
 	if (sort_by !== "volume") baseParams.sort_by = sort_by;
 	if (sort_dir !== "desc") baseParams.sort_dir = sort_dir;
+	if (timeframe !== "24h") baseParams.timeframe = timeframe;
 
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -66,6 +67,7 @@ export default async function MarketsPage({ searchParams }: Props) {
 					paginationMode="none"
 					sortBy={sort_by}
 					sortDirection={sort_dir}
+					timeframe={timeframe}
 					toolbarLeft={
 						<div className="mb-3">
 							<h1 className="text-xl font-medium tracking-tight">Markets</h1>

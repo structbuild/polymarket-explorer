@@ -3,7 +3,9 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
-import { ArrowUpIcon, ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
+import type { Route } from "next"
+import Link from "next/link"
+import { ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
 import { useCallback, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
@@ -84,6 +86,7 @@ function buildColumns(
 				const isUnknownMarket = !entry.title
 				const title = entry.title || "Unknown Market"
 				const sharesLine = formatSharesLine(entry)
+				const href = entry.market_slug ? (`/markets/${entry.market_slug}` as Route) : null
 				return (
 					<div className="flex items-center gap-3">
 						{entry.image_url ? (
@@ -92,17 +95,27 @@ function buildColumns(
 							<div className="size-10 shrink-0 rounded-md bg-muted" />
 						)}
 						<div className="min-w-0 flex-1 space-y-0.5">
-							<p className="truncate text-base font-medium" title={title}>
-								{isUnknownMarket ? (
+							{isUnknownMarket ? (
+								<p className="truncate text-base font-medium" title={title}>
 									<TooltipWrapper content="Polymarket Gamma has no data on this market/position">
 										<span className="cursor-help border-b border-dotted border-muted-foreground/50">
 											{title}
 										</span>
 									</TooltipWrapper>
-								) : (
-									title
-								)}
-							</p>
+								</p>
+							) : href ? (
+								<Link
+									href={href}
+									className="block truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
+									title={title}
+								>
+									{title}
+								</Link>
+							) : (
+								<p className="truncate text-base font-medium" title={title}>
+									{title}
+								</p>
+							)}
 							<div className="flex flex-wrap items-center gap-1.5">
 								{entry.outcome ? (
 									<Badge
@@ -387,20 +400,13 @@ function buildColumns(
 		{
 			id: "link",
 			header: "",
-			size: 96,
+			size: 64,
 			enableHiding: false,
 			cell: ({ row }) => {
 				const slug = row.original.market_slug
 				if (!slug) return null
 				return (
-					<div className="flex justify-end gap-1">
-						<TooltipWrapper content="View market details">
-							<a href={`/markets/${slug}`}>
-								<Button variant="ghost" size="icon" aria-label="View market details">
-									<ArrowUpIcon className="size-4 rotate-45" />
-								</Button>
-							</a>
-						</TooltipWrapper>
+					<div className="flex justify-end">
 						<TooltipWrapper content="View on Polymarket">
 							<a
 								href={`https://polymarket.com/market/${slug}`}

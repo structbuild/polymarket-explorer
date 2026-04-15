@@ -320,6 +320,8 @@ type ServerSortProps = BaseMarketsTableProps & {
 	sortBy: MarketSortBy;
 	sortDirection: MarketSortDirection;
 	onSortChange: (sortBy: MarketSortBy) => void;
+	timeframe?: MetricsTimeframeChoice;
+	onTimeframeChange?: (timeframe: MetricsTimeframeChoice) => void;
 };
 
 type MarketsTableProps = NoSortProps | ClientSortProps | ServerSortProps;
@@ -333,10 +335,15 @@ export function MarketsTable(props: MarketsTableProps) {
 	} = props;
 
 	const isClientSort = props.sortingMode === "client";
+	const isServerSort = props.sortingMode === "server";
+	const serverTimeframe = isServerSort ? props.timeframe : undefined;
+	const serverOnTimeframeChange = isServerSort ? props.onTimeframeChange : undefined;
 
 	const [localSortBy, setLocalSortBy] = useState<MarketSortBy>(defaultMarketSortBy);
 	const [localSortDirection, setLocalSortDirection] = useState<MarketSortDirection>(defaultMarketSortDirection);
-	const [timeframe, setTimeframe] = useTimeframeState(storageKey, TABLE_TIMEFRAMES, DEFAULT_TIMEFRAME);
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, TABLE_TIMEFRAMES, DEFAULT_TIMEFRAME);
+	const timeframe = serverTimeframe ?? internalTimeframe;
+	const setTimeframe = serverOnTimeframeChange ?? setInternalTimeframe;
 
 	const handleClientSortChange = useCallback((nextSortBy: MarketSortBy) => {
 		setLocalSortDirection((prev) =>
@@ -397,7 +404,9 @@ export function MarketsTable(props: MarketsTableProps) {
 			timeframes={TABLE_TIMEFRAMES}
 			defaultTimeframe={DEFAULT_TIMEFRAME}
 			toolbarLeft={toolbarLeft}
-			{...(isClientSort ? { controlledTimeframe: timeframe, onControlledTimeframeChange: setTimeframe } : {})}
+			{...(isClientSort || (isServerSort && serverTimeframe)
+				? { controlledTimeframe: timeframe, onControlledTimeframeChange: setTimeframe }
+				: {})}
 		/>
 	);
 }

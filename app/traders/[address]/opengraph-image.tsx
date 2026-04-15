@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { loadTraderOpenGraphData } from "@/lib/trader-open-graph";
 import type { PnlDataPoint } from "@/lib/polymarket/pnl";
 import { formatDateShort, formatDuration, formatNumber } from "@/lib/format";
-import { ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
+import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 export const runtime = "nodejs";
@@ -119,6 +119,31 @@ function getFacehashInitial(displayName: string, address: string) {
 
 	const compactAddress = address.replace(/^0x/i, "");
 	return compactAddress[0]?.toUpperCase() ?? "?";
+}
+
+function OpenGraphAvatarImage({ src }: { src: string }) {
+	return (
+		<div
+			style={{
+				display: "flex",
+				width: 96,
+				height: 96,
+				borderRadius: 8,
+				overflow: "hidden",
+				border: "2px solid rgba(255, 255, 255, 0.12)",
+				flexShrink: 0,
+			}}
+		>
+			{/* eslint-disable-next-line @next/next/no-img-element */}
+			<img
+				src={src}
+				width={96}
+				height={96}
+				alt=""
+				style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 8 }}
+			/>
+		</div>
+	);
 }
 
 function OpenGraphFacehash({ address, displayName }: { address: string; displayName: string }) {
@@ -288,6 +313,7 @@ export default async function OpenGraphImage({ params }: Props) {
 
 	const chart = buildChartGeometry(pnlCandles);
 	const headlinePnl = chart?.lastPoint.value ?? 0;
+	const avatarDataUrl = await loadImageAsDataUrl(profile?.profile_image, 192);
 
 	const activeSince = formatDateShort(pnlSummary?.first_trade_at) || "Unknown";
 	const lastActive = formatDateShort(pnlSummary?.last_trade_at) || "Unknown";
@@ -342,7 +368,11 @@ export default async function OpenGraphImage({ params }: Props) {
 						minWidth: 0,
 					}}
 				>
-					<OpenGraphFacehash address={address} displayName={displayName} />
+					{avatarDataUrl ? (
+						<OpenGraphAvatarImage src={avatarDataUrl} />
+					) : (
+						<OpenGraphFacehash address={address} displayName={displayName} />
+					)}
 					<div
 						style={{
 							display: "flex",

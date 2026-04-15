@@ -3,6 +3,8 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import type { components } from "@structbuild/sdk";
+import type { Route } from "next";
+import Link from "next/link";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -59,6 +61,9 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			const trade = row.original;
 			const imageUrl = "image_url" in trade ? trade.image_url : null;
 			const question = "question" in trade ? trade.question : null;
+			const marketSlug = "slug" in trade ? trade.slug : null;
+			const title = question ?? "Unknown Market";
+			const href = marketSlug ? (`/markets/${marketSlug}` as Route) : null;
 			return (
 				<div className="flex items-center gap-3">
 					{imageUrl ? (
@@ -66,9 +71,19 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 					) : (
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}
-					<p className="min-w-0 flex-1 truncate text-base font-medium" title={question ?? "Unknown Market"}>
-						{question ?? "Unknown Market"}
-					</p>
+					{href ? (
+						<Link
+							href={href}
+							className="min-w-0 flex-1 truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
+							title={title}
+						>
+							{title}
+						</Link>
+					) : (
+						<p className="min-w-0 flex-1 truncate text-base font-medium" title={title}>
+							{title}
+						</p>
+					)}
 				</div>
 			);
 		},

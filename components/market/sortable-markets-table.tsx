@@ -3,8 +3,11 @@
 import { useCallback, useTransition } from "react";
 import { useQueryStates } from "nuqs";
 
-import type { MarketSortBy } from "@/lib/market-search-params-shared";
-import type { MarketSortDirection } from "@/lib/market-search-params-shared";
+import type {
+	MarketSortBy,
+	MarketSortDirection,
+	MarketTimeframe,
+} from "@/lib/market-search-params-shared";
 import { marketSearchParamParsers } from "@/lib/market-search-params";
 import type { MarketTableRow } from "@/lib/market-table-map";
 
@@ -14,6 +17,7 @@ type SortableMarketsTableProps = {
 	markets: MarketTableRow[];
 	sortBy: MarketSortBy;
 	sortDirection: MarketSortDirection;
+	timeframe: MarketTimeframe;
 	storageKey?: string;
 	toolbarLeft?: React.ReactNode;
 	paginationMode?: "client" | "none";
@@ -23,6 +27,7 @@ export function SortableMarketsTable({
 	markets,
 	sortBy,
 	sortDirection,
+	timeframe,
 	...rest
 }: SortableMarketsTableProps) {
 	const [, startTransition] = useTransition();
@@ -42,6 +47,13 @@ export function SortableMarketsTable({
 		[setSearchParams, sortBy, sortDirection],
 	);
 
+	const handleTimeframeChange = useCallback(
+		(nextTimeframe: MarketTimeframe) => {
+			void setSearchParams({ timeframe: nextTimeframe, cursor: "" });
+		},
+		[setSearchParams],
+	);
+
 	return (
 		<MarketsTable
 			{...rest}
@@ -50,6 +62,8 @@ export function SortableMarketsTable({
 			sortBy={sortBy}
 			sortDirection={sortDirection}
 			onSortChange={handleSortChange}
+			timeframe={timeframe}
+			onTimeframeChange={handleTimeframeChange}
 		/>
 	);
 }
