@@ -19,6 +19,16 @@ type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function getLeadingOutcome(market: MarketResponse) {
+	const outcomes = market.outcomes ?? [];
+	if (outcomes.length === 0) return null;
+	return outcomes.reduce((best, o) => ((o.price ?? 0) > (best.price ?? 0) ? o : best), outcomes[0]);
+}
+
+function getMarketVolume(market: MarketResponse): number {
+	return market.metrics?.lifetime?.volume ?? 0;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { slug } = await params;
 	const market = await getMarketBySlug(slug);
@@ -27,15 +37,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		return {};
 	}
 
-	const yesOutcome = market.outcomes?.find((o) => o.name.toLowerCase() === "yes");
-	const probability = yesOutcome?.price ? (yesOutcome.price * 100).toFixed(0) : "N/A";
-	const volume = formatNumber(market.volume_usd ?? 0, {
+	const leading = getLeadingOutcome(market);
+	const probability = leading?.price != null ? (leading.price * 100).toFixed(0) : "N/A";
+	const volume = formatNumber(getMarketVolume(market), {
 		compact: true,
 		currency: true,
 	});
 	const holders = formatNumber(market.total_holders ?? 0, { decimals: 0 });
 	const marketName = market.question ?? market.title ?? "Prediction Market";
-	const leadingOutcome = yesOutcome?.name ?? market.outcomes?.[0]?.name ?? "Leading outcome";
+	const leadingOutcome = leading?.name ?? "Leading outcome";
 	const oddsSummary = probability === "N/A" ? "Current odds are unavailable" : `${leadingOutcome} trades at ${probability}%`;
 
 	return buildPageMetadata({
@@ -64,15 +74,12 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 }
 
 function buildFaqJsonLd(market: MarketResponse) {
-	const outcomes = market.outcomes ?? [];
-	const topOutcome = outcomes.length > 0
-		? outcomes.reduce((best, o) => ((o.price ?? 0) > (best.price ?? 0) ? o : best), outcomes[0])
-		: null;
+	const topOutcome = getLeadingOutcome(market);
 	const question = market.question ?? market.title ?? "Market question for this market";
 	const description = market.description?.trim();
 
-	const probability = topOutcome?.price ? (topOutcome.price * 100).toFixed(0) : "N/A";
-	const volume = formatNumber(market.volume_usd ?? 0, {
+	const probability = topOutcome?.price != null ? (topOutcome.price * 100).toFixed(0) : "N/A";
+	const volume = formatNumber(getMarketVolume(market), {
 		compact: true,
 		currency: true,
 	});
