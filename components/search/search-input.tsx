@@ -54,13 +54,13 @@ export function SearchInput() {
 				value={value}
 				onChange={handleChange}
 				className="h-full w-full rounded-xl border bg-card/85 py-4 pl-4 pr-12 text-sm! backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-offset-0 sm:pl-5 sm:pr-14 sm:text-base!"
-				placeholder="Search traders or markets..."
+				placeholder="Search traders..."
 			/>
 			<Button
 				type="button"
 				onClick={() => pushQuery(value)}
 				className="absolute right-1 top-1/2 size-10! -translate-y-1/2 rounded-xl"
-				aria-label="Search traders"
+				aria-label="Search"
 			>
 				<SearchIcon className="size-4" />
 			</Button>

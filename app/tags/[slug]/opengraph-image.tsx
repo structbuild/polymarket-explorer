@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
 import { formatCapitalizeWords } from "@/lib/format";
-import { loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
+import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
 import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 
 export const runtime = "nodejs";
@@ -26,7 +26,7 @@ export default async function OpenGraphImage({ params }: Props) {
 	const { data: markets } = await getMarketsByTag(tag.label, ogFloatingPositions.length);
 	const tagDisplay = formatCapitalizeWords(tag.label);
 
-	const marketsWithImages = markets.filter((m) => m.image_url).slice(0, ogFloatingPositions.length);
+	const marketsWithImages = deduplicateByImage(markets, ogFloatingPositions.length);
 	const imageDataUrls = await Promise.all(marketsWithImages.map((m) => loadImageAsDataUrl(m.image_url, 128)));
 
 	return new ImageResponse(

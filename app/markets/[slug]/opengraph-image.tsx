@@ -120,11 +120,11 @@ export default async function OpenGraphImage({ params }: Props) {
 
 	const question = market.question ?? market.title ?? slug;
 	const status = market.status ?? "unknown";
-	const metrics30d = market.metrics?.["30d"];
-	const volume = formatNumber(metrics30d?.volume ?? 0, { compact: true, currency: true });
-	const txns = formatNumber(metrics30d?.txns ?? 0, { decimals: 0 });
-	const traders = formatNumber(metrics30d?.unique_traders ?? 0, { decimals: 0 });
-	const fees = formatNumber(metrics30d?.fees ?? 0, { compact: true, currency: true });
+	const metricsLifetime = market.metrics?.["lifetime"];
+	const volume = formatNumber(metricsLifetime?.volume ?? 0, { compact: true, currency: true });
+	const txns = formatNumber(metricsLifetime?.txns ?? 0, { decimals: 0 });
+	const traders = formatNumber(metricsLifetime?.unique_traders ?? 0, { decimals: 0 });
+	const fees = formatNumber(metricsLifetime?.fees ?? 0, { compact: true, currency: true });
 	const endDate = formatDateShort(market.end_time);
 
 	const outcomes = market.outcomes ?? [];
@@ -317,10 +317,10 @@ export default async function OpenGraphImage({ params }: Props) {
 							gap: 32,
 						}}
 					>
-						<OgStatItem label="Volume (30d)" value={volume} />
-						<OgStatItem label="Txns (30d)" value={txns} />
-						<OgStatItem label="Traders (30d)" value={traders} />
-						<OgStatItem label="Fees (30d)" value={fees} />
+						<OgStatItem label="Volume" value={volume} />
+						<OgStatItem label="Txns" value={txns} />
+						<OgStatItem label="Traders" value={traders} />
+						<OgStatItem label="Fees" value={fees} />
 						<OgStatItem label="End Date" value={endDate} />
 					</div>
 				</div>

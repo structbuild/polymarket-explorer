@@ -72,10 +72,10 @@ export function MarketHeader({ market, slug }: MarketHeaderProps) {
 			</div>
 
 			<div className="flex flex-wrap gap-2 sm:gap-3">
-				<StatCard label="Volume (30d)" value={formatNumber(market.metrics?.["30d"]?.volume ?? 0, { currency: true, decimals: 0 })} />
-				<StatCard label="Txns (30d)" value={formatNumber(market.metrics?.["30d"]?.txns ?? 0, { decimals: 0 })} />
-				<StatCard label="Traders (30d)" value={formatNumber(market.metrics?.["30d"]?.unique_traders ?? 0, { decimals: 0 })} />
-				<StatCard label="Fees (30d)" value={formatNumber(market.metrics?.["30d"]?.fees ?? 0, { currency: true, decimals: 0 })} />
+				<StatCard label="Volume" value={formatNumber(market.metrics?.["lifetime"]?.volume ?? 0, { currency: true, decimals: 0 })} />
+				<StatCard label="Txns" value={formatNumber(market.metrics?.["lifetime"]?.txns ?? 0, { decimals: 0 })} />
+				<StatCard label="Traders" value={formatNumber(market.metrics?.["lifetime"]?.unique_traders ?? 0, { decimals: 0 })} />
+				<StatCard label="Fees" value={formatNumber(market.metrics?.["lifetime"]?.fees ?? 0, { currency: true, decimals: 0 })} />
 				{market.status === "active" && <StatCard label="Liquidity" value={formatNumber(market.liquidity_usd ?? 0, { currency: true, decimals: 0 })} />}
 				<StatCard label="Ends" value={formatDateShort(market.end_time)} />
 			</div>

@@ -4,6 +4,18 @@ import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 
 export const ogImageSize = { width: 1200, height: 630 };
 
+export function deduplicateByImage<T extends { image_url?: string | null }>(items: T[], limit: number): T[] {
+	const seen = new Set<string>();
+	const result: T[] = [];
+	for (const item of items) {
+		if (!item.image_url || seen.has(item.image_url)) continue;
+		seen.add(item.image_url);
+		result.push(item);
+		if (result.length >= limit) break;
+	}
+	return result;
+}
+
 export async function loadImageAsDataUrl(
 	src: string | null | undefined,
 	size: number,

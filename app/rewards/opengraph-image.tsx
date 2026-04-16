@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { formatNumber } from "@/lib/format";
-import { loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize, ogPalette } from "@/lib/opengraph";
+import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize, ogPalette } from "@/lib/opengraph";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ export default async function OpenGraphImage() {
 		return sum + rate;
 	}, 0);
 
-	const marketsWithImages = markets.filter((m) => m.image_url).slice(0, ogFloatingPositions.length);
+	const marketsWithImages = deduplicateByImage(markets, ogFloatingPositions.length);
 	const imageDataUrls = await Promise.all(marketsWithImages.map((m) => loadImageAsDataUrl(m.image_url, 128)));
 
 	return new ImageResponse(
@@ -26,7 +26,7 @@ export default async function OpenGraphImage() {
 			title={
 				<>
 					{formatNumber(totalDailyRewards, { compact: true, currency: true })}+
-					<span style={{ fontSize: 40, fontWeight: 500, color: ogPalette.mutedForeground, marginLeft: 10 }}>/day</span>
+					<span style={{ fontSize: 40, fontWeight: 500, color: ogPalette.mutedForeground, marginLeft: 10, alignSelf: "flex-end", marginBottom: 10 }}>/day</span>
 				</>
 			}
 			titleColor={ogPalette.positive}
