@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-	title: { absolute: SITE_NAME },
+	title: { absolute: `${SITE_NAME} - Explore markets, traders, tags, and more on Polymarket` },
 	description: SITE_DESCRIPTION,
 	alternates: {
 		canonical: "/",
