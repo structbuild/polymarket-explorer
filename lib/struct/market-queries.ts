@@ -474,7 +474,15 @@ export const getGlobalLeaderboard = cache(
 			let hasMore = false;
 
 			try {
+				let requestsMade = 0;
+
 				while (data.length < limit) {
+					if (requestsMade >= maxPaginationRequests) {
+						logPaginationLimitReached("getGlobalLeaderboard");
+						hasMore = false;
+						break;
+					}
+
 					const chunkLimit = Math.min(MAX_LEADERBOARD_PAGE_SIZE, limit - data.length);
 					const response = await client.trader.getLeaderboard({
 						timeframe: tf,
@@ -482,6 +490,7 @@ export const getGlobalLeaderboard = cache(
 						limit: chunkLimit,
 						offset,
 					});
+					requestsMade += 1;
 					const chunk = response.data ?? [];
 					data.push(...chunk);
 					offset += chunk.length;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -59,6 +59,29 @@ function MarketVolumeChartClientContent({ outcomes }: { outcomes: VolumeOutcome[
 
 	const activeOutcome =
 		outcomes.find((o) => o.outcomeIndex === selectedOutcomeIndex) ?? outcomes[0];
+	const activeOutcomeIndex = activeOutcome.outcomeIndex;
+	const previousFirstOutcomeIndexRef = useRef<number>(outcomes[0].outcomeIndex);
+
+	useEffect(() => {
+		const firstOutcomeIndex = outcomes[0].outcomeIndex;
+		const previousFirstOutcomeIndex = previousFirstOutcomeIndexRef.current;
+		const hasSelectedOutcome = outcomes.some((o) => o.outcomeIndex === selectedOutcomeIndex);
+
+		if (!hasSelectedOutcome) {
+			startTransition(() => {
+				setSelectedOutcomeIndex(activeOutcomeIndex);
+			});
+		} else if (
+			previousFirstOutcomeIndex !== firstOutcomeIndex
+			&& selectedOutcomeIndex === previousFirstOutcomeIndex
+		) {
+			startTransition(() => {
+				setSelectedOutcomeIndex(firstOutcomeIndex);
+			});
+		}
+
+		previousFirstOutcomeIndexRef.current = firstOutcomeIndex;
+	}, [outcomes, selectedOutcomeIndex, activeOutcomeIndex]);
 
 	const chartData = useMemo(
 		() =>

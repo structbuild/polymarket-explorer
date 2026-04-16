@@ -68,6 +68,8 @@ function buildFaqJsonLd(market: MarketResponse) {
 	const topOutcome = outcomes.length > 0
 		? outcomes.reduce((best, o) => ((o.price ?? 0) > (best.price ?? 0) ? o : best), outcomes[0])
 		: null;
+	const question = market.question ?? market.title ?? "Market question for this market";
+	const description = market.description?.trim();
 
 	const probability = topOutcome?.price ? (topOutcome.price * 100).toFixed(0) : "N/A";
 	const volume = formatNumber(market.volume_usd ?? 0, {
@@ -86,10 +88,10 @@ function buildFaqJsonLd(market: MarketResponse) {
 		mainEntity: [
 			{
 				"@type": "Question",
-				name: market.question,
+				name: question,
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: `As of ${date}, Polymarket traders predict ${topOutcome?.name ?? "the leading outcome"} at ${probability}% probability. Total trading volume: ${volume}. ${market.description ?? ""}`,
+					text: `As of ${date}, Polymarket traders predict ${topOutcome?.name ?? "the leading outcome"} at ${probability}% probability. Total trading volume: ${volume}.${description ? ` ${description}` : ""}`,
 				},
 			},
 		],

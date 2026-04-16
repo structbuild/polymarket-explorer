@@ -160,6 +160,18 @@ export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHolders[] }
 	const defaultValue = outcomes[0]?.position_id ?? "0";
 	return (
 		<Tabs defaultValue={defaultValue}>
+			<TabsList>
+				{outcomes.map((outcome) => (
+					<TabsTrigger key={outcome.position_id} value={outcome.position_id}>
+						<span className="flex items-center gap-2">
+							<span>{outcome.outcome_name}</span>
+							<span className="text-xs text-muted-foreground">
+								{formatNumber(outcome.total_holders, { decimals: 0 })}
+							</span>
+						</span>
+					</TabsTrigger>
+				))}
+			</TabsList>
 			{outcomes.map((outcome) => {
 				const rows: HolderRow[] = outcome.holders.map((h, index) => ({ ...h, rank: index + 1 }));
 				return (
@@ -172,20 +184,6 @@ export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHolders[] }
 							emptyMessage="No holders for this outcome."
 							columnLayout="fixed"
 							paginationMode="none"
-							toolbarLeft={
-								<TabsList>
-									{outcomes.map((o) => (
-										<TabsTrigger key={o.position_id} value={o.position_id}>
-											<span className="flex items-center gap-2">
-												<span>{o.outcome_name}</span>
-												<span className="text-xs text-muted-foreground">
-													{formatNumber(o.total_holders, { decimals: 0 })}
-												</span>
-											</span>
-										</TabsTrigger>
-									))}
-								</TabsList>
-							}
 						/>
 					</TabsContent>
 				);

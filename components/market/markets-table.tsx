@@ -299,12 +299,36 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 }
 
 function buildColumnFlags(markets: MarketTableRow[]): ColumnFlags {
-	return {
-		anyMetrics: markets.some((m) => Object.keys(m.metrics).length > 0),
-		anyLiquidity: markets.some((m) => m.liquidityUsd !== null),
-		anyHolders: markets.some((m) => m.totalHolders !== null),
-		anyEnd: markets.some((m) => m.endTime !== null),
+	const flags: ColumnFlags = {
+		anyMetrics: false,
+		anyLiquidity: false,
+		anyHolders: false,
+		anyEnd: false,
 	};
+
+	for (const market of markets) {
+		if (!flags.anyMetrics && Object.keys(market.metrics).length > 0) {
+			flags.anyMetrics = true;
+		}
+
+		if (!flags.anyLiquidity && market.liquidityUsd !== null) {
+			flags.anyLiquidity = true;
+		}
+
+		if (!flags.anyHolders && market.totalHolders !== null) {
+			flags.anyHolders = true;
+		}
+
+		if (!flags.anyEnd && market.endTime !== null) {
+			flags.anyEnd = true;
+		}
+
+		if (flags.anyMetrics && flags.anyLiquidity && flags.anyHolders && flags.anyEnd) {
+			break;
+		}
+	}
+
+	return flags;
 }
 
 type BaseMarketsTableProps = {
@@ -409,6 +433,10 @@ export function MarketsTable(props: MarketsTableProps) {
 
 	const flags = useMemo(() => buildColumnFlags(markets), [markets]);
 	const columns = useMemo(() => buildColumns(flags, sortState), [flags, sortState]);
+	const controlledTimeframeProps =
+		isClientSort || (isServerSort && serverTimeframe)
+			? { controlledTimeframe: timeframe, onControlledTimeframeChange: setTimeframe }
+			: {};
 
 	return (
 		<DataTable
@@ -423,9 +451,7 @@ export function MarketsTable(props: MarketsTableProps) {
 			timeframes={TABLE_TIMEFRAMES}
 			defaultTimeframe={DEFAULT_TIMEFRAME}
 			toolbarLeft={toolbarLeft}
-			{...(isClientSort || (isServerSort && serverTimeframe)
-				? { controlledTimeframe: timeframe, onControlledTimeframeChange: setTimeframe }
-				: {})}
+			{...controlledTimeframeProps}
 		/>
 	);
 }
