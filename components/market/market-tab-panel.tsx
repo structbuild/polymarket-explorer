@@ -15,22 +15,6 @@ type MarketTabPanelProps = {
 };
 
 export function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
-	if (currentTab === "trades") {
-		return (
-			<Suspense fallback={<MarketTradesFallback />}>
-				<MarketTrades conditionId={conditionId} pageNumber={tradesPage} />
-			</Suspense>
-		);
-	}
-
-	if (currentTab === "spikes") {
-		return (
-			<Suspense fallback={<MarketPriceSpikesFallback />}>
-				<MarketPriceSpikes conditionId={conditionId} />
-			</Suspense>
-		);
-	}
-
 	return (
 		<div className="space-y-4">
 			<MarketTabs />
@@ -41,6 +25,12 @@ export function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: Ma
 
 function MarketTabContent({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
 	switch (currentTab) {
+		case "spikes":
+			return (
+				<Suspense fallback={<MarketPriceSpikesFallback />}>
+					<MarketPriceSpikes conditionId={conditionId} />
+				</Suspense>
+			);
 		case "holders":
 			return (
 				<Suspense fallback={<MarketHoldersFallback />}>

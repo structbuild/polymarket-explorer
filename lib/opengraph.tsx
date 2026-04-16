@@ -1,8 +1,100 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import sharp from "sharp";
 
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 
 export const ogImageSize = { width: 1200, height: 630 };
+const ogImageFetchTimeoutMs = 5000;
+const ogImageMaxBytes = 1024 * 1024;
+const ogAllowedProtocols = new Set(["http:", "https:"]);
+
+function isBlockedIpv4Address(address: string): boolean {
+	const octets = address.split(".").map((part) => Number(part));
+
+	if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+		return true;
+	}
+
+	const [first, second] = octets;
+
+	return (
+		first === 0 ||
+		first === 10 ||
+		first === 127 ||
+		(first === 169 && second === 254) ||
+		(first === 172 && second >= 16 && second <= 31) ||
+		(first === 192 && second === 168) ||
+		(first === 100 && second >= 64 && second <= 127) ||
+		(first === 198 && (second === 18 || second === 19)) ||
+		first >= 224
+	);
+}
+
+function isBlockedIpv6Address(address: string): boolean {
+	const normalized = address.toLowerCase();
+
+	if (normalized === "::" || normalized === "::1") {
+		return true;
+	}
+
+	if (normalized.startsWith("::ffff:")) {
+		return isBlockedIpAddress(normalized.slice("::ffff:".length));
+	}
+
+	return normalized.startsWith("fc")
+		|| normalized.startsWith("fd")
+		|| /^fe[89ab]/.test(normalized);
+}
+
+function isBlockedIpAddress(address: string): boolean {
+	const version = isIP(address);
+
+	if (version === 4) {
+		return isBlockedIpv4Address(address);
+	}
+
+	if (version === 6) {
+		return isBlockedIpv6Address(address);
+	}
+
+	return false;
+}
+
+async function resolveOgImageUrl(src: string): Promise<URL | null> {
+	const normalizedSrc = normalizePolymarketS3ImageUrl(src) ?? src;
+	let url: URL;
+
+	try {
+		url = new URL(normalizedSrc);
+	} catch {
+		return null;
+	}
+
+	if (!ogAllowedProtocols.has(url.protocol) || url.hostname.toLowerCase() === "localhost") {
+		return null;
+	}
+
+	if (isBlockedIpAddress(url.hostname)) {
+		return null;
+	}
+
+	try {
+		const resolvedAddresses = await lookup(url.hostname, { all: true, verbatim: true });
+
+		if (resolvedAddresses.length === 0) {
+			return null;
+		}
+
+		if (resolvedAddresses.some(({ address }) => isBlockedIpAddress(address))) {
+			return null;
+		}
+	} catch {
+		return null;
+	}
+
+	return url;
+}
 
 export function deduplicateByImage<T extends { image_url?: string | null }>(items: T[], limit: number): T[] {
 	const seen = new Set<string>();
@@ -22,16 +114,53 @@ export async function loadImageAsDataUrl(
 ): Promise<string | null> {
 	if (!src) return null;
 
+	const resolvedUrl = await resolveOgImageUrl(src);
+
+	if (!resolvedUrl) {
+		return null;
+	}
+
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), ogImageFetchTimeoutMs);
+
 	try {
-		const response = await fetch(normalizePolymarketS3ImageUrl(src) ?? src);
+		const response = await fetch(resolvedUrl, {
+			signal: controller.signal,
+			redirect: "error",
+		});
 		if (!response.ok) return null;
 
-		const buffer = Buffer.from(await response.arrayBuffer());
+		const contentLengthHeader = response.headers.get("content-length");
+		const contentLength = contentLengthHeader ? Number(contentLengthHeader) : NaN;
+
+		if (!Number.isFinite(contentLength) || contentLength <= 0 || contentLength > ogImageMaxBytes) {
+			return null;
+		}
+
+		const contentType = response.headers.get("content-type");
+
+		if (!contentType?.startsWith("image/")) {
+			return null;
+		}
+
+		const imageBytes = await response.arrayBuffer();
+
+		if (imageBytes.byteLength > ogImageMaxBytes) {
+			return null;
+		}
+
+		const buffer = Buffer.from(imageBytes);
 		const png = await sharp(buffer).resize(size, size, { fit: "cover" }).png().toBuffer();
 		return `data:image/png;base64,${png.toString("base64")}`;
 	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			return null;
+		}
+
 		console.error("Failed to load image for OG:", error);
 		return null;
+	} finally {
+		clearTimeout(timeoutId);
 	}
 }
 
@@ -127,8 +256,10 @@ export function OgCollectionLayout({
 			</div>
 
 			{images.map((dataUrl, i) => {
-				if (!dataUrl) return null;
 				const pos = ogFloatingPositions[i];
+
+				if (!dataUrl || !pos) return null;
+
 				return (
 					<div
 						key={i}

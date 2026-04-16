@@ -134,7 +134,6 @@ function OpenGraphAvatarImage({ src }: { src: string }) {
 				flexShrink: 0,
 			}}
 		>
-			{/* eslint-disable-next-line @next/next/no-img-element */}
 			<img
 				src={src}
 				width={96}

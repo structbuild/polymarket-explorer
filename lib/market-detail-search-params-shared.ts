@@ -6,7 +6,11 @@ export const maxMarketTradesPageNumber = 1000;
 
 export const marketPositivePageParserDef = {
 	parse(value: string) {
-		const parsed = Number.parseInt(value, 10);
+		if (!/^[1-9]\d*$/.test(value)) {
+			return null;
+		}
+
+		const parsed = Number(value);
 		return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, maxMarketTradesPageNumber) : null;
 	},
 	serialize(value: number) {

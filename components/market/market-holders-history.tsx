@@ -5,7 +5,7 @@ import { getMarketHoldersHistory } from "@/lib/struct/market-queries";
 export async function MarketHoldersHistory({ conditionId }: { conditionId: string }) {
 	const candles = await getMarketHoldersHistory(conditionId);
 	const data = (candles ?? [])
-		.filter((c): c is { t: number; h: number } => typeof c.t === "number" && typeof c.h === "number")
+		.filter((c): c is { t: number; h: number } => Number.isFinite(c.t) && Number.isFinite(c.h))
 		.sort((a, b) => a.t - b.t);
 
 	if (data.length === 0) {

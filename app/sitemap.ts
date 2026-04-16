@@ -26,31 +26,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const staticEntries: MetadataRoute.Sitemap = [
 		{
 			url: siteUrl,
-			lastModified: new Date(),
 			changeFrequency: "hourly",
 			priority: 1,
 		},
 		{
 			url: `${siteUrl}/markets`,
-			lastModified: new Date(),
 			changeFrequency: "hourly",
 			priority: 0.9,
 		},
 		{
 			url: `${siteUrl}/traders`,
-			lastModified: new Date(),
 			changeFrequency: "hourly",
 			priority: 0.9,
 		},
 		{
 			url: `${siteUrl}/rewards`,
-			lastModified: new Date(),
 			changeFrequency: "daily",
 			priority: 0.7,
 		},
 		{
 			url: `${siteUrl}/tags`,
-			lastModified: new Date(),
 			changeFrequency: "weekly",
 			priority: 0.6,
 		},
@@ -58,7 +53,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	const tagEntries: MetadataRoute.Sitemap = tagsWithSlug.map((tag) => ({
 		url: `${siteUrl}/tags/${tag.slug}`,
-		lastModified: new Date(),
 		changeFrequency: "daily" as const,
 		priority: 0.7,
 	}));
@@ -67,7 +61,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		{ length: tagPageCount - 1 },
 		(_, i) => ({
 			url: `${siteUrl}/tags/page/${i + 2}`,
-			lastModified: new Date(),
 			changeFrequency: "weekly" as const,
 			priority: 0.5,
 		}),
@@ -75,7 +68,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	const marketEntries: MetadataRoute.Sitemap = marketSlugs.map((entry) => ({
 		url: `${siteUrl}/markets/${entry.slug}`,
-		lastModified: entry.lastModified,
 		changeFrequency: "daily" as const,
 		priority: 0.8,
 	}));
@@ -86,7 +78,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			if (!address) return null;
 			return {
 				url: `${siteUrl}/traders/${address}`,
-				lastModified: new Date(),
 				changeFrequency: "daily" as const,
 				priority: 0.6,
 			};

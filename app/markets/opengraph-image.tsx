@@ -12,7 +12,9 @@ export default async function OpenGraphImage() {
 	const { data: markets } = await getTopMarkets(ogFloatingPositions.length);
 
 	const marketsWithImages = deduplicateByImage(markets, ogFloatingPositions.length);
-	const imageDataUrls = await Promise.all(marketsWithImages.map((m) => loadImageAsDataUrl(m.image_url, 128)));
+	const imageDataUrls = (
+		await Promise.allSettled(marketsWithImages.map((m) => loadImageAsDataUrl(m.image_url, 128)))
+	).flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
 
 	return new ImageResponse(
 		<OgCollectionLayout

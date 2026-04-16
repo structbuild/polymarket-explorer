@@ -54,7 +54,7 @@ export function MarketHoldersHistoryClient({ data }: { data: HolderPoint[] }) {
 						<ChartTooltipContent
 							labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
 								const entry = payload?.[0]?.payload as { t?: number } | undefined;
-								return entry?.t ? formatDateFull(entry.t) : "";
+								return typeof entry?.t === "number" ? formatDateFull(entry.t) : "";
 							}}
 							formatter={(
 								value: number | string | readonly (number | string)[] | undefined,

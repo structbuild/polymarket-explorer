@@ -152,7 +152,6 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 ];
 
 const defaultColumnVisibility = {
-	cost: false,
 	realized_pnl: false,
 	fees: false,
 };

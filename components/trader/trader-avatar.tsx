@@ -26,7 +26,7 @@ export function TraderAvatar({
 	if (profileImage) {
 		return (
 			<Avatar className={cn(roundedClass, className)}>
-				<AvatarImage src={profileImage} className={imageRoundedClass} />
+				<AvatarImage src={profileImage} alt={`${displayName} avatar`} className={imageRoundedClass} />
 				<AvatarFallback className={cn(imageRoundedClass, "text-lg")}>
 					{displayName.slice(0, 2).toUpperCase()}
 				</AvatarFallback>

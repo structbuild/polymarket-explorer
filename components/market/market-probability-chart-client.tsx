@@ -25,6 +25,18 @@ function outcomeKey(outcome: PositionChartOutcome) {
 }
 
 export function MarketProbabilityChartClient({ outcomes }: { outcomes: PositionChartOutcome[] }) {
+	if (outcomes.length === 0) {
+		return (
+			<div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground sm:h-[320px]">
+				No probability data available.
+			</div>
+		);
+	}
+
+	return <MarketProbabilityChartClientContent outcomes={outcomes} />;
+}
+
+function MarketProbabilityChartClientContent({ outcomes }: { outcomes: PositionChartOutcome[] }) {
 	const [selectedKey, setSelectedKey] = useState<string>(() => outcomeKey(outcomes[0]));
 
 	const { data, config, keys } = useMemo(() => {
@@ -145,12 +157,12 @@ export function MarketProbabilityChartClient({ outcomes }: { outcomes: PositionC
 					<ChartTooltip
 						content={
 							<ChartTooltipContent
-								labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
-									const entry = payload?.[0]?.payload as { t?: number } | undefined;
-									if (!entry?.t) return "";
-									const time = formatTime(entry.t);
-									return time ? `${formatDateFull(entry.t)} · ${time}` : formatDateFull(entry.t);
-								}}
+							labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
+								const entry = payload?.[0]?.payload as { t?: number } | undefined;
+								if (typeof entry?.t !== "number") return "";
+								const time = formatTime(entry.t);
+								return time ? `${formatDateFull(entry.t)} · ${time}` : formatDateFull(entry.t);
+							}}
 								formatter={(
 									value: number | string | readonly (number | string)[] | undefined,
 									name: number | string | undefined,

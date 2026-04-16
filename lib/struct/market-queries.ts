@@ -259,14 +259,10 @@ export const getMarketTradesPage = cache(
 );
 
 export const getMarketTrades = cache(
-	unstable_cache(
-		async (conditionId: string, limit: number = defaultMarketTradesPageSize): Promise<Trade[]> => {
-			const page = await getMarketTradesPage(conditionId, { limit });
-			return page.data;
-		},
-		[structMarketTradesCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structMarketTradesCacheTag] },
-	),
+	async (conditionId: string, limit: number = defaultMarketTradesPageSize): Promise<Trade[]> => {
+		const page = await getMarketTradesPage(conditionId, { limit });
+		return page.data;
+	},
 );
 
 export const getMarketHoldersHistory = cache(
@@ -372,21 +368,17 @@ export const getAllTags = cache(
 );
 
 export const getTagsPaginated = cache(
-	unstable_cache(
-		async (limit: number = defaultPageSize, offset: number = 0): Promise<PaginatedResult<Tag>> => {
-			const tags = (await getAllTags()).filter(hasTagSlug);
-			const data = tags.slice(offset, offset + limit);
-			const hasMore = offset + limit < tags.length;
+	async (limit: number = defaultPageSize, offset: number = 0): Promise<PaginatedResult<Tag>> => {
+		const tags = (await getAllTags()).filter(hasTagSlug);
+		const data = tags.slice(offset, offset + limit);
+		const hasMore = offset + limit < tags.length;
 
-			return {
-				data,
-				hasMore,
-				nextCursor: hasMore ? String(offset + limit) : null,
-			};
-		},
-		[structAllTagsCacheTag],
-		{ revalidate: longRevalidateSeconds, tags: [structAllTagsCacheTag] },
-	),
+		return {
+			data,
+			hasMore,
+			nextCursor: hasMore ? String(offset + limit) : null,
+		};
+	},
 );
 
 export const getTagCount = cache(
@@ -410,12 +402,9 @@ export const getTagBySlug = cache(
 			}
 
 			try {
-				console.log("[getTagBySlug] identifier:", JSON.stringify(slug));
 				const response = await client.tags.getTag({ identifier: slug });
-				console.log("[getTagBySlug] response:", JSON.stringify(response.data));
 				return response.data;
 			} catch (error) {
-				console.error("[getTagBySlug] error:", error);
 				if (readStatus(error) === 404) {
 					return null;
 				}

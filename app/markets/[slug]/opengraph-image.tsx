@@ -193,7 +193,6 @@ export default async function OpenGraphImage({ params }: Props) {
 									flexShrink: 0,
 								}}
 							>
-								{/* eslint-disable-next-line @next/next/no-img-element */}
 								<img src={imageDataUrl} width={96} height={96} alt="" style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 12 }} />
 							</div>
 						)}

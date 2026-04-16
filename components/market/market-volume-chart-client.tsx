@@ -42,6 +42,18 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function MarketVolumeChartClient({ outcomes }: { outcomes: VolumeOutcome[] }) {
+	if (outcomes.length === 0) {
+		return (
+			<div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground sm:h-[320px]">
+				No volume data available.
+			</div>
+		);
+	}
+
+	return <MarketVolumeChartClientContent outcomes={outcomes} />;
+}
+
+function MarketVolumeChartClientContent({ outcomes }: { outcomes: VolumeOutcome[] }) {
 	const [selectedOutcomeIndex, setSelectedOutcomeIndex] = useState<number>(outcomes[0].outcomeIndex);
 	const [selectedSeries, setSelectedSeries] = useState<SeriesKey>("total");
 
@@ -132,10 +144,10 @@ export function MarketVolumeChartClient({ outcomes }: { outcomes: VolumeOutcome[
 					<ChartTooltip
 						content={
 							<ChartTooltipContent
-								labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
-									const entry = payload?.[0]?.payload as { t?: number } | undefined;
-									return entry?.t ? formatDateFull(entry.t) : "";
-								}}
+							labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
+								const entry = payload?.[0]?.payload as { t?: number } | undefined;
+								return typeof entry?.t === "number" ? formatDateFull(entry.t) : "";
+							}}
 								formatter={(
 									value: number | string | readonly (number | string)[] | undefined,
 									name: number | string | undefined,

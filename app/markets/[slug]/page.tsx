@@ -64,7 +64,10 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 }
 
 function buildFaqJsonLd(market: MarketResponse) {
-	const topOutcome = market.outcomes?.reduce((best, o) => ((o.price ?? 0) > (best.price ?? 0) ? o : best), market.outcomes![0]);
+	const outcomes = market.outcomes ?? [];
+	const topOutcome = outcomes.length > 0
+		? outcomes.reduce((best, o) => ((o.price ?? 0) > (best.price ?? 0) ? o : best), outcomes[0])
+		: null;
 
 	const probability = topOutcome?.price ? (topOutcome.price * 100).toFixed(0) : "N/A";
 	const volume = formatNumber(market.volume_usd ?? 0, {

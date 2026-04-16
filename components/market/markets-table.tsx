@@ -100,16 +100,21 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 	function headerOrSortable(columnId: string, label: string) {
 		const apiSortBy = COLUMN_SORT_MAP[columnId];
 		if (!sort || !apiSortBy) return label;
-		return () => (
-			<SortableHeader
-				sortBy={apiSortBy}
-				currentSortBy={sort.sortBy}
-				currentSortDirection={sort.sortDirection}
-				onSortChange={sort.onSortChange}
-			>
-				{label}
-			</SortableHeader>
-		);
+		const HeaderComponent = function SortableHeaderForColumn() {
+			return (
+				<SortableHeader
+					sortBy={apiSortBy}
+					currentSortBy={sort.sortBy}
+					currentSortDirection={sort.sortDirection}
+					onSortChange={sort.onSortChange}
+				>
+					{label}
+				</SortableHeader>
+			);
+		};
+
+		HeaderComponent.displayName = `SortableHeader(${columnId})`;
+		return HeaderComponent;
 	}
 
 	const cols: ColumnDef<MarketTableRow, unknown>[] = [
@@ -336,8 +341,12 @@ export function MarketsTable(props: MarketsTableProps) {
 		paginationMode = "client",
 	} = props;
 
-	const isClientSort = props.sortingMode === "client";
-	const isServerSort = props.sortingMode === "server";
+	const sortingMode = props.sortingMode;
+	const isClientSort = sortingMode === "client";
+	const isServerSort = sortingMode === "server";
+	const serverSortBy = isServerSort ? props.sortBy : undefined;
+	const serverSortDirection = isServerSort ? props.sortDirection : undefined;
+	const serverOnSortChange = isServerSort ? props.onSortChange : undefined;
 	const serverTimeframe = isServerSort ? props.timeframe : undefined;
 	const serverOnTimeframeChange = isServerSort ? props.onTimeframeChange : undefined;
 
@@ -355,14 +364,14 @@ export function MarketsTable(props: MarketsTableProps) {
 	}, [localSortBy]);
 
 	const sortState: SortState | null = useMemo(() => {
-		if (props.sortingMode === "server") {
+		if (sortingMode === "server" && serverSortBy && serverSortDirection && serverOnSortChange) {
 			return {
-				sortBy: props.sortBy,
-				sortDirection: props.sortDirection,
-				onSortChange: props.onSortChange,
+				sortBy: serverSortBy,
+				sortDirection: serverSortDirection,
+				onSortChange: serverOnSortChange,
 			};
 		}
-		if (props.sortingMode === "client") {
+		if (sortingMode === "client") {
 			return {
 				sortBy: localSortBy,
 				sortDirection: localSortDirection,
@@ -370,7 +379,15 @@ export function MarketsTable(props: MarketsTableProps) {
 			};
 		}
 		return null;
-	}, [props, localSortBy, localSortDirection, handleClientSortChange]);
+	}, [
+		sortingMode,
+		serverSortBy,
+		serverSortDirection,
+		serverOnSortChange,
+		localSortBy,
+		localSortDirection,
+		handleClientSortChange,
+	]);
 
 	const sortedMarkets = useMemo(() => {
 		if (!isClientSort) return markets;

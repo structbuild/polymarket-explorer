@@ -9,21 +9,25 @@ export async function MarketCharts({ conditionId }: { conditionId: string }) {
 
 	const volumeOutcomes = outcomes?.length
 		? (
-				await Promise.all(
-					outcomes.map(async (o) => {
-						const points = await getPositionVolumeChart(o.position_id);
-						const data = (points ?? [])
-							.filter((p) => (p.bv ?? 0) + (p.sv ?? 0) > 0)
-							.map((p) => ({ t: p.t, buy: p.bv, sell: p.sv }));
-						return {
-							name: o.name,
-							outcomeIndex: o.outcome_index,
-							data,
-						};
-					}),
-				)
-			).filter((o) => o.data.length > 0)
-		: [];
+					await Promise.all(
+						outcomes.map(async (o) => {
+							try {
+								const points = await getPositionVolumeChart(o.position_id);
+								const data = (points ?? [])
+									.filter((p) => (p.bv ?? 0) + (p.sv ?? 0) > 0)
+									.map((p) => ({ t: p.t, buy: p.bv ?? 0, sell: p.sv ?? 0 }));
+								return {
+									name: o.name,
+									outcomeIndex: o.outcome_index,
+									data,
+								};
+							} catch {
+								return null;
+							}
+						}),
+					)
+				).filter((o): o is NonNullable<typeof o> => o !== null && o.data.length > 0)
+			: [];
 
 	const hasVolume = volumeOutcomes.length > 0;
 

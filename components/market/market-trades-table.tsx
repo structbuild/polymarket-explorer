@@ -53,7 +53,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			const address = normalizeWalletAddress(trade.trader.address) ?? trade.trader.address;
 			return (
 				<Link
-					href={`/traders/${trade.trader.address}` as Route}
+					href={`/traders/${address}` as Route}
 					className="max-w-48 flex items-center gap-3 hover:underline"
 				>
 					{trade.trader.profile_image ? (
@@ -155,7 +155,9 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 					</TooltipWrapper>
 					{hasTradeTrader(trade) ? (
 						<TooltipWrapper content="View trader">
-							<Link href={`/traders/${trade.trader.address}` as Route}>
+							<Link
+								href={`/traders/${normalizeWalletAddress(trade.trader.address) ?? trade.trader.address}` as Route}
+							>
 								<Button variant="ghost" size="icon" aria-label="View trader">
 									<ExternalLinkIcon className="size-4" />
 								</Button>
