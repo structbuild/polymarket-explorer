@@ -9,10 +9,6 @@ import {
 	structTraderPositionsCacheTag,
 	structTraderTradesCacheTag,
 } from "@/lib/struct/queries";
-import {
-	structHomeTopMarketsCacheTag,
-	structRecentGlobalTradesCacheTag,
-} from "@/lib/struct/market-queries";
 
 export type SearchResult = {
 	traders: { address: string; name: string | null; pseudonym: string | null; profile_image: string | null }[];
@@ -61,9 +57,4 @@ export async function refreshTraderTabAction(pathname: string, kind: "positions"
 export async function refreshRewardsPageAction() {
 	updateTag(structRewardsMarketsCacheTag);
 	revalidatePath("/rewards");
-}
-
-export async function refreshHomeActivityAction(kind: "markets" | "trades") {
-	updateTag(kind === "markets" ? structHomeTopMarketsCacheTag : structRecentGlobalTradesCacheTag);
-	revalidatePath("/");
 }
