@@ -1,12 +1,13 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Holder, OutcomeHolders } from "@structbuild/sdk";
 
 import { DataTable } from "@/components/ui/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
 import { formatNumber, formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
@@ -159,8 +160,20 @@ const defaultColumnVisibility = {
 
 export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHolders[] }) {
 	const defaultValue = outcomes[0]?.position_id ?? "0";
-	return (
-		<Tabs defaultValue={defaultValue}>
+	const [activeOutcomeId, setActiveOutcomeId] = useState(defaultValue);
+
+	const activeOutcome = useMemo(
+		() => outcomes.find((o) => o.position_id === activeOutcomeId) ?? outcomes[0],
+		[outcomes, activeOutcomeId],
+	);
+
+	const rows: HolderRow[] = useMemo(
+		() => activeOutcome?.holders.map((h, index) => ({ ...h, rank: index + 1 })) ?? [],
+		[activeOutcome],
+	);
+
+	const outcomePicker = (
+		<Tabs value={activeOutcomeId} onValueChange={(value) => setActiveOutcomeId(String(value))}>
 			<TabsList>
 				{outcomes.map((outcome) => (
 					<TabsTrigger key={outcome.position_id} value={outcome.position_id}>
@@ -173,22 +186,19 @@ export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHolders[] }
 					</TabsTrigger>
 				))}
 			</TabsList>
-			{outcomes.map((outcome) => {
-				const rows: HolderRow[] = outcome.holders.map((h, index) => ({ ...h, rank: index + 1 }));
-				return (
-					<TabsContent key={outcome.position_id} value={outcome.position_id}>
-						<DataTable
-							columns={columns}
-							data={rows}
-							storageKey="market-holders-table"
-							defaultColumnVisibility={defaultColumnVisibility}
-							emptyMessage="No holders for this outcome."
-							columnLayout="fixed"
-							paginationMode="none"
-						/>
-					</TabsContent>
-				);
-			})}
 		</Tabs>
+	);
+
+	return (
+		<DataTable
+			columns={columns}
+			data={rows}
+			storageKey="market-holders-table"
+			defaultColumnVisibility={defaultColumnVisibility}
+			emptyMessage="No holders for this outcome."
+			columnLayout="fixed"
+			paginationMode="none"
+			toolbarLeft={outcomePicker}
+		/>
 	);
 }
