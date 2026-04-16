@@ -7,6 +7,8 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
 	title: { absolute: `${SITE_NAME} - Explore markets, traders, tags, and more on Polymarket` },
 	description: SITE_DESCRIPTION,

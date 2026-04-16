@@ -37,10 +37,8 @@ export const structTagBySlugCacheTag = "struct-tag-by-slug";
 export const structMarketsByTagCacheTag = "struct-markets-by-tag";
 export const structGlobalLeaderboardCacheTag = "struct-global-leaderboard-v2";
 export const structTopMarketsCacheTag = "struct-top-markets";
-export const structHomeTopMarketsCacheTag = "struct-home-top-markets";
 export const structAllMarketSlugsCacheTag = "struct-all-market-slugs";
 export const structPlatformCountsCacheTag = "struct-platform-counts";
-export const structRecentGlobalTradesCacheTag = "struct-recent-global-trades";
 
 const MAX_LEADERBOARD_PAGE_SIZE = 50;
 export const defaultMarketTradesPageSize = 25;
@@ -61,7 +59,6 @@ export type GetMarketTradesRequest = NonNullable<Parameters<StructClient["market
 export type MarketTradesPageOptions = Omit<GetMarketTradesRequest, "condition_ids">;
 
 const defaultPageSize = 24;
-const homeFeedRevalidateSeconds = 0.5;
 const shortRevalidateSeconds = 300;
 const longRevalidateSeconds = 3600;
 const maxPaginationRequests = 1000;
@@ -566,17 +563,13 @@ export const getTopMarkets = cache(
 	),
 );
 
-export const getHomeTopMarkets = cache(
-	unstable_cache(
-		fetchTopMarkets,
-		[structHomeTopMarketsCacheTag],
-		{ revalidate: homeFeedRevalidateSeconds, tags: [structHomeTopMarketsCacheTag] },
-	),
-);
+export const getHomeTopMarkets = fetchTopMarkets;
 
 export const getAllMarketSlugs = cache(
 	unstable_cache(
-		async (): Promise<{ slug: string; lastModified: Date }[]> => {
+		async (
+			maxCount?: number,
+		): Promise<{ slug: string; lastModified: Date }[]> => {
 			const client = getStructClient();
 
 			if (!client) {
@@ -591,7 +584,7 @@ export const getAllMarketSlugs = cache(
 				const seenPaginationKeys = new Set<string>();
 				let requestCount = 0;
 
-				do {
+				outer: do {
 					if (requestCount >= maxPaginationRequests) {
 						logPaginationLimitReached("getAllMarketSlugs");
 						break;
@@ -609,6 +602,9 @@ export const getAllMarketSlugs = cache(
 					for (const market of response.data) {
 						if (market.market_slug) {
 							results.push({ slug: market.market_slug, lastModified: now });
+							if (maxCount && results.length >= maxCount) {
+								break outer;
+							}
 						}
 					}
 
@@ -657,28 +653,22 @@ export const getPlatformCounts = cache(
 	),
 );
 
-export const getRecentTrades = cache(
-	unstable_cache(
-		async (limit: number = 10): Promise<Trade[]> => {
-			const client = getStructClient();
+export async function getRecentTrades(limit: number = 10): Promise<Trade[]> {
+	const client = getStructClient();
 
-			if (!client) {
-				return [];
-			}
+	if (!client) {
+		return [];
+	}
 
-			try {
-				const response = await client.markets.getTrades({
-					limit,
-					sort_desc: true,
-					trade_types: "OrderFilled,OrdersMatched",
-				});
-				return response.data;
-			} catch (error) {
-				logStructError("getRecentTrades", error);
-				return [];
-			}
-		},
-		[structRecentGlobalTradesCacheTag],
-		{ revalidate: homeFeedRevalidateSeconds, tags: [structRecentGlobalTradesCacheTag] },
-	),
-);
+	try {
+		const response = await client.markets.getTrades({
+			limit,
+			sort_desc: true,
+			trade_types: "OrderFilled,OrdersMatched",
+		});
+		return response.data;
+	} catch (error) {
+		logStructError("getRecentTrades", error);
+		return [];
+	}
+}

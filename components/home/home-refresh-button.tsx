@@ -4,10 +4,9 @@ import { RefreshCwIcon } from "lucide-react";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { refreshHomeActivityAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 
-export function HomeRefreshButton({ kind }: { kind: "markets" | "trades" }) {
+export function HomeRefreshButton() {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 
@@ -17,8 +16,7 @@ export function HomeRefreshButton({ kind }: { kind: "markets" | "trades" }) {
 			size="sm"
 			className="shrink-0"
 			onClick={() => {
-				startTransition(async () => {
-					await refreshHomeActivityAction(kind);
+				startTransition(() => {
 					router.refresh();
 				});
 			}}

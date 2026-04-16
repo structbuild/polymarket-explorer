@@ -6,7 +6,7 @@ import { getRecentTrades } from "@/lib/struct/market-queries";
 export async function RecentTradesList() {
 	const trades = await getRecentTrades(15);
 
-	return <RecentTradesTable trades={trades} toolbarLeft={<HomeTabsBar />} toolbarRight={<HomeRefreshButton kind="trades" />} />;
+	return <RecentTradesTable trades={trades} toolbarLeft={<HomeTabsBar />} toolbarRight={<HomeRefreshButton />} />;
 }
 
 export function RecentTradesListFallback() {

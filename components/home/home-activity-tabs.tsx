@@ -1,8 +1,7 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { type ReactNode } from "react";
-import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { useState, type ReactNode } from "react";
 
 type HomeActivityTab = "markets" | "trades";
 
@@ -29,7 +28,7 @@ export function HomeActivityTabs({
 	markets: ReactNode;
 	trades: ReactNode;
 }) {
-	const [tab, setTab] = useLocalStorage<HomeActivityTab>("home-activity-tab", "markets");
+	const [tab, setTab] = useState<HomeActivityTab>("markets");
 
 	return (
 		<Tabs value={tab} onValueChange={(value) => setTab(value as HomeActivityTab)}>

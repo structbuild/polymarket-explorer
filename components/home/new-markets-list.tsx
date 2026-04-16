@@ -16,7 +16,7 @@ export async function NewMarketsList() {
 			storageKey="home-new-markets"
 			paginationMode="none"
 			toolbarLeft={<HomeTabsBar />}
-			toolbarRight={<HomeRefreshButton kind="markets" />}
+			toolbarRight={<HomeRefreshButton />}
 		/>
 	);
 }
