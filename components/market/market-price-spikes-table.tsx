@@ -6,7 +6,8 @@ import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react";
 
 import { MarketTabs } from "@/components/market/market-tabs";
 import { DataTable } from "@/components/ui/data-table";
-import { formatNumber, formatTimeAgo } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { cn } from "@/lib/utils";
 
 type SpikeRow = PriceJump;
@@ -18,7 +19,7 @@ const columns: ColumnDef<SpikeRow, unknown>[] = [
 		size: 100,
 		cell: ({ row }) => {
 			const fromSec = Math.floor(row.original.from / 1000);
-			return <p className="text-sm text-muted-foreground">{formatTimeAgo(fromSec)}</p>;
+			return <TimeAgo timestamp={fromSec} className="text-sm text-muted-foreground" />;
 		},
 	},
 	{

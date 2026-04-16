@@ -8,7 +8,8 @@ import type { Holder, OutcomeHolders } from "@structbuild/sdk";
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
-import { formatNumber, formatPriceCents, formatTimeAgo } from "@/lib/format";
+import { formatNumber, formatPriceCents } from "@/lib/format";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { cn, getTraderDisplayName } from "@/lib/utils";
 
 type HolderRow = Holder & { rank: number };
@@ -129,10 +130,10 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const t = row.original.pnl?.first_trade_at;
-			return (
-				<span className="tabular-nums text-foreground/80">
-					{t != null ? formatTimeAgo(t) : "—"}
-				</span>
+			return t != null ? (
+				<TimeAgo timestamp={t} className="tabular-nums text-foreground/80" />
+			) : (
+				<span className="tabular-nums text-foreground/80">—</span>
 			);
 		},
 	},
@@ -142,10 +143,10 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const t = row.original.pnl?.last_trade_at;
-			return (
-				<span className="tabular-nums text-foreground/80">
-					{t != null ? formatTimeAgo(t) : "—"}
-				</span>
+			return t != null ? (
+				<TimeAgo timestamp={t} className="tabular-nums text-foreground/80" />
+			) : (
+				<span className="tabular-nums text-foreground/80">—</span>
 			);
 		},
 	},

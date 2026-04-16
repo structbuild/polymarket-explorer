@@ -14,6 +14,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 const DEBOUNCE_MS = 300;
+const OPEN_EVENT = "search-dialog:open";
+
+export function openSearchDialog() {
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new Event(OPEN_EVENT));
+	}
+}
 
 export function SearchDialog() {
 	const [open, setOpen] = useState(false);
@@ -30,6 +37,12 @@ export function SearchDialog() {
 		event.preventDefault();
 		setOpen((prev) => !prev);
 	});
+
+	useEffect(() => {
+		const handler = () => setOpen(true);
+		window.addEventListener(OPEN_EVENT, handler);
+		return () => window.removeEventListener(OPEN_EVENT, handler);
+	}, []);
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 639px)");

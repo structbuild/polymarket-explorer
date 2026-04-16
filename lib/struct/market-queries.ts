@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+	CountsResponse,
 	HolderHistoryCandle,
 	LeaderboardEntry,
 	MarketHoldersResponse,
@@ -36,7 +37,10 @@ export const structTagBySlugCacheTag = "struct-tag-by-slug";
 export const structMarketsByTagCacheTag = "struct-markets-by-tag";
 export const structGlobalLeaderboardCacheTag = "struct-global-leaderboard-v2";
 export const structTopMarketsCacheTag = "struct-top-markets";
+export const structHomeTopMarketsCacheTag = "struct-home-top-markets";
 export const structAllMarketSlugsCacheTag = "struct-all-market-slugs";
+export const structPlatformCountsCacheTag = "struct-platform-counts";
+export const structRecentGlobalTradesCacheTag = "struct-recent-global-trades";
 
 const MAX_LEADERBOARD_PAGE_SIZE = 50;
 export const defaultMarketTradesPageSize = 25;
@@ -57,6 +61,7 @@ export type GetMarketTradesRequest = NonNullable<Parameters<StructClient["market
 export type MarketTradesPageOptions = Omit<GetMarketTradesRequest, "condition_ids">;
 
 const defaultPageSize = 24;
+const homeFeedRevalidateSeconds = 0.5;
 const shortRevalidateSeconds = 300;
 const longRevalidateSeconds = 3600;
 const maxPaginationRequests = 1000;
@@ -91,6 +96,45 @@ function emptyOffsetPage<T>(limit: number): PaginatedResource<T, number> {
 
 function hasTagSlug(tag: Tag): tag is Tag & { slug: string } {
 	return typeof tag.slug === "string" && tag.slug.length > 0;
+}
+
+async function fetchTopMarkets(
+	limit: number = defaultPageSize,
+	status: string = "open",
+	cursor?: string,
+	sortBy: string = "volume",
+	sortDir: string = "desc",
+	timeframe: string = "24h",
+	excludeTags?: string,
+): Promise<PaginatedResult<MarketResponse>> {
+	const client = getStructClient();
+
+	if (!client) {
+		return { data: [], hasMore: false, nextCursor: null };
+	}
+
+	try {
+		const response = await client.markets.getMarkets({
+			limit,
+			status: status as "open" | "closed" | "all",
+			sort_by: sortBy as MarketSortBy,
+			sort_dir: sortDir as SortDirection,
+			timeframe: timeframe as MetricsTimeframe,
+			include_metrics: true,
+			...(cursor ? { pagination_key: cursor } : {}),
+			...(excludeTags ? { exclude_tags: excludeTags } : {}),
+		});
+		const hasMore = response.pagination?.has_more ?? false;
+		const nextKey = response.pagination?.pagination_key;
+		return {
+			data: response.data.map(normalizeMarketResponseImages),
+			hasMore,
+			nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
+		};
+	} catch (error) {
+		logStructError(`getTopMarkets:${status}`, error);
+		return { data: [], hasMore: false, nextCursor: null };
+	}
 }
 
 export const getMarketBySlug = cache(
@@ -518,37 +562,17 @@ export const getGlobalLeaderboard = cache(
 
 export const getTopMarkets = cache(
 	unstable_cache(
-		async (limit: number = defaultPageSize, status: string = "open", cursor?: string, sortBy: string = "volume", sortDir: string = "desc", timeframe: string = "24h"): Promise<PaginatedResult<MarketResponse>> => {
-			const client = getStructClient();
-
-			if (!client) {
-				return { data: [], hasMore: false, nextCursor: null };
-			}
-
-			try {
-				const response = await client.markets.getMarkets({
-					limit,
-					status: status as "open" | "closed" | "all",
-					sort_by: sortBy as MarketSortBy,
-					sort_dir: sortDir as SortDirection,
-					timeframe: timeframe as MetricsTimeframe,
-					include_metrics: true,
-					...(cursor ? { pagination_key: cursor } : {}),
-				});
-				const hasMore = response.pagination?.has_more ?? false;
-				const nextKey = response.pagination?.pagination_key;
-				return {
-					data: response.data.map(normalizeMarketResponseImages),
-					hasMore,
-					nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
-				};
-			} catch (error) {
-				logStructError(`getTopMarkets:${status}`, error);
-				return { data: [], hasMore: false, nextCursor: null };
-			}
-		},
+		fetchTopMarkets,
 		[structTopMarketsCacheTag],
 		{ revalidate: shortRevalidateSeconds, tags: [structTopMarketsCacheTag] },
+	),
+);
+
+export const getHomeTopMarkets = cache(
+	unstable_cache(
+		fetchTopMarkets,
+		[structHomeTopMarketsCacheTag],
+		{ revalidate: homeFeedRevalidateSeconds, tags: [structHomeTopMarketsCacheTag] },
 	),
 );
 
@@ -610,5 +634,53 @@ export const getAllMarketSlugs = cache(
 		},
 		[structAllMarketSlugsCacheTag],
 		{ revalidate: longRevalidateSeconds, tags: [structAllMarketSlugsCacheTag] },
+	),
+);
+
+export const getPlatformCounts = cache(
+	unstable_cache(
+		async (): Promise<CountsResponse | null> => {
+			const client = getStructClient();
+
+			if (!client) {
+				return null;
+			}
+
+			try {
+				const response = await client.misc.getCounts();
+				return response.data;
+			} catch (error) {
+				logStructError("getPlatformCounts", error);
+				return null;
+			}
+		},
+		[structPlatformCountsCacheTag],
+		{ revalidate: longRevalidateSeconds, tags: [structPlatformCountsCacheTag] },
+	),
+);
+
+export const getRecentTrades = cache(
+	unstable_cache(
+		async (limit: number = 10): Promise<Trade[]> => {
+			const client = getStructClient();
+
+			if (!client) {
+				return [];
+			}
+
+			try {
+				const response = await client.markets.getTrades({
+					limit,
+					sort_desc: true,
+					trade_types: "OrderFilled,OrdersMatched",
+				});
+				return response.data;
+			} catch (error) {
+				logStructError("getRecentTrades", error);
+				return [];
+			}
+		},
+		[structRecentGlobalTradesCacheTag],
+		{ revalidate: homeFeedRevalidateSeconds, tags: [structRecentGlobalTradesCacheTag] },
 	),
 );

@@ -21,7 +21,8 @@ import { TooltipWrapper } from "../ui/tooltip";
 import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { formatTimeAgo, formatPriceCents } from "@/lib/format";
+import { formatPriceCents } from "@/lib/format";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
 
@@ -48,11 +49,12 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		id: "age",
 		header: "Age",
 		size: 80,
-		cell: ({ row }) => (
-			<p className="text-sm text-muted-foreground">
-				{row.original.confirmed_at != null ? formatTimeAgo(row.original.confirmed_at) : "—"}
-			</p>
-		),
+		cell: ({ row }) =>
+			row.original.confirmed_at != null ? (
+				<TimeAgo timestamp={row.original.confirmed_at} className="text-sm text-muted-foreground" />
+			) : (
+				<p className="text-sm text-muted-foreground">—</p>
+			),
 	},
 	{
 		id: "market",

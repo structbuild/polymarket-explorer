@@ -197,12 +197,16 @@ export function OgCollectionLayout({
 	subtitle,
 	title,
 	titleColor,
+	titleSize = 120,
+	positions = ogFloatingPositions,
 	images,
 	children,
 }: {
 	subtitle: string;
 	title: React.ReactNode;
 	titleColor?: string;
+	titleSize?: number;
+	positions?: typeof ogFloatingPositions;
 	images: (string | null)[];
 	children?: React.ReactNode;
 }) {
@@ -242,7 +246,7 @@ export function OgCollectionLayout({
 					style={{
 						display: "flex",
 						alignItems: "baseline",
-						fontSize: 120,
+						fontSize: titleSize,
 						fontWeight: 800,
 						lineHeight: 0.9,
 						marginTop: 40,
@@ -256,7 +260,7 @@ export function OgCollectionLayout({
 			</div>
 
 			{images.map((dataUrl, i) => {
-				const pos = ogFloatingPositions[i];
+				const pos = positions[i];
 
 				if (!dataUrl || !pos) return null;
 

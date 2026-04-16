@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { facehashColorClasses } from "@/lib/facehash";
-import { formatNumber, formatPriceCents, formatTimeAgo } from "@/lib/format";
+import { formatNumber, formatPriceCents } from "@/lib/format";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { marketDetailSearchParamParsers } from "@/lib/market-detail-search-params";
 import { maxMarketTradesPageNumber } from "@/lib/market-detail-search-params-shared";
 import type { PaginatedResource } from "@/lib/struct/types";
@@ -30,11 +31,12 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		id: "age",
 		header: "Age",
 		size: 80,
-		cell: ({ row }) => (
-			<p className="text-sm text-muted-foreground">
-				{row.original.confirmed_at != null ? formatTimeAgo(row.original.confirmed_at) : "—"}
-			</p>
-		),
+		cell: ({ row }) =>
+			row.original.confirmed_at != null ? (
+				<TimeAgo timestamp={row.original.confirmed_at} className="text-sm text-muted-foreground" />
+			) : (
+				<p className="text-sm text-muted-foreground">—</p>
+			),
 	},
 	{
 		id: "trader",

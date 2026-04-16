@@ -15,9 +15,12 @@ type MarketTabPanelProps = {
 };
 
 export function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
+	const showStandaloneTabs =
+		currentTab === "holders" || currentTab === "holders-history";
+
 	return (
 		<div className="space-y-4">
-			<MarketTabs />
+			{showStandaloneTabs ? <MarketTabs /> : null}
 			<MarketTabContent currentTab={currentTab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
 		</div>
 	);

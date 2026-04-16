@@ -177,10 +177,10 @@ function DataTableView<TData>({
 		<DataTableTimeframeContext.Provider value={timeframe ?? null}>
 		<div className="space-y-3">
 			{toolbarLeft || toolbarRight || toolbar || timeframeToggle ? (
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:min-h-8">
 					<div className="min-w-0 flex-1">{toolbarLeft}</div>
 					{(toolbarRight || toolbar || timeframeToggle) ? (
-						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end">
+						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:items-end sm:justify-end">
 							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
 							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
 							{toolbar && <Fragment key="toolbar">{toolbar}</Fragment>}

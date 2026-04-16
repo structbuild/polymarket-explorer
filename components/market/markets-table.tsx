@@ -335,6 +335,7 @@ type BaseMarketsTableProps = {
 	markets: MarketTableRow[];
 	storageKey?: string;
 	toolbarLeft?: React.ReactNode;
+	toolbarRight?: React.ReactNode;
 	paginationMode?: "client" | "none";
 };
 
@@ -351,8 +352,8 @@ type ServerSortProps = BaseMarketsTableProps & {
 	sortBy: MarketSortBy;
 	sortDirection: MarketSortDirection;
 	onSortChange: (sortBy: MarketSortBy) => void;
-	timeframe?: MetricsTimeframeChoice;
-	onTimeframeChange?: (timeframe: MetricsTimeframeChoice) => void;
+	timeframe: MetricsTimeframeChoice;
+	onTimeframeChange: (timeframe: MetricsTimeframeChoice) => void;
 };
 
 type MarketsTableProps = NoSortProps | ClientSortProps | ServerSortProps;
@@ -362,6 +363,7 @@ export function MarketsTable(props: MarketsTableProps) {
 		markets,
 		storageKey = "markets-table",
 		toolbarLeft,
+		toolbarRight,
 		paginationMode = "client",
 	} = props;
 
@@ -373,12 +375,14 @@ export function MarketsTable(props: MarketsTableProps) {
 	const serverOnSortChange = isServerSort ? props.onSortChange : undefined;
 	const serverTimeframe = isServerSort ? props.timeframe : undefined;
 	const serverOnTimeframeChange = isServerSort ? props.onTimeframeChange : undefined;
+	const hasServerTimeframeControl =
+		isServerSort && serverTimeframe !== undefined && serverOnTimeframeChange !== undefined;
 
 	const [localSortBy, setLocalSortBy] = useState<MarketSortBy>(defaultMarketSortBy);
 	const [localSortDirection, setLocalSortDirection] = useState<MarketSortDirection>(defaultMarketSortDirection);
 	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, TABLE_TIMEFRAMES, DEFAULT_TIMEFRAME);
-	const timeframe = serverTimeframe ?? internalTimeframe;
-	const setTimeframe = serverOnTimeframeChange ?? setInternalTimeframe;
+	const timeframe = hasServerTimeframeControl ? serverTimeframe : internalTimeframe;
+	const setTimeframe = hasServerTimeframeControl ? serverOnTimeframeChange : setInternalTimeframe;
 
 	const handleClientSortChange = useCallback((nextSortBy: MarketSortBy) => {
 		setLocalSortDirection((prev) =>
@@ -434,9 +438,10 @@ export function MarketsTable(props: MarketsTableProps) {
 	const flags = useMemo(() => buildColumnFlags(markets), [markets]);
 	const columns = useMemo(() => buildColumns(flags, sortState), [flags, sortState]);
 	const controlledTimeframeProps =
-		isClientSort || (isServerSort && serverTimeframe)
+		isClientSort || hasServerTimeframeControl
 			? { controlledTimeframe: timeframe, onControlledTimeframeChange: setTimeframe }
 			: {};
+	const timeframes = isServerSort && !hasServerTimeframeControl ? undefined : TABLE_TIMEFRAMES;
 
 	return (
 		<DataTable
@@ -448,9 +453,10 @@ export function MarketsTable(props: MarketsTableProps) {
 			emptyMessage="No markets to show."
 			columnLayout="fixed"
 			defaultPageSize={25}
-			timeframes={TABLE_TIMEFRAMES}
+			timeframes={timeframes}
 			defaultTimeframe={DEFAULT_TIMEFRAME}
 			toolbarLeft={toolbarLeft}
+			toolbarRight={toolbarRight}
 			{...controlledTimeframeProps}
 		/>
 	);
