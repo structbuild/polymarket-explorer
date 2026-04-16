@@ -1,8 +1,8 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -57,7 +57,13 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			return (
 				<div className="flex items-center gap-3">
 					{imageUrl ? (
-						<img className="size-10 rounded-md object-cover" alt="" src={imageUrl} />
+						<Image
+							className="size-10 shrink-0 rounded-md object-cover"
+							alt={title}
+							src={imageUrl}
+							width={40}
+							height={40}
+						/>
 					) : (
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}

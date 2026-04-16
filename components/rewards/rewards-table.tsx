@@ -1,9 +1,9 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { MarketResponse } from "@structbuild/sdk";
 import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ExternalLinkIcon, InfoIcon } from "lucide-react";
 
@@ -39,7 +39,13 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 			return (
 				<div className="flex items-center gap-3">
 					{market.image_url ? (
-						<img className="size-10 shrink-0 rounded-md object-cover" alt="" src={market.image_url} />
+						<Image
+							className="size-10 shrink-0 rounded-md object-cover"
+							alt={market.question ?? ""}
+							src={market.image_url}
+							width={40}
+							height={40}
+						/>
 					) : (
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}

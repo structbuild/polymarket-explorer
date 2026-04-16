@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const [tags, marketSlugs, { data: traders }] = await Promise.all([
 		getAllTags(),
 		getAllMarketSlugs(),
-		getGlobalLeaderboard("lifetime", 200),
+		getGlobalLeaderboard("lifetime", 5000),
 	]);
 
 	const tagsWithSlug = tags.filter((tag) => tag.slug);

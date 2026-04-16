@@ -135,7 +135,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 						{m.imageUrl ? (
 							<Image
 								src={m.imageUrl}
-								alt=""
+								alt={title}
 								width={40}
 								height={40}
 								className="size-10 shrink-0 rounded-md object-cover"

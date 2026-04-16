@@ -67,11 +67,21 @@ export default function RootLayout({
 		},
 	};
 
+	const organizationJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		name: SITE_NAME,
+		url: siteUrl,
+		logo: `${siteUrl}/favicon.ico`,
+		description: SITE_DESCRIPTION,
+	};
+
 	return (
 		<html lang="en" suppressHydrationWarning className="h-full">
 			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh overflow-x-hidden antialiased font-sans`}>
 				<Analytics />
 				<JsonLd data={websiteJsonLd} />
+				<JsonLd data={organizationJsonLd} />
 				<NuqsAdapter>
 					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 						<TooltipProvider>

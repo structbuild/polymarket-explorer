@@ -8,14 +8,18 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "PM Explorer",
     description: SITE_DESCRIPTION,
     start_url: "/",
+    scope: "/",
     display: "standalone",
+    orientation: "portrait",
     background_color: "#09090b",
     theme_color: "#09090b",
+    categories: ["finance", "productivity", "news"],
     icons: [
       {
         src: "/favicon.ico",
         sizes: "any",
         type: "image/x-icon",
+        purpose: "any",
       },
     ],
   };
