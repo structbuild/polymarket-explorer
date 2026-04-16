@@ -33,9 +33,22 @@ export function SearchDialog() {
 	const cachedResultsRef = useRef(new Map<string, SearchResult>());
 	const inFlightRequestsRef = useRef(new Map<string, Promise<SearchResult>>());
 
+	const handleOpenChange = useCallback((nextOpen: boolean) => {
+		requestIdRef.current += 1;
+		if (timeoutRef.current) {
+			clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
+		}
+		setOpen(nextOpen);
+		if (!nextOpen) {
+			setQuery("");
+			setResults({ traders: [], markets: [] });
+		}
+	}, []);
+
 	useHotkey("Mod+K", (event) => {
 		event.preventDefault();
-		setOpen((prev) => !prev);
+		handleOpenChange(!open);
 	});
 
 	useEffect(() => {
@@ -55,15 +68,6 @@ export function SearchDialog() {
 			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 			mediaQuery.removeEventListener("change", updateViewport);
 		};
-	}, []);
-
-	const handleOpenChange = useCallback((nextOpen: boolean) => {
-		requestIdRef.current += 1;
-		setOpen(nextOpen);
-		if (!nextOpen) {
-			setQuery("");
-			setResults({ traders: [], markets: [] });
-		}
 	}, []);
 
 	const loadResults = useCallback((trimmed: string) => {

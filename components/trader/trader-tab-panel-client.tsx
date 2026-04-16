@@ -1,6 +1,6 @@
 "use client"
 
-import type { TraderOutcomePnlEntry, components } from "@structbuild/sdk"
+import type { TraderOutcomePnlEntry } from "@structbuild/sdk"
 import dynamic from "next/dynamic"
 
 import type {
@@ -8,6 +8,7 @@ import type {
 	TraderSortDirection,
 } from "@/lib/trader-search-params-shared"
 import type { PaginatedResource } from "@/lib/struct/types"
+import type { TradeRow } from "./types"
 import {
 	loadTraderActivity,
 	loadTraderPositions,
@@ -15,19 +16,6 @@ import {
 
 const TraderActivity = dynamic(loadTraderActivity)
 const TraderPositions = dynamic(loadTraderPositions)
-
-type TradeEvent = components["schemas"]["TradeEvent"]
-type TradeRow = TradeEvent & {
-	image_url?: string | null;
-	question?: string | null;
-	outcome?: string | null;
-	price?: number | null;
-	shares_amount?: number | null;
-	usd_amount?: number | null;
-	fee?: number | null;
-	slug?: string | null;
-	side?: string | null;
-}
 
 type TraderTabPanelClientProps =
 	| {

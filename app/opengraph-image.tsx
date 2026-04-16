@@ -1,9 +1,9 @@
 import { ImageResponse } from "next/og";
 import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize, ogPalette } from "@/lib/opengraph";
+import { SITE_NAME } from "@/lib/site-metadata";
+import { getTopMarkets } from "@/lib/struct/market-queries";
 
 const homeFloatingPositions = ogFloatingPositions.with(3, { x: 170, y: 530, size: 68, rotate: -6, opacity: 0.4 });
-import { getTopMarkets } from "@/lib/struct/market-queries";
-import { SITE_NAME } from "@/lib/site-metadata";
 
 export const runtime = "nodejs";
 export const revalidate = 7200;

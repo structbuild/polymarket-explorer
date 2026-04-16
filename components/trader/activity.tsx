@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
-import type { components } from "@structbuild/sdk";
 import type { Route } from "next";
 import Link from "next/link";
 import { useTransition } from "react";
@@ -25,20 +24,7 @@ import { formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
-
-type TradeEvent = components["schemas"]["TradeEvent"];
-
-type TradeRow = TradeEvent & {
-	image_url?: string | null;
-	question?: string | null;
-	outcome?: string | null;
-	price?: number | null;
-	shares_amount?: number | null;
-	usd_amount?: number | null;
-	fee?: number | null;
-	slug?: string | null;
-	side?: string | null;
-};
+import type { TradeRow } from "./types";
 
 const defaultColumnVisibility: VisibilityState = {
 	fee: false,

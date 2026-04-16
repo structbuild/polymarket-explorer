@@ -256,13 +256,7 @@ const getMarketTradesPageCached = unstable_cache(
 		}
 
 		const offset = options?.offset ?? 0;
-		const restOptions: MarketTradesPageOptions = { ...(options ?? {}) };
-		const sort_desc = restOptions.sort_desc;
-		const trade_types = restOptions.trade_types;
-		delete restOptions.limit;
-		delete restOptions.offset;
-		delete restOptions.sort_desc;
-		delete restOptions.trade_types;
+		const { limit: _limit, offset: _offset, sort_desc, trade_types, ...restOptions } = (options ?? {}) as MarketTradesPageOptions;
 
 		try {
 			const response = await client.markets.getTrades({
@@ -489,6 +483,10 @@ export const getMarketsByTag = cache(
 					nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
 				};
 			} catch (error) {
+				if (readStatus(error) === 404) {
+					return { data: [], hasMore: false, nextCursor: null };
+				}
+
 				logStructError(`getMarketsByTag:${tag}`, error);
 				return { data: [], hasMore: false, nextCursor: null };
 			}

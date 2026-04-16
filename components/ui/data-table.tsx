@@ -324,8 +324,8 @@ export function useTimeframeState(
 		storageKey ? `${storageKey}-timeframe` : "__unused_tf__",
 		fallback,
 	)
-	const active: MetricsTimeframeChoice = timeframes && timeframes.includes(stored)
-		? stored
+	const active: MetricsTimeframeChoice = timeframes
+		? (timeframes.includes(stored) ? stored : fallback)
 		: (isMetricsTimeframe(stored) ? stored : fallback)
 	return [active, setStored] as const
 }

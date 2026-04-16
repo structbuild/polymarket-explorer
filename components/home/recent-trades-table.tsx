@@ -17,7 +17,6 @@ import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { hasTradeTrader, isBuyTrade, isOrderFilledTrade } from "@/lib/trade-utils";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import Image from "next/image";
 
 const columns: ColumnDef<Trade, unknown>[] = [
 	{
@@ -81,7 +80,9 @@ const columns: ColumnDef<Trade, unknown>[] = [
 			const content = (
 				<div className="flex items-center gap-2">
 					{imageUrl && (
-						<Image className="size-8 shrink-0 rounded-sm object-cover" alt={`${label} image`} src={imageUrl} width={32} height={32} />
+						<Avatar className="rounded-sm after:rounded-sm">
+							<AvatarImage src={imageUrl} className="rounded-sm" />
+						</Avatar>
 					)}
 					<span className="min-w-0 flex-1 truncate text-sm">{label}</span>
 				</div>

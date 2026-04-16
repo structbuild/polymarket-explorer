@@ -4,8 +4,10 @@ import { MarketsTable } from "@/components/market/markets-table";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getHomeTopMarkets } from "@/lib/struct/market-queries";
 
+const MARKET_FETCH_COUNT = 12;
+
 export async function NewMarketsList() {
-	const result = await getHomeTopMarkets(12, "all", undefined, "created_time", "desc", "24h", "Hide from New");
+	const result = await getHomeTopMarkets(MARKET_FETCH_COUNT, "all", undefined, "created_time", "desc", "24h", "Hide from New");
 	const rows = result.data.map(marketResponseToRow);
 
 	return (
@@ -30,7 +32,7 @@ export function NewMarketsListFallback() {
 				</div>
 			</div>
 			<div className="overflow-hidden rounded-lg bg-card">
-				{Array.from({ length: 10 }, (_, i) => (
+				{Array.from({ length: MARKET_FETCH_COUNT }, (_, i) => (
 					<div key={i} className="flex items-center gap-3 border-t px-4 py-3 first:border-t-0">
 						<div className="size-10 shrink-0 animate-pulse rounded-md bg-muted" />
 						<div className="min-w-0 flex-1 space-y-1.5">

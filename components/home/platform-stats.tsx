@@ -1,14 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
 import { getPlatformCounts } from "@/lib/struct/market-queries";
-import { TagIcon, CalendarIcon, BarChart3Icon, LayersIcon, UsersIcon } from "lucide-react";
 
 const stats = [
-	{ key: "markets" as const, label: "Markets", icon: BarChart3Icon },
-	{ key: "events" as const, label: "Events", icon: CalendarIcon },
-	{ key: "traders" as const, label: "Traders", icon: UsersIcon },
-	{ key: "positions" as const, label: "Positions", icon: LayersIcon },
-	{ key: "tags" as const, label: "Tags", icon: TagIcon },
+	{ key: "markets" as const, label: "Markets" },
+	{ key: "events" as const, label: "Events" },
+	{ key: "traders" as const, label: "Traders" },
+	{ key: "positions" as const, label: "Positions" },
+	{ key: "tags" as const, label: "Tags" },
 ];
 
 export async function PlatformStats() {
@@ -38,13 +37,10 @@ export function PlatformStatsFallback() {
 	return (
 		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
 			{Array.from({ length: 5 }, (_, i) => (
-				<Card key={i} size="sm">
-					<CardContent className="flex items-center gap-3">
-						<div className="size-9 shrink-0 animate-pulse rounded-lg bg-muted" />
-						<div className="min-w-0 space-y-1.5">
-							<div className="h-5 w-16 animate-pulse rounded bg-muted" />
-							<div className="h-3 w-12 animate-pulse rounded bg-muted" />
-						</div>
+				<Card key={i} size="sm" className="px-2 rounded-lg ring-0 ">
+					<CardContent className="flex flex-col gap-0.5">
+						<div className="h-5 w-16 animate-pulse rounded bg-muted" />
+						<div className="h-7 w-20 animate-pulse rounded bg-muted" />
 					</CardContent>
 				</Card>
 			))}

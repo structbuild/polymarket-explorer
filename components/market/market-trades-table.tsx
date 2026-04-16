@@ -6,7 +6,7 @@ import type { Route } from "next";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Trade } from "@structbuild/sdk";
 import { Facehash } from "facehash";
-import { ExternalLinkIcon, HashIcon } from "lucide-react";
+import { HashIcon } from "lucide-react";
 import { useQueryStates } from "nuqs";
 
 import { MarketTabs } from "@/components/market/market-tabs";
@@ -155,17 +155,6 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							</Button>
 						</a>
 					</TooltipWrapper>
-					{hasTradeTrader(trade) ? (
-						<TooltipWrapper content="View trader">
-							<Link
-								href={`/traders/${normalizeWalletAddress(trade.trader.address) ?? trade.trader.address}` as Route}
-							>
-								<Button variant="ghost" size="icon" aria-label="View trader">
-									<ExternalLinkIcon className="size-4" />
-								</Button>
-							</Link>
-						</TooltipWrapper>
-					) : null}
 				</div>
 			);
 		},
