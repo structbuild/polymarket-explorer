@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { InfoRow } from "@/components/trader/info-row";
 import { Separator } from "@/components/ui/separator";
 import type { PnlStreaks } from "@/lib/polymarket/pnl";
@@ -28,8 +28,14 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: Per
 						<span className="text-sm font-medium text-muted-foreground sm:text-base">—</span>
 					) : (
 						<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
-							{bestTradeMarket && (
-								<img src={bestTradeMarket.image_url ?? ""} alt={bestTradeMarket.question ?? ""} className="size-4 rounded-sm" />
+							{bestTradeMarket?.image_url && (
+								<Image
+									src={bestTradeMarket.image_url}
+									alt={bestTradeMarket.question ?? ""}
+									width={16}
+									height={16}
+									className="size-4 rounded-sm object-cover"
+								/>
 							)}
 							<p className="text-sm font-medium text-emerald-500 sm:text-base">
 								{formatNumber(pnlSummary?.best_trade_pnl_usd ?? 0, { currency: true, compact: true })}

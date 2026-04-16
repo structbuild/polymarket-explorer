@@ -3,7 +3,9 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
 import type { components } from "@structbuild/sdk"
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
+import type { Route } from "next"
+import Link from "next/link"
+import { ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
 import { useCallback, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
@@ -20,12 +22,13 @@ import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 import { Badge } from "../ui/badge"
 import { Checkbox } from "../ui/checkbox"
 import { DataTable } from "../ui/data-table"
+import { SortableHeader } from "../ui/sortable-header"
 import { TooltipWrapper } from "../ui/tooltip"
 import { Button } from "../ui/button"
 import { TraderTabs } from "./trader-tabs"
-import { formatNumber } from "@/lib/format"
+import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
-import { formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
 
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
 
@@ -52,43 +55,6 @@ const defaultColumnVisibility: VisibilityState = {
 	total_sell_usd: false,
 	total_fees: false,
 	redemption_usd: false,
-}
-
-type SortableHeaderProps = {
-	children: React.ReactNode
-	sortBy: TraderPositionSortBy
-	currentSortBy: TraderPositionSortBy
-	currentSortDirection: TraderSortDirection
-	onSortChange: (sortBy: TraderPositionSortBy) => void
-}
-
-function SortableHeader({
-	children,
-	sortBy,
-	currentSortBy,
-	currentSortDirection,
-	onSortChange,
-}: SortableHeaderProps) {
-	const isActive = currentSortBy === sortBy
-	const SortIcon = isActive
-		? currentSortDirection === "asc"
-			? ArrowUpIcon
-			: ArrowDownIcon
-		: ArrowUpDownIcon
-
-	return (
-		<button
-			type="button"
-			className={cn(
-				"inline-flex items-center gap-1.5 text-left transition-colors hover:text-foreground",
-				isActive && "text-foreground",
-			)}
-			onClick={() => onSortChange(sortBy)}
-		>
-			<span>{children}</span>
-			<SortIcon className="size-4" />
-		</button>
-	)
 }
 
 function buildColumns(
@@ -121,25 +87,40 @@ function buildColumns(
 				const isUnknownMarket = !entry.title
 				const title = entry.title || "Unknown Market"
 				const sharesLine = formatSharesLine(entry)
+				const href = entry.market_slug ? (`/markets/${entry.market_slug}` as Route) : null
 				return (
 					<div className="flex items-center gap-3">
 						{entry.image_url ? (
-							<img className="size-10 rounded-md object-cover" alt="" src={entry.image_url} />
+							<img
+								className="size-10 rounded-md object-cover"
+								alt=""
+								src={normalizePolymarketS3ImageUrl(entry.image_url) ?? ""}
+							/>
 						) : (
 							<div className="size-10 shrink-0 rounded-md bg-muted" />
 						)}
 						<div className="min-w-0 flex-1 space-y-0.5">
-							<p className="truncate text-base font-medium" title={title}>
-								{isUnknownMarket ? (
+							{isUnknownMarket ? (
+								<p className="truncate text-base font-medium" title={title}>
 									<TooltipWrapper content="Polymarket Gamma has no data on this market/position">
 										<span className="cursor-help border-b border-dotted border-muted-foreground/50">
 											{title}
 										</span>
 									</TooltipWrapper>
-								) : (
-									title
-								)}
-							</p>
+								</p>
+							) : href ? (
+								<Link
+									href={href}
+									className="block truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
+									title={title}
+								>
+									{title}
+								</Link>
+							) : (
+								<p className="truncate text-base font-medium" title={title}>
+									{title}
+								</p>
+							)}
 							<div className="flex flex-wrap items-center gap-1.5">
 								{entry.outcome ? (
 									<Badge
@@ -326,7 +307,7 @@ function buildColumns(
 			meta: { title: "Buy Vol" },
 			header: () => (
 				<SortableHeader
-					sortBy="buy_usd"
+					sortBy="total_buy_usd"
 					currentSortBy={currentSortBy}
 					currentSortDirection={currentSortDirection}
 					onSortChange={onSortChange}
@@ -344,7 +325,7 @@ function buildColumns(
 			meta: { title: "Sell Vol" },
 			header: () => (
 				<SortableHeader
-					sortBy="sell_usd"
+					sortBy="total_sell_usd"
 					currentSortBy={currentSortBy}
 					currentSortDirection={currentSortDirection}
 					onSortChange={onSortChange}

@@ -12,6 +12,7 @@ import type {
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
+import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
 import type { PaginatedResource } from "@/lib/struct/types";
 import { normalizeWalletAddress } from "@/lib/utils";
@@ -73,6 +74,30 @@ export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	} catch (error) {
 		logStructError(`searchTraders:${sanitizeLogValue(normalizedQuery)}`, error);
 		return [];
+	}
+});
+
+export const searchAll = cache(async (query: string): Promise<{ traders: Trader[]; markets: MarketResponse[] }> => {
+	const client = getStructClient();
+	const normalizedQuery = normalizeTraderSearchQuery(query);
+
+	if (!client || normalizedQuery.length < 2) {
+		return { traders: [], markets: [] };
+	}
+
+	try {
+		const response = await client.search.search({
+			q: normalizedQuery,
+			limit: 10,
+			type: "traders,markets",
+		});
+		return {
+			traders: response.data.traders ?? [],
+			markets: (response.data.markets ?? []).map(normalizeMarketResponseImages),
+		};
+	} catch (error) {
+		logStructError(`searchAll:${sanitizeLogValue(normalizedQuery)}`, error);
+		return { traders: [], markets: [] };
 	}
 });
 
@@ -154,7 +179,8 @@ export const getMarketsByConditionIds = unstable_cache(
 
 		try {
 			const response = await client.markets.getMarkets({ condition_ids: conditionIds.join(",") });
-			return response.data ?? [];
+			const data = response.data ?? [];
+			return data.map(normalizeMarketResponseImages);
 		} catch (error) {
 			logStructError(`getMarketsByConditionIds:${conditionIds.join(",")}`, error);
 			return null;
@@ -318,12 +344,14 @@ export const getRewardsMarkets = unstable_cache(
 				status: "open",
 				limit: 100,
 			});
-			return response.data.filter(
-				(market) =>
-					(market.clob_rewards
-						?.map((reward) => reward.total_daily_rate)
-						?.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0) > 0.5,
-			);
+			return response.data
+				.filter(
+					(market) =>
+						(market.clob_rewards
+							?.map((reward) => reward.total_daily_rate)
+							?.reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0) > 0.5,
+				)
+				.map(normalizeMarketResponseImages);
 		} catch (error) {
 			logStructError("getRewardsMarkets", error);
 			return [];

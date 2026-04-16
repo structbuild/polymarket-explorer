@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { createContext, Fragment, useContext, useEffect, useState } from "react"
 import {
 	type ColumnDef,
 	type PaginationState,
@@ -14,6 +14,11 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon, Settings2Icon } from "lucide-react"
 
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
+import {
+	METRICS_TIMEFRAMES,
+	isMetricsTimeframe,
+	type MetricsTimeframeChoice,
+} from "@/lib/timeframes"
 
 import { Button } from "./button"
 import { Checkbox } from "./checkbox"
@@ -26,10 +31,17 @@ import {
 	TableHeader,
 	TableRow,
 } from "./table"
+import { TimeframeToggle } from "./timeframe-toggle"
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZES = [10, 25, 50, 100]
 const EMPTY_COLUMN_VISIBILITY: VisibilityState = {}
+
+const DataTableTimeframeContext = createContext<MetricsTimeframeChoice | null>(null)
+
+export function useDataTableTimeframe(): MetricsTimeframeChoice | null {
+	return useContext(DataTableTimeframeContext)
+}
 
 type BaseDataTableProps<TData> = {
 	columns: ColumnDef<TData, unknown>[]
@@ -40,11 +52,19 @@ type BaseDataTableProps<TData> = {
 	columnLayout?: "auto" | "fixed"
 	toolbarLeft?: React.ReactNode
 	toolbarRight?: React.ReactNode
+	timeframes?: readonly MetricsTimeframeChoice[]
+	defaultTimeframe?: MetricsTimeframeChoice
+	controlledTimeframe?: MetricsTimeframeChoice
+	onControlledTimeframeChange?: (value: MetricsTimeframeChoice) => void
 }
 
 type ClientPaginationProps = {
 	paginationMode?: "client"
 	defaultPageSize?: number
+}
+
+type NoPaginationProps = {
+	paginationMode: "none"
 }
 
 type ServerPaginationProps = {
@@ -56,7 +76,11 @@ type ServerPaginationProps = {
 	onPageIndexChange: (pageIndex: number) => void
 }
 
-type DataTableProps<TData> = BaseDataTableProps<TData> & (ClientPaginationProps | ServerPaginationProps)
+type DataTableProps<TData> = BaseDataTableProps<TData> & (
+	ClientPaginationProps
+	| NoPaginationProps
+	| ServerPaginationProps
+)
 
 type PaginationFooterProps = {
 	show: boolean
@@ -75,6 +99,8 @@ type PaginationFooterProps = {
 type DataTableViewProps<TData> = BaseDataTableProps<TData> & {
 	table: ReactTableInstance<TData>
 	pagination: PaginationFooterProps
+	timeframe?: MetricsTimeframeChoice
+	onTimeframeChange?: (value: MetricsTimeframeChoice) => void
 }
 
 function DataTableView<TData>({
@@ -85,9 +111,20 @@ function DataTableView<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	timeframes,
+	timeframe,
+	onTimeframeChange,
 }: DataTableViewProps<TData>) {
 	const hasRows = data.length > 0
 	const hideableColumns = table.getAllColumns().filter((col) => col.getCanHide())
+	const timeframeToggle =
+		timeframes && timeframes.length > 0 && timeframe && onTimeframeChange ? (
+			<TimeframeToggle
+				timeframes={timeframes}
+				value={timeframe}
+				onValueChange={onTimeframeChange}
+			/>
+		) : null
 
 	function commitPageInput(value: string) {
 		if (pagination.pageNumber == null || !pagination.onPageNumberChange) {
@@ -137,14 +174,16 @@ function DataTableView<TData>({
 	) : null
 
 	return (
+		<DataTableTimeframeContext.Provider value={timeframe ?? null}>
 		<div className="space-y-3">
-			{toolbarLeft || toolbarRight || toolbar ? (
-				<div className="flex items-center justify-between gap-4">
+			{toolbarLeft || toolbarRight || toolbar || timeframeToggle ? (
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:min-h-8">
 					<div className="min-w-0 flex-1">{toolbarLeft}</div>
-					{(toolbarRight || toolbar) ? (
-						<div className="flex shrink-0 items-center gap-3">
-							{toolbarRight}
-							{toolbar}
+					{(toolbarRight || toolbar || timeframeToggle) ? (
+						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:items-end sm:justify-end">
+							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
+							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
+							{toolbar && <Fragment key="toolbar">{toolbar}</Fragment>}
 						</div>
 					) : null}
 				</div>
@@ -160,7 +199,10 @@ function DataTableView<TData>({
 										key={column.id}
 										style={
 											column.columnDef.size != null
-												? { width: `${column.columnDef.size}px` }
+												? {
+														width: `${column.columnDef.size}px`,
+														maxWidth: `${column.columnDef.size}px`,
+													}
 												: undefined
 										}
 									/>
@@ -268,7 +310,24 @@ function DataTableView<TData>({
 				</div>
 			)}
 		</div>
+		</DataTableTimeframeContext.Provider>
 	)
+}
+
+export function useTimeframeState(
+	storageKey: string | undefined,
+	timeframes: readonly MetricsTimeframeChoice[] | undefined,
+	defaultTimeframe: MetricsTimeframeChoice | undefined,
+) {
+	const fallback = defaultTimeframe ?? timeframes?.[0] ?? METRICS_TIMEFRAMES[0]
+	const [stored, setStored] = useLocalStorage<MetricsTimeframeChoice>(
+		storageKey ? `${storageKey}-timeframe` : "__unused_tf__",
+		fallback,
+	)
+	const active: MetricsTimeframeChoice = timeframes
+		? (timeframes.includes(stored) ? stored : fallback)
+		: (isMetricsTimeframe(stored) ? stored : fallback)
+	return [active, setStored] as const
 }
 
 function ClientPaginatedDataTable<TData>({
@@ -281,6 +340,10 @@ function ClientPaginatedDataTable<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	timeframes,
+	defaultTimeframe,
+	controlledTimeframe,
+	onControlledTimeframeChange,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -290,6 +353,9 @@ function ClientPaginatedDataTable<TData>({
 		storageKey ? `${storageKey}-page-size` : "__unused_ps__",
 		defaultPageSize,
 	)
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const timeframe = controlledTimeframe ?? internalTimeframe
+	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
 	const [pagination, setPagination] = useState<PaginationState>(() => ({ pageIndex: 0, pageSize }))
 
 	useEffect(() => {
@@ -339,6 +405,9 @@ function ClientPaginatedDataTable<TData>({
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			timeframes={timeframes}
+			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
+			onTimeframeChange={setTimeframe}
 			table={table}
 			pagination={{
 				show: totalRows > PAGE_SIZES[0],
@@ -359,6 +428,65 @@ function ClientPaginatedDataTable<TData>({
 	)
 }
 
+function NonPaginatedDataTable<TData>({
+	columns,
+	data,
+	storageKey,
+	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
+	emptyMessage,
+	columnLayout = "auto",
+	toolbarLeft,
+	toolbarRight,
+	timeframes,
+	defaultTimeframe,
+	controlledTimeframe,
+	onControlledTimeframeChange,
+}: BaseDataTableProps<TData> & NoPaginationProps) {
+	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
+		storageKey ? `${storageKey}-columns` : "__unused__",
+		defaultColumnVisibility,
+	)
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const timeframe = controlledTimeframe ?? internalTimeframe
+	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
+
+	// eslint-disable-next-line
+	const table = useReactTable({
+		data,
+		columns,
+		state: {
+			columnVisibility,
+		},
+		onColumnVisibilityChange: setColumnVisibility,
+		getCoreRowModel: getCoreRowModel(),
+	})
+
+	return (
+		<DataTableView
+			columns={columns}
+			data={data}
+			storageKey={storageKey}
+			defaultColumnVisibility={defaultColumnVisibility}
+			emptyMessage={emptyMessage}
+			columnLayout={columnLayout}
+			toolbarLeft={toolbarLeft}
+			toolbarRight={toolbarRight}
+			timeframes={timeframes}
+			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
+			onTimeframeChange={setTimeframe}
+			table={table}
+			pagination={{
+				show: false,
+				label: "",
+				canPreviousPage: false,
+				canNextPage: false,
+				onPreviousPage: () => {},
+				onNextPage: () => {},
+			}}
+		/>
+	)
+}
+
 function ServerPaginatedDataTable<TData>({
 	columns,
 	data,
@@ -368,6 +496,10 @@ function ServerPaginatedDataTable<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	timeframes,
+	defaultTimeframe,
+	controlledTimeframe,
+	onControlledTimeframeChange,
 	pageIndex,
 	pageSize,
 	hasNextPage,
@@ -378,6 +510,9 @@ function ServerPaginatedDataTable<TData>({
 		storageKey ? `${storageKey}-columns` : "__unused__",
 		defaultColumnVisibility,
 	)
+	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
+	const timeframe = controlledTimeframe ?? internalTimeframe
+	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
 
 	// eslint-disable-next-line
 	const table = useReactTable({
@@ -404,6 +539,9 @@ function ServerPaginatedDataTable<TData>({
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			timeframes={timeframes}
+			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
+			onTimeframeChange={setTimeframe}
 			table={table}
 			pagination={{
 				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],
@@ -424,6 +562,10 @@ function ServerPaginatedDataTable<TData>({
 export function DataTable<TData>(props: DataTableProps<TData>) {
 	if (props.paginationMode === "server") {
 		return <ServerPaginatedDataTable {...props} />
+	}
+
+	if (props.paginationMode === "none") {
+		return <NonPaginatedDataTable {...props} />
 	}
 
 	return <ClientPaginatedDataTable {...props} />

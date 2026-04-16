@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const DEBOUNCE_MS = 300;
 
-export function SearchInput() {
+export function SearchInput({ compact }: { compact?: boolean } = {}) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [value, setValue] = useState(searchParams.get("q") ?? "");
@@ -21,7 +21,7 @@ export function SearchInput() {
 			const trimmed = query.trim();
 
 			if (isWalletAddress(trimmed)) {
-				router.push(`/trader/${normalizeWalletAddress(trimmed) ?? trimmed}` as Route);
+				router.push(`/traders/${normalizeWalletAddress(trimmed) ?? trimmed}` as Route);
 				return;
 			}
 
@@ -49,20 +49,29 @@ export function SearchInput() {
 	};
 
 	return (
-		<div className="relative h-12">
+		<div className={compact ? "relative h-9" : "relative h-12"}>
 			<Input
 				value={value}
 				onChange={handleChange}
-				className="h-full w-full rounded-xl border bg-card/85 py-4 pl-4 pr-12 text-sm! backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-offset-0 sm:pl-5 sm:pr-14 sm:text-base!"
-				placeholder="Search by trader or wallet..."
+				className={
+					compact
+						? "h-full w-full rounded-lg border bg-card/85 py-1.5 pl-3 pr-9 text-sm! focus-visible:ring-0 focus-visible:ring-offset-0"
+						: "h-full w-full rounded-xl border bg-card/85 py-4 pl-4 pr-12 text-sm! backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-offset-0 sm:pl-5 sm:pr-14 sm:text-base!"
+				}
+				placeholder="Search traders or markets..."
 			/>
 			<Button
 				type="button"
 				onClick={() => pushQuery(value)}
-				className="absolute right-1 top-1/2 size-10! -translate-y-1/2 rounded-xl"
-				aria-label="Search traders"
+				className={
+					compact
+						? "absolute right-0.5 top-1/2 size-8! -translate-y-1/2 rounded-lg"
+						: "absolute right-1 top-1/2 size-10! -translate-y-1/2 rounded-xl"
+				}
+				size={compact ? "icon-sm" : "icon"}
+				aria-label="Search"
 			>
-				<SearchIcon className="size-4" />
+				<SearchIcon className={compact ? "size-3.5" : "size-4"} />
 			</Button>
 		</div>
 	);

@@ -1,3 +1,15 @@
+export function slugify(text: string): string {
+	return text.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_]+/g, "-").replace(/-+/g, "-");
+}
+
+export function formatCapitalizeWords(text: string): string {
+	return text
+		.split(/\s+/)
+		.filter(Boolean)
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+		.join(" ");
+}
+
 export function formatPriceCents(price: number | null | undefined): string {
 	if (price == null || Number.isNaN(price)) return "—"
 	return `${(price * 100).toFixed(1)}¢`

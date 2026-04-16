@@ -1,8 +1,9 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
-import type { Trade } from "@structbuild/sdk";
+import type { Route } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -19,19 +20,27 @@ import { TooltipWrapper } from "../ui/tooltip";
 import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { formatTimeAgo, formatPriceCents } from "@/lib/format";
+import { formatPriceCents } from "@/lib/format";
+import { TimeAgo } from "@/components/ui/time-ago";
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
+import type { TradeRow } from "./types";
 
 const defaultColumnVisibility: VisibilityState = {
 	fee: false,
 };
 
-const columns: ColumnDef<Trade, unknown>[] = [
+const columns: ColumnDef<TradeRow, unknown>[] = [
 	{
 		id: "age",
 		header: "Age",
 		size: 80,
-		cell: ({ row }) => <p className="text-sm text-muted-foreground">{formatTimeAgo(row.original.confirmed_at)}</p>,
+		cell: ({ row }) =>
+			row.original.confirmed_at != null ? (
+				<TimeAgo timestamp={row.original.confirmed_at} className="text-sm text-muted-foreground" />
+			) : (
+				<p className="text-sm text-muted-foreground">—</p>
+			),
 	},
 	{
 		id: "market",
@@ -39,18 +48,38 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 480,
 		cell: ({ row }) => {
 			const trade = row.original;
-			const imageUrl = "image_url" in trade ? trade.image_url : null;
+			const rawImageUrl = "image_url" in trade ? trade.image_url : null;
+			const imageUrl = rawImageUrl != null ? normalizePolymarketS3ImageUrl(rawImageUrl) : null;
 			const question = "question" in trade ? trade.question : null;
+			const marketSlug = "slug" in trade ? trade.slug : null;
+			const title = question ?? "Unknown Market";
+			const href = marketSlug ? (`/markets/${marketSlug}` as Route) : null;
 			return (
 				<div className="flex items-center gap-3">
 					{imageUrl ? (
-						<img className="size-10 rounded-md object-cover" alt="" src={imageUrl} />
+						<Image
+							className="size-10 shrink-0 rounded-md object-cover"
+							alt={title}
+							src={imageUrl}
+							width={40}
+							height={40}
+						/>
 					) : (
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}
-					<p className="min-w-0 flex-1 truncate text-base font-medium" title={question ?? "Unknown Market"}>
-						{question ?? "Unknown Market"}
-					</p>
+					{href ? (
+						<Link
+							href={href}
+							className="min-w-0 flex-1 truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
+							title={title}
+						>
+							{title}
+						</Link>
+					) : (
+						<p className="min-w-0 flex-1 truncate text-base font-medium" title={title}>
+							{title}
+						</p>
+					)}
 				</div>
 			);
 		},
@@ -159,7 +188,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 ];
 
 type Props = {
-	page: PaginatedResource<Trade, number>;
+	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
 };
 

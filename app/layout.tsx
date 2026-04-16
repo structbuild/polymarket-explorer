@@ -5,8 +5,10 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 
 import { getSiteUrl } from "@/lib/env";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
 import { Header } from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Analytics } from "@vercel/analytics/next";
@@ -14,24 +16,23 @@ import { Analytics } from "@vercel/analytics/next";
 export const metadata: Metadata = {
 	metadataBase: getSiteUrl(),
 	title: {
-		default: "Polymarket Explorer — Trader Analytics & PnL Tracking",
-		template: "%s | Polymarket Explorer",
+		default: SITE_NAME,
+		template: `%s | ${SITE_NAME}`,
 	},
-	description:
-		"Analyze any Polymarket trader's performance, PnL history, and trading activity. Built with Struct and Polymarket APIs.",
+	description: SITE_DESCRIPTION,
 	alternates: {
 		canonical: "/",
 	},
 	openGraph: {
-		title: "Polymarket Explorer — Trader Analytics & PnL Tracking",
-		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity. Powered by Struct.",
+		title: SITE_NAME,
+		description: SITE_DESCRIPTION,
 		type: "website",
-		siteName: "Polymarket Explorer",
+		siteName: SITE_NAME,
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Polymarket Explorer — Trader Analytics",
-		description: "Analyze any Polymarket trader's performance, PnL history, and trading activity. Powered by Struct.",
+		title: SITE_NAME,
+		description: SITE_DESCRIPTION,
 	},
 	robots: {
 		index: true,
@@ -51,10 +52,36 @@ export default function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const siteUrl = getSiteUrl().origin;
+
+	const websiteJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		name: SITE_NAME,
+		url: siteUrl,
+		description: SITE_DESCRIPTION,
+		potentialAction: {
+			"@type": "SearchAction",
+			target: `${siteUrl}/?q={search_term_string}`,
+			"query-input": "required name=search_term_string",
+		},
+	};
+
+	const organizationJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		name: SITE_NAME,
+		url: siteUrl,
+		logo: `${siteUrl}/favicon.ico`,
+		description: SITE_DESCRIPTION,
+	};
+
 	return (
 		<html lang="en" suppressHydrationWarning className="h-full">
 			<body className={`${GeistSans.variable} ${GeistMono.variable} min-h-svh overflow-x-hidden antialiased font-sans`}>
 				<Analytics />
+				<JsonLd data={websiteJsonLd} />
+				<JsonLd data={organizationJsonLd} />
 				<NuqsAdapter>
 					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 						<TooltipProvider>

@@ -1,8 +1,10 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { MarketResponse } from "@structbuild/sdk";
+import type { Route } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import { ExternalLinkIcon, InfoIcon } from "lucide-react";
 
 import { DataTable } from "@/components/ui/data-table";
@@ -33,17 +35,34 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		meta: { cellClassName: "whitespace-normal" },
 		cell: ({ row }) => {
 			const market = row.original;
+			const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
 			return (
 				<div className="flex items-center gap-3">
 					{market.image_url ? (
-						<img className="size-10 shrink-0 rounded-md object-cover" alt="" src={market.image_url} />
+						<Image
+							className="size-10 shrink-0 rounded-md object-cover"
+							alt={market.question ?? ""}
+							src={market.image_url}
+							width={40}
+							height={40}
+						/>
 					) : (
 						<div className="size-10 shrink-0 rounded-md bg-muted" />
 					)}
 					<div className="min-w-0 flex-1">
-						<p className="line-clamp-2 text-base font-medium wrap-break-word" title={market.question ?? ""}>
-							{market.question}
-						</p>
+						{href ? (
+							<Link
+								href={href}
+								className="line-clamp-2 text-base font-medium wrap-break-word text-foreground underline-offset-4 hover:underline"
+								title={market.question ?? ""}
+							>
+								{market.question}
+							</Link>
+						) : (
+							<p className="line-clamp-2 text-base font-medium wrap-break-word" title={market.question ?? ""}>
+								{market.question}
+							</p>
+						)}
 					</div>
 				</div>
 			);
@@ -178,12 +197,12 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		size: 64,
 		enableHiding: false,
 		cell: ({ row }) => {
-			const slug = row.original.event_slug;
-			if (!slug) return null;
+			const eventSlug = row.original.event_slug;
+			if (!eventSlug) return null;
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polymarket">
-						<a href={`https://polymarket.com/event/${slug}`} target="_blank" rel="noopener noreferrer">
+						<a href={`https://polymarket.com/event/${eventSlug}`} target="_blank" rel="noopener noreferrer">
 							<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 								<ExternalLinkIcon className="size-4" />
 							</Button>

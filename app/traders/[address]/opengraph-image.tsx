@@ -1,13 +1,14 @@
 import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
-import { loadTraderOpenGraphData, traderOgImageSize } from "@/lib/trader-open-graph";
+import { loadTraderOpenGraphData } from "@/lib/trader-open-graph";
 import type { PnlDataPoint } from "@/lib/polymarket/pnl";
 import { formatDateShort, formatDuration, formatNumber } from "@/lib/format";
+import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 export const runtime = "nodejs";
 export const revalidate = 7200;
-export const size = traderOgImageSize;
+export const size = ogImageSize;
 export const contentType = "image/png";
 export const alt = "Polymarket trader lifetime performance preview";
 
@@ -24,19 +25,6 @@ type ChartGeometry = {
 	zeroY: number;
 };
 
-const palette = {
-	background: "#0A0A0A",
-	card: "#171717",
-	cardBorder: "#2E2E2E",
-	foreground: "#fafafa",
-	mutedForeground: "#a3a3a3",
-	muted: "#3c3c3c",
-	positive: "#10b981",
-	negative: "#ef4444",
-	chartLine: "#8EC5FF",
-	chartArea: "rgba(125, 211, 252, 0.05)",
-	zeroLine: "rgba(255, 255, 255, 0.05)",
-};
 
 function stringHash(value: string) {
 	let hash = 0;
@@ -131,6 +119,30 @@ function getFacehashInitial(displayName: string, address: string) {
 
 	const compactAddress = address.replace(/^0x/i, "");
 	return compactAddress[0]?.toUpperCase() ?? "?";
+}
+
+function OpenGraphAvatarImage({ src }: { src: string }) {
+	return (
+		<div
+			style={{
+				display: "flex",
+				width: 96,
+				height: 96,
+				borderRadius: 8,
+				overflow: "hidden",
+				border: "2px solid rgba(255, 255, 255, 0.12)",
+				flexShrink: 0,
+			}}
+		>
+			<img
+				src={src}
+				width={96}
+				height={96}
+				alt=""
+				style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 8 }}
+			/>
+		</div>
+	);
 }
 
 function OpenGraphFacehash({ address, displayName }: { address: string; displayName: string }) {
@@ -264,45 +276,7 @@ function buildChartGeometry(points: PnlDataPoint[]): ChartGeometry | null {
 }
 
 function getSignedTone(value: number) {
-	return value >= 0 ? palette.positive : palette.negative;
-}
-
-function renderStatItem(label: string, value: string) {
-	return (
-		<div
-			style={{
-				display: "flex",
-				flexDirection: "column",
-				gap: 4,
-				minWidth: 0,
-				flexShrink: 0,
-			}}
-		>
-			<div
-				style={{
-					display: "flex",
-					fontSize: 13,
-					color: palette.mutedForeground,
-					whiteSpace: "nowrap",
-				}}
-			>
-				{label}
-			</div>
-			<div
-				style={{
-					display: "flex",
-					fontSize: 17,
-					fontWeight: 600,
-					color: palette.foreground,
-					whiteSpace: "nowrap",
-					overflow: "hidden",
-					textOverflow: "ellipsis",
-				}}
-			>
-				{value}
-			</div>
-		</div>
-	);
+	return value >= 0 ? ogPalette.positive : ogPalette.negative;
 }
 
 function renderInfoRow(label: string, value: string, tone?: string, isLast = false) {
@@ -313,11 +287,11 @@ function renderInfoRow(label: string, value: string, tone?: string, isLast = fal
 				alignItems: "center",
 				justifyContent: "space-between",
 				padding: "8px 0",
-				borderBottom: isLast ? "none" : `1px solid ${palette.cardBorder}`,
+				borderBottom: isLast ? "none" : `1px solid ${ogPalette.cardBorder}`,
 			}}
 		>
-			<div style={{ display: "flex", fontSize: 16, color: palette.mutedForeground }}>{label}</div>
-			<div style={{ display: "flex", fontSize: 16, fontWeight: 600, color: tone ?? palette.foreground }}>{value}</div>
+			<div style={{ display: "flex", fontSize: 16, color: ogPalette.mutedForeground }}>{label}</div>
+			<div style={{ display: "flex", fontSize: 16, fontWeight: 600, color: tone ?? ogPalette.foreground }}>{value}</div>
 		</div>
 	);
 }
@@ -338,6 +312,7 @@ export default async function OpenGraphImage({ params }: Props) {
 
 	const chart = buildChartGeometry(pnlCandles);
 	const headlinePnl = chart?.lastPoint.value ?? 0;
+	const avatarDataUrl = await loadImageAsDataUrl(profile?.profile_image, 192);
 
 	const activeSince = formatDateShort(pnlSummary?.first_trade_at) || "Unknown";
 	const lastActive = formatDateShort(pnlSummary?.last_trade_at) || "Unknown";
@@ -367,8 +342,8 @@ export default async function OpenGraphImage({ params }: Props) {
 				height: "100%",
 				padding: 28,
 				gap: 14,
-				background: palette.background,
-				color: palette.foreground,
+				background: ogPalette.background,
+				color: ogPalette.foreground,
 				fontFamily: "system-ui, sans-serif",
 			}}
 		>
@@ -377,7 +352,7 @@ export default async function OpenGraphImage({ params }: Props) {
 					display: "flex",
 					flexDirection: "column",
 					borderRadius: 16,
-					background: palette.card,
+					background: ogPalette.card,
 					padding: "20px 24px",
 					width: "100%",
 				}}
@@ -392,7 +367,11 @@ export default async function OpenGraphImage({ params }: Props) {
 						minWidth: 0,
 					}}
 				>
-					<OpenGraphFacehash address={address} displayName={displayName} />
+					{avatarDataUrl ? (
+						<OpenGraphAvatarImage src={avatarDataUrl} />
+					) : (
+						<OpenGraphFacehash address={address} displayName={displayName} />
+					)}
 					<div
 						style={{
 							display: "flex",
@@ -432,8 +411,8 @@ export default async function OpenGraphImage({ params }: Props) {
 									alignItems: "center",
 									fontSize: 14,
 									fontFamily: "ui-monospace, monospace",
-									color: palette.foreground,
-									backgroundColor: palette.muted,
+									color: ogPalette.foreground,
+									backgroundColor: ogPalette.muted,
 									padding: "5px 10px",
 									borderRadius: 8,
 									flexShrink: 0,
@@ -453,14 +432,14 @@ export default async function OpenGraphImage({ params }: Props) {
 								flexWrap: "nowrap",
 							}}
 						>
-							{renderStatItem("Active Since", activeSince)}
-							{renderStatItem("Last Active", lastActive)}
-							{renderStatItem("Buys", totalBuys)}
-							{renderStatItem("Sells", totalSells)}
-							{renderStatItem("Redemptions", totalRedemptions)}
-							{renderStatItem("Merges", totalMerges)}
-							{renderStatItem("Volume", totalVolume)}
-							{renderStatItem("Fees", totalFees)}
+							<OgStatItem label="Active Since" value={activeSince} />
+							<OgStatItem label="Last Active" value={lastActive} />
+							<OgStatItem label="Buys" value={totalBuys} />
+							<OgStatItem label="Sells" value={totalSells} />
+							<OgStatItem label="Redemptions" value={totalRedemptions} />
+							<OgStatItem label="Merges" value={totalMerges} />
+							<OgStatItem label="Volume" value={totalVolume} />
+							<OgStatItem label="Fees" value={totalFees} />
 						</div>
 					</div>
 				</div>
@@ -481,7 +460,7 @@ export default async function OpenGraphImage({ params }: Props) {
 						flex: 1,
 						flexDirection: "column",
 						borderRadius: 16,
-						background: palette.card,
+						background: ogPalette.card,
 						padding: 20,
 					}}
 				>
@@ -494,7 +473,7 @@ export default async function OpenGraphImage({ params }: Props) {
 						}}
 					>
 						<div style={{ display: "flex", flexDirection: "column" }}>
-							<div style={{ display: "flex", fontSize: 14, color: palette.mutedForeground }}>Cumulative PnL</div>
+							<div style={{ display: "flex", fontSize: 14, color: ogPalette.mutedForeground }}>Cumulative PnL</div>
 							<div
 								style={{
 									display: "flex",
@@ -513,9 +492,9 @@ export default async function OpenGraphImage({ params }: Props) {
 								display: "flex",
 								padding: "6px 12px",
 								borderRadius: 999,
-								background: palette.muted,
+								background: ogPalette.muted,
 								fontSize: 14,
-								color: palette.foreground,
+								color: ogPalette.foreground,
 							}}
 						>
 							{`Streak: ${currentStreak}`}
@@ -531,9 +510,9 @@ export default async function OpenGraphImage({ params }: Props) {
 							}}
 						>
 							<svg viewBox="0 0 760 240" width="760" height="280">
-								<path d={chart.areaPath} fill={palette.chartArea} />
-								<line x1="14" x2="746" y1={chart.zeroY} y2={chart.zeroY} stroke={palette.zeroLine} strokeWidth="2" />
-								<path d={chart.linePath} fill="none" stroke={palette.chartLine} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+								<path d={chart.areaPath} fill={ogPalette.chartArea} />
+								<line x1="14" x2="746" y1={chart.zeroY} y2={chart.zeroY} stroke={ogPalette.zeroLine} strokeWidth="2" />
+								<path d={chart.linePath} fill="none" stroke={ogPalette.chartLine} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
 								<circle
 									cx={chart.lastPoint.x}
 									cy={chart.lastPoint.y}
@@ -550,7 +529,7 @@ export default async function OpenGraphImage({ params }: Props) {
 									justifyContent: "space-between",
 									marginTop: 4,
 									fontSize: 14,
-									color: palette.mutedForeground,
+									color: ogPalette.mutedForeground,
 								}}
 							>
 								<div style={{ display: "flex" }}>{`Low: ${chart.minLabel}`}</div>
@@ -565,9 +544,9 @@ export default async function OpenGraphImage({ params }: Props) {
 								alignItems: "center",
 								justifyContent: "center",
 								borderRadius: 12,
-								border: `1px dashed ${palette.cardBorder}`,
+								border: `1px dashed ${ogPalette.cardBorder}`,
 								fontSize: 18,
-								color: palette.mutedForeground,
+								color: ogPalette.mutedForeground,
 							}}
 						>
 							Lifetime PnL chart unavailable
@@ -582,7 +561,7 @@ export default async function OpenGraphImage({ params }: Props) {
 						width: 310,
 						flexDirection: "column",
 						borderRadius: 16,
-						background: palette.card,
+						background: ogPalette.card,
 						padding: "14px 20px",
 					}}
 				>
@@ -590,7 +569,7 @@ export default async function OpenGraphImage({ params }: Props) {
 						style={{
 							display: "flex",
 							fontSize: 16,
-							color: palette.foreground,
+							color: ogPalette.foreground,
 							marginBottom: 8,
 						}}
 					>
@@ -599,11 +578,11 @@ export default async function OpenGraphImage({ params }: Props) {
 
 					<div style={{ display: "flex", flexDirection: "column" }}>
 						{renderInfoRow("Markets Traded", marketsTraded)}
-						{renderInfoRow("Markets Won", marketsWon, palette.positive)}
-						{renderInfoRow("Markets Lost", marketsLost, palette.negative)}
+						{renderInfoRow("Markets Won", marketsWon, ogPalette.positive)}
+						{renderInfoRow("Markets Lost", marketsLost, ogPalette.negative)}
 						{renderInfoRow("Avg. Hold Time", avgHold)}
-						{renderInfoRow("Best Day", bestDay, streaks.bestDay.pnl > 0 ? palette.positive : undefined)}
-						{renderInfoRow("Worst Day", worstDay, streaks.worstDay.pnl < 0 ? palette.negative : undefined)}
+						{renderInfoRow("Best Day", bestDay, streaks.bestDay.pnl > 0 ? ogPalette.positive : undefined)}
+						{renderInfoRow("Worst Day", worstDay, streaks.worstDay.pnl < 0 ? ogPalette.negative : undefined)}
 						{renderInfoRow("Win Streak", longestWin)}
 						{renderInfoRow("Loss Streak", longestLoss)}
 						{renderInfoRow("Current Streak", currentStreak, undefined, true)}

@@ -1,4 +1,8 @@
-import type { Trade } from "@structbuild/sdk"
+import type { TraderInfo, Trade } from "@structbuild/sdk"
+
+export function hasTradeTrader(trade: Trade): trade is Trade & { trader: TraderInfo } {
+	return "trader" in trade
+}
 
 export type OrderFilledTradeEvent = Extract<Trade, { trade_type: "OrderFilled" | "OrdersMatched" }>
 

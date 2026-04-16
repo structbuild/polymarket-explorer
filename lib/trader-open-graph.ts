@@ -10,9 +10,10 @@ import {
 	type PnlDataPoint,
 	type PnlStreaks,
 } from "@/lib/polymarket/pnl";
+import { getSiteUrl } from "@/lib/env";
+import { buildEntityPageTitle } from "@/lib/site-metadata";
 import { getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import { getSiteUrl } from "@/lib/env";
 
 export const traderOgImageSize = {
 	width: 1200,
@@ -35,15 +36,15 @@ export type TraderOpenGraphIdentity = {
 };
 
 export function getTraderPageTitle(displayName: string) {
-	return `${displayName} - Trader Profile`;
+	return buildEntityPageTitle(displayName, "Trader Profile");
 }
 
 export function getTraderSocialTitle(displayName: string) {
-	return `${displayName} - Polymarket Trader`;
+	return buildEntityPageTitle(displayName, "Trader Profile");
 }
 
 export function getTraderPageDescription(displayName: string) {
-	return `Analyze ${displayName}'s lifetime Polymarket trading performance - PnL history, win rate, volume, and recent trades. Powered by Struct.`;
+	return `Review ${displayName}'s Polymarket performance, including PnL, win rate, volume, and trade history.`;
 }
 
 export function getTraderOgImageAlt(displayName: string) {
@@ -52,7 +53,7 @@ export function getTraderOgImageAlt(displayName: string) {
 
 export function getTraderOgImageUrl(address: string) {
 	const normalizedAddress = normalizeWalletAddress(address) ?? address.trim();
-	return new URL(`/trader/${normalizedAddress}/opengraph-image`, getSiteUrl());
+	return new URL(`/traders/${normalizedAddress}/opengraph-image`, getSiteUrl());
 }
 
 const loadTraderOpenGraphIdentityCached = cache(async (address: string): Promise<TraderOpenGraphIdentity> => {
