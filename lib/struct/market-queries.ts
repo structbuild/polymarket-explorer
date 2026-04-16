@@ -18,6 +18,7 @@ import type {
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
+import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
 import type { PaginatedResource } from "@/lib/struct/types";
 
@@ -103,7 +104,8 @@ export const getMarketBySlug = cache(
 
 			try {
 				const response = await client.markets.getMarketBySlug({ marketSlug: slug });
-				return response.data;
+				const data = response.data;
+				return data ? normalizeMarketResponseImages(data) : null;
 			} catch (error) {
 				if (readStatus(error) === 404) {
 					return null;
@@ -408,9 +410,12 @@ export const getTagBySlug = cache(
 			}
 
 			try {
+				console.log("[getTagBySlug] identifier:", JSON.stringify(slug));
 				const response = await client.tags.getTag({ identifier: slug });
+				console.log("[getTagBySlug] response:", JSON.stringify(response.data));
 				return response.data;
 			} catch (error) {
+				console.error("[getTagBySlug] error:", error);
 				if (readStatus(error) === 404) {
 					return null;
 				}
@@ -446,7 +451,7 @@ export const getMarketsByTag = cache(
 				const hasMore = response.pagination?.has_more ?? false;
 				const nextKey = response.pagination?.pagination_key;
 				return {
-					data: response.data,
+					data: response.data.map(normalizeMarketResponseImages),
 					hasMore,
 					nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
 				};
@@ -535,7 +540,7 @@ export const getTopMarkets = cache(
 				const hasMore = response.pagination?.has_more ?? false;
 				const nextKey = response.pagination?.pagination_key;
 				return {
-					data: response.data,
+					data: response.data.map(normalizeMarketResponseImages),
 					hasMore,
 					nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
 				};

@@ -54,7 +54,7 @@ export function SearchInput() {
 				value={value}
 				onChange={handleChange}
 				className="h-full w-full rounded-xl border bg-card/85 py-4 pl-4 pr-12 text-sm! backdrop-blur-sm focus-visible:ring-0 focus-visible:ring-offset-0 sm:pl-5 sm:pr-14 sm:text-base!"
-				placeholder="Search by trader or wallet..."
+				placeholder="Search traders or markets..."
 			/>
 			<Button
 				type="button"

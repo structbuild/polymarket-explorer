@@ -4,6 +4,8 @@ import type {
 	SimpleTimeframeMetrics,
 } from "@structbuild/sdk";
 
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
+
 export type TimeframeMetrics = Partial<Record<MetricsTimeframe, SimpleTimeframeMetrics>>;
 
 export type MarketTableRow = {
@@ -31,7 +33,7 @@ export function marketResponseToRow(market: MarketResponse): MarketTableRow {
 		slug: market.market_slug ?? null,
 		question: market.question ?? null,
 		title: market.title ?? null,
-		imageUrl: market.image_url ?? null,
+		imageUrl: normalizePolymarketS3ImageUrl(market.image_url) ?? null,
 		outcomes:
 			market.outcomes?.map((o) => ({
 				label: o.name,

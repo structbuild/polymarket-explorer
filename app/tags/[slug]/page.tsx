@@ -7,6 +7,7 @@ import { PaginationNav } from "@/components/seo/pagination-nav";
 import { MarketsTable } from "@/components/market/markets-table";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
+import { formatCapitalizeWords } from "@/lib/format";
 import {
 	buildEntityPageTitle,
 	buildPageMetadata,
@@ -22,22 +23,26 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-	const { slug } = await params;
+	const { slug: rawSlug } = await params;
+	const slug = decodeURIComponent(rawSlug);
 	const tag = await getTagBySlug(slug);
 
 	if (!tag) {
 		return {};
 	}
 
+	const canonicalSlug = tag.slug ?? slug;
+	const tagTitle = formatCapitalizeWords(tag.label);
 	return buildPageMetadata({
-		title: buildEntityPageTitle(tag.label, "Prediction Markets"),
-		description: `Browse ${tag.label} prediction markets on Polymarket. Track live odds, trading volume, and recent market activity.`,
-		canonical: `/tags/${slug}`,
+		title: buildEntityPageTitle(tagTitle, "Prediction Markets"),
+		description: `Browse ${tagTitle} prediction markets on Polymarket. Track live odds, trading volume, and recent market activity.`,
+		canonical: `/tags/${canonicalSlug}`,
 	});
 }
 
 export default async function TagPage({ params, searchParams }: Props) {
-	const { slug } = await params;
+	const { slug: rawSlug } = await params;
+	const slug = decodeURIComponent(rawSlug);
 	const tag = await getTagBySlug(slug);
 
 	if (!tag) {
@@ -46,16 +51,17 @@ export default async function TagPage({ params, searchParams }: Props) {
 
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
-	const tagFilter = tag.slug ?? slug;
-	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tagFilter, 24, cursor);
+	const canonicalSlug = tag.slug ?? slug;
+	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor);
 	const siteUrl = getSiteUrl();
+	const tagDisplay = formatCapitalizeWords(tag.label);
 
 	const jsonLd: Record<string, unknown> = {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
-		name: `${tag.label} — ${SITE_NAME}`,
-		description: `Prediction markets tagged ${tag.label} on ${SITE_NAME}.`,
-		url: new URL(`/tags/${slug}`, siteUrl).toString(),
+		name: `${tagDisplay} — ${SITE_NAME}`,
+		description: `Prediction markets tagged ${tagDisplay} on ${SITE_NAME}.`,
+		url: new URL(`/tags/${canonicalSlug}`, siteUrl).toString(),
 		mainEntity: {
 			"@type": "ItemList",
 			numberOfItems: markets.length,
@@ -76,7 +82,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 				items={[
 					{ label: "Home", href: "/" },
 					{ label: "Tags", href: "/tags" },
-					{ label: tag.label, href: `/tags/${slug}` },
+					{ label: tagDisplay, href: `/tags/${canonicalSlug}` },
 				]}
 			/>
 			<JsonLd data={jsonLd} />
@@ -89,9 +95,9 @@ export default async function TagPage({ params, searchParams }: Props) {
 						sortingMode="client"
 						toolbarLeft={
 							<div className="mb-3">
-								<h1 className="text-xl font-medium tracking-tight capitalize">{tag.label} Markets</h1>
+								<h1 className="text-xl font-medium tracking-tight">{tagDisplay} Markets</h1>
 								<p className="mt-1 text-sm text-muted-foreground">
-									Explore prediction markets related to tag: {tag.label}.
+									Explore prediction markets related to tag: {tagDisplay}.
 								</p>
 							</div>
 						}
@@ -99,9 +105,9 @@ export default async function TagPage({ params, searchParams }: Props) {
 				) : (
 					<>
 						<div className="mb-6">
-							<h1 className="text-xl font-medium tracking-tight capitalize">{tag.label} Markets</h1>
+							<h1 className="text-xl font-medium tracking-tight">{tagDisplay} Markets</h1>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Explore prediction markets related to tag: {tag.label}.
+								Explore prediction markets related to tag: {tagDisplay}.
 							</p>
 						</div>
 						<p className="rounded-lg bg-card px-4 py-12 text-center text-muted-foreground">
@@ -111,7 +117,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 				)}
 			</div>
 			<PaginationNav
-				basePath={`/tags/${slug}`}
+				basePath={`/tags/${canonicalSlug}`}
 				cursor={cursor ?? null}
 				nextCursor={nextCursor}
 				hasMore={hasMore}

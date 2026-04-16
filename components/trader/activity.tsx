@@ -22,6 +22,7 @@ import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { formatTimeAgo, formatPriceCents } from "@/lib/format";
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
 
 type TradeEvent = components["schemas"]["TradeEvent"];
@@ -59,7 +60,8 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 480,
 		cell: ({ row }) => {
 			const trade = row.original;
-			const imageUrl = "image_url" in trade ? trade.image_url : null;
+			const rawImageUrl = "image_url" in trade ? trade.image_url : null;
+			const imageUrl = rawImageUrl != null ? normalizePolymarketS3ImageUrl(rawImageUrl) : null;
 			const question = "question" in trade ? trade.question : null;
 			const marketSlug = "slug" in trade ? trade.slug : null;
 			const title = question ?? "Unknown Market";

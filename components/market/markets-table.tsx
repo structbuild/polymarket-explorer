@@ -217,16 +217,18 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 			meta: { title: "Liquidity" },
 			header: headerOrSortable("liquidity", "Liquidity"),
 			size: 112,
-			cell: ({ row }) => (
-				<p className="text-foreground/90 tabular-nums">
-					{row.original.liquidityUsd !== null
-						? formatNumber(row.original.liquidityUsd, {
-								compact: true,
-								currency: true,
-							})
-						: "—"}
-				</p>
-			),
+			cell: ({ row }) => {
+				const liq = row.original.liquidityUsd ?? 0;
+				return (
+					<p className="text-foreground/90 tabular-nums">
+						{formatNumber(liq, {
+							compact: true,
+							currency: true,
+							...(liq === 0 ? { decimals: 0 } : {}),
+						})}
+					</p>
+				);
+			},
 		});
 	}
 

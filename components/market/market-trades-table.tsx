@@ -20,6 +20,7 @@ import { marketDetailSearchParamParsers } from "@/lib/market-detail-search-param
 import { maxMarketTradesPageNumber } from "@/lib/market-detail-search-params-shared";
 import type { PaginatedResource } from "@/lib/struct/types";
 import { hasTradeTrader, isBuyTrade, isOrderFilledTrade, getActivityLabel } from "@/lib/trade-utils";
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
 type TradeRow = Trade;
@@ -57,7 +58,10 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 				>
 					{trade.trader.profile_image ? (
 						<Avatar size="lg" className="size-9 rounded-md after:rounded-md">
-							<AvatarImage src={trade.trader.profile_image} className="rounded-md" />
+							<AvatarImage
+								src={normalizePolymarketS3ImageUrl(trade.trader.profile_image) ?? trade.trader.profile_image}
+								className="rounded-md"
+							/>
 						</Avatar>
 					) : (
 						<Facehash

@@ -7,7 +7,7 @@ import { MarketDescription } from "@/components/market/market-description";
 import { CopyLink } from "@/components/trader/copy-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDateShort, formatNumber } from "@/lib/format";
+import { formatDateShort, formatNumber, slugify } from "@/lib/format";
 import type { MarketResponse } from "@structbuild/sdk";
 
 function StatusBadge({ status }: { status: string }) {
@@ -83,7 +83,7 @@ export function MarketHeader({ market, slug }: MarketHeaderProps) {
 			{tags.length > 0 && (
 				<div className="flex flex-wrap gap-1.5">
 					{tags.map((tag) => (
-						<Link key={tag} href={`/tags/${tag}` as Route}>
+						<Link key={tag} href={`/tags/${slugify(tag)}` as Route}>
 							<Badge variant="secondary" className="h-7 px-3 capitalize">
 								{tag}
 							</Badge>

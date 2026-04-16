@@ -27,6 +27,7 @@ import { TooltipWrapper } from "../ui/tooltip"
 import { Button } from "../ui/button"
 import { TraderTabs } from "./trader-tabs"
 import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
 
 type TraderOutcomePnlEntry = components["schemas"]["TraderOutcomePnlEntry"]
@@ -90,7 +91,11 @@ function buildColumns(
 				return (
 					<div className="flex items-center gap-3">
 						{entry.image_url ? (
-							<img className="size-10 rounded-md object-cover" alt="" src={entry.image_url} />
+							<img
+								className="size-10 rounded-md object-cover"
+								alt=""
+								src={normalizePolymarketS3ImageUrl(entry.image_url) ?? ""}
+							/>
 						) : (
 							<div className="size-10 shrink-0 rounded-md bg-muted" />
 						)}

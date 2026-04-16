@@ -6,7 +6,7 @@ import { MarketHeader } from "@/components/market/market-header";
 import { MarketTabPanel } from "@/components/market/market-tab-panel";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
-import { formatNumber } from "@/lib/format";
+import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { getMarketBySlug } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata } from "@/lib/site-metadata";
@@ -111,7 +111,9 @@ export default async function MarketPage({ params, searchParams }: Props) {
 					items={[
 						{ label: "Home", href: "/" },
 						{ label: "Markets", href: "/markets" },
-						...(breadcrumbTag ? [{ label: breadcrumbTag, href: `/tags/${breadcrumbTag}` as string }] : []),
+						...(breadcrumbTag
+							? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }]
+							: []),
 						{
 							label: truncateQuestion(market.question ?? market.title ?? slug),
 							href: `/markets/${slug}`,

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { formatNumber } from "@/lib/format";
-import { ogImageSize, ogPalette } from "@/lib/opengraph";
+import { loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize, ogPalette } from "@/lib/opengraph";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
 export const runtime = "nodejs";
@@ -17,54 +17,21 @@ export default async function OpenGraphImage() {
 		return sum + rate;
 	}, 0);
 
+	const marketsWithImages = markets.filter((m) => m.image_url).slice(0, ogFloatingPositions.length);
+	const imageDataUrls = await Promise.all(marketsWithImages.map((m) => loadImageAsDataUrl(m.image_url, 128)));
+
 	return new ImageResponse(
-		<div
-			style={{
-				display: "flex",
-				flexDirection: "column",
-				width: "100%",
-				height: "100%",
-				padding: 28,
-				gap: 14,
-				background: ogPalette.background,
-				color: ogPalette.foreground,
-				fontFamily: "system-ui, sans-serif",
-			}}
-		>
-			<div
-				style={{
-					display: "flex",
-					flex: 1,
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					borderRadius: 16,
-					background: ogPalette.card,
-					padding: "40px 28px",
-					gap: 16,
-				}}
-			>
-				<div style={{ display: "flex", fontSize: 32, color: ogPalette.mutedForeground }}>
-					Discover markets with liquidity rewards
-				</div>
-				<div
-					style={{
-						display: "flex",
-						alignItems: "baseline",
-						fontSize: 160,
-						fontWeight: 800,
-						lineHeight: 0.8,
-						marginTop: 40,
-						marginBottom: 40,
-						color: ogPalette.positive,
-					}}
-				>
+		<OgCollectionLayout
+			subtitle="Discover markets with liquidity rewards"
+			title={
+				<>
 					{formatNumber(totalDailyRewards, { compact: true, currency: true })}+
 					<span style={{ fontSize: 40, fontWeight: 500, color: ogPalette.mutedForeground, marginLeft: 10 }}>/day</span>
-				</div>
-				<span style={{ fontSize: 20, color: ogPalette.mutedForeground }}>Analyze the best markets to earn rewards on explorer.struct.to</span>
-			</div>
-		</div>,
+				</>
+			}
+			titleColor={ogPalette.positive}
+			images={imageDataUrls}
+		/>,
 		size,
 	);
 }
