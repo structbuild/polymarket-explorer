@@ -224,12 +224,11 @@ export function SearchDialog() {
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
-				className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border bg-card/50 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:px-3"
+				className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-lg border bg-card/50 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:h-9 sm:w-auto px-3"
 				aria-label="Search"
 			>
-				<SearchIcon className="size-3.5" />
-				<span className="sm:hidden">Search</span>
-				<span className="hidden sm:inline">Search...</span>
+				<SearchIcon className="size-4 sm:size-3.5" />
+				<span className="">Search...</span>
 				<kbd className="pointer-events-none ml-1 hidden h-5 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
 					⌘K
 				</kbd>
