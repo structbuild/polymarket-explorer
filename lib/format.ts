@@ -31,11 +31,35 @@ export function formatDateCompact(seconds: number): string {
 	})
 }
 
+export function formatDateTimeCompact(seconds: number): string {
+	return new Date(seconds * 1000).toLocaleString("en-US", {
+		month: "short",
+		day: "numeric",
+		hour: "numeric",
+	})
+}
+
+export function formatTimeCompact(seconds: number): string {
+	return new Date(seconds * 1000).toLocaleTimeString("en-US", {
+		hour: "numeric",
+	})
+}
+
 export function formatDateFull(seconds: number): string {
 	return new Date(seconds * 1000).toLocaleDateString("en-US", {
 		month: "long",
 		day: "numeric",
 		year: "numeric",
+	})
+}
+
+export function formatDateTimeFull(seconds: number): string {
+	return new Date(seconds * 1000).toLocaleString("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
 	})
 }
 

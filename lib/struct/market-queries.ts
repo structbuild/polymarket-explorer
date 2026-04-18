@@ -1,7 +1,7 @@
 import "server-only";
 
 import type {
-	CountsResponse,
+	GlobalCountsResponse,
 	HolderHistoryCandle,
 	LeaderboardEntry,
 	MarketHoldersResponse,
@@ -12,8 +12,11 @@ import type {
 	PositionVolumeDataPoint,
 	PriceJump,
 	SortDirection,
+	HttpClient,
 	StructClient,
 	Tag,
+	TagSortBy,
+	TagSortTimeframe,
 	Trade,
 } from "@structbuild/sdk";
 import { unstable_cache } from "next/cache";
@@ -362,7 +365,7 @@ export const getMarketPriceJumps = cache(
 
 export const getAllTags = cache(
 	unstable_cache(
-		async (): Promise<Tag[]> => {
+		async (sort?: TagSortBy, timeframe?: TagSortTimeframe): Promise<Tag[]> => {
 			const client = getStructClient();
 
 			if (!client) {
@@ -372,6 +375,9 @@ export const getAllTags = cache(
 			const results: Tag[] = [];
 			let offset = 0;
 			const batchSize = 250;
+			const sortParams = sort
+				? { sort, timeframe: timeframe ?? ("lifetime" as TagSortTimeframe) }
+				: undefined;
 
 			try {
 				let requestCount = 0;
@@ -382,7 +388,11 @@ export const getAllTags = cache(
 						break;
 					}
 
-					const response = await client.tags.getTags({ limit: batchSize, offset });
+					const response = await client.tags.getTags({
+						limit: batchSize,
+						offset,
+						...sortParams,
+					});
 					results.push(...response.data);
 					requestCount += 1;
 
@@ -403,8 +413,13 @@ export const getAllTags = cache(
 );
 
 export const getTagsPaginated = cache(
-	async (limit: number = defaultPageSize, offset: number = 0): Promise<PaginatedResult<Tag>> => {
-		const tags = (await getAllTags()).filter(hasTagSlug);
+	async (
+		limit: number = defaultPageSize,
+		offset: number = 0,
+		sort?: TagSortBy,
+		timeframe?: TagSortTimeframe,
+	): Promise<PaginatedResult<Tag>> => {
+		const tags = (await getAllTags(sort, timeframe)).filter(hasTagSlug);
 		const data = tags.slice(offset, offset + limit);
 		const hasMore = offset + limit < tags.length;
 
@@ -413,6 +428,19 @@ export const getTagsPaginated = cache(
 			hasMore,
 			nextCursor: hasMore ? String(offset + limit) : null,
 		};
+	},
+);
+
+export const searchTags = cache(
+	async (
+		query: string,
+		sort?: TagSortBy,
+		timeframe?: TagSortTimeframe,
+	): Promise<Tag[]> => {
+		const q = query.trim().toLowerCase();
+		if (!q) return [];
+		const tags = (await getAllTags(sort, timeframe)).filter(hasTagSlug);
+		return tags.filter((tag) => tag.label.toLowerCase().includes(q));
 	},
 );
 
@@ -437,7 +465,11 @@ export const getTagBySlug = cache(
 			}
 
 			try {
-				const response = await client.tags.getTag({ identifier: slug });
+				const http = (client.tags as unknown as { http: HttpClient }).http;
+				const response = await http.get<Tag>(
+					`/polymarket/tags/${encodeURIComponent(slug)}`,
+					{ params: { include_metrics: true, timeframe: "lifetime" } },
+				);
 				return response.data;
 			} catch (error) {
 				if (readStatus(error) === 404) {
@@ -455,7 +487,7 @@ export const getTagBySlug = cache(
 
 export const getMarketsByTag = cache(
 	unstable_cache(
-		async (tag: string, limit: number = defaultPageSize, cursor?: string, sortBy: string = "volume", sortDir: string = "desc"): Promise<PaginatedResult<MarketResponse>> => {
+		async (tag: string, limit: number = defaultPageSize, cursor?: string, sortBy: string = "volume", sortDir: string = "desc", status: "open" | "closed" | "all" = "open"): Promise<PaginatedResult<MarketResponse>> => {
 			const client = getStructClient();
 
 			if (!client) {
@@ -468,7 +500,7 @@ export const getMarketsByTag = cache(
 					limit,
 					sort_by: sortBy as MarketSortBy,
 					sort_dir: sortDir as SortDirection,
-					status: "open",
+					status,
 					include_metrics: true,
 					...(cursor ? { pagination_key: cursor } : {}),
 				});
@@ -633,7 +665,7 @@ export const getAllMarketSlugs = cache(
 
 export const getPlatformCounts = cache(
 	unstable_cache(
-		async (): Promise<CountsResponse | null> => {
+		async (): Promise<GlobalCountsResponse | null> => {
 			const client = getStructClient();
 
 			if (!client) {
@@ -641,7 +673,7 @@ export const getPlatformCounts = cache(
 			}
 
 			try {
-				const response = await client.misc.getCounts();
+				const response = await client.analytics.getCounts();
 				return response.data;
 			} catch (error) {
 				logStructError("getPlatformCounts", error);

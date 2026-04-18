@@ -1,3 +1,4 @@
+import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { PerformanceSummary } from "@/components/trader/performance-summary";
 import { PnlCalendar } from "@/components/trader/pnl-calendar";
 import { PnlCard } from "@/components/trader/pnl-card";
@@ -32,6 +33,15 @@ import {
 	traderOgImageSize,
 } from "@/lib/trader-open-graph";
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
+import {
+	getTraderAnalyticsChanges,
+	getTraderAnalyticsDeltas,
+	getTraderAnalyticsTimeseries,
+} from "@/lib/struct/analytics-queries";
+import {
+	parseAnalyticsRange,
+	parseAnalyticsView,
+} from "@/lib/struct/analytics-shared";
 import {
 	getMarketsByConditionIds,
 	getTraderPnlSummary,
@@ -387,17 +397,23 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const {
-		tab,
-		openPage,
-		closedPage,
-		activityPage,
-		pnlTimeframe,
-		openSortBy,
-		openSortDirection,
-		closedSortBy,
-		closedSortDirection,
-	} = await loadTraderSearchParams(searchParams);
+	const [
+		{
+			tab,
+			openPage,
+			closedPage,
+			activityPage,
+			pnlTimeframe,
+			openSortBy,
+			openSortDirection,
+			closedSortBy,
+			closedSortDirection,
+		},
+		resolvedSearchParams,
+	] = await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
+	const view = parseAnalyticsView(resolvedSearchParams.view);
+	const range =
+		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
 
 	const profilePromise = getTraderProfile(address);
 	const pnlSummaryPromise = getTraderPnlSummary(address);
@@ -443,6 +459,18 @@ export default async function TraderPage({ params, searchParams }: Props) {
 						<TraderTabPanel tabDataPromise={tabDataPromise} />
 					</Suspense>
 				</div>
+
+				<AnalyticsSection
+					title="Analytics"
+					range={range}
+					view={view}
+					excludeMetrics={["uniqueTraders"]}
+					fetchers={{
+						deltas: () => getTraderAnalyticsDeltas(address, range),
+						timeseries: () => getTraderAnalyticsTimeseries(address, range),
+						changes: () => getTraderAnalyticsChanges(address, range),
+					}}
+				/>
 			</div>
 		</div>
 	);

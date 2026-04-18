@@ -227,6 +227,7 @@ export default function TraderActivity({ page, pageNumber }: Props) {
 			storageKey="activity-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No trades to show."
+			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"
 			pageIndex={pageNumber - 1}

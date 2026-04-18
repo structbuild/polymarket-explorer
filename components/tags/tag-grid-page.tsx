@@ -1,32 +1,59 @@
-import type { Route } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { TagSortBy, TagSortTimeframe } from "@structbuild/sdk";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { RoutePaginationNav } from "@/components/seo/route-pagination-nav";
+import { SortableTagsTable } from "@/components/tags/sortable-tags-table";
+import { TagSearchInput } from "@/components/tags/tag-search-input";
 import { getSiteUrl } from "@/lib/env";
 import { TAGS_PAGE_SIZE, getPageCount } from "@/lib/pagination";
 import { SITE_NAME } from "@/lib/site-metadata";
-import { getTagsPaginated, getTagCount } from "@/lib/struct/market-queries";
+import { DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME } from "@/lib/struct/tag-shared";
+import {
+	getTagsPaginated,
+	getTagCount,
+	searchTags,
+} from "@/lib/struct/market-queries";
 
 type TagGridPageProps = {
 	page: number;
+	sort?: TagSortBy;
+	timeframe?: TagSortTimeframe;
+	query?: string;
 };
 
-export async function TagGridPage({ page }: TagGridPageProps) {
-	const [{ data: tags }, totalTags] = await Promise.all([
-		getTagsPaginated(TAGS_PAGE_SIZE, (page - 1) * TAGS_PAGE_SIZE),
-		getTagCount(),
-	]);
+export async function TagGridPage({
+	page,
+	sort,
+	timeframe,
+	query,
+}: TagGridPageProps) {
+	const effectiveSort = sort ?? DEFAULT_TAG_SORT;
+	const effectiveTimeframe = timeframe ?? DEFAULT_TAG_TIMEFRAME;
+	const trimmedQuery = query?.trim() ?? "";
+	const isSearching = trimmedQuery.length > 0;
 
-	const totalPages = getPageCount(totalTags, TAGS_PAGE_SIZE);
+	const tags = isSearching
+		? await searchTags(trimmedQuery, effectiveSort, effectiveTimeframe)
+		: null;
+	const paginated = isSearching
+		? null
+		: await getTagsPaginated(
+				TAGS_PAGE_SIZE,
+				(page - 1) * TAGS_PAGE_SIZE,
+				effectiveSort,
+				effectiveTimeframe,
+			);
+	const totalTags = isSearching ? tags!.length : await getTagCount();
 
-	if (page > totalPages && page !== 1) {
+	const totalPages = isSearching ? 1 : getPageCount(totalTags, TAGS_PAGE_SIZE);
+
+	if (!isSearching && page > totalPages && page !== 1) {
 		notFound();
 	}
 
-	const tagsWithSlug = tags.filter((tag) => tag.slug);
+	const displayTags = isSearching ? tags! : paginated!.data.filter((tag) => tag.slug);
 
 	const breadcrumbs = [
 		{ label: "Home", href: "/" },
@@ -36,7 +63,7 @@ export async function TagGridPage({ page }: TagGridPageProps) {
 
 	const siteUrl = getSiteUrl();
 	const canonicalPath = page > 1 ? `/tags/page/${page}` : "/tags";
-	const positionOffset = (page - 1) * TAGS_PAGE_SIZE;
+	const positionOffset = isSearching ? 0 : (page - 1) * TAGS_PAGE_SIZE;
 	const pageSuffix = page > 1 ? ` — Page ${page}` : "";
 
 	const jsonLd: Record<string, unknown> = {
@@ -47,8 +74,8 @@ export async function TagGridPage({ page }: TagGridPageProps) {
 		url: new URL(canonicalPath, siteUrl).toString(),
 		mainEntity: {
 			"@type": "ItemList",
-			numberOfItems: tagsWithSlug.length,
-			itemListElement: tagsWithSlug.map((tag, index) => ({
+			numberOfItems: displayTags.length,
+			itemListElement: displayTags.map((tag, index) => ({
 				"@type": "ListItem",
 				position: positionOffset + index + 1,
 				name: tag.label,
@@ -57,31 +84,43 @@ export async function TagGridPage({ page }: TagGridPageProps) {
 		},
 	};
 
+	const paginationParams = new URLSearchParams();
+	if (sort && sort !== DEFAULT_TAG_SORT) paginationParams.set("sort", sort);
+	if (timeframe && timeframe !== DEFAULT_TAG_TIMEFRAME) {
+		paginationParams.set("timeframe", timeframe);
+	}
+
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Breadcrumbs items={breadcrumbs} />
 			<JsonLd data={jsonLd} />
 
 			<div className="mt-6">
-				<h1 className="text-xl font-medium tracking-tight">Tags</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Browse prediction markets by topic.
-				</p>
+				<SortableTagsTable
+					tags={displayTags}
+					sort={effectiveSort}
+					timeframe={effectiveTimeframe}
+					rankOffset={positionOffset}
+					toolbarLeft={
+						<div className="mb-3">
+							<h1 className="text-xl font-medium tracking-tight">Tags</h1>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Browse prediction markets by topic.
+							</p>
+						</div>
+					}
+					toolbarRight={<TagSearchInput query={trimmedQuery} />}
+				/>
 			</div>
 
-			<div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-				{tagsWithSlug.map((tag) => (
-					<Link
-						key={tag.id}
-						href={`/tags/${tag.slug}` as Route}
-						className="rounded-lg border bg-card p-4 transition-colors hover:bg-accent"
-					>
-						<span className="font-medium capitalize">{tag.label}</span>
-					</Link>
-				))}
-			</div>
-
-			<RoutePaginationNav basePath="/tags" currentPage={page} totalPages={totalPages} />
+			{isSearching ? null : (
+				<RoutePaginationNav
+					basePath="/tags"
+					currentPage={page}
+					totalPages={totalPages}
+					searchParams={paginationParams}
+				/>
+			)}
 		</div>
 	);
 }

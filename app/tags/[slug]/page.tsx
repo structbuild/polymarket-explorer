@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import type { Tag } from "@structbuild/sdk";
 
+import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import { MarketsTable } from "@/components/market/markets-table";
+import { TagStatsRow } from "@/components/tags/tag-stats-row";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
 import { formatCapitalizeWords } from "@/lib/format";
@@ -13,7 +16,21 @@ import {
 	buildPageMetadata,
 	SITE_NAME,
 } from "@/lib/site-metadata";
+import {
+	getTagAnalyticsChanges,
+	getTagAnalyticsDeltas,
+	getTagAnalyticsTimeseries,
+} from "@/lib/struct/analytics-queries";
+import {
+	parseAnalyticsRange,
+	parseAnalyticsView,
+} from "@/lib/struct/analytics-shared";
+import {
+	DEFAULT_TAG_MARKET_TAB,
+	parseTagMarketTab,
+} from "@/lib/struct/tag-shared";
 import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import { TagMarketTabs } from "@/components/tags/tag-market-tabs";
 
 export const revalidate = 300;
 
@@ -21,6 +38,18 @@ type Props = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function TagHeader({ tag, tagDisplay }: { tag: Tag; tagDisplay: string }) {
+	return (
+		<div>
+			<h1 className="text-xl font-medium tracking-tight">{tagDisplay} Markets</h1>
+			<p className="mt-1 text-sm text-muted-foreground">
+				Explore prediction markets related to tag: {tagDisplay}.
+			</p>
+			<TagStatsRow tag={tag} className="mt-2" />
+		</div>
+	);
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { slug: rawSlug } = await params;
@@ -51,8 +80,14 @@ export default async function TagPage({ params, searchParams }: Props) {
 
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
+	const view = parseAnalyticsView(resolvedSearchParams.view);
+	const range =
+		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
+	const marketTab = parseTagMarketTab(resolvedSearchParams.tab);
 	const canonicalSlug = tag.slug ?? slug;
-	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor);
+	const tagKey = tag.slug ?? tag.label;
+	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab);
+	const paginationBaseParams = marketTab === DEFAULT_TAG_MARKET_TAB ? {} : { tab: marketTab };
 	const siteUrl = getSiteUrl();
 	const tagDisplay = formatCapitalizeWords(tag.label);
 
@@ -87,41 +122,46 @@ export default async function TagPage({ params, searchParams }: Props) {
 			/>
 			<JsonLd data={jsonLd} />
 
-			<div className="mt-6">
+			<div className="mt-6 space-y-4">
+				<TagHeader tag={tag} tagDisplay={tagDisplay} />
 				{markets.length > 0 ? (
 					<MarketsTable
 						markets={markets.map(marketResponseToRow)}
 						paginationMode="none"
 						sortingMode="client"
-						toolbarLeft={
-							<div className="mb-3">
-								<h1 className="text-xl font-medium tracking-tight">{tagDisplay} Markets</h1>
-								<p className="mt-1 text-sm text-muted-foreground">
-									Explore prediction markets related to tag: {tagDisplay}.
-								</p>
-							</div>
-						}
+						toolbarLeft={<TagMarketTabs />}
 					/>
 				) : (
 					<>
-						<div className="mb-6">
-							<h1 className="text-xl font-medium tracking-tight">{tagDisplay} Markets</h1>
-							<p className="mt-1 text-sm text-muted-foreground">
-								Explore prediction markets related to tag: {tagDisplay}.
-							</p>
-						</div>
+						<TagMarketTabs />
 						<p className="rounded-lg bg-card px-4 py-12 text-center text-muted-foreground">
-							No markets found for this tag.
+							{marketTab === "closed"
+								? "No closed markets found for this tag."
+								: "No open markets found for this tag."}
 						</p>
 					</>
 				)}
 			</div>
 			<PaginationNav
 				basePath={`/tags/${canonicalSlug}`}
+				baseParams={paginationBaseParams}
 				cursor={cursor ?? null}
 				nextCursor={nextCursor}
 				hasMore={hasMore}
 			/>
+
+			<div className="mt-8">
+				<AnalyticsSection
+					title="Analytics"
+					range={range}
+					view={view}
+					fetchers={{
+						deltas: () => getTagAnalyticsDeltas(tagKey, range),
+						timeseries: () => getTagAnalyticsTimeseries(tagKey, range),
+						changes: () => getTagAnalyticsChanges(tagKey, range),
+					}}
+				/>
+			</div>
 		</div>
 	);
 }

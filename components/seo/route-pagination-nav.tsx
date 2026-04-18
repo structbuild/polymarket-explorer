@@ -5,12 +5,27 @@ type RoutePaginationNavProps = {
 	basePath: string;
 	currentPage: number;
 	totalPages: number;
+	searchParams?: URLSearchParams | Record<string, string> | null;
 };
 
 type PaginationItem = number | "ellipsis";
 
-function pageHref(basePath: string, page: number) {
-	return (page === 1 ? basePath : `${basePath}/page/${page}`) as Route;
+function toQueryString(
+	input: URLSearchParams | Record<string, string> | null | undefined,
+): string {
+	if (!input) return "";
+	const params = input instanceof URLSearchParams ? input : new URLSearchParams(input);
+	const query = params.toString();
+	return query ? `?${query}` : "";
+}
+
+function pageHref(
+	basePath: string,
+	page: number,
+	searchParams?: URLSearchParams | Record<string, string> | null,
+) {
+	const path = page === 1 ? basePath : `${basePath}/page/${page}`;
+	return `${path}${toQueryString(searchParams)}` as Route;
 }
 
 function getPaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
@@ -38,7 +53,12 @@ const disabledClass =
 const ellipsisClass =
 	"inline-flex items-center justify-center px-2 py-2 text-sm text-muted-foreground";
 
-export function RoutePaginationNav({ basePath, currentPage, totalPages }: RoutePaginationNavProps) {
+export function RoutePaginationNav({
+	basePath,
+	currentPage,
+	totalPages,
+	searchParams,
+}: RoutePaginationNavProps) {
 	if (totalPages <= 1) return null;
 
 	const hasPrev = currentPage > 1;
@@ -48,7 +68,7 @@ export function RoutePaginationNav({ basePath, currentPage, totalPages }: RouteP
 	return (
 		<nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2">
 			{hasPrev ? (
-				<Link href={pageHref(basePath, currentPage - 1)} rel="prev" className={linkClass}>
+				<Link href={pageHref(basePath, currentPage - 1, searchParams)} rel="prev" className={linkClass}>
 					Previous
 				</Link>
 			) : (
@@ -65,14 +85,14 @@ export function RoutePaginationNav({ basePath, currentPage, totalPages }: RouteP
 						{item}
 					</span>
 				) : (
-					<Link key={item} href={pageHref(basePath, item)} className={linkClass}>
+					<Link key={item} href={pageHref(basePath, item, searchParams)} className={linkClass}>
 						{item}
 					</Link>
 				),
 			)}
 
 			{hasNext ? (
-				<Link href={pageHref(basePath, currentPage + 1)} rel="next" className={linkClass}>
+				<Link href={pageHref(basePath, currentPage + 1, searchParams)} rel="next" className={linkClass}>
 					Next
 				</Link>
 			) : (

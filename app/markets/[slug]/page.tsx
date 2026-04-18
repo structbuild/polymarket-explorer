@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { MarketCharts, MarketChartsFallback } from "@/components/market/market-charts";
 import { MarketHeader } from "@/components/market/market-header";
 import { MarketTabPanel } from "@/components/market/market-tab-panel";
@@ -8,6 +9,15 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
+import {
+	getMarketAnalyticsChanges,
+	getMarketAnalyticsDeltas,
+	getMarketAnalyticsTimeseries,
+} from "@/lib/struct/analytics-queries";
+import {
+	parseAnalyticsRange,
+	parseAnalyticsView,
+} from "@/lib/struct/analytics-shared";
 import { getMarketBySlug } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
@@ -113,8 +123,15 @@ export default async function MarketPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const { tab, tradesPage } = await loadMarketDetailSearchParams(searchParams);
+	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([
+		loadMarketDetailSearchParams(searchParams),
+		searchParams,
+	]);
+	const view = parseAnalyticsView(resolvedSearchParams.view);
+	const range =
+		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
 	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
+	const conditionId = market.condition_id ?? null;
 
 	return (
 		<div className="flex w-full justify-center">
@@ -137,16 +154,26 @@ export default async function MarketPage({ params, searchParams }: Props) {
 
 				<MarketHeader market={market} slug={slug} />
 
-				{market.condition_id && (
+				{conditionId && (
 					<>
 						<Suspense fallback={<MarketChartsFallback />}>
-							<MarketCharts conditionId={market.condition_id} />
+							<MarketCharts conditionId={conditionId} />
 						</Suspense>
 						<MarketTabPanel
 							currentTab={tab}
 							slug={slug}
-							conditionId={market.condition_id}
+							conditionId={conditionId}
 							tradesPage={tradesPage}
+						/>
+						<AnalyticsSection
+							title="Analytics"
+							range={range}
+							view={view}
+							fetchers={{
+								deltas: () => getMarketAnalyticsDeltas(conditionId, range),
+								timeseries: () => getMarketAnalyticsTimeseries(conditionId, range),
+								changes: () => getMarketAnalyticsChanges(conditionId, range),
+							}}
 						/>
 					</>
 				)}

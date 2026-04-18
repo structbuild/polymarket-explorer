@@ -529,6 +529,7 @@ export default function TraderPositions({
 			storageKey="positions-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No positions to show."
+			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"
 			pageIndex={pageNumber - 1}
