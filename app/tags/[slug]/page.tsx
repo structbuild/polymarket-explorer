@@ -87,7 +87,8 @@ export default async function TagPage({ params, searchParams }: Props) {
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
 	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab);
-	const paginationBaseParams = marketTab === DEFAULT_TAG_MARKET_TAB ? {} : { tab: marketTab };
+	const paginationBaseParams: Record<string, string> =
+		marketTab === DEFAULT_TAG_MARKET_TAB ? {} : { tab: marketTab };
 	const siteUrl = getSiteUrl();
 	const tagDisplay = formatCapitalizeWords(tag.label);
 
