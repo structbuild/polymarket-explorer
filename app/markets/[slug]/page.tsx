@@ -9,16 +9,8 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
-import {
-	getMarketAnalyticsChanges,
-	getMarketAnalyticsDeltas,
-	getMarketAnalyticsTimeseries,
-} from "@/lib/struct/analytics-queries";
-import {
-	parseAnalyticsCap,
-	parseAnalyticsRange,
-	parseAnalyticsView,
-} from "@/lib/struct/analytics-shared";
+import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
+import { parseAnalyticsCap, parseAnalyticsRange, parseAnalyticsView } from "@/lib/struct/analytics-shared";
 import { getMarketBySlug } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
@@ -124,17 +116,10 @@ export default async function MarketPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([
-		loadMarketDetailSearchParams(searchParams),
-		searchParams,
-	]);
+	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([loadMarketDetailSearchParams(searchParams), searchParams]);
 	const view = parseAnalyticsView(resolvedSearchParams.view);
-	const range =
-		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
-	const endTime =
-		typeof market.end_time === "number" && Number.isFinite(market.end_time)
-			? market.end_time
-			: undefined;
+	const range = view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
+	const endTime = typeof market.end_time === "number" && Number.isFinite(market.end_time) ? market.end_time : undefined;
 	const isResolved = market.status === "closed" || market.status === "resolved";
 	const defaultCap = isResolved && endTime !== undefined;
 	const cap = parseAnalyticsCap(resolvedSearchParams.cap) ?? defaultCap;
@@ -148,9 +133,7 @@ export default async function MarketPage({ params, searchParams }: Props) {
 					items={[
 						{ label: "Home", href: "/" },
 						{ label: "Markets", href: "/markets" },
-						...(breadcrumbTag
-							? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }]
-							: []),
+						...(breadcrumbTag ? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }] : []),
 						{
 							label: truncateQuestion(market.question ?? market.title ?? slug),
 							href: `/markets/${slug}`,
@@ -167,26 +150,23 @@ export default async function MarketPage({ params, searchParams }: Props) {
 						<Suspense fallback={<MarketChartsFallback />}>
 							<MarketCharts conditionId={conditionId} />
 						</Suspense>
-						<MarketTabPanel
-							currentTab={tab}
-							slug={slug}
-							conditionId={conditionId}
-							tradesPage={tradesPage}
-						/>
-						<AnalyticsSection
-							title="Analytics"
-							range={range}
-							view={view}
-							endTime={endTime}
-							cap={cap}
-							defaultCap={defaultCap}
-							pathname={`/markets/${slug}`}
-							fetchers={{
-								deltas: () => getMarketAnalyticsDeltas(conditionId, range),
-								timeseries: () => getMarketAnalyticsTimeseries(conditionId, range),
-								changes: () => getMarketAnalyticsChanges(conditionId, range),
-							}}
-						/>
+						<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
+						<div className="mt-8">
+							<AnalyticsSection
+								title="Analytics"
+								range={range}
+								view={view}
+								endTime={endTime}
+								cap={cap}
+								defaultCap={defaultCap}
+								pathname={`/markets/${slug}`}
+								fetchers={{
+									deltas: () => getMarketAnalyticsDeltas(conditionId, range),
+									timeseries: () => getMarketAnalyticsTimeseries(conditionId, range),
+									changes: () => getMarketAnalyticsChanges(conditionId, range),
+								}}
+							/>
+						</div>
 					</>
 				)}
 			</div>
