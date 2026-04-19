@@ -61,7 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	}
 
 	const { displayName } = await loadTraderOpenGraphIdentity(address);
-	const description = getTraderPageDescription(displayName);
+	const description = getTraderPageDescription(address);
 	const socialTitle = getTraderSocialTitle(displayName);
 	const ogImage = getTraderOgImageUrl(address);
 	const ogAlt = getTraderOgImageAlt(displayName);

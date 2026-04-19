@@ -43,8 +43,8 @@ export function getTraderSocialTitle(displayName: string) {
 	return buildEntityPageTitle(displayName, "Trader Profile");
 }
 
-export function getTraderPageDescription(displayName: string) {
-	return `Review ${displayName}'s Polymarket performance, including PnL, win rate, volume, and trade history.`;
+export function getTraderPageDescription(address: string) {
+	return `Review ${address} Polymarket performance, including PnL, analytics, volume, trade history, and more.`;
 }
 
 export function getTraderOgImageAlt(displayName: string) {
