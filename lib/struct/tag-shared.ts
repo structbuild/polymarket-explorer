@@ -37,13 +37,3 @@ export function parseTagTimeframe(value: string | string[] | undefined): TagSort
 		: DEFAULT_TAG_TIMEFRAME;
 }
 
-export const tagMarketTabValues = ["open", "closed"] as const;
-export type TagMarketTab = (typeof tagMarketTabValues)[number];
-export const DEFAULT_TAG_MARKET_TAB: TagMarketTab = "open";
-
-export function parseTagMarketTab(value: string | string[] | undefined): TagMarketTab {
-	const raw = Array.isArray(value) ? value[0] : value;
-	return tagMarketTabValues.includes(raw as TagMarketTab)
-		? (raw as TagMarketTab)
-		: DEFAULT_TAG_MARKET_TAB;
-}

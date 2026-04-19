@@ -184,7 +184,16 @@ export function BuyDistributionPie({ points }: BuyDistributionPieProps) {
 									</span>
 								</span>
 								<span className="font-mono tabular-nums text-muted-foreground">
-									{hidden ? "—" : `${pct.toFixed(1)}%`}
+									{hidden ? (
+										"—"
+									) : (
+										<>
+											{formatNumber(d.value, { compact: true })}
+											<span className="ml-1.5 opacity-70">
+												{pct.toFixed(1)}%
+											</span>
+										</>
+									)}
 								</span>
 							</button>
 						</li>

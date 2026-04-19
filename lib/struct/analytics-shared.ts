@@ -48,6 +48,17 @@ export function parseAnalyticsView(value: string | string[] | undefined): Analyt
 		: DEFAULT_ANALYTICS_VIEW;
 }
 
+export const ANALYTICS_CAP_BUFFER_SECONDS = 7 * 86400;
+
+export function parseAnalyticsCap(
+	value: string | string[] | undefined,
+): boolean | undefined {
+	const raw = Array.isArray(value) ? value[0] : value;
+	if (raw === "1" || raw === "true") return true;
+	if (raw === "0" || raw === "false") return false;
+	return undefined;
+}
+
 export type AnalyticsPoint = {
 	t: number;
 	volumeUsd: number;
@@ -96,6 +107,16 @@ export const BUY_DIST_LABELS: Record<BuyDistributionKey, string> = {
 	buyDist10kTo50k: "$10K–$50K",
 	buyDistOver50k: "$50K+",
 };
+
+export function applyAnalyticsCap(
+	points: AnalyticsPoint[],
+	endTime: number | undefined,
+	cap: boolean,
+): AnalyticsPoint[] {
+	if (!cap || endTime === undefined) return points;
+	const cutoff = endTime + ANALYTICS_CAP_BUFFER_SECONDS;
+	return points.filter((p) => p.t <= cutoff);
+}
 
 export type AnalyticsSummary = {
 	totalVolumeUsd: number;

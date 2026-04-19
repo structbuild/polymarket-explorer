@@ -20,7 +20,7 @@ const traderSearchParamParsers = {
 	openSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
 	closedSortBy: parseAsStringLiteral(traderPositionSortByValues).withDefault(defaultTraderPositionSortBy.closed),
 	closedSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
-	pnlTimeframe: parseAsStringLiteral(pnlTimeframeValues).withDefault("all"),
+	pnlTimeframe: parseAsStringLiteral(pnlTimeframeValues).withDefault("1w"),
 };
 
 export const loadTraderSearchParams = createLoader(traderSearchParamParsers);

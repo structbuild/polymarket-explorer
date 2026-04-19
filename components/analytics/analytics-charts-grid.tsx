@@ -50,6 +50,21 @@ const COLOR_NO = "var(--chart-4)";
 const COLOR_TRADERS = "var(--chart-3)";
 const COLOR_FEES = "var(--chart-5)";
 const COLOR_SHARES = "var(--chart-2)";
+const COLOR_TOTAL = "#64748b";
+
+const VOLUME_TOTAL_SERIES: AnalyticsSeries = {
+	key: "volumeUsd",
+	label: "Total",
+	color: COLOR_TOTAL,
+	isTotal: true,
+};
+
+const TRADE_COUNT_TOTAL_SERIES: AnalyticsSeries = {
+	key: "txnCount",
+	label: "Total",
+	color: COLOR_TOTAL,
+	isTotal: true,
+};
 
 const VOLUME_SERIES: AnalyticsSeries[] = [
 	{ key: "buyVolumeUsd", label: "Buys", color: COLOR_VOLUME_BUY, stackId: "v" },
@@ -62,6 +77,7 @@ const VOLUME_SERIES: AnalyticsSeries[] = [
 	},
 	{ key: "mergeVolumeUsd", label: "Merges", color: COLOR_MERGE, stackId: "v" },
 	{ key: "splitVolumeUsd", label: "Splits", color: COLOR_SPLIT, stackId: "v" },
+	VOLUME_TOTAL_SERIES,
 ];
 
 const VOLUME_CUMULATIVE_SERIES: AnalyticsSeries[] = [
@@ -70,6 +86,7 @@ const VOLUME_CUMULATIVE_SERIES: AnalyticsSeries[] = [
 	{ key: "redemptionVolumeUsd", label: "Redemptions", color: COLOR_VOLUME_REDEEM },
 	{ key: "mergeVolumeUsd", label: "Merges", color: COLOR_MERGE },
 	{ key: "splitVolumeUsd", label: "Splits", color: COLOR_SPLIT },
+	VOLUME_TOTAL_SERIES,
 ];
 
 const TRADE_COUNT_SERIES: AnalyticsSeries[] = [
@@ -78,6 +95,7 @@ const TRADE_COUNT_SERIES: AnalyticsSeries[] = [
 	{ key: "redemptionCount", label: "Redemptions", color: COLOR_VOLUME_REDEEM, stackId: "tc" },
 	{ key: "mergeCount", label: "Merges", color: COLOR_MERGE, stackId: "tc" },
 	{ key: "splitCount", label: "Splits", color: COLOR_SPLIT, stackId: "tc" },
+	TRADE_COUNT_TOTAL_SERIES,
 ];
 
 const TRADE_COUNT_CUMULATIVE_SERIES: AnalyticsSeries[] = [
@@ -86,6 +104,7 @@ const TRADE_COUNT_CUMULATIVE_SERIES: AnalyticsSeries[] = [
 	{ key: "redemptionCount", label: "Redemptions", color: COLOR_VOLUME_REDEEM },
 	{ key: "mergeCount", label: "Merges", color: COLOR_MERGE },
 	{ key: "splitCount", label: "Splits", color: COLOR_SPLIT },
+	TRADE_COUNT_TOTAL_SERIES,
 ];
 
 const YES_NO_COUNT_SERIES: AnalyticsSeries[] = [
@@ -217,6 +236,19 @@ function visibleCharts(excludeMetrics?: readonly AnalyticsMetricId[]): ChartSpec
 	return CHART_SPECS.filter((spec) => !excluded.has(spec.id));
 }
 
+function reorderAppended(
+	specs: ChartSpec[],
+	appendMetrics?: readonly AnalyticsMetricId[],
+): ChartSpec[] {
+	if (!appendMetrics || appendMetrics.length === 0) return specs;
+	const appended = new Set(appendMetrics);
+	const kept = specs.filter((spec) => !appended.has(spec.id));
+	const tail = appendMetrics
+		.map((id) => specs.find((spec) => spec.id === id))
+		.filter((spec): spec is ChartSpec => Boolean(spec));
+	return [...kept, ...tail];
+}
+
 function balanceLayout(specs: ChartSpec[]): ChartSpec[] {
 	const nonWideCount = specs.reduce((acc, s) => acc + (s.wide ? 0 : 1), 0);
 	if (nonWideCount % 2 === 0) return specs;
@@ -250,16 +282,20 @@ type AnalyticsChartsGridProps = {
 	points: AnalyticsPoint[];
 	view: AnalyticsView;
 	excludeMetrics?: readonly AnalyticsMetricId[];
+	appendMetrics?: readonly AnalyticsMetricId[];
 };
 
 export function AnalyticsChartsGrid({
 	points,
 	view,
 	excludeMetrics,
+	appendMetrics,
 }: AnalyticsChartsGridProps) {
 	const data = toChartData(points);
 	const specs = balanceLayout(
-		visibleCharts(excludeMetrics).map((spec) => withViewVariant(spec, view)),
+		reorderAppended(visibleCharts(excludeMetrics), appendMetrics).map((spec) =>
+			withViewVariant(spec, view),
+		),
 	);
 
 	return (
@@ -288,13 +324,17 @@ export function AnalyticsChartsGrid({
 export function AnalyticsChartsGridFallback({
 	view,
 	excludeMetrics,
+	appendMetrics,
 }: {
 	view?: AnalyticsView;
 	excludeMetrics?: readonly AnalyticsMetricId[];
+	appendMetrics?: readonly AnalyticsMetricId[];
 } = {}) {
 	const resolvedView: AnalyticsView = view ?? "deltas";
 	const specs = balanceLayout(
-		visibleCharts(excludeMetrics).map((spec) => withViewVariant(spec, resolvedView)),
+		reorderAppended(visibleCharts(excludeMetrics), appendMetrics).map((spec) =>
+			withViewVariant(spec, resolvedView),
+		),
 	);
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

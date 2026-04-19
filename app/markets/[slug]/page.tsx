@@ -15,6 +15,7 @@ import {
 	getMarketAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
 import {
+	parseAnalyticsCap,
 	parseAnalyticsRange,
 	parseAnalyticsView,
 } from "@/lib/struct/analytics-shared";
@@ -130,6 +131,13 @@ export default async function MarketPage({ params, searchParams }: Props) {
 	const view = parseAnalyticsView(resolvedSearchParams.view);
 	const range =
 		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
+	const endTime =
+		typeof market.end_time === "number" && Number.isFinite(market.end_time)
+			? market.end_time
+			: undefined;
+	const isResolved = market.status === "closed" || market.status === "resolved";
+	const defaultCap = isResolved && endTime !== undefined;
+	const cap = parseAnalyticsCap(resolvedSearchParams.cap) ?? defaultCap;
 	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
 	const conditionId = market.condition_id ?? null;
 
@@ -169,6 +177,9 @@ export default async function MarketPage({ params, searchParams }: Props) {
 							title="Analytics"
 							range={range}
 							view={view}
+							endTime={endTime}
+							cap={cap}
+							defaultCap={defaultCap}
 							fetchers={{
 								deltas: () => getMarketAnalyticsDeltas(conditionId, range),
 								timeseries: () => getMarketAnalyticsTimeseries(conditionId, range),

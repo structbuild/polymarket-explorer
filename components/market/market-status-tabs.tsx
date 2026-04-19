@@ -5,10 +5,10 @@ import { useCallback, useEffect, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
-	DEFAULT_TAG_MARKET_TAB,
-	tagMarketTabValues,
-	type TagMarketTab,
-} from "@/lib/struct/tag-shared";
+	DEFAULT_MARKET_STATUS_TAB,
+	marketStatusTabValues,
+	type MarketStatusTab,
+} from "@/lib/market-search-params-shared";
 import { cn } from "@/lib/utils";
 
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
@@ -42,10 +42,10 @@ function canBackgroundPrefetch() {
 	);
 }
 
-function buildTabHref(pathname: string, search: string, tab: TagMarketTab) {
+function buildTabHref(pathname: string, search: string, tab: MarketStatusTab) {
 	const params = new URLSearchParams(search);
 
-	if (tab === DEFAULT_TAG_MARKET_TAB) {
+	if (tab === DEFAULT_MARKET_STATUS_TAB) {
 		params.delete("tab");
 	} else {
 		params.set("tab", tab);
@@ -58,10 +58,10 @@ function buildTabHref(pathname: string, search: string, tab: TagMarketTab) {
 	return (nextSearch ? `${pathname}?${nextSearch}` : pathname) as Route;
 }
 
-function readCurrentTab(value: string | null): TagMarketTab {
-	return tagMarketTabValues.includes(value as TagMarketTab)
-		? (value as TagMarketTab)
-		: DEFAULT_TAG_MARKET_TAB;
+function readCurrentTab(value: string | null): MarketStatusTab {
+	return marketStatusTabValues.includes(value as MarketStatusTab)
+		? (value as MarketStatusTab)
+		: DEFAULT_MARKET_STATUS_TAB;
 }
 
 function scheduleWhenIdle(callback: () => void) {
@@ -77,12 +77,12 @@ function scheduleWhenIdle(callback: () => void) {
 	return () => window.clearTimeout(timeoutId);
 }
 
-const tabLabels: Record<TagMarketTab, string> = {
+const tabLabels: Record<MarketStatusTab, string> = {
 	open: "Open",
 	closed: "Closed",
 };
 
-export function TagMarketTabs({
+export function MarketStatusTabs({
 	prefetchEnabled = true,
 }: {
 	prefetchEnabled?: boolean;
@@ -94,7 +94,7 @@ export function TagMarketTabs({
 	const currentTab = readCurrentTab(searchParams.get("tab"));
 	const search = searchParams.toString();
 
-	const setTab = useCallback((nextTab: TagMarketTab) => {
+	const setTab = useCallback((nextTab: MarketStatusTab) => {
 		if (nextTab === currentTab) {
 			return;
 		}
@@ -105,7 +105,7 @@ export function TagMarketTabs({
 		});
 	}, [currentTab, pathname, router, search]);
 
-	const prefetchTab = useCallback((nextTab: TagMarketTab) => {
+	const prefetchTab = useCallback((nextTab: MarketStatusTab) => {
 		if (!prefetchEnabled || nextTab === currentTab) {
 			return;
 		}
@@ -123,7 +123,7 @@ export function TagMarketTabs({
 			return;
 		}
 
-		const nextTabs = tagMarketTabValues.filter((tab) => tab !== currentTab);
+		const nextTabs = marketStatusTabValues.filter((tab) => tab !== currentTab);
 		const timeoutIds: number[] = [];
 		let cancelIdleWork = () => {};
 
@@ -157,7 +157,7 @@ export function TagMarketTabs({
 	}, [currentTab, isPending, prefetchEnabled, prefetchTab]);
 
 	return (
-		<Tabs value={currentTab} onValueChange={(value) => setTab(value as TagMarketTab)}>
+		<Tabs value={currentTab} onValueChange={(value) => setTab(value as MarketStatusTab)}>
 			<TabsList
 				variant="text"
 				aria-busy={isPending}
@@ -166,7 +166,7 @@ export function TagMarketTabs({
 					isPending && "opacity-70",
 				)}
 			>
-				{tagMarketTabValues.map((tab) => (
+				{marketStatusTabValues.map((tab) => (
 					<TabsTrigger
 						key={tab}
 						className="text-base! sm:text-xl!"

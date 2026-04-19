@@ -465,6 +465,7 @@ export default async function TraderPage({ params, searchParams }: Props) {
 					range={range}
 					view={view}
 					excludeMetrics={["uniqueTraders"]}
+					appendMetrics={["fees"]}
 					fetchers={{
 						deltas: () => getTraderAnalyticsDeltas(address, range),
 						timeseries: () => getTraderAnalyticsTimeseries(address, range),

@@ -46,6 +46,7 @@ export type AnalyticsSeries = {
 	label: string;
 	color: string;
 	stackId?: string;
+	isTotal?: boolean;
 };
 
 export type AnalyticsValueFormat = "currency" | "count";
@@ -92,15 +93,43 @@ export function AnalyticsChart({
 		return config;
 	}, [series]);
 
-	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
-	const toggleKey = useCallback((key: string) => {
-		setHiddenKeys((prev) => {
-			const next = new Set(prev);
-			if (next.has(key)) next.delete(key);
-			else next.add(key);
-			return next;
-		});
-	}, []);
+	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => {
+		const hidden = new Set<string>();
+		for (const s of series) {
+			if (s.isTotal) hidden.add(s.key);
+		}
+		return hidden;
+	});
+	const toggleKey = useCallback(
+		(key: string) => {
+			setHiddenKeys((prev) => {
+				const clicked = series.find((s) => s.key === key);
+				const totalKeys = series.filter((s) => s.isTotal).map((s) => s.key);
+				const nonTotalKeys = series.filter((s) => !s.isTotal).map((s) => s.key);
+				const totalVisible = totalKeys.some((k) => !prev.has(k));
+
+				if (clicked?.isTotal) {
+					const next = new Set<string>();
+					if (totalVisible) {
+						for (const k of totalKeys) next.add(k);
+					} else {
+						for (const k of nonTotalKeys) next.add(k);
+					}
+					return next;
+				}
+
+				const next = new Set(prev);
+				if (totalVisible) {
+					for (const k of totalKeys) next.add(k);
+					for (const k of nonTotalKeys) next.delete(k);
+				}
+				if (next.has(key)) next.delete(key);
+				else next.add(key);
+				return next;
+			});
+		},
+		[series],
+	);
 	const visibleSeries = useMemo(
 		() => (interactiveLegend ? series.filter((s) => !hiddenKeys.has(s.key)) : series),
 		[series, hiddenKeys, interactiveLegend],

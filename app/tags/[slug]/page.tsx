@@ -26,11 +26,11 @@ import {
 	parseAnalyticsView,
 } from "@/lib/struct/analytics-shared";
 import {
-	DEFAULT_TAG_MARKET_TAB,
-	parseTagMarketTab,
-} from "@/lib/struct/tag-shared";
+	DEFAULT_MARKET_STATUS_TAB,
+	parseMarketStatusTab,
+} from "@/lib/market-search-params-shared";
 import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
-import { TagMarketTabs } from "@/components/tags/tag-market-tabs";
+import { MarketStatusTabs } from "@/components/market/market-status-tabs";
 
 export const revalidate = 300;
 
@@ -83,12 +83,12 @@ export default async function TagPage({ params, searchParams }: Props) {
 	const view = parseAnalyticsView(resolvedSearchParams.view);
 	const range =
 		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
-	const marketTab = parseTagMarketTab(resolvedSearchParams.tab);
+	const marketTab = parseMarketStatusTab(resolvedSearchParams.tab);
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
 	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab);
 	const paginationBaseParams: Record<string, string> =
-		marketTab === DEFAULT_TAG_MARKET_TAB ? {} : { tab: marketTab };
+		marketTab === DEFAULT_MARKET_STATUS_TAB ? {} : { tab: marketTab };
 	const siteUrl = getSiteUrl();
 	const tagDisplay = formatCapitalizeWords(tag.label);
 
@@ -130,11 +130,11 @@ export default async function TagPage({ params, searchParams }: Props) {
 						markets={markets.map(marketResponseToRow)}
 						paginationMode="none"
 						sortingMode="client"
-						toolbarLeft={<TagMarketTabs />}
+						toolbarLeft={<MarketStatusTabs />}
 					/>
 				) : (
 					<>
-						<TagMarketTabs />
+						<MarketStatusTabs />
 						<p className="rounded-lg bg-card px-4 py-12 text-center text-muted-foreground">
 							{marketTab === "closed"
 								? "No closed markets found for this tag."
