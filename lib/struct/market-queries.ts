@@ -34,10 +34,12 @@ export const structMarketTradesCacheTag = "struct-market-trades";
 export const structMarketPriceJumpsCacheTag = "struct-market-price-jumps";
 export const structMarketHoldersHistoryCacheTag = "struct-market-holders-history";
 const structAllTagsCacheVersion = "v2";
+const structTagBySlugCacheVersion = "v2";
+const structMarketsByTagCacheVersion = "v2";
 
 export const structAllTagsCacheTag = `struct-all-tags-${structAllTagsCacheVersion}`;
-export const structTagBySlugCacheTag = "struct-tag-by-slug";
-export const structMarketsByTagCacheTag = "struct-markets-by-tag";
+export const structTagBySlugCacheTag = `struct-tag-by-slug-${structTagBySlugCacheVersion}`;
+export const structMarketsByTagCacheTag = `struct-markets-by-tag-${structMarketsByTagCacheVersion}`;
 export const structGlobalLeaderboardCacheTag = "struct-global-leaderboard-v2";
 export const structTopMarketsCacheTag = "struct-top-markets";
 export const structAllMarketSlugsCacheTag = "struct-all-market-slugs";
