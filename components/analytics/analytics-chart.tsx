@@ -140,7 +140,6 @@ export function AnalyticsChart({
 
 	const gradientPrefix = useId().replace(/:/g, "");
 	const shareMode = useShareMode();
-	const animationActive = !shareMode;
 
 	const granularity = useMemo(() => detectGranularity(data), [data]);
 	const xAxisFormatter = useMemo(() => {
@@ -257,7 +256,7 @@ export function AnalyticsChart({
 								fill={s.color}
 								stackId={s.stackId}
 								radius={s.stackId && !isLast ? 0 : [2, 2, 0, 0]}
-								isAnimationActive={animationActive}
+								{...(shareMode ? { isAnimationActive: false } : {})}
 							/>
 						);
 					})}
@@ -289,7 +288,7 @@ export function AnalyticsChart({
 							strokeWidth={2}
 							fill={`url(#${gradientPrefix}-${s.key})`}
 							stackId={s.stackId}
-							isAnimationActive={animationActive}
+							{...(shareMode ? { isAnimationActive: false } : {})}
 						/>
 					))}
 				</AreaChart>
