@@ -1,4 +1,6 @@
 import { ChartCard } from "@/components/market/chart-card";
+import { AnalyticsAttribution } from "@/components/analytics/analytics-attribution";
+import { ShareableChartCard } from "@/components/analytics/shareable-chart-card";
 import {
 	AnalyticsChart,
 	type AnalyticsSeries,
@@ -13,6 +15,20 @@ import type {
 	AnalyticsPoint,
 	AnalyticsView,
 } from "@/lib/struct/analytics-shared";
+
+function slugForFilename(value: string): string {
+	return value
+		.toLowerCase()
+		.normalize("NFKD")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+function buildChartFilename(pathname: string, title: string): string {
+	const pathPart = slugForFilename(pathname) || "polymarket";
+	const titlePart = slugForFilename(title) || "chart";
+	return `${pathPart}-${titlePart}.png`;
+}
 
 type TimeSeriesChartSpec = {
 	kind: "timeSeries";
@@ -283,6 +299,8 @@ type AnalyticsChartsGridProps = {
 	view: AnalyticsView;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
+	pathname: string;
+	refreshedAt: Date;
 };
 
 export function AnalyticsChartsGrid({
@@ -290,6 +308,8 @@ export function AnalyticsChartsGrid({
 	view,
 	excludeMetrics,
 	appendMetrics,
+	pathname,
+	refreshedAt,
 }: AnalyticsChartsGridProps) {
 	const data = toChartData(points);
 	const specs = balanceLayout(
@@ -302,7 +322,13 @@ export function AnalyticsChartsGrid({
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => (
 				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
-					<ChartCard title={spec.title}>
+					<ShareableChartCard
+						title={spec.title}
+						filename={buildChartFilename(pathname, spec.title)}
+						footer={
+							<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
+						}
+					>
 						{spec.kind === "buyDistribution" ? (
 							<BuyDistributionPie points={points} />
 						) : (
@@ -314,22 +340,28 @@ export function AnalyticsChartsGrid({
 								interactiveLegend={spec.interactiveLegend}
 							/>
 						)}
-					</ChartCard>
+					</ShareableChartCard>
 				</div>
 			))}
 		</div>
 	);
 }
 
+type AnalyticsChartsGridFallbackProps = {
+	view?: AnalyticsView;
+	excludeMetrics?: readonly AnalyticsMetricId[];
+	appendMetrics?: readonly AnalyticsMetricId[];
+	pathname: string;
+	refreshedAt: Date;
+};
+
 export function AnalyticsChartsGridFallback({
 	view,
 	excludeMetrics,
 	appendMetrics,
-}: {
-	view?: AnalyticsView;
-	excludeMetrics?: readonly AnalyticsMetricId[];
-	appendMetrics?: readonly AnalyticsMetricId[];
-} = {}) {
+	pathname,
+	refreshedAt,
+}: AnalyticsChartsGridFallbackProps) {
 	const resolvedView: AnalyticsView = view ?? "deltas";
 	const specs = balanceLayout(
 		reorderAppended(visibleCharts(excludeMetrics), appendMetrics).map((spec) =>
@@ -340,7 +372,12 @@ export function AnalyticsChartsGridFallback({
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => (
 				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
-					<ChartCard title={spec.title}>
+					<ChartCard
+						title={spec.title}
+						footer={
+							<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
+						}
+					>
 						{spec.kind === "buyDistribution" ? (
 							<BuyDistributionPieFallback />
 						) : (

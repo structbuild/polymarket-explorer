@@ -35,3 +35,20 @@ export const StructLogoIcon = ({ className }: { className?: string }) => {
 		</svg>
 	);
 };
+
+export const StructLogoMark = ({ className }: { className?: string }) => {
+	return (
+		<svg
+			className={cn("size-6 rounded-[22%]", className)}
+			viewBox="0 0 368 368"
+			fill="none"
+			xmlns="http://www.w3.org/2000/svg"
+		>
+			<rect width="368" height="368" fill="#FF6900" />
+			<path
+				d="M164.333 267.555V208.889H154.556V199.111H135V169.778H154.556V160H164.333V101.333H174.111V81.778H183.889V72H223V91.555H193.667V101.333H183.889V160H174.111V179.556H154.556V189.333H174.111V208.889H183.889V267.555H193.667V277.333H223V296.889H183.889V287.111H174.111V267.555H164.333Z"
+				fill="#FFFFFF"
+			/>
+		</svg>
+	);
+};

@@ -1,8 +1,16 @@
 import type { MetricPctChange } from "@structbuild/sdk";
 
+import { ComponentsKpiCard } from "@/components/analytics/components-kpi-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
-import type { AnalyticsMetricId, AnalyticsSummary } from "@/lib/struct/analytics-shared";
+import type {
+	AnalyticsMetricId,
+	AnalyticsSummary,
+	ComponentTotals,
+} from "@/lib/struct/analytics-shared";
+
+const VOLUME_STORAGE_KEY = "analytics:volumeComponents";
+const TRADES_STORAGE_KEY = "analytics:tradeComponents";
 
 type KpiSpec = {
 	id: AnalyticsMetricId;
@@ -58,6 +66,8 @@ function getPct(spec: KpiSpec, changes: MetricPctChange | null): number | null {
 type AnalyticsKpiStripProps = {
 	summary: AnalyticsSummary;
 	changes: MetricPctChange | null;
+	volumeComponentTotals: ComponentTotals;
+	tradeCountComponentTotals: ComponentTotals;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 };
 
@@ -81,11 +91,48 @@ function gridColsClass(count: number): string {
 	return `grid grid-cols-2 gap-3 ${sm} ${lg}`;
 }
 
-export function AnalyticsKpiStrip({ summary, changes, excludeMetrics }: AnalyticsKpiStripProps) {
+export function AnalyticsKpiStrip({
+	summary,
+	changes,
+	volumeComponentTotals,
+	tradeCountComponentTotals,
+	excludeMetrics,
+}: AnalyticsKpiStripProps) {
 	const kpis = visibleKpis(excludeMetrics);
+	const volumeComponentPcts = {
+		buy: changes?.buy_volume_usd ?? null,
+		sell: changes?.sell_volume_usd ?? null,
+	};
 	return (
 		<div className={gridColsClass(kpis.length)}>
 			{kpis.map((kpi) => {
+				if (kpi.id === "volume") {
+					return (
+						<ComponentsKpiCard
+							key={kpi.key}
+							storageKey={VOLUME_STORAGE_KEY}
+							label={kpi.label}
+							defaultTotal={summary[kpi.key]}
+							totals={volumeComponentTotals}
+							aggregatePct={changes?.volume_usd ?? null}
+							componentPcts={volumeComponentPcts}
+							currency
+						/>
+					);
+				}
+				if (kpi.id === "trades") {
+					return (
+						<ComponentsKpiCard
+							key={kpi.key}
+							storageKey={TRADES_STORAGE_KEY}
+							label={kpi.label}
+							defaultTotal={summary[kpi.key]}
+							totals={tradeCountComponentTotals}
+							aggregatePct={changes?.txn_count ?? null}
+							toggleLabel="Include in trades"
+						/>
+					);
+				}
 				const pct = getPct(kpi, changes);
 				const pctLabel = formatPctChange(pct);
 				return (

@@ -44,6 +44,7 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 				range={range}
 				view={view}
 				headingLevel="h1"
+				pathname="/analytics"
 				fetchers={{
 					deltas: () => getAnalyticsDeltas(range),
 					timeseries: () => getAnalyticsTimeseries(range),

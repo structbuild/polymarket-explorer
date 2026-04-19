@@ -27,7 +27,8 @@ const BUCKET_COLORS: Record<BuyDistributionKey, string> = {
 	buyDistOver50k: "#ef4444",
 };
 
-const PIE_AREA_CLASS = "h-[172px] w-full sm:h-[232px]";
+const PIE_AREA_CLASS =
+	"h-[172px] w-full sm:h-[232px] group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0 group-data-[share-mode=image]/share-card:flex-1";
 
 type BuyDistributionPieProps = {
 	points: AnalyticsPoint[];
@@ -100,7 +101,7 @@ export function BuyDistributionPie({ points }: BuyDistributionPieProps) {
 	}
 
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex flex-col gap-3 group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0">
 			<div className={`relative ${PIE_AREA_CLASS}`}>
 				<StructLogo
 					aria-hidden
@@ -155,7 +156,7 @@ export function BuyDistributionPie({ points }: BuyDistributionPieProps) {
 					</span>
 				</div>
 			</div>
-			<ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+			<ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs group-data-[share-mode=image]/share-card:mx-auto group-data-[share-mode=image]/share-card:grid-cols-3 group-data-[share-mode=image]/share-card:gap-x-8 group-data-[share-mode=image]/share-card:gap-y-2 group-data-[share-mode=image]/share-card:text-sm group-data-[share-mode=image]/share-card:max-w-3xl">
 				{data.map((d) => {
 					const hidden = hiddenKeys.has(d.key);
 					const pct = visibleTotal > 0 ? (d.value / visibleTotal) * 100 : 0;

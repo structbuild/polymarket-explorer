@@ -15,6 +15,8 @@ import { AnalyticsViewToggle } from "@/components/analytics/view-toggle";
 import { summarizeAnalytics } from "@/lib/struct/analytics-queries";
 import {
 	applyAnalyticsCap,
+	computeTradeCountComponentTotals,
+	computeVolumeComponentTotals,
 	type AnalyticsMetricId,
 	type AnalyticsPoint,
 	type AnalyticsRange,
@@ -38,6 +40,8 @@ async function KpiLoader({
 	return (
 		<AnalyticsKpiStrip
 			summary={summarizeAnalytics(points)}
+			volumeComponentTotals={computeVolumeComponentTotals(points)}
+			tradeCountComponentTotals={computeTradeCountComponentTotals(points)}
 			changes={changes}
 			excludeMetrics={excludeMetrics}
 		/>
@@ -51,6 +55,8 @@ async function ChartsLoader({
 	appendMetrics,
 	endTime,
 	cap,
+	pathname,
+	refreshedAt,
 }: {
 	fetchers: AnalyticsFetchers;
 	view: AnalyticsView;
@@ -58,6 +64,8 @@ async function ChartsLoader({
 	appendMetrics?: readonly AnalyticsMetricId[];
 	endTime?: number;
 	cap?: boolean;
+	pathname: string;
+	refreshedAt: Date;
 }) {
 	const raw =
 		view === "cumulative" ? await fetchers.timeseries() : await fetchers.deltas();
@@ -68,6 +76,8 @@ async function ChartsLoader({
 			view={view}
 			excludeMetrics={excludeMetrics}
 			appendMetrics={appendMetrics}
+			pathname={pathname}
+			refreshedAt={refreshedAt}
 		/>
 	);
 }
@@ -84,6 +94,7 @@ type AnalyticsSectionProps = {
 	endTime?: number;
 	cap?: boolean;
 	defaultCap?: boolean;
+	pathname: string;
 };
 
 export function AnalyticsSection({
@@ -98,8 +109,10 @@ export function AnalyticsSection({
 	endTime,
 	cap = false,
 	defaultCap = false,
+	pathname,
 }: AnalyticsSectionProps) {
 	const Heading = headingLevel;
+	const refreshedAt = new Date();
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -134,6 +147,8 @@ export function AnalyticsSection({
 						view={view}
 						excludeMetrics={excludeMetrics}
 						appendMetrics={appendMetrics}
+						pathname={pathname}
+						refreshedAt={refreshedAt}
 					/>
 				}
 			>
@@ -144,6 +159,8 @@ export function AnalyticsSection({
 					appendMetrics={appendMetrics}
 					endTime={endTime}
 					cap={cap}
+					pathname={pathname}
+					refreshedAt={refreshedAt}
 				/>
 			</Suspense>
 		</div>

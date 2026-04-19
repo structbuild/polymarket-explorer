@@ -125,3 +125,64 @@ export type AnalyticsSummary = {
 	uniqueTradersTotal: number;
 	avgTradeSizeUsd: number;
 };
+
+export type VolumeComponentId = "buy" | "sell" | "redeem" | "merge" | "split";
+
+export const VOLUME_COMPONENT_IDS: readonly VolumeComponentId[] = [
+	"buy",
+	"sell",
+	"redeem",
+	"merge",
+	"split",
+];
+
+export const VOLUME_COMPONENT_LABELS: Record<VolumeComponentId, string> = {
+	buy: "Buys",
+	sell: "Sells",
+	redeem: "Redemptions",
+	merge: "Merges",
+	split: "Splits",
+};
+
+export const DEFAULT_VOLUME_COMPONENTS: readonly VolumeComponentId[] = VOLUME_COMPONENT_IDS;
+
+export type ComponentTotals = Record<VolumeComponentId, number>;
+
+export function isDefaultVolumeComponents(
+	components: readonly VolumeComponentId[],
+): boolean {
+	return components.length === VOLUME_COMPONENT_IDS.length;
+}
+
+export function computeVolumeComponentTotals(points: AnalyticsPoint[]): ComponentTotals {
+	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0 };
+	for (const p of points) {
+		totals.buy += p.buyVolumeUsd;
+		totals.sell += p.sellVolumeUsd;
+		totals.redeem += p.redemptionVolumeUsd;
+		totals.merge += p.mergeVolumeUsd;
+		totals.split += p.splitVolumeUsd;
+	}
+	return totals;
+}
+
+export function computeTradeCountComponentTotals(points: AnalyticsPoint[]): ComponentTotals {
+	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0 };
+	for (const p of points) {
+		totals.buy += p.buyCount;
+		totals.sell += p.sellCount;
+		totals.redeem += p.redemptionCount;
+		totals.merge += p.mergeCount;
+		totals.split += p.splitCount;
+	}
+	return totals;
+}
+
+export function sumSelectedComponentTotals(
+	totals: ComponentTotals,
+	components: readonly VolumeComponentId[],
+): number {
+	let sum = 0;
+	for (const id of components) sum += totals[id];
+	return sum;
+}

@@ -156,6 +156,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 					title="Analytics"
 					range={range}
 					view={view}
+					pathname={`/tags/${canonicalSlug}`}
 					fetchers={{
 						deltas: () => getTagAnalyticsDeltas(tagKey, range),
 						timeseries: () => getTagAnalyticsTimeseries(tagKey, range),

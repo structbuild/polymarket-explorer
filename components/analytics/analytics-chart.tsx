@@ -26,6 +26,8 @@ import {
 	formatNumber,
 	formatTimeCompact,
 } from "@/lib/format";
+import { useShareMode } from "@/lib/hooks/use-share-mode";
+import { cn } from "@/lib/utils";
 
 const SECONDS_PER_DAY = 86400;
 
@@ -62,7 +64,8 @@ type AnalyticsChartProps = {
 	className?: string;
 };
 
-const HEIGHT_CLASS = "h-[240px] min-h-[240px] w-full sm:h-[300px]";
+const HEIGHT_CLASS =
+	"h-[240px] min-h-[240px] w-full sm:h-[300px] group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0 group-data-[share-mode=image]/share-card:flex-1";
 
 function stripTrailingZeros(formatted: string): string {
 	return formatted
@@ -136,6 +139,8 @@ export function AnalyticsChart({
 	);
 
 	const gradientPrefix = useId().replace(/:/g, "");
+	const shareMode = useShareMode();
+	const animationActive = !shareMode;
 
 	const granularity = useMemo(() => detectGranularity(data), [data]);
 	const xAxisFormatter = useMemo(() => {
@@ -252,6 +257,7 @@ export function AnalyticsChart({
 								fill={s.color}
 								stackId={s.stackId}
 								radius={s.stackId && !isLast ? 0 : [2, 2, 0, 0]}
+								isAnimationActive={animationActive}
 							/>
 						);
 					})}
@@ -283,6 +289,7 @@ export function AnalyticsChart({
 							strokeWidth={2}
 							fill={`url(#${gradientPrefix}-${s.key})`}
 							stackId={s.stackId}
+							isAnimationActive={animationActive}
 						/>
 					))}
 				</AreaChart>
@@ -290,7 +297,12 @@ export function AnalyticsChart({
 		);
 
 	return (
-		<div className={className}>
+		<div
+			className={cn(
+				className,
+				"group-data-[share-mode=image]/share-card:flex group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0 group-data-[share-mode=image]/share-card:flex-col",
+			)}
+		>
 			{legend}
 			<div className={`relative ${HEIGHT_CLASS}`}>
 				{watermark}

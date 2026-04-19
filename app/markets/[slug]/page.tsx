@@ -180,6 +180,7 @@ export default async function MarketPage({ params, searchParams }: Props) {
 							endTime={endTime}
 							cap={cap}
 							defaultCap={defaultCap}
+							pathname={`/markets/${slug}`}
 							fetchers={{
 								deltas: () => getMarketAnalyticsDeltas(conditionId, range),
 								timeseries: () => getMarketAnalyticsTimeseries(conditionId, range),
