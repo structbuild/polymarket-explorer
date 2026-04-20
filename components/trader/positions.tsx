@@ -20,11 +20,11 @@ import { traderSearchParamParsers } from "@/lib/trader-search-params"
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 
 import { Badge } from "../ui/badge"
-import { Checkbox } from "../ui/checkbox"
 import { DataTable } from "../ui/data-table"
 import { SortableHeader } from "../ui/sortable-header"
 import { TooltipWrapper } from "../ui/tooltip"
 import { Button } from "../ui/button"
+import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle"
 import { TraderTabs } from "./trader-tabs"
 import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass } from "@/lib/format"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
@@ -456,7 +456,7 @@ export default function TraderPositions({
 	})
 	const pageKey = status === "open" ? "openPage" : "closedPage"
 
-	const [hideUnknown, setHideUnknown] = useState(false)
+	const [showUnknown, setShowUnknown] = useState(false)
 
 	const hasUnknownMarkets = page.data.some((entry) => !entry.title)
 
@@ -486,34 +486,28 @@ export default function TraderPositions({
 	)
 
 	const data = useMemo(() => {
-		if (hideUnknown) {
-			return page.data.filter((entry) => entry.title)
+		if (showUnknown) {
+			return page.data
 		}
-		return page.data
-	}, [page.data, hideUnknown])
+		return page.data.filter((entry) => entry.title)
+	}, [page.data, showUnknown])
 
 	const toolbarRight = (
 		<div className="flex items-center gap-3">
-			{hasUnknownMarkets || hideUnknown ? (
-				<label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-					<Checkbox
-						checked={hideUnknown}
-						onCheckedChange={(val) => setHideUnknown(!!val)}
-					/>
-					Hide unknown markets
-				</label>
+			{hasUnknownMarkets ? (
+				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
 			) : null}
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => {
-						startTransition(async () => {
-							await refreshTraderTabAction(pathname, "positions")
-							router.refresh()
-						})
-					}}
-					disabled={isPending}
-				>
+			<Button
+				variant="outline"
+				size="sm"
+				onClick={() => {
+					startTransition(async () => {
+						await refreshTraderTabAction(pathname, "positions")
+						router.refresh()
+					})
+				}}
+				disabled={isPending}
+			>
 				<RefreshCwIcon data-icon="inline-start" />
 				Refresh
 			</Button>

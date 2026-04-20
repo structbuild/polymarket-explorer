@@ -424,7 +424,7 @@ export default async function TraderPage({ params, searchParams }: Props) {
 						resolution={resolution}
 						defaultResolution={defaultResolution}
 						excludeMetrics={["uniqueTraders"]}
-						appendMetrics={["fees"]}
+						appendMetrics={["fees", "tradeTypes"]}
 						pathname={`/traders/${address}`}
 						fetchers={{
 							deltas: () => getTraderAnalyticsDeltas(address, range, resolution),
