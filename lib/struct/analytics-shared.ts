@@ -21,6 +21,13 @@ export const ANALYTICS_RANGE_LABELS: Record<AnalyticsRange, string> = {
 	all: "All",
 };
 
+export const ANALYTICS_RANGE_DESCRIPTIONS: Record<AnalyticsRange, string> = {
+	"1d": "Last 24 hours",
+	"7d": "Last 7 days",
+	"30d": "Last 30 days",
+	all: "All time",
+};
+
 export const DEFAULT_ANALYTICS_RANGE: AnalyticsRange = "all";
 
 export function parseAnalyticsRange(value: string | string[] | undefined): AnalyticsRange {
@@ -30,6 +37,57 @@ export function parseAnalyticsRange(value: string | string[] | undefined): Analy
 		: DEFAULT_ANALYTICS_RANGE;
 }
 
+export type AnalyticsResolution = "60" | "240" | "D" | "W" | "M";
+
+export const ANALYTICS_RESOLUTION_LABELS: Record<AnalyticsResolution, string> = {
+	"60": "1h",
+	"240": "4h",
+	D: "1d",
+	W: "1w",
+	M: "1m",
+};
+
+export const ANALYTICS_RESOLUTION_DESCRIPTIONS: Record<AnalyticsResolution, string> = {
+	"60": "1 hour buckets",
+	"240": "4 hour buckets",
+	D: "Daily buckets",
+	W: "Weekly buckets",
+	M: "Monthly buckets",
+};
+
+export const RESOLUTION_OPTIONS_BY_RANGE: Record<AnalyticsRange, readonly AnalyticsResolution[]> = {
+	"1d": [],
+	"7d": [],
+	"30d": ["60", "240", "D"],
+	all: ["D", "W", "M"],
+};
+
+export type AnalyticsScope = "global" | "scoped";
+
+export function getDefaultResolution(
+	range: AnalyticsRange,
+	scope: AnalyticsScope = "scoped",
+): AnalyticsResolution {
+	if (range === "1d") return "60";
+	if (range === "7d") return "240";
+	if (range === "30d") return "D";
+	return scope === "global" ? "W" : "D";
+}
+
+export function parseAnalyticsResolution(
+	value: string | string[] | undefined,
+	range: AnalyticsRange,
+	scope: AnalyticsScope = "scoped",
+): AnalyticsResolution {
+	const raw = Array.isArray(value) ? value[0] : value;
+	const allowed = RESOLUTION_OPTIONS_BY_RANGE[range];
+	const fallback = getDefaultResolution(range, scope);
+	if (allowed.length === 0) return fallback;
+	return allowed.includes(raw as AnalyticsResolution)
+		? (raw as AnalyticsResolution)
+		: fallback;
+}
+
 export type AnalyticsView = "deltas" | "cumulative";
 
 export const ANALYTICS_VIEWS: AnalyticsView[] = ["deltas", "cumulative"];
@@ -37,6 +95,11 @@ export const ANALYTICS_VIEWS: AnalyticsView[] = ["deltas", "cumulative"];
 export const ANALYTICS_VIEW_LABELS: Record<AnalyticsView, string> = {
 	deltas: "Per-period",
 	cumulative: "Cumulative",
+};
+
+export const ANALYTICS_VIEW_DESCRIPTIONS: Record<AnalyticsView, string> = {
+	deltas: "Show activity per bucket",
+	cumulative: "Show running total over time",
 };
 
 export const DEFAULT_ANALYTICS_VIEW: AnalyticsView = "deltas";
@@ -148,6 +211,8 @@ export const DEFAULT_VOLUME_COMPONENTS: readonly VolumeComponentId[] = VOLUME_CO
 
 export const DEFAULT_KPI_VOLUME_COMPONENTS: readonly VolumeComponentId[] = ["buy", "sell"];
 
+export const AVG_TRADE_SIZE_STORAGE_KEY = "analytics:avgTradeSizeComponents";
+
 export type ComponentTotals = Record<VolumeComponentId, number>;
 
 export function isDefaultVolumeComponents(
@@ -187,4 +252,26 @@ export function sumSelectedComponentTotals(
 	let sum = 0;
 	for (const id of components) sum += totals[id];
 	return sum;
+}
+
+export function deserializeVolumeComponents(raw: string): readonly VolumeComponentId[] {
+	const parsed = JSON.parse(raw);
+	if (!Array.isArray(parsed)) return DEFAULT_KPI_VOLUME_COMPONENTS;
+	const valid = new Set<VolumeComponentId>(VOLUME_COMPONENT_IDS);
+	const filtered = parsed.filter(
+		(v): v is VolumeComponentId => typeof v === "string" && valid.has(v as VolumeComponentId),
+	);
+	if (filtered.length === 0) return DEFAULT_KPI_VOLUME_COMPONENTS;
+	return VOLUME_COMPONENT_IDS.filter((id) => filtered.includes(id));
+}
+
+export function computeAvgTradeSizePctChange(
+	volumePct: number | null | undefined,
+	txnPct: number | null | undefined,
+): number | null {
+	if (volumePct === null || volumePct === undefined) return null;
+	if (txnPct === null || txnPct === undefined) return null;
+	const denom = 1 + txnPct;
+	if (denom === 0) return null;
+	return (1 + volumePct) / denom - 1;
 }

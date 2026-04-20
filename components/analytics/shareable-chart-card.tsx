@@ -11,9 +11,11 @@ const SHARE_CARD_HEIGHT = 675
 
 type ShareableChartCardProps = {
 	title: string
+	tooltip?: string
 	filename: string
 	children: ReactNode
 	footer?: ReactNode
+	headerAction?: ReactNode
 }
 
 function waitForChartLayout(): Promise<void> {
@@ -28,9 +30,11 @@ function waitForChartLayout(): Promise<void> {
 
 export function ShareableChartCard({
 	title,
+	tooltip,
 	filename,
 	children,
 	footer,
+	headerAction,
 }: ShareableChartCardProps) {
 	const mirrorRef = useRef<HTMLDivElement>(null)
 	const [mirrorMounted, setMirrorMounted] = useState(false)
@@ -48,19 +52,23 @@ export function ShareableChartCard({
 		<>
 			<ChartCard
 				title={title}
+				tooltip={tooltip}
 				action={
-					<ShareImageDialog
-						targetRef={mirrorRef}
-						filename={filename}
-						dialogTitle={`Share ${title}`}
-						dialogDescription="Preview the chart card before downloading it or copying it as an image."
-						buttonSize="icon-sm"
-						buttonVariant="ghost"
-						buttonAriaLabel={`Share ${title} chart`}
-						iconOnly
-						onBeforeCapture={handleBeforeCapture}
-						onAfterCapture={handleAfterCapture}
-					/>
+					<div className="flex items-center gap-1">
+						{headerAction}
+						<ShareImageDialog
+							targetRef={mirrorRef}
+							filename={filename}
+							dialogTitle={`Share ${title}`}
+							dialogDescription="Preview the chart card before downloading it or copying it as an image."
+							buttonSize="icon-sm"
+							buttonVariant="ghost"
+							buttonAriaLabel={`Share ${title} chart`}
+							iconOnly
+							onBeforeCapture={handleBeforeCapture}
+							onAfterCapture={handleAfterCapture}
+						/>
+					</div>
 				}
 				footer={footer}
 			>
@@ -82,7 +90,7 @@ export function ShareableChartCard({
 								height: `${SHARE_CARD_HEIGHT}px`,
 							}}
 						>
-							<ChartCard title={title} className="rounded-none" footer={footer}>
+							<ChartCard title={title} tooltip={tooltip} className="rounded-none" footer={footer}>
 								{children}
 							</ChartCard>
 						</div>

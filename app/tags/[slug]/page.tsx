@@ -22,7 +22,9 @@ import {
 	getTagAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
 import {
+	getDefaultResolution,
 	parseAnalyticsRange,
+	parseAnalyticsResolution,
 	parseAnalyticsView,
 } from "@/lib/struct/analytics-shared";
 import {
@@ -94,6 +96,8 @@ export default async function TagPage({ params, searchParams }: Props) {
 	const view = parseAnalyticsView(resolvedSearchParams.view);
 	const range =
 		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
+	const resolution = parseAnalyticsResolution(resolvedSearchParams.resolution, range);
+	const defaultResolution = getDefaultResolution(range);
 	const marketTab = parseMarketStatusTab(resolvedSearchParams.tab);
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
@@ -167,10 +171,12 @@ export default async function TagPage({ params, searchParams }: Props) {
 					title="Analytics"
 					range={range}
 					view={view}
+					resolution={resolution}
+					defaultResolution={defaultResolution}
 					pathname={`/tags/${canonicalSlug}`}
 					fetchers={{
-						deltas: () => getTagAnalyticsDeltas(tagKey, range),
-						timeseries: () => getTagAnalyticsTimeseries(tagKey, range),
+						deltas: () => getTagAnalyticsDeltas(tagKey, range, resolution),
+						timeseries: () => getTagAnalyticsTimeseries(tagKey, range, resolution),
 						changes: () => getTagAnalyticsChanges(tagKey, range),
 					}}
 				/>

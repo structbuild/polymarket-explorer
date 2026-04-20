@@ -27,7 +27,7 @@ import {
 } from "@/lib/trader-open-graph";
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { getTraderAnalyticsChanges, getTraderAnalyticsDeltas, getTraderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
-import { parseAnalyticsRange, parseAnalyticsView } from "@/lib/struct/analytics-shared";
+import { getDefaultResolution, parseAnalyticsRange, parseAnalyticsResolution, parseAnalyticsView } from "@/lib/struct/analytics-shared";
 import { getMarketsByConditionIds, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -368,6 +368,8 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
 	const view = parseAnalyticsView(resolvedSearchParams.view);
 	const range = view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
+	const resolution = parseAnalyticsResolution(resolvedSearchParams.resolution, range);
+	const defaultResolution = getDefaultResolution(range);
 
 	const profilePromise = getTraderProfile(address);
 	const pnlSummaryPromise = getTraderPnlSummary(address);
@@ -419,12 +421,14 @@ export default async function TraderPage({ params, searchParams }: Props) {
 						title="Analytics"
 						range={range}
 						view={view}
+						resolution={resolution}
+						defaultResolution={defaultResolution}
 						excludeMetrics={["uniqueTraders"]}
 						appendMetrics={["fees"]}
 						pathname={`/traders/${address}`}
 						fetchers={{
-							deltas: () => getTraderAnalyticsDeltas(address, range),
-							timeseries: () => getTraderAnalyticsTimeseries(address, range),
+							deltas: () => getTraderAnalyticsDeltas(address, range, resolution),
+							timeseries: () => getTraderAnalyticsTimeseries(address, range, resolution),
 							changes: () => getTraderAnalyticsChanges(address, range),
 						}}
 					/>

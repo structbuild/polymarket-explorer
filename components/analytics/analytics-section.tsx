@@ -11,6 +11,7 @@ import {
 } from "@/components/analytics/analytics-kpi-strip";
 import { AnalyticsCapToggle } from "@/components/analytics/cap-toggle";
 import { AnalyticsRangeToggle } from "@/components/analytics/range-toggle";
+import { AnalyticsResolutionToggle } from "@/components/analytics/resolution-toggle";
 import { AnalyticsViewToggle } from "@/components/analytics/view-toggle";
 import { summarizeAnalytics } from "@/lib/struct/analytics-queries";
 import {
@@ -20,6 +21,7 @@ import {
 	type AnalyticsMetricId,
 	type AnalyticsPoint,
 	type AnalyticsRange,
+	type AnalyticsResolution,
 	type AnalyticsView,
 } from "@/lib/struct/analytics-shared";
 
@@ -87,6 +89,8 @@ type AnalyticsSectionProps = {
 	description?: string;
 	range: AnalyticsRange;
 	view: AnalyticsView;
+	resolution: AnalyticsResolution;
+	defaultResolution: AnalyticsResolution;
 	fetchers: AnalyticsFetchers;
 	headingLevel?: "h1" | "h2";
 	excludeMetrics?: readonly AnalyticsMetricId[];
@@ -102,6 +106,8 @@ export function AnalyticsSection({
 	description,
 	range,
 	view,
+	resolution,
+	defaultResolution,
 	fetchers,
 	headingLevel = "h2",
 	excludeMetrics,
@@ -126,6 +132,11 @@ export function AnalyticsSection({
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
 					{view === "deltas" ? <AnalyticsRangeToggle range={range} /> : null}
+					<AnalyticsResolutionToggle
+						range={range}
+						resolution={resolution}
+						defaultResolution={defaultResolution}
+					/>
 					<AnalyticsViewToggle view={view} />
 					{endTime !== undefined ? (
 						<AnalyticsCapToggle cap={cap} defaultCap={defaultCap} />
@@ -134,14 +145,14 @@ export function AnalyticsSection({
 			</div>
 
 			<Suspense
-				key={`kpi-${range}-${view}`}
+				key={`kpi-${range}-${view}-${resolution}`}
 				fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}
 			>
 				<KpiLoader fetchers={fetchers} excludeMetrics={excludeMetrics} />
 			</Suspense>
 
 			<Suspense
-				key={`charts-${range}-${view}-${cap ? "cap" : "all"}`}
+				key={`charts-${range}-${view}-${resolution}-${cap ? "cap" : "all"}`}
 				fallback={
 					<AnalyticsChartsGridFallback
 						view={view}

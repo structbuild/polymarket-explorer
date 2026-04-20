@@ -3,6 +3,7 @@
 import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
 import {
 	ANALYTICS_RANGES,
+	ANALYTICS_RANGE_DESCRIPTIONS,
 	ANALYTICS_RANGE_LABELS,
 	DEFAULT_ANALYTICS_RANGE,
 	type AnalyticsRange,
@@ -15,7 +16,11 @@ export function AnalyticsRangeToggle({ range }: { range: AnalyticsRange }) {
 			value={range}
 			options={ANALYTICS_RANGES}
 			labels={ANALYTICS_RANGE_LABELS}
+			descriptions={ANALYTICS_RANGE_DESCRIPTIONS}
 			defaultValue={DEFAULT_ANALYTICS_RANGE}
+			transformParams={(params) => {
+				params.delete("resolution");
+			}}
 		/>
 	);
 }

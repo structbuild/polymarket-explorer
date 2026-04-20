@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { TooltipWrapper } from "@/components/ui/tooltip";
 
 type Props<T extends string> = {
 	paramKey: string;
@@ -13,6 +14,7 @@ type Props<T extends string> = {
 	labels: Record<T, string>;
 	defaultValue: T;
 	ariaLabelPrefix?: string;
+	descriptions?: Partial<Record<T, string>>;
 	transformParams?: (params: URLSearchParams, next: T) => void;
 };
 
@@ -23,6 +25,7 @@ export function AnalyticsUrlToggle<T extends string>({
 	labels,
 	defaultValue,
 	ariaLabelPrefix = "Show",
+	descriptions,
 	transformParams,
 }: Props<T>) {
 	const router = useRouter();
@@ -60,15 +63,25 @@ export function AnalyticsUrlToggle<T extends string>({
 			data-pending={isPending ? "" : undefined}
 			className="data-[pending]:opacity-70"
 		>
-			{options.map((opt) => (
-				<ToggleGroupItem
-					key={opt}
-					value={opt}
-					aria-label={`${ariaLabelPrefix} ${labels[opt]}`}
-				>
-					{labels[opt]}
-				</ToggleGroupItem>
-			))}
+			{options.map((opt) => {
+				const item = (
+					<ToggleGroupItem
+						key={opt}
+						value={opt}
+						aria-label={`${ariaLabelPrefix} ${labels[opt]}`}
+					>
+						{labels[opt]}
+					</ToggleGroupItem>
+				);
+				const description = descriptions?.[opt];
+				return description ? (
+					<TooltipWrapper key={opt} content={description}>
+						{item}
+					</TooltipWrapper>
+				) : (
+					item
+				);
+			})}
 		</ToggleGroup>
 	);
 }

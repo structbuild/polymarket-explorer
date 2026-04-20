@@ -6,6 +6,8 @@ import {
 	type AnalyticsSeries,
 	type AnalyticsValueFormat,
 } from "@/components/analytics/analytics-chart";
+import { AvgTradeSizeChart } from "@/components/analytics/avg-trade-size-chart";
+import { AvgTradeSizeComponentsToggle } from "@/components/analytics/avg-trade-size-components-toggle";
 import {
 	BuyDistributionPie,
 	BuyDistributionPieFallback,
@@ -34,6 +36,7 @@ type TimeSeriesChartSpec = {
 	kind: "timeSeries";
 	id: AnalyticsMetricId;
 	title: string;
+	tooltip?: string;
 	variant: "area" | "bar";
 	series: AnalyticsSeries[];
 	valueFormat: AnalyticsValueFormat;
@@ -50,11 +53,21 @@ type BuyDistributionChartSpec = {
 	kind: "buyDistribution";
 	id: AnalyticsMetricId;
 	title: string;
+	tooltip?: string;
 	wide?: boolean;
 	keepNarrow?: boolean;
 };
 
-type ChartSpec = TimeSeriesChartSpec | BuyDistributionChartSpec;
+type AvgTradeSizeChartSpec = {
+	kind: "avgTradeSize";
+	id: AnalyticsMetricId;
+	title: string;
+	tooltip?: string;
+	wide?: boolean;
+	keepNarrow?: boolean;
+};
+
+type ChartSpec = TimeSeriesChartSpec | BuyDistributionChartSpec | AvgTradeSizeChartSpec;
 
 const COLOR_VOLUME_BUY = "#10b981";
 const COLOR_VOLUME_SELL = "#ef4444";
@@ -63,9 +76,7 @@ const COLOR_MERGE = "#f59e0b";
 const COLOR_SPLIT = "#06b6d4";
 const COLOR_YES = "var(--chart-1)";
 const COLOR_NO = "var(--chart-4)";
-const COLOR_TRADERS = "var(--chart-3)";
-const COLOR_FEES = "var(--chart-5)";
-const COLOR_SHARES = "var(--chart-2)";
+const COLOR_SINGLE = "var(--chart-2)";
 const COLOR_TOTAL = "#64748b";
 
 const VOLUME_TOTAL_SERIES: AnalyticsSeries = {
@@ -151,6 +162,7 @@ const CHART_SPECS: ChartSpec[] = [
 		kind: "timeSeries",
 		id: "yesNo",
 		title: "Yes vs No volume",
+		tooltip: "Shows volume for outcome index 0 and 1.",
 		variant: "bar",
 		series: [
 			{ key: "yesVolumeUsd", label: "Yes", color: COLOR_YES, stackId: "yn" },
@@ -168,6 +180,7 @@ const CHART_SPECS: ChartSpec[] = [
 		kind: "timeSeries",
 		id: "yesNoCount",
 		title: "Yes vs No trades",
+		tooltip: "Shows transactions for outcome index 0 and 1.",
 		variant: "bar",
 		series: YES_NO_COUNT_SERIES,
 		valueFormat: "count",
@@ -180,23 +193,30 @@ const CHART_SPECS: ChartSpec[] = [
 		id: "uniqueTraders",
 		title: "Unique traders",
 		variant: "area",
-		series: [{ key: "uniqueTraders", label: "Traders", color: COLOR_TRADERS }],
+		series: [{ key: "uniqueTraders", label: "Traders", color: COLOR_SINGLE }],
 		valueFormat: "count",
 	},
 	{
 		kind: "timeSeries",
 		id: "fees",
 		title: "Fees",
+		tooltip: "Shows only fees from orders matched/filled.",
 		variant: "area",
-		series: [{ key: "feesUsd", label: "Fees", color: COLOR_FEES }],
+		series: [{ key: "feesUsd", label: "Fees", color: COLOR_SINGLE }],
 		valueFormat: "currency",
+	},
+	{
+		kind: "avgTradeSize",
+		id: "avgTradeSize",
+		title: "Avg trade size",
+		tooltip: "Volume divided by trade count for the selected components.",
 	},
 	{
 		kind: "timeSeries",
 		id: "shares",
 		title: "Shares traded",
 		variant: "area",
-		series: [{ key: "sharesVolume", label: "Shares", color: COLOR_SHARES }],
+		series: [{ key: "sharesVolume", label: "Shares", color: COLOR_SINGLE }],
 		valueFormat: "count",
 		keepNarrow: true,
 	},
@@ -324,13 +344,23 @@ export function AnalyticsChartsGrid({
 				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
 					<ShareableChartCard
 						title={spec.title}
+						tooltip={spec.tooltip}
 						filename={buildChartFilename(pathname, spec.title)}
+						headerAction={
+							spec.kind === "avgTradeSize" ? <AvgTradeSizeComponentsToggle /> : undefined
+						}
 						footer={
 							<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
 						}
 					>
 						{spec.kind === "buyDistribution" ? (
 							<BuyDistributionPie points={points} />
+						) : spec.kind === "avgTradeSize" ? (
+							<AvgTradeSizeChart
+								points={points}
+								view={view}
+								showIncomplete={view === "deltas"}
+							/>
 						) : (
 							<AnalyticsChart
 								data={data}
@@ -338,6 +368,7 @@ export function AnalyticsChartsGrid({
 								series={spec.series}
 								valueFormat={spec.valueFormat}
 								interactiveLegend={spec.interactiveLegend}
+								showIncomplete={view === "deltas"}
 							/>
 						)}
 					</ShareableChartCard>
@@ -374,6 +405,7 @@ export function AnalyticsChartsGridFallback({
 				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
 					<ChartCard
 						title={spec.title}
+						tooltip={spec.tooltip}
 						footer={
 							<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
 						}

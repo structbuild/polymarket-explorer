@@ -8,7 +8,9 @@ import {
 	getAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
 import {
+	getDefaultResolution,
 	parseAnalyticsRange,
+	parseAnalyticsResolution,
 	parseAnalyticsView,
 	ANALYTICS_RANGE_LABELS,
 } from "@/lib/struct/analytics-shared";
@@ -25,9 +27,11 @@ type Props = {
 };
 
 export default async function AnalyticsPage({ searchParams }: Props) {
-	const { range: rangeParam, view: viewParam } = await searchParams;
+	const { range: rangeParam, view: viewParam, resolution: resolutionParam } = await searchParams;
 	const view = parseAnalyticsView(viewParam);
 	const range = view === "cumulative" ? "all" : parseAnalyticsRange(rangeParam);
+	const resolution = parseAnalyticsResolution(resolutionParam, range, "global");
+	const defaultResolution = getDefaultResolution(range, "global");
 
 	const description =
 		view === "cumulative"
@@ -43,11 +47,13 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 				description={description}
 				range={range}
 				view={view}
+				resolution={resolution}
+				defaultResolution={defaultResolution}
 				headingLevel="h1"
 				pathname="/analytics"
 				fetchers={{
-					deltas: () => getAnalyticsDeltas(range),
-					timeseries: () => getAnalyticsTimeseries(range),
+					deltas: () => getAnalyticsDeltas(range, resolution),
+					timeseries: () => getAnalyticsTimeseries(range, resolution),
 					changes: () => getAnalyticsChanges(range),
 				}}
 			/>

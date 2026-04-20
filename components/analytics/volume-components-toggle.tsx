@@ -17,10 +17,14 @@ export function VolumeComponentsToggle({
 	components,
 	onChange,
 	label = "Include in volume",
+	buttonSize = "icon-xs",
+	buttonClassName = "-mr-1 -mt-1 self-start text-muted-foreground hover:text-foreground",
 }: {
 	components: readonly VolumeComponentId[];
 	onChange: (next: readonly VolumeComponentId[]) => void;
 	label?: string;
+	buttonSize?: "icon-xs" | "icon-sm";
+	buttonClassName?: string;
 }) {
 	const selected = new Set(components);
 	const isDefault = isDefaultVolumeComponents(components);
@@ -42,9 +46,9 @@ export function VolumeComponentsToggle({
 				render={
 					<Button
 						variant="ghost"
-						size="icon-xs"
+						size={buttonSize}
 						aria-label="Configure volume components"
-						className="-mr-1 -mt-1 self-start text-muted-foreground hover:text-foreground"
+						className={buttonClassName}
 					>
 						<Settings2Icon />
 					</Button>

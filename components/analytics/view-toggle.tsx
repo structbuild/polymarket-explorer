@@ -3,6 +3,7 @@
 import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
 import {
 	ANALYTICS_VIEWS,
+	ANALYTICS_VIEW_DESCRIPTIONS,
 	ANALYTICS_VIEW_LABELS,
 	DEFAULT_ANALYTICS_VIEW,
 	type AnalyticsView,
@@ -15,6 +16,7 @@ export function AnalyticsViewToggle({ view }: { view: AnalyticsView }) {
 			value={view}
 			options={ANALYTICS_VIEWS}
 			labels={ANALYTICS_VIEW_LABELS}
+			descriptions={ANALYTICS_VIEW_DESCRIPTIONS}
 			defaultValue={DEFAULT_ANALYTICS_VIEW}
 			transformParams={(params, next) => {
 				if (next === "cumulative") params.delete("range");

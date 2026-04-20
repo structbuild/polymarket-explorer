@@ -62,6 +62,7 @@ type AnalyticsChartProps = {
 	series: AnalyticsSeries[];
 	valueFormat: AnalyticsValueFormat;
 	interactiveLegend?: boolean;
+	showIncomplete?: boolean;
 	className?: string;
 };
 
@@ -87,6 +88,7 @@ export function AnalyticsChart({
 	series,
 	valueFormat,
 	interactiveLegend = false,
+	showIncomplete = true,
 	className,
 }: AnalyticsChartProps) {
 	const chartConfig = useMemo<ChartConfig>(() => {
@@ -144,14 +146,27 @@ export function AnalyticsChart({
 
 	const granularity = useMemo(() => detectGranularity(data), [data]);
 	const lastIncompleteT = useMemo(() => {
+		if (!showIncomplete) return null;
 		if (data.length < 2) return null;
 		const last = data[data.length - 1];
 		const step = last.t - data[data.length - 2].t;
 		if (step <= 0) return null;
 		const nowSeconds = Math.floor(Date.now() / 1000);
 		return last.t + step > nowSeconds ? last.t : null;
-	}, [data]);
+	}, [data, showIncomplete]);
 	const showShimmer = lastIncompleteT !== null && !shareMode;
+	const areaData = useMemo(() => {
+		if (!showShimmer || data.length < 2) return data;
+		const lastIdx = data.length - 1;
+		return data.map((d, i) => {
+			const out: AnalyticsDatum = { ...d };
+			for (const s of series) {
+				const tailKey = `${s.key}__tail`;
+				out[tailKey] = (i >= lastIdx - 1 ? d[s.key] : null) as number;
+			}
+			return out;
+		});
+	}, [data, series, showShimmer]);
 	const xAxisFormatter = useMemo(() => {
 		if (granularity === "intraday-short") return formatTimeCompact;
 		if (granularity === "intraday") return formatDateTimeCompact;
@@ -312,7 +327,7 @@ export function AnalyticsChart({
 			</ChartContainer>
 		) : (
 			<ChartContainer config={chartConfig} className="h-full w-full">
-				<AreaChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+				<AreaChart data={areaData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 					<defs>
 						{visibleSeries.map((s) => {
 							const id = `${gradientPrefix}-${s.key}`;
@@ -326,19 +341,39 @@ export function AnalyticsChart({
 					</defs>
 					{sharedAxes}
 					{tooltip}
-					{visibleSeries.map((s) => (
-						<Area
-							key={s.key}
-							type="monotone"
-							dataKey={s.key}
-							name={s.label}
-							stroke={s.color}
-							strokeWidth={2}
-							fill={`url(#${gradientPrefix}-${s.key})`}
-							stackId={s.stackId}
-							{...(shareMode ? { isAnimationActive: false } : {})}
-						/>
-					))}
+					{visibleSeries.flatMap((s) => {
+						const main = (
+							<Area
+								key={s.key}
+								type="monotone"
+								dataKey={s.key}
+								name={s.label}
+								stroke={s.color}
+								strokeWidth={2}
+								fill={`url(#${gradientPrefix}-${s.key})`}
+								stackId={s.stackId}
+								{...(shareMode ? { isAnimationActive: false } : {})}
+							/>
+						);
+						if (!showShimmer) return [main];
+						const eraser = (
+							<Area
+								key={`${s.key}__eraser`}
+								type="monotone"
+								dataKey={`${s.key}__tail`}
+								stroke="var(--color-card)"
+								strokeWidth={3}
+								strokeDasharray="5 4"
+								fill="none"
+								dot={false}
+								activeDot={false}
+								tooltipType="none"
+								legendType="none"
+								isAnimationActive={false}
+							/>
+						);
+						return [main, eraser];
+					})}
 				</AreaChart>
 			</ChartContainer>
 		);

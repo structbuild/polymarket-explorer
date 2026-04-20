@@ -13,7 +13,7 @@ import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
-import { parseAnalyticsCap, parseAnalyticsRange, parseAnalyticsView } from "@/lib/struct/analytics-shared";
+import { getDefaultResolution, parseAnalyticsCap, parseAnalyticsRange, parseAnalyticsResolution, parseAnalyticsView } from "@/lib/struct/analytics-shared";
 import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
@@ -105,6 +105,8 @@ export default async function MarketPage({ params, searchParams }: Props) {
 	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([loadMarketDetailSearchParams(searchParams), searchParams]);
 	const view = parseAnalyticsView(resolvedSearchParams.view);
 	const range = view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
+	const resolution = parseAnalyticsResolution(resolvedSearchParams.resolution, range);
+	const defaultResolution = getDefaultResolution(range);
 	const endTime = typeof market.end_time === "number" && Number.isFinite(market.end_time) ? market.end_time : undefined;
 	const isResolved = market.status === "closed" || market.status === "resolved";
 	const defaultCap = isResolved && endTime !== undefined;
@@ -155,13 +157,15 @@ export default async function MarketPage({ params, searchParams }: Props) {
 								title="Analytics"
 								range={range}
 								view={view}
+								resolution={resolution}
+								defaultResolution={defaultResolution}
 								endTime={endTime}
 								cap={cap}
 								defaultCap={defaultCap}
 								pathname={`/markets/${slug}`}
 								fetchers={{
-									deltas: () => getMarketAnalyticsDeltas(conditionId, range),
-									timeseries: () => getMarketAnalyticsTimeseries(conditionId, range),
+									deltas: () => getMarketAnalyticsDeltas(conditionId, range, resolution),
+									timeseries: () => getMarketAnalyticsTimeseries(conditionId, range, resolution),
 									changes: () => getMarketAnalyticsChanges(conditionId, range),
 								}}
 							/>

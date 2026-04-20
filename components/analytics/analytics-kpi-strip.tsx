@@ -1,7 +1,10 @@
 import type { MetricPctChange } from "@structbuild/sdk";
 
+import { AvgTradeSizeKpiCard } from "@/components/analytics/avg-trade-size-kpi-card";
 import { ComponentsKpiCard } from "@/components/analytics/components-kpi-card";
+import { formatPctChange, pctToneClass } from "@/components/analytics/pct-display";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { formatNumber } from "@/lib/format";
 import type {
 	AnalyticsMetricId,
@@ -16,6 +19,7 @@ type KpiSpec = {
 	id: AnalyticsMetricId;
 	key: keyof AnalyticsSummary;
 	label: string;
+	tooltip?: string;
 	currency?: boolean;
 	compact?: boolean;
 	pctKey?: keyof MetricPctChange;
@@ -23,42 +27,14 @@ type KpiSpec = {
 
 const KPIS: KpiSpec[] = [
 	{ id: "volume", key: "totalVolumeUsd", label: "Volume", currency: true, compact: true, pctKey: "volume_usd" },
-	{ id: "fees", key: "totalFeesUsd", label: "Fees", currency: true, compact: true, pctKey: "fees_usd" },
+	{ id: "fees", key: "totalFeesUsd", label: "Fees", tooltip: "Shows only fees from orders matched/filled.", currency: true, compact: true, pctKey: "fees_usd" },
 	{ id: "trades", key: "totalTxnCount", label: "Trades", compact: true, pctKey: "txn_count" },
 	{ id: "uniqueTraders", key: "uniqueTradersTotal", label: "Unique traders", compact: true, pctKey: "unique_traders" },
 	{ id: "avgTradeSize", key: "avgTradeSizeUsd", label: "Avg trade size", currency: true, compact: true },
 ];
 
-function formatPctChange(value: number | null | undefined): string | null {
-	if (value === null || value === undefined || !Number.isFinite(value)) return null;
-	const pct = value * 100;
-	const sign = pct > 0 ? "+" : "";
-	return `${sign}${pct.toFixed(1)}%`;
-}
-
-function pctToneClass(value: number | null | undefined): string {
-	if (value === null || value === undefined || !Number.isFinite(value) || value === 0) {
-		return "text-muted-foreground";
-	}
-	return value > 0
-		? "text-emerald-600 dark:text-emerald-500"
-		: "text-red-600 dark:text-red-500";
-}
-
-function avgTradeSizePct(changes: MetricPctChange | null): number | null {
-	if (!changes) return null;
-	const vol = changes.volume_usd;
-	const txn = changes.txn_count;
-	if (vol === null || vol === undefined || txn === null || txn === undefined) return null;
-	const denom = 1 + txn;
-	if (denom === 0) return null;
-	return (1 + vol) / denom - 1;
-}
-
 function getPct(spec: KpiSpec, changes: MetricPctChange | null): number | null {
-	if (!changes) return null;
-	if (spec.key === "avgTradeSizeUsd") return avgTradeSizePct(changes);
-	if (!spec.pctKey) return null;
+	if (!changes || !spec.pctKey) return null;
 	const raw = changes[spec.pctKey];
 	return typeof raw === "number" ? raw : null;
 }
@@ -133,12 +109,26 @@ export function AnalyticsKpiStrip({
 						/>
 					);
 				}
+				if (kpi.id === "avgTradeSize") {
+					return (
+						<AvgTradeSizeKpiCard
+							key={kpi.key}
+							label={kpi.label}
+							volumeTotals={volumeComponentTotals}
+							tradeCountTotals={tradeCountComponentTotals}
+							changes={changes}
+						/>
+					);
+				}
 				const pct = getPct(kpi, changes);
 				const pctLabel = formatPctChange(pct);
 				return (
 					<Card key={kpi.key} size="sm" className="rounded-lg px-2 ring-0">
 						<CardContent className="flex flex-col gap-0.5">
-							<p className="text-sm text-muted-foreground">{kpi.label}</p>
+							<div className="flex items-center gap-1">
+								<p className="text-sm text-muted-foreground">{kpi.label}</p>
+								{kpi.tooltip ? <InfoTooltip content={kpi.tooltip} /> : null}
+							</div>
 							<p className="text-xl font-medium tabular-nums">
 								{formatNumber(summary[kpi.key], {
 									compact: kpi.compact,
