@@ -5,14 +5,17 @@ import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { MarketCharts, MarketChartsFallback } from "@/components/market/market-charts";
 import { MarketHeader } from "@/components/market/market-header";
 import { MarketTabPanel } from "@/components/market/market-tab-panel";
+import { RelatedMarkets } from "@/components/market/related-markets";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
+import { getSiteUrl } from "@/lib/env";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
+import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import { parseAnalyticsCap, parseAnalyticsRange, parseAnalyticsView } from "@/lib/struct/analytics-shared";
-import { getMarketBySlug } from "@/lib/struct/market-queries";
-import { buildEntityPageTitle, buildPageMetadata } from "@/lib/site-metadata";
+import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
 
 export const revalidate = 300;
@@ -41,19 +44,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	}
 
 	const leading = getLeadingOutcome(market);
-	const probability = leading?.price != null ? (leading.price * 100).toFixed(0) : "N/A";
+	const probability = leading?.price != null ? (leading.price * 100).toFixed(0) : null;
 	const volume = formatNumber(getMarketVolume(market), {
 		compact: true,
 		currency: true,
 	});
 	const holders = formatNumber(market.total_holders ?? 0, { decimals: 0 });
-	const marketName = market.question ?? market.title ?? "Prediction Market";
+	const marketName = (market.question ?? market.title ?? "Prediction Market").trim();
+	const marketNameNoPunct = marketName.replace(/[?.!,;:]+\s*$/u, "");
 	const leadingOutcome = leading?.name ?? "Leading outcome";
-	const oddsSummary = probability === "N/A" ? "Current odds are unavailable" : `${leadingOutcome} trades at ${probability}%`;
+
+	const shortOutcome = leadingOutcome && leadingOutcome.length <= 5 ? leadingOutcome : null;
+	const titleDescriptor = probability
+		? shortOutcome
+			? `${probability}% ${shortOutcome} · Polymarket`
+			: `${probability}% · Polymarket Odds`
+		: "Polymarket Odds";
+
+	const descriptionParts: string[] = [];
+	if (probability) {
+		descriptionParts.push(`${leadingOutcome} ${probability}%`);
+	}
+	descriptionParts.push(`${volume} volume`);
+	descriptionParts.push(`${holders} holders`);
+	const description = `${descriptionParts.join(" · ")}. Live Polymarket odds for: ${marketNameNoPunct}.`;
 
 	return buildPageMetadata({
-		title: buildEntityPageTitle(marketName, "Odds & Volume"),
-		description: `Track live Polymarket odds for ${marketName}. ${oddsSummary}, ${volume} in volume, and ${holders} holders.`,
+		title: buildEntityPageTitle(marketNameNoPunct, titleDescriptor),
+		description,
 		canonical: `/markets/${slug}`,
 		openGraph: {
 			type: "article",
@@ -76,38 +94,6 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 	return `${question.slice(0, maxLength)}…`;
 }
 
-function buildFaqJsonLd(market: MarketResponse) {
-	const topOutcome = getLeadingOutcome(market);
-	const question = market.question ?? market.title ?? "Market question for this market";
-	const description = market.description?.trim();
-
-	const probability = topOutcome?.price != null ? (topOutcome.price * 100).toFixed(0) : "N/A";
-	const volume = formatNumber(getMarketVolume(market), {
-		compact: true,
-		currency: true,
-	});
-	const date = new Date().toLocaleDateString("en-US", {
-		month: "long",
-		day: "numeric",
-		year: "numeric",
-	});
-
-	return {
-		"@context": "https://schema.org",
-		"@type": "FAQPage",
-		mainEntity: [
-			{
-				"@type": "Question",
-				name: question,
-				acceptedAnswer: {
-					"@type": "Answer",
-					text: `As of ${date}, Polymarket traders predict ${topOutcome?.name ?? "the leading outcome"} at ${probability}% probability. Total trading volume: ${volume}.${description ? ` ${description}` : ""}`,
-				},
-			},
-		],
-	};
-}
-
 export default async function MarketPage({ params, searchParams }: Props) {
 	const { slug } = await params;
 	const market = await getMarketBySlug(slug);
@@ -126,6 +112,19 @@ export default async function MarketPage({ params, searchParams }: Props) {
 	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
 	const conditionId = market.condition_id ?? null;
 
+	const siteUrl = getSiteUrl();
+	const marketUrl = new URL(`/markets/${slug}`, siteUrl).toString();
+	const marketJsonLd = buildMarketJsonLd({
+		market,
+		url: marketUrl,
+		siteName: SITE_NAME,
+		imageUrl: market.image_url ?? undefined,
+	});
+
+	const relatedMarketsPromise = breadcrumbTag
+		? getMarketsByTag(breadcrumbTag, 8, undefined, "volume", "desc", isResolved ? "all" : "open")
+		: null;
+
 	return (
 		<div className="flex w-full justify-center">
 			<div className="flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 sm:gap-6 sm:px-6 sm:pb-12">
@@ -141,7 +140,7 @@ export default async function MarketPage({ params, searchParams }: Props) {
 					]}
 				/>
 
-				<JsonLd data={buildFaqJsonLd(market)} />
+				<JsonLd data={marketJsonLd} />
 
 				<MarketHeader market={market} slug={slug} />
 
@@ -169,7 +168,30 @@ export default async function MarketPage({ params, searchParams }: Props) {
 						</div>
 					</>
 				)}
+
+				{breadcrumbTag && relatedMarketsPromise && (
+					<Suspense>
+						<RelatedMarketsSection
+							relatedPromise={relatedMarketsPromise}
+							tag={breadcrumbTag}
+							currentSlug={slug}
+						/>
+					</Suspense>
+				)}
 			</div>
 		</div>
 	);
+}
+
+async function RelatedMarketsSection({
+	relatedPromise,
+	tag,
+	currentSlug,
+}: {
+	relatedPromise: ReturnType<typeof getMarketsByTag>;
+	tag: string;
+	currentSlug: string;
+}) {
+	const { data } = await relatedPromise;
+	return <RelatedMarkets markets={data} tag={tag} currentSlug={currentSlug} />;
 }

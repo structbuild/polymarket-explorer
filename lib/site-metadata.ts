@@ -48,6 +48,7 @@ type BuildPageMetadataOptions = {
 	canonical: string;
 	openGraph?: Partial<NonNullable<Metadata["openGraph"]>>;
 	twitter?: Partial<NonNullable<Metadata["twitter"]>>;
+	robots?: Metadata["robots"];
 };
 
 export function buildPageMetadata({
@@ -56,6 +57,7 @@ export function buildPageMetadata({
 	canonical,
 	openGraph,
 	twitter,
+	robots,
 }: BuildPageMetadataOptions): Metadata {
 	return {
 		title,
@@ -75,5 +77,6 @@ export function buildPageMetadata({
 			description,
 			...twitter,
 		},
+		...(robots !== undefined && { robots }),
 	};
 }

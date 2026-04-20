@@ -13,8 +13,9 @@ import { getTopMarkets } from "@/lib/struct/market-queries";
 import { loadMarketSearchParams } from "@/lib/market-search-params.server";
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Prediction Markets",
-	description: "Browse active Polymarket prediction markets with live probabilities, volume, and liquidity data.",
+	title: "Top Polymarket Markets · Live Odds & 24h Volume",
+	description:
+		"Every active Polymarket market, sorted by 24h volume. Track live probabilities, liquidity, and trader activity in real time.",
 	canonical: "/markets",
 });
 

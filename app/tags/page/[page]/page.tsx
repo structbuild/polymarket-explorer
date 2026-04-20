@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	if (!page || page === 1) return {};
 
 	return buildPageMetadata({
-		title: `Prediction Market Tags - Page ${page}`,
-		description: `Browse Polymarket tags and topics on page ${page}, including politics, crypto, sports, and more.`,
+		title: `Polymarket Categories · Page ${page}`,
+		description: `Browse Polymarket prediction market categories, page ${page} — politics, crypto, sports, culture, and more.`,
 		canonical: `/tags/page/${page}`,
 	});
 }

@@ -18,8 +18,9 @@ type Props = {
 };
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Top Polymarket Traders",
-	description: "Compare top Polymarket traders by PnL, volume, markets traded, and win rate.",
+	title: "Top Polymarket Traders by PnL · Live Leaderboard",
+	description:
+		"Live Polymarket trader leaderboard — ranked by realized PnL, volume, markets traded, and win rate. See who's winning today.",
 	canonical: "/traders",
 });
 

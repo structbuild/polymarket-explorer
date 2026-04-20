@@ -117,7 +117,7 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 					<div className="flex w-full min-w-0 items-center gap-3">
 						{entry.trader.profile_image ? (
 							<Avatar size="lg">
-								<AvatarImage className="rounded-sm" src={entry.trader.profile_image} alt="" />
+								<AvatarImage className="rounded-sm" src={entry.trader.profile_image} alt={`${displayName} avatar`} />
 								<AvatarFallback className="rounded-sm">{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
 							</Avatar>
 						) : (

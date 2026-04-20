@@ -7,8 +7,9 @@ import { parseTagSort, parseTagTimeframe } from "@/lib/struct/tag-shared";
 export const revalidate = 3600;
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Prediction Market Tags",
-	description: "Browse Polymarket tags and topics, including politics, crypto, sports, and more.",
+	title: "Polymarket Categories · Politics, Crypto, Sports & More",
+	description:
+		"Browse Polymarket prediction markets by topic — politics, crypto, sports, culture, and more. Sorted by live volume and activity.",
 	canonical: "/tags",
 });
 

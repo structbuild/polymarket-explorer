@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import {
-	DEFAULT_VOLUME_COMPONENTS,
+	DEFAULT_KPI_VOLUME_COMPONENTS,
 	VOLUME_COMPONENT_IDS,
 	isDefaultVolumeComponents,
 	sumSelectedComponentTotals,
@@ -17,12 +17,12 @@ export type ComponentPctMap = Partial<Record<VolumeComponentId, number | null>>;
 
 function deserialize(raw: string): readonly VolumeComponentId[] {
 	const parsed = JSON.parse(raw);
-	if (!Array.isArray(parsed)) return DEFAULT_VOLUME_COMPONENTS;
+	if (!Array.isArray(parsed)) return DEFAULT_KPI_VOLUME_COMPONENTS;
 	const valid = new Set<VolumeComponentId>(VOLUME_COMPONENT_IDS);
 	const filtered = parsed.filter(
 		(v): v is VolumeComponentId => typeof v === "string" && valid.has(v as VolumeComponentId),
 	);
-	if (filtered.length === 0) return DEFAULT_VOLUME_COMPONENTS;
+	if (filtered.length === 0) return DEFAULT_KPI_VOLUME_COMPONENTS;
 	return VOLUME_COMPONENT_IDS.filter((id) => filtered.includes(id));
 }
 
@@ -75,7 +75,7 @@ export function ComponentsKpiCard({
 }) {
 	const [components, setComponents] = useLocalStorage<readonly VolumeComponentId[]>(
 		storageKey,
-		DEFAULT_VOLUME_COMPONENTS,
+		DEFAULT_KPI_VOLUME_COMPONENTS,
 		{ deserialize },
 	);
 

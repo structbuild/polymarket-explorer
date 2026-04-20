@@ -60,14 +60,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		notFound();
 	}
 
-	const { displayName } = await loadTraderOpenGraphIdentity(address);
-	const description = getTraderPageDescription(address);
-	const socialTitle = getTraderSocialTitle(displayName);
+	const [{ displayName }, pnlSummary] = await Promise.all([
+		loadTraderOpenGraphIdentity(address),
+		getTraderPnlSummary(address),
+	]);
+	const description = getTraderPageDescription(displayName, address, pnlSummary);
+	const socialTitle = getTraderSocialTitle(displayName, pnlSummary);
 	const ogImage = getTraderOgImageUrl(address);
 	const ogAlt = getTraderOgImageAlt(displayName);
 
 	return buildPageMetadata({
-		title: getTraderPageTitle(displayName),
+		title: getTraderPageTitle(displayName, pnlSummary),
 		description,
 		canonical: `/traders/${address}`,
 		openGraph: {
@@ -275,9 +278,20 @@ async function TraderOverviewSection({
 		pseudonym: profile?.pseudonym,
 	});
 
+	const firstTradeIso =
+		pnlSummary?.first_trade_at && Number.isFinite(pnlSummary.first_trade_at)
+			? new Date(pnlSummary.first_trade_at * 1000).toISOString()
+			: undefined;
+	const lastTradeIso =
+		pnlSummary?.last_trade_at && Number.isFinite(pnlSummary.last_trade_at)
+			? new Date(pnlSummary.last_trade_at * 1000).toISOString()
+			: undefined;
+
 	const profileJsonLd = {
 		"@context": "https://schema.org",
 		"@type": "ProfilePage",
+		...(firstTradeIso && { datePublished: firstTradeIso }),
+		...(lastTradeIso && { dateModified: lastTradeIso }),
 		mainEntity: {
 			"@type": "Person",
 			name: displayName,

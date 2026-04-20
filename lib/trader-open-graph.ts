@@ -11,9 +11,10 @@ import {
 	type PnlStreaks,
 } from "@/lib/polymarket/pnl";
 import { getSiteUrl } from "@/lib/env";
+import { formatNumber } from "@/lib/format";
 import { buildEntityPageTitle } from "@/lib/site-metadata";
 import { getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
-import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
+import { getTraderDisplayName, normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 export const traderOgImageSize = {
 	width: 1200,
@@ -35,16 +36,53 @@ export type TraderOpenGraphIdentity = {
 	profile: UserProfile | null;
 };
 
-export function getTraderPageTitle(displayName: string) {
-	return buildEntityPageTitle(displayName, "Trader Profile");
+export function getTraderPageTitle(displayName: string, pnlSummary?: TraderPnlSummary | null) {
+	const pnl = pnlSummary?.realized_pnl_usd;
+	if (typeof pnl === "number" && Number.isFinite(pnl) && Math.abs(pnl) >= 1000) {
+		const pnlText = formatNumber(pnl, { compact: true, currency: true });
+		const prefix = pnl >= 0 ? "+" : "";
+		return buildEntityPageTitle(displayName, `${prefix}${pnlText} PnL · Polymarket`);
+	}
+	return buildEntityPageTitle(displayName, "Polymarket Trader");
 }
 
-export function getTraderSocialTitle(displayName: string) {
-	return buildEntityPageTitle(displayName, "Trader Profile");
+export function getTraderSocialTitle(displayName: string, pnlSummary?: TraderPnlSummary | null) {
+	return getTraderPageTitle(displayName, pnlSummary);
 }
 
-export function getTraderPageDescription(address: string) {
-	return `Review ${address} Polymarket performance, including PnL, analytics, volume, trade history, and more.`;
+export function getTraderPageDescription(
+	displayName: string,
+	address: string,
+	pnlSummary?: TraderPnlSummary | null,
+) {
+	const pnl = pnlSummary?.realized_pnl_usd;
+	const volume = pnlSummary?.total_volume_usd;
+	const winRate = pnlSummary?.market_win_rate_pct;
+	const marketsTraded = pnlSummary?.markets_traded;
+
+	const stats: string[] = [];
+	if (typeof pnl === "number" && Number.isFinite(pnl)) {
+		const prefix = pnl >= 0 ? "+" : "";
+		stats.push(`${prefix}${formatNumber(pnl, { compact: true, currency: true })} PnL`);
+	}
+	if (typeof volume === "number" && volume > 0) {
+		stats.push(`${formatNumber(volume, { compact: true, currency: true })} volume`);
+	}
+	if (typeof marketsTraded === "number" && marketsTraded > 0) {
+		stats.push(`${formatNumber(marketsTraded, { decimals: 0 })} markets`);
+	}
+	if (typeof winRate === "number" && Number.isFinite(winRate)) {
+		stats.push(`${winRate.toFixed(0)}% win rate`);
+	}
+
+	const displayIsAddress = displayName === truncateAddress(address) || displayName === address;
+	const lead = displayIsAddress ? address : `${displayName} (${address})`;
+
+	if (stats.length === 0) {
+		return `${lead} on Polymarket. View live positions, PnL chart, trade history, and analytics.`;
+	}
+
+	return `${lead} on Polymarket: ${stats.join(", ")}. View live positions, PnL chart, trade history, and analytics.`;
 }
 
 export function getTraderOgImageAlt(displayName: string) {

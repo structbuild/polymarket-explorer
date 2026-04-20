@@ -10,7 +10,7 @@ import { MarketsTable } from "@/components/market/markets-table";
 import { TagStatsRow } from "@/components/tags/tag-stats-row";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
-import { formatCapitalizeWords } from "@/lib/format";
+import { formatCapitalizeWords, formatNumber } from "@/lib/format";
 import {
 	buildEntityPageTitle,
 	buildPageMetadata,
@@ -62,10 +62,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 	const canonicalSlug = tag.slug ?? slug;
 	const tagTitle = formatCapitalizeWords(tag.label);
+
+	const volume = tag.volume_usd > 0 ? formatNumber(tag.volume_usd, { compact: true, currency: true }) : null;
+	const traders = tag.unique_traders > 0 ? formatNumber(tag.unique_traders, { decimals: 0 }) : null;
+	const isEmpty = tag.volume_usd === 0 && tag.txn_count === 0 && tag.unique_traders === 0;
+
+	const stats: string[] = [];
+	if (volume) stats.push(`${volume} volume`);
+	if (traders) stats.push(`${traders} traders`);
+	const descriptionStats = stats.length ? `${stats.join(", ")}. ` : "";
+
 	return buildPageMetadata({
-		title: buildEntityPageTitle(tagTitle, "Prediction Markets"),
-		description: `Browse ${tagTitle} prediction markets on Polymarket. Track live odds, trading volume, and recent market activity.`,
+		title: buildEntityPageTitle(tagTitle, "Polymarket Markets"),
+		description: `Polymarket ${tagTitle} prediction markets. ${descriptionStats}Live odds, trading volume, and recent market activity.`,
 		canonical: `/tags/${canonicalSlug}`,
+		...(isEmpty && { robots: { index: false, follow: true } }),
 	});
 }
 

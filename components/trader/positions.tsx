@@ -93,7 +93,7 @@ function buildColumns(
 						{entry.image_url ? (
 							<img
 								className="size-10 rounded-md object-cover"
-								alt=""
+								alt={title}
 								src={normalizePolymarketS3ImageUrl(entry.image_url) ?? ""}
 							/>
 						) : (

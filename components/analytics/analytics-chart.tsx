@@ -7,6 +7,7 @@ import {
 	Bar,
 	BarChart,
 	CartesianGrid,
+	Cell,
 	XAxis,
 	YAxis,
 } from "recharts";
@@ -142,6 +143,15 @@ export function AnalyticsChart({
 	const shareMode = useShareMode();
 
 	const granularity = useMemo(() => detectGranularity(data), [data]);
+	const lastIncompleteT = useMemo(() => {
+		if (data.length < 2) return null;
+		const last = data[data.length - 1];
+		const step = last.t - data[data.length - 2].t;
+		if (step <= 0) return null;
+		const nowSeconds = Math.floor(Date.now() / 1000);
+		return last.t + step > nowSeconds ? last.t : null;
+	}, [data]);
+	const showShimmer = lastIncompleteT !== null && !shareMode;
 	const xAxisFormatter = useMemo(() => {
 		if (granularity === "intraday-short") return formatTimeCompact;
 		if (granularity === "intraday") return formatDateTimeCompact;
@@ -244,6 +254,31 @@ export function AnalyticsChart({
 		variant === "bar" ? (
 			<ChartContainer config={chartConfig} className="h-full w-full">
 				<BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+					{showShimmer ? (
+						<defs>
+							{visibleSeries.map((s) => {
+								const id = `${gradientPrefix}-shimmer-${s.key}`;
+								return (
+									<pattern
+										key={id}
+										id={id}
+										patternUnits="userSpaceOnUse"
+										width="6"
+										height="6"
+										patternTransform="rotate(-45)"
+									>
+										<rect width="6" height="6" fill={s.color} />
+										<rect
+											width="3"
+											height="6"
+											fill="var(--color-background)"
+											fillOpacity="0.45"
+										/>
+									</pattern>
+								);
+							})}
+						</defs>
+					) : null}
 					{sharedAxes}
 					{tooltip}
 					{visibleSeries.map((s, idx) => {
@@ -257,7 +292,20 @@ export function AnalyticsChart({
 								stackId={s.stackId}
 								radius={s.stackId && !isLast ? 0 : [2, 2, 0, 0]}
 								{...(shareMode ? { isAnimationActive: false } : {})}
-							/>
+							>
+								{showShimmer
+									? data.map((d) => (
+											<Cell
+												key={d.t}
+												fill={
+													d.t === lastIncompleteT
+														? `url(#${gradientPrefix}-shimmer-${s.key})`
+														: s.color
+												}
+											/>
+										))
+									: null}
+							</Bar>
 						);
 					})}
 				</BarChart>

@@ -14,9 +14,9 @@ import {
 } from "@/lib/struct/analytics-shared";
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Analytics",
+	title: "Polymarket Analytics · Volume, Trades & Fees",
 	description:
-		"Global Polymarket analytics — volume, trades, fees, unique traders, and yes/no flow over time.",
+		"Global Polymarket analytics dashboard — daily volume, trade count, fees, unique traders, and yes/no flow across every market.",
 	canonical: "/analytics",
 });
 

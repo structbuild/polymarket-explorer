@@ -10,8 +10,8 @@ import { Suspense } from "react";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	title: { absolute: `${SITE_NAME} - Explore markets, traders, tags, and more on Polymarket` },
-	description: SITE_DESCRIPTION,
+	title: `${SITE_NAME} · Live Odds, Traders & Analytics`,
+	description: "Live Polymarket prediction markets, top trader leaderboard, historical odds, and analytics in one place.",
 	alternates: {
 		canonical: "/",
 	},

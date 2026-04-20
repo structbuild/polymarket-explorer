@@ -146,6 +146,8 @@ export const VOLUME_COMPONENT_LABELS: Record<VolumeComponentId, string> = {
 
 export const DEFAULT_VOLUME_COMPONENTS: readonly VolumeComponentId[] = VOLUME_COMPONENT_IDS;
 
+export const DEFAULT_KPI_VOLUME_COMPONENTS: readonly VolumeComponentId[] = ["buy", "sell"];
+
 export type ComponentTotals = Record<VolumeComponentId, number>;
 
 export function isDefaultVolumeComponents(
