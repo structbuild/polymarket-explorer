@@ -111,6 +111,24 @@ export function parseAnalyticsView(value: string | string[] | undefined): Analyt
 		: DEFAULT_ANALYTICS_VIEW;
 }
 
+export type AnalyticsParams = {
+	view: AnalyticsView;
+	range: AnalyticsRange;
+	resolution: AnalyticsResolution;
+	defaultResolution: AnalyticsResolution;
+};
+
+export function parseAnalyticsParams(
+	searchParams: Record<string, string | string[] | undefined>,
+	scope: AnalyticsScope = "scoped",
+): AnalyticsParams {
+	const view = parseAnalyticsView(searchParams.view);
+	const range = view === "cumulative" ? "all" : parseAnalyticsRange(searchParams.range);
+	const resolution = parseAnalyticsResolution(searchParams.resolution, range, scope);
+	const defaultResolution = getDefaultResolution(range, scope);
+	return { view, range, resolution, defaultResolution };
+}
+
 export const ANALYTICS_CAP_BUFFER_SECONDS = 7 * 86400;
 
 export function parseAnalyticsCap(

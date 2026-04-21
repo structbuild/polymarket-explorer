@@ -14,6 +14,7 @@ import { cache } from "react";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
+import { logStructError, readStatus } from "@/lib/struct/http";
 import type { PaginatedResource } from "@/lib/struct/types";
 import { normalizeWalletAddress } from "@/lib/utils";
 
@@ -31,21 +32,6 @@ export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTrade
 
 export type TraderPositionsOptions = Omit<GetTraderOutcomePnlRequest, "address" | "status">;
 export type TraderTradesPageOptions = Omit<GetTraderTradesRequest, "address">;
-
-function readStatus(error: unknown) {
-	if (typeof error !== "object" || error === null) {
-		return null;
-	}
-
-	const record = error as Record<string, unknown>;
-	const status = record.status;
-
-	return typeof status === "number" ? status : null;
-}
-
-function logStructError(label: string, error: unknown) {
-	console.error(`Struct SDK request failed: ${label}`, error);
-}
 
 function normalizeTraderSearchQuery(query: string) {
 	return query.trim().replace(/\s+/g, " ").slice(0, maxTraderSearchQueryLength);

@@ -8,10 +8,7 @@ import {
 	getAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
 import {
-	getDefaultResolution,
-	parseAnalyticsRange,
-	parseAnalyticsResolution,
-	parseAnalyticsView,
+	parseAnalyticsParams,
 	ANALYTICS_RANGE_LABELS,
 } from "@/lib/struct/analytics-shared";
 
@@ -27,11 +24,11 @@ type Props = {
 };
 
 export default async function AnalyticsPage({ searchParams }: Props) {
-	const { range: rangeParam, view: viewParam, resolution: resolutionParam } = await searchParams;
-	const view = parseAnalyticsView(viewParam);
-	const range = view === "cumulative" ? "all" : parseAnalyticsRange(rangeParam);
-	const resolution = parseAnalyticsResolution(resolutionParam, range, "global");
-	const defaultResolution = getDefaultResolution(range, "global");
+	const resolvedSearchParams = await searchParams;
+	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(
+		resolvedSearchParams,
+		"global",
+	);
 
 	const description =
 		view === "cumulative"

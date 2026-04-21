@@ -9,9 +9,10 @@ import { useMemo } from "react";
 
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { dateCol, durationCol, numericCol } from "@/components/ui/table-columns";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { facehashColorClasses } from "@/lib/facehash";
-import { formatDateShort, formatDuration, formatNumber, pnlColorClass } from "@/lib/format";
+import { formatNumber, pnlColorClass } from "@/lib/format";
 import { cn, getTraderDisplayName, normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 type NumericField = Extract<
@@ -39,7 +40,7 @@ type NumericField = Extract<
 	| "best_trade_pnl_usd"
 >;
 
-type NumericColumnConfig = {
+type LeaderboardNumericOptions = {
 	id: string;
 	title: string;
 	field: NumericField;
@@ -48,41 +49,15 @@ type NumericColumnConfig = {
 	colorizePnl?: boolean;
 };
 
-function numericColumn({
-	id,
-	title,
-	field,
-	size = 112,
-	format,
-	colorizePnl = false,
-}: NumericColumnConfig): ColumnDef<LeaderboardEntry, unknown> {
-	return {
-		id,
-		meta: { title },
-		header: title,
-		size,
-		cell: ({ row }) => {
-			const value = row.original[field] as number | null | undefined;
-			const colorClass = colorizePnl && value != null ? pnlColorClass(value) : null;
-			return (
-				<p className={cn("tabular-nums", colorClass ? cn("font-medium", colorClass) : "text-foreground/90")}>
-					{formatNumber(value, format)}
-				</p>
-			);
-		},
-	};
-}
-
-function timestampColumn(id: string, title: string, field: "first_trade_at" | "last_trade_at", size = 128): ColumnDef<LeaderboardEntry, unknown> {
-	return {
-		id,
-		meta: { title },
-		header: title,
-		size,
-		cell: ({ row }) => (
-			<p className="text-foreground/90 tabular-nums">{formatDateShort(row.original[field] ?? null)}</p>
-		),
-	};
+function leaderboardNumeric(options: LeaderboardNumericOptions): ColumnDef<LeaderboardEntry, unknown> {
+	return numericCol<LeaderboardEntry>({
+		id: options.id,
+		title: options.title,
+		size: options.size,
+		format: options.format,
+		colorizePnl: options.colorizePnl,
+		accessor: (row) => row[options.field] as number | null | undefined,
+	});
 }
 
 function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[] {
@@ -159,39 +134,30 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 				);
 			},
 		},
-		numericColumn({ id: "volume", title: "Volume", field: "total_volume_usd", size: 120, format: { compact: true, currency: true } }),
-		numericColumn({ id: "markets", title: "Markets", field: "markets_traded", size: 96, format: { decimals: 0 } }),
-		numericColumn({ id: "winRate", title: "Win Rate", field: "market_win_rate_pct", size: 112, format: { percent: true } }),
-		numericColumn({ id: "events", title: "Events", field: "events_traded", size: 96, format: { decimals: 0 } }),
-		numericColumn({ id: "marketsWon", title: "Won", field: "markets_won", size: 88, format: { decimals: 0 } }),
-		numericColumn({ id: "marketsLost", title: "Lost", field: "markets_lost", size: 88, format: { decimals: 0 } }),
-		numericColumn({ id: "trades", title: "Trades", field: "total_trades", size: 104, format: { decimals: 0, compact: true } }),
-		numericColumn({ id: "buys", title: "Buys", field: "total_buys", size: 96, format: { decimals: 0, compact: true } }),
-		numericColumn({ id: "sells", title: "Sells", field: "total_sells", size: 96, format: { decimals: 0, compact: true } }),
-		numericColumn({ id: "redemptions", title: "Redemptions", field: "total_redemptions", size: 128, format: { decimals: 0, compact: true } }),
-		numericColumn({ id: "merges", title: "Merges", field: "total_merges", size: 104, format: { decimals: 0, compact: true } }),
-		numericColumn({ id: "buyVolume", title: "Buy Vol", field: "buy_volume_usd", size: 120, format: { compact: true, currency: true } }),
-		numericColumn({ id: "sellVolume", title: "Sell Vol", field: "sell_volume_usd", size: 120, format: { compact: true, currency: true } }),
-		numericColumn({ id: "redemptionVolume", title: "Redemption Vol", field: "redemption_volume_usd", size: 144, format: { compact: true, currency: true } }),
-		numericColumn({ id: "mergeVolume", title: "Merge Vol", field: "merge_volume_usd", size: 128, format: { compact: true, currency: true } }),
-		numericColumn({ id: "fees", title: "Fees", field: "total_fees", size: 112, format: { compact: true, currency: true } }),
-		numericColumn({ id: "bestTradePnl", title: "Best Trade", field: "best_trade_pnl_usd", size: 128, format: { compact: true, currency: true }, colorizePnl: true }),
-		{
+		leaderboardNumeric({ id: "volume", title: "Volume", field: "total_volume_usd", size: 120, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "markets", title: "Markets", field: "markets_traded", size: 96, format: { decimals: 0 } }),
+		leaderboardNumeric({ id: "winRate", title: "Win Rate", field: "market_win_rate_pct", size: 112, format: { percent: true } }),
+		leaderboardNumeric({ id: "events", title: "Events", field: "events_traded", size: 96, format: { decimals: 0 } }),
+		leaderboardNumeric({ id: "marketsWon", title: "Won", field: "markets_won", size: 88, format: { decimals: 0 } }),
+		leaderboardNumeric({ id: "marketsLost", title: "Lost", field: "markets_lost", size: 88, format: { decimals: 0 } }),
+		leaderboardNumeric({ id: "trades", title: "Trades", field: "total_trades", size: 104, format: { decimals: 0, compact: true } }),
+		leaderboardNumeric({ id: "buys", title: "Buys", field: "total_buys", size: 96, format: { decimals: 0, compact: true } }),
+		leaderboardNumeric({ id: "sells", title: "Sells", field: "total_sells", size: 96, format: { decimals: 0, compact: true } }),
+		leaderboardNumeric({ id: "redemptions", title: "Redemptions", field: "total_redemptions", size: 128, format: { decimals: 0, compact: true } }),
+		leaderboardNumeric({ id: "merges", title: "Merges", field: "total_merges", size: 104, format: { decimals: 0, compact: true } }),
+		leaderboardNumeric({ id: "buyVolume", title: "Buy Vol", field: "buy_volume_usd", size: 120, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "sellVolume", title: "Sell Vol", field: "sell_volume_usd", size: 120, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "redemptionVolume", title: "Redemption Vol", field: "redemption_volume_usd", size: 144, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "mergeVolume", title: "Merge Vol", field: "merge_volume_usd", size: 128, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "fees", title: "Fees", field: "total_fees", size: 112, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "bestTradePnl", title: "Best Trade", field: "best_trade_pnl_usd", size: 128, format: { compact: true, currency: true }, colorizePnl: true }),
+		durationCol<LeaderboardEntry>({
 			id: "avgHoldTime",
-			meta: { title: "Avg Hold" },
-			header: "Avg Hold",
-			size: 128,
-			cell: ({ row }) => {
-				const seconds = row.original.avg_hold_time_seconds;
-				return (
-					<p className="text-foreground/90 tabular-nums">
-						{seconds != null ? formatDuration(seconds) : "—"}
-					</p>
-				);
-			},
-		},
-		timestampColumn("firstTradeAt", "First Trade", "first_trade_at"),
-		timestampColumn("lastTradeAt", "Last Trade", "last_trade_at"),
+			title: "Avg Hold",
+			accessor: (row) => row.avg_hold_time_seconds,
+		}),
+		dateCol<LeaderboardEntry>({ id: "firstTradeAt", title: "First Trade", accessor: (row) => row.first_trade_at }),
+		dateCol<LeaderboardEntry>({ id: "lastTradeAt", title: "Last Trade", accessor: (row) => row.last_trade_at }),
 	];
 }
 

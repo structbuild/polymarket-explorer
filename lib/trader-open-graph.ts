@@ -36,34 +36,33 @@ export type TraderOpenGraphIdentity = {
 	profile: UserProfile | null;
 };
 
-export function getTraderPageTitle(displayName: string, pnlSummary?: TraderPnlSummary | null) {
-	const pnl = pnlSummary?.realized_pnl_usd;
-	if (typeof pnl === "number" && Number.isFinite(pnl) && Math.abs(pnl) >= 1000) {
-		const pnlText = formatNumber(pnl, { compact: true, currency: true });
-		const prefix = pnl >= 0 ? "+" : "";
+export function getTraderPageTitle(displayName: string, cumulativePnlUsd: number) {
+	if (Number.isFinite(cumulativePnlUsd) && Math.abs(cumulativePnlUsd) >= 1000) {
+		const pnlText = formatNumber(cumulativePnlUsd, { compact: true, currency: true });
+		const prefix = cumulativePnlUsd >= 0 ? "+" : "";
 		return buildEntityPageTitle(displayName, `${prefix}${pnlText} PnL · Polymarket`);
 	}
 	return buildEntityPageTitle(displayName, "Polymarket Trader");
 }
 
-export function getTraderSocialTitle(displayName: string, pnlSummary?: TraderPnlSummary | null) {
-	return getTraderPageTitle(displayName, pnlSummary);
+export function getTraderSocialTitle(displayName: string, cumulativePnlUsd: number) {
+	return getTraderPageTitle(displayName, cumulativePnlUsd);
 }
 
 export function getTraderPageDescription(
 	displayName: string,
 	address: string,
+	cumulativePnlUsd: number,
 	pnlSummary?: TraderPnlSummary | null,
 ) {
-	const pnl = pnlSummary?.realized_pnl_usd;
 	const volume = pnlSummary?.total_volume_usd;
 	const winRate = pnlSummary?.market_win_rate_pct;
 	const marketsTraded = pnlSummary?.markets_traded;
 
 	const stats: string[] = [];
-	if (typeof pnl === "number" && Number.isFinite(pnl)) {
-		const prefix = pnl >= 0 ? "+" : "";
-		stats.push(`${prefix}${formatNumber(pnl, { compact: true, currency: true })} PnL`);
+	if (Number.isFinite(cumulativePnlUsd)) {
+		const prefix = cumulativePnlUsd >= 0 ? "+" : "";
+		stats.push(`${prefix}${formatNumber(cumulativePnlUsd, { compact: true, currency: true })} PnL`);
 	}
 	if (typeof volume === "number" && volume > 0) {
 		stats.push(`${formatNumber(volume, { compact: true, currency: true })} volume`);

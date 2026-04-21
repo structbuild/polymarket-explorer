@@ -21,12 +21,7 @@ import {
 	getTagAnalyticsDeltas,
 	getTagAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
-import {
-	getDefaultResolution,
-	parseAnalyticsRange,
-	parseAnalyticsResolution,
-	parseAnalyticsView,
-} from "@/lib/struct/analytics-shared";
+import { parseAnalyticsParams } from "@/lib/struct/analytics-shared";
 import {
 	DEFAULT_MARKET_STATUS_TAB,
 	parseMarketStatusTab,
@@ -93,11 +88,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
-	const view = parseAnalyticsView(resolvedSearchParams.view);
-	const range =
-		view === "cumulative" ? "all" : parseAnalyticsRange(resolvedSearchParams.range);
-	const resolution = parseAnalyticsResolution(resolvedSearchParams.resolution, range);
-	const defaultResolution = getDefaultResolution(range);
+	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
 	const marketTab = parseMarketStatusTab(resolvedSearchParams.tab);
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
