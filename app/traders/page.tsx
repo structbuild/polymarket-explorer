@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -11,8 +12,6 @@ import { getGlobalLeaderboard } from "@/lib/struct/market-queries";
 import { parseTraderTimeframe } from "@/lib/trader-timeframes";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
-export const revalidate = 300;
-
 type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -24,7 +23,17 @@ export const metadata: Metadata = buildPageMetadata({
 	canonical: "/traders",
 });
 
-export default async function TradersPage({ searchParams }: Props) {
+export default function TradersPage({ searchParams }: Props) {
+	return (
+		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+			<Suspense fallback={<TradersPageFallback />}>
+				<TradersPageContent searchParams={searchParams} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function TradersPageContent({ searchParams }: Props) {
 	const resolvedSearchParams = await searchParams;
 	const timeframe = parseTraderTimeframe(resolvedSearchParams.timeframe);
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
@@ -53,7 +62,7 @@ export default async function TradersPage({ searchParams }: Props) {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+		<>
 			<Breadcrumbs
 				items={[
 					{ label: "Home", href: "/" },
@@ -85,6 +94,20 @@ export default async function TradersPage({ searchParams }: Props) {
 				nextCursor={nextCursor}
 				hasMore={hasMore}
 			/>
+		</>
+	);
+}
+
+function TradersPageFallback() {
+	return (
+		<div className="mt-6 space-y-4">
+			<div>
+				<div className="h-7 w-28 animate-pulse rounded bg-muted" />
+				<div className="mt-2 h-4 w-56 animate-pulse rounded bg-muted" />
+			</div>
+			<div className="rounded-lg bg-card px-4 py-12">
+				<div className="h-4 w-44 animate-pulse rounded bg-muted" />
+			</div>
 		</div>
 	);
 }

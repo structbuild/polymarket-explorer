@@ -9,7 +9,6 @@ import {
 } from "@/lib/struct/market-queries";
 import { normalizeWalletAddress } from "@/lib/utils";
 
-export const revalidate = 3600;
 export const maxDuration = 60;
 
 const MARKET_CAP = 5000;

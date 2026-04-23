@@ -9,7 +9,7 @@ import type {
 	TagSortBy,
 	TagSortTimeframe,
 } from "@structbuild/sdk";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
@@ -20,69 +20,65 @@ import {
 	logPaginationLimitReached,
 	maxPaginationRequests,
 	type PaginatedResult,
-	shortRevalidateSeconds,
 } from "@/lib/struct/queries/_shared";
 
-const structAllTagsCacheVersion = "v2";
-const structTagBySlugCacheVersion = "v2";
-const structMarketsByTagCacheVersion = "v2";
-
-export const structAllTagsCacheTag = `struct-all-tags-${structAllTagsCacheVersion}`;
-export const structTagBySlugCacheTag = `struct-tag-by-slug-${structTagBySlugCacheVersion}`;
-export const structMarketsByTagCacheTag = `struct-markets-by-tag-${structMarketsByTagCacheVersion}`;
+export const structAllTagsCacheTag = "struct-all-tags-v2";
+export const structTagBySlugCacheTag = "struct-tag-by-slug-v2";
+export const structMarketsByTagCacheTag = "struct-markets-by-tag-v2";
 
 function hasTagSlug(tag: Tag): tag is Tag & { slug: string } {
 	return typeof tag.slug === "string" && tag.slug.length > 0;
 }
 
-export const getAllTags = cache(
-	unstable_cache(
-		async (sort?: TagSortBy, timeframe?: TagSortTimeframe): Promise<Tag[]> => {
-			const client = getStructClient();
+export async function getAllTags(
+	sort?: TagSortBy,
+	timeframe?: TagSortTimeframe,
+): Promise<Tag[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structAllTagsCacheTag);
 
-			if (!client) {
-				return [];
+	const client = getStructClient();
+
+	if (!client) {
+		return [];
+	}
+
+	const results: Tag[] = [];
+	let offset = 0;
+	const batchSize = 250;
+	const sortParams = sort
+		? { sort, timeframe: timeframe ?? ("lifetime" as TagSortTimeframe) }
+		: undefined;
+
+	try {
+		let requestCount = 0;
+
+		do {
+			if (requestCount >= maxPaginationRequests) {
+				logPaginationLimitReached("getAllTags");
+				break;
 			}
 
-			const results: Tag[] = [];
-			let offset = 0;
-			const batchSize = 250;
-			const sortParams = sort
-				? { sort, timeframe: timeframe ?? ("lifetime" as TagSortTimeframe) }
-				: undefined;
+			const response = await client.tags.getTags({
+				limit: batchSize,
+				offset,
+				...sortParams,
+			});
+			results.push(...response.data);
+			requestCount += 1;
 
-			try {
-				let requestCount = 0;
+			if (response.data.length < batchSize) break;
 
-				do {
-					if (requestCount >= maxPaginationRequests) {
-						logPaginationLimitReached("getAllTags");
-						break;
-					}
+			offset += batchSize;
+		} while (true);
 
-					const response = await client.tags.getTags({
-						limit: batchSize,
-						offset,
-						...sortParams,
-					});
-					results.push(...response.data);
-					requestCount += 1;
-
-					if (response.data.length < batchSize) break;
-
-					offset += batchSize;
-				} while (true);
-
-				return results;
-			} catch (error) {
-				logStructError("getAllTags", error);
-				return results;
-			}
-		},
-		[structAllTagsCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structAllTagsCacheTag] },
-	),
-);
+		return results;
+	} catch (error) {
+		logStructError("getAllTags", error);
+		return results;
+	}
+}
 
 export const getTagsPaginated = cache(
 	async (
@@ -116,83 +112,84 @@ export const searchTags = cache(
 	},
 );
 
-export const getTagCount = cache(
-	unstable_cache(
-		async (): Promise<number> => {
-			const tags = (await getAllTags()).filter(hasTagSlug);
-			return tags.length;
-		},
-		[`struct-tag-count-${structAllTagsCacheVersion}`],
-		{ revalidate: shortRevalidateSeconds, tags: [structAllTagsCacheTag] },
-	),
-);
+export async function getTagCount(): Promise<number> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structAllTagsCacheTag);
 
-export const getTagBySlug = cache(
-	unstable_cache(
-		async (slug: string): Promise<Tag | null> => {
-			const client = getStructClient();
+	const tags = (await getAllTags()).filter(hasTagSlug);
+	return tags.length;
+}
 
-			if (!client) {
-				return null;
-			}
+export async function getTagBySlug(slug: string): Promise<Tag | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTagBySlugCacheTag);
 
-			try {
-				const http = (client.tags as unknown as { http: HttpClient }).http;
-				const response = await http.get<Tag>(
-					`/polymarket/tags/${encodeURIComponent(slug)}`,
-					{ params: { include_metrics: true, timeframe: "lifetime" } },
-				);
-				return response.data;
-			} catch (error) {
-				if (readStatus(error) === 404) {
-					return null;
-				}
+	const client = getStructClient();
 
-				logStructError(`getTagBySlug:${slug}`, error);
-				return null;
-			}
-		},
-		[structTagBySlugCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structTagBySlugCacheTag] },
-	),
-);
+	if (!client) {
+		return null;
+	}
 
-export const getMarketsByTag = cache(
-	unstable_cache(
-		async (tag: string, limit: number = defaultPageSize, cursor?: string, sortBy: string = "volume", sortDir: string = "desc", status: "open" | "closed" | "all" = "open"): Promise<PaginatedResult<MarketResponse>> => {
-			const client = getStructClient();
+	try {
+		const http = (client.tags as unknown as { http: HttpClient }).http;
+		const response = await http.get<Tag>(
+			`/polymarket/tags/${encodeURIComponent(slug)}`,
+			{ params: { include_metrics: true, timeframe: "lifetime" } },
+		);
+		return response.data;
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return null;
+		}
 
-			if (!client) {
-				return { data: [], hasMore: false, nextCursor: null };
-			}
+		logStructError(`getTagBySlug:${slug}`, error);
+		return null;
+	}
+}
 
-			try {
-				const response = await client.markets.getMarkets({
-					tags: tag,
-					limit,
-					sort_by: sortBy as MarketSortBy,
-					sort_dir: sortDir as SortDirection,
-					status,
-					include_metrics: true,
-					...(cursor ? { pagination_key: cursor } : {}),
-				});
-				const hasMore = response.pagination?.has_more ?? false;
-				const nextKey = response.pagination?.pagination_key;
-				return {
-					data: response.data.map(normalizeMarketResponseImages),
-					hasMore,
-					nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
-				};
-			} catch (error) {
-				if (readStatus(error) === 404) {
-					return { data: [], hasMore: false, nextCursor: null };
-				}
+export async function getMarketsByTag(
+	tag: string,
+	limit: number = defaultPageSize,
+	cursor?: string,
+	sortBy: string = "volume",
+	sortDir: string = "desc",
+	status: "open" | "closed" | "all" = "open",
+): Promise<PaginatedResult<MarketResponse>> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structMarketsByTagCacheTag);
 
-				logStructError(`getMarketsByTag:${tag}`, error);
-				return { data: [], hasMore: false, nextCursor: null };
-			}
-		},
-		[structMarketsByTagCacheTag],
-		{ revalidate: shortRevalidateSeconds, tags: [structMarketsByTagCacheTag] },
-	),
-);
+	const client = getStructClient();
+
+	if (!client) {
+		return { data: [], hasMore: false, nextCursor: null };
+	}
+
+	try {
+		const response = await client.markets.getMarkets({
+			tags: tag,
+			limit,
+			sort_by: sortBy as MarketSortBy,
+			sort_dir: sortDir as SortDirection,
+			status,
+			include_metrics: true,
+			...(cursor ? { pagination_key: cursor } : {}),
+		});
+		const hasMore = response.pagination?.has_more ?? false;
+		const nextKey = response.pagination?.pagination_key;
+		return {
+			data: response.data.map(normalizeMarketResponseImages),
+			hasMore,
+			nextCursor: hasMore && nextKey != null ? String(nextKey) : null,
+		};
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return { data: [], hasMore: false, nextCursor: null };
+		}
+
+		logStructError(`getMarketsByTag:${tag}`, error);
+		return { data: [], hasMore: false, nextCursor: null };
+	}
+}

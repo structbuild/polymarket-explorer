@@ -7,8 +7,6 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
 	title: `${SITE_NAME} · Live Odds, Traders & Analytics`,
 	description: "Live Polymarket prediction markets, top trader leaderboard, historical odds, and analytics in one place.",

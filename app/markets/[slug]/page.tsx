@@ -14,16 +14,26 @@ import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import { parseAnalyticsCap, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
-import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import { getAllMarketSlugs, getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
 
-export const revalidate = 300;
+const MARKET_SLUG_PLACEHOLDER = "__placeholder__";
 
 type Props = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateStaticParams() {
+	const marketSlugs = await getAllMarketSlugs(10);
+
+	if (marketSlugs.length > 0) {
+		return marketSlugs.map(({ slug }) => ({ slug }));
+	}
+
+	return [{ slug: MARKET_SLUG_PLACEHOLDER }];
+}
 
 function getLeadingOutcome(market: MarketResponse) {
 	const outcomes = market.outcomes ?? [];
@@ -101,15 +111,7 @@ export default async function MarketPage({ params, searchParams }: Props) {
 	if (!market) {
 		notFound();
 	}
-
-	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([loadMarketDetailSearchParams(searchParams), searchParams]);
-	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
-	const endTime = typeof market.end_time === "number" && Number.isFinite(market.end_time) ? market.end_time : undefined;
-	const isResolved = market.status === "closed" || market.status === "resolved";
-	const defaultCap = isResolved && endTime !== undefined;
-	const cap = parseAnalyticsCap(resolvedSearchParams.cap) ?? defaultCap;
 	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
-	const conditionId = market.condition_id ?? null;
 
 	const siteUrl = getSiteUrl();
 	const marketUrl = new URL(`/markets/${slug}`, siteUrl).toString();
@@ -119,10 +121,6 @@ export default async function MarketPage({ params, searchParams }: Props) {
 		siteName: SITE_NAME,
 		imageUrl: market.image_url ?? undefined,
 	});
-
-	const relatedMarketsPromise = breadcrumbTag
-		? getMarketsByTag(breadcrumbTag, 8, undefined, "volume", "desc", isResolved ? "all" : "open")
-		: null;
 
 	return (
 		<div className="flex w-full justify-center">
@@ -143,43 +141,82 @@ export default async function MarketPage({ params, searchParams }: Props) {
 
 				<MarketHeader market={market} slug={slug} />
 
-				{conditionId && (
-					<>
-						<Suspense fallback={<MarketChartsFallback />}>
-							<MarketCharts conditionId={conditionId} />
-						</Suspense>
-						<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
-						<div className="mt-8">
-							<AnalyticsSection
-								title="Analytics"
-								range={range}
-								view={view}
-								resolution={resolution}
-								defaultResolution={defaultResolution}
-								endTime={endTime}
-								cap={cap}
-								defaultCap={defaultCap}
-								pathname={`/markets/${slug}`}
-								fetchers={{
-									deltas: () => getMarketAnalyticsDeltas(conditionId, range, resolution),
-									timeseries: () => getMarketAnalyticsTimeseries(conditionId, range, resolution),
-									changes: () => getMarketAnalyticsChanges(conditionId, range),
-								}}
-							/>
-						</div>
-					</>
-				)}
-
-				{breadcrumbTag && relatedMarketsPromise && (
-					<Suspense>
-						<RelatedMarketsSection
-							relatedPromise={relatedMarketsPromise}
-							tag={breadcrumbTag}
-							currentSlug={slug}
-						/>
-					</Suspense>
-				)}
+				<Suspense fallback={<MarketPageFallback />}>
+					<MarketPageContent market={market} searchParams={searchParams} slug={slug} />
+				</Suspense>
 			</div>
+		</div>
+	);
+}
+
+async function MarketPageContent({
+	market,
+	searchParams,
+	slug,
+}: {
+	market: MarketResponse;
+	searchParams: Props["searchParams"];
+	slug: string;
+}) {
+	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([loadMarketDetailSearchParams(searchParams), searchParams]);
+	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
+	const endTime = typeof market.end_time === "number" && Number.isFinite(market.end_time) ? market.end_time : undefined;
+	const isResolved = market.status === "closed" || market.status === "resolved";
+	const defaultCap = isResolved && endTime !== undefined;
+	const cap = parseAnalyticsCap(resolvedSearchParams.cap) ?? defaultCap;
+	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
+	const conditionId = market.condition_id ?? null;
+	const relatedMarketsPromise = breadcrumbTag
+		? getMarketsByTag(breadcrumbTag, 8, undefined, "volume", "desc", isResolved ? "all" : "open")
+		: null;
+
+	return (
+		<>
+			{conditionId && (
+				<>
+					<Suspense fallback={<MarketChartsFallback />}>
+						<MarketCharts conditionId={conditionId} />
+					</Suspense>
+					<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
+					<div className="mt-8">
+						<AnalyticsSection
+							title="Analytics"
+							range={range}
+							view={view}
+							resolution={resolution}
+							defaultResolution={defaultResolution}
+							endTime={endTime}
+							cap={cap}
+							defaultCap={defaultCap}
+							pathname={`/markets/${slug}`}
+							fetchers={{
+								deltas: () => getMarketAnalyticsDeltas(conditionId, range, resolution),
+								timeseries: () => getMarketAnalyticsTimeseries(conditionId, range, resolution),
+								changes: () => getMarketAnalyticsChanges(conditionId, range),
+							}}
+						/>
+					</div>
+				</>
+			)}
+
+			{breadcrumbTag && relatedMarketsPromise && (
+				<Suspense>
+					<RelatedMarketsSection
+						relatedPromise={relatedMarketsPromise}
+						tag={breadcrumbTag}
+						currentSlug={slug}
+					/>
+				</Suspense>
+			)}
+		</>
+	);
+}
+
+function MarketPageFallback() {
+	return (
+		<div className="space-y-4">
+			<div className="h-32 rounded-lg bg-card" />
+			<div className="h-64 rounded-lg bg-card" />
 		</div>
 	);
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import type { Tag } from "@structbuild/sdk";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
@@ -26,15 +27,27 @@ import {
 	DEFAULT_MARKET_STATUS_TAB,
 	parseMarketStatusTab,
 } from "@/lib/market-search-params-shared";
-import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import { getAllTags, getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { MarketStatusTabs } from "@/components/market/market-status-tabs";
 
-export const revalidate = 300;
+const TAG_SLUG_PLACEHOLDER = "__placeholder__";
 
 type Props = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateStaticParams() {
+	const tagSlugs = (await getAllTags())
+		.flatMap((tag) => (typeof tag.slug === "string" && tag.slug.length > 0 ? [tag.slug] : []))
+		.slice(0, 10);
+
+	if (tagSlugs.length > 0) {
+		return tagSlugs.map((slug) => ({ slug }));
+	}
+
+	return [{ slug: TAG_SLUG_PLACEHOLDER }];
+}
 
 function TagHeader({ tag, tagDisplay }: { tag: Tag; tagDisplay: string }) {
 	return (
@@ -86,6 +99,24 @@ export default async function TagPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
+	return (
+		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+			<Suspense fallback={<TagPageFallback />}>
+				<TagPageContent searchParams={searchParams} slug={slug} tag={tag} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function TagPageContent({
+	searchParams,
+	slug,
+	tag,
+}: {
+	searchParams: Props["searchParams"];
+	slug: string;
+	tag: Tag;
+}) {
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
 	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
@@ -119,7 +150,7 @@ export default async function TagPage({ params, searchParams }: Props) {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+		<>
 			<Breadcrumbs
 				items={[
 					{ label: "Home", href: "/" },
@@ -172,6 +203,18 @@ export default async function TagPage({ params, searchParams }: Props) {
 					}}
 				/>
 			</div>
+		</>
+	);
+}
+
+function TagPageFallback() {
+	return (
+		<div className="mt-6 space-y-4">
+			<div>
+				<div className="h-7 w-32 animate-pulse rounded bg-muted" />
+				<div className="mt-2 h-4 w-52 animate-pulse rounded bg-muted" />
+			</div>
+			<div className="h-64 rounded-lg bg-card" />
 		</div>
 	);
 }

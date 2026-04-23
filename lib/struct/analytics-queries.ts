@@ -3,8 +3,7 @@ import "server-only";
 import type { ChangeTimeframe, MetricPctChange, TimeBucketRow } from "@structbuild/sdk";
 import { HttpError } from "@structbuild/sdk";
 import type { HttpResponse } from "@structbuild/sdk";
-import { unstable_cache } from "next/cache";
-import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { getStructClient } from "@/lib/struct/client";
 import {
@@ -17,15 +16,7 @@ import {
 type RangeConfig = {
 	resolution: AnalyticsResolution;
 	countBack: number;
-	revalidateSeconds: number;
 	paginate: boolean;
-};
-
-const REVALIDATE_BY_RANGE: Record<AnalyticsRange, number> = {
-	"1d": 120,
-	"7d": 300,
-	"30d": 600,
-	all: 3600,
 };
 
 const RANGE_SECONDS: Record<Exclude<AnalyticsRange, "all">, number> = {
@@ -57,7 +48,6 @@ function buildRangeConfig(
 	return {
 		resolution,
 		countBack: computeCountBack(range, resolution),
-		revalidateSeconds: REVALIDATE_BY_RANGE[range],
 		paginate: range === "all",
 	};
 }
@@ -294,322 +284,301 @@ function handleChangesError(label: string, error: unknown): MetricPctChange | nu
 	return null;
 }
 
-export const getAnalyticsDeltas = cache(
-	unstable_cache(
-		async (
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getDeltas(params),
-					{},
-					buildRangeConfig(range, resolution),
-					`getAnalyticsDeltas:${range}:${resolution}`,
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getAnalyticsDeltas:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structAnalyticsDeltasCacheTag, "v6"],
-		{ revalidate: 300, tags: [structAnalyticsDeltasCacheTag] },
-	),
-);
+export async function getAnalyticsDeltas(
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structAnalyticsDeltasCacheTag);
 
-export const getAnalyticsChanges = cache(
-	unstable_cache(
-		async (range: AnalyticsRange): Promise<MetricPctChange | null> => {
-			const client = getStructClient();
-			if (!client) return null;
-			try {
-				const response = await client.analytics.getChanges({
-					timeframe: CHANGES_TIMEFRAME[range],
-				});
-				return response.data;
-			} catch (error) {
-				return handleChangesError(`getAnalyticsChanges:${range}`, error);
-			}
-		},
-		[structAnalyticsChangesCacheTag, "v1"],
-		{ revalidate: 300, tags: [structAnalyticsChangesCacheTag] },
-	),
-);
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getDeltas(params),
+			{},
+			buildRangeConfig(range, resolution),
+			`getAnalyticsDeltas:${range}:${resolution}`,
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getAnalyticsDeltas:${range}:${resolution}`,
+			error,
+		);
+	}
+}
 
-export const getMarketAnalyticsDeltas = cache(
-	unstable_cache(
-		async (
-			conditionId: string,
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getMarketDeltas(params),
-					{ condition_id: conditionId },
-					buildRangeConfig(range, resolution),
-					`getMarketAnalyticsDeltas:${conditionId}:${range}:${resolution}`,
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getMarketAnalyticsDeltas:${conditionId}:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structMarketAnalyticsDeltasCacheTag, "v5"],
-		{ revalidate: 300, tags: [structMarketAnalyticsDeltasCacheTag] },
-	),
-);
+export async function getAnalyticsChanges(range: AnalyticsRange): Promise<MetricPctChange | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structAnalyticsChangesCacheTag);
 
-export const getMarketAnalyticsChanges = cache(
-	unstable_cache(
-		async (
-			conditionId: string,
-			range: AnalyticsRange,
-		): Promise<MetricPctChange | null> => {
-			const client = getStructClient();
-			if (!client) return null;
-			try {
-				const response = await client.analytics.getMarketChanges({
-					condition_id: conditionId,
-					timeframe: CHANGES_TIMEFRAME[range],
-				});
-				return response.data;
-			} catch (error) {
-				return handleChangesError(
-					`getMarketAnalyticsChanges:${conditionId}:${range}`,
-					error,
-				);
-			}
-		},
-		[structMarketAnalyticsChangesCacheTag, "v1"],
-		{ revalidate: 300, tags: [structMarketAnalyticsChangesCacheTag] },
-	),
-);
+	const client = getStructClient();
+	if (!client) return null;
+	try {
+		const response = await client.analytics.getChanges({
+			timeframe: CHANGES_TIMEFRAME[range],
+		});
+		return response.data;
+	} catch (error) {
+		return handleChangesError(`getAnalyticsChanges:${range}`, error);
+	}
+}
 
-export const getTagAnalyticsDeltas = cache(
-	unstable_cache(
-		async (
-			tag: string,
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getTagDeltas(params),
-					{ tag },
-					buildRangeConfig(range, resolution),
-					`getTagAnalyticsDeltas:${tag}:${range}:${resolution}`,
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getTagAnalyticsDeltas:${tag}:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structTagAnalyticsDeltasCacheTag, "v5"],
-		{ revalidate: 300, tags: [structTagAnalyticsDeltasCacheTag] },
-	),
-);
+export async function getMarketAnalyticsDeltas(
+	conditionId: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structMarketAnalyticsDeltasCacheTag);
 
-export const getTagAnalyticsChanges = cache(
-	unstable_cache(
-		async (tag: string, range: AnalyticsRange): Promise<MetricPctChange | null> => {
-			const client = getStructClient();
-			if (!client) return null;
-			try {
-				const response = await client.analytics.getTagChanges({
-					tag,
-					timeframe: CHANGES_TIMEFRAME[range],
-				});
-				return response.data;
-			} catch (error) {
-				return handleChangesError(`getTagAnalyticsChanges:${tag}:${range}`, error);
-			}
-		},
-		[structTagAnalyticsChangesCacheTag, "v1"],
-		{ revalidate: 300, tags: [structTagAnalyticsChangesCacheTag] },
-	),
-);
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getMarketDeltas(params),
+			{ condition_id: conditionId },
+			buildRangeConfig(range, resolution),
+			`getMarketAnalyticsDeltas:${conditionId}:${range}:${resolution}`,
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getMarketAnalyticsDeltas:${conditionId}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
 
-export const getTraderAnalyticsDeltas = cache(
-	unstable_cache(
-		async (
-			address: string,
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getTraderDeltas(params),
-					{ address },
-					buildRangeConfig(range, resolution),
-					`getTraderAnalyticsDeltas:${address}:${range}:${resolution}`,
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getTraderAnalyticsDeltas:${address}:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structTraderAnalyticsDeltasCacheTag, "v5"],
-		{ revalidate: 300, tags: [structTraderAnalyticsDeltasCacheTag] },
-	),
-);
+export async function getMarketAnalyticsChanges(
+	conditionId: string,
+	range: AnalyticsRange,
+): Promise<MetricPctChange | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structMarketAnalyticsChangesCacheTag);
 
-export const getTraderAnalyticsChanges = cache(
-	unstable_cache(
-		async (
-			address: string,
-			range: AnalyticsRange,
-		): Promise<MetricPctChange | null> => {
-			const client = getStructClient();
-			if (!client) return null;
-			try {
-				const response = await client.analytics.getTraderChanges({
-					address,
-					timeframe: CHANGES_TIMEFRAME[range],
-				});
-				return response.data;
-			} catch (error) {
-				return handleChangesError(
-					`getTraderAnalyticsChanges:${address}:${range}`,
-					error,
-				);
-			}
-		},
-		[structTraderAnalyticsChangesCacheTag, "v1"],
-		{ revalidate: 300, tags: [structTraderAnalyticsChangesCacheTag] },
-	),
-);
+	const client = getStructClient();
+	if (!client) return null;
+	try {
+		const response = await client.analytics.getMarketChanges({
+			condition_id: conditionId,
+			timeframe: CHANGES_TIMEFRAME[range],
+		});
+		return response.data;
+	} catch (error) {
+		return handleChangesError(
+			`getMarketAnalyticsChanges:${conditionId}:${range}`,
+			error,
+		);
+	}
+}
 
-export const getAnalyticsTimeseries = cache(
-	unstable_cache(
-		async (
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getTimeseries(params),
-					{},
-					buildRangeConfig(range, resolution),
-					`getAnalyticsTimeseries:${range}:${resolution}`,
-					"carryForward",
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getAnalyticsTimeseries:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structAnalyticsTimeseriesCacheTag, "v4"],
-		{ revalidate: 300, tags: [structAnalyticsTimeseriesCacheTag] },
-	),
-);
+export async function getTagAnalyticsDeltas(
+	tag: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTagAnalyticsDeltasCacheTag);
 
-export const getMarketAnalyticsTimeseries = cache(
-	unstable_cache(
-		async (
-			conditionId: string,
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getMarketTimeseries(params),
-					{ condition_id: conditionId },
-					buildRangeConfig(range, resolution),
-					`getMarketAnalyticsTimeseries:${conditionId}:${range}:${resolution}`,
-					"carryForward",
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getMarketAnalyticsTimeseries:${conditionId}:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structMarketAnalyticsTimeseriesCacheTag, "v4"],
-		{ revalidate: 300, tags: [structMarketAnalyticsTimeseriesCacheTag] },
-	),
-);
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getTagDeltas(params),
+			{ tag },
+			buildRangeConfig(range, resolution),
+			`getTagAnalyticsDeltas:${tag}:${range}:${resolution}`,
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getTagAnalyticsDeltas:${tag}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
 
-export const getTagAnalyticsTimeseries = cache(
-	unstable_cache(
-		async (
-			tag: string,
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getTagTimeseries(params),
-					{ tag },
-					buildRangeConfig(range, resolution),
-					`getTagAnalyticsTimeseries:${tag}:${range}:${resolution}`,
-					"carryForward",
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getTagAnalyticsTimeseries:${tag}:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structTagAnalyticsTimeseriesCacheTag, "v4"],
-		{ revalidate: 300, tags: [structTagAnalyticsTimeseriesCacheTag] },
-	),
-);
+export async function getTagAnalyticsChanges(
+	tag: string,
+	range: AnalyticsRange,
+): Promise<MetricPctChange | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTagAnalyticsChangesCacheTag);
 
-export const getTraderAnalyticsTimeseries = cache(
-	unstable_cache(
-		async (
-			address: string,
-			range: AnalyticsRange,
-			resolution: AnalyticsResolution,
-		): Promise<AnalyticsPoint[]> => {
-			const client = getStructClient();
-			if (!client) return [];
-			try {
-				return await fetchTimeBucketsWithPagination(
-					(params) => client.analytics.getTraderTimeseries(params),
-					{ address },
-					buildRangeConfig(range, resolution),
-					`getTraderAnalyticsTimeseries:${address}:${range}:${resolution}`,
-					"carryForward",
-				);
-			} catch (error) {
-				return handleDeltasError(
-					`getTraderAnalyticsTimeseries:${address}:${range}:${resolution}`,
-					error,
-				);
-			}
-		},
-		[structTraderAnalyticsTimeseriesCacheTag, "v4"],
-		{ revalidate: 300, tags: [structTraderAnalyticsTimeseriesCacheTag] },
-	),
-);
+	const client = getStructClient();
+	if (!client) return null;
+	try {
+		const response = await client.analytics.getTagChanges({
+			tag,
+			timeframe: CHANGES_TIMEFRAME[range],
+		});
+		return response.data;
+	} catch (error) {
+		return handleChangesError(`getTagAnalyticsChanges:${tag}:${range}`, error);
+	}
+}
+
+export async function getTraderAnalyticsDeltas(
+	address: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTraderAnalyticsDeltasCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getTraderDeltas(params),
+			{ address },
+			buildRangeConfig(range, resolution),
+			`getTraderAnalyticsDeltas:${address}:${range}:${resolution}`,
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getTraderAnalyticsDeltas:${address}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getTraderAnalyticsChanges(
+	address: string,
+	range: AnalyticsRange,
+): Promise<MetricPctChange | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTraderAnalyticsChangesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return null;
+	try {
+		const response = await client.analytics.getTraderChanges({
+			address,
+			timeframe: CHANGES_TIMEFRAME[range],
+		});
+		return response.data;
+	} catch (error) {
+		return handleChangesError(
+			`getTraderAnalyticsChanges:${address}:${range}`,
+			error,
+		);
+	}
+}
+
+export async function getAnalyticsTimeseries(
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structAnalyticsTimeseriesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getTimeseries(params),
+			{},
+			buildRangeConfig(range, resolution),
+			`getAnalyticsTimeseries:${range}:${resolution}`,
+			"carryForward",
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getAnalyticsTimeseries:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getMarketAnalyticsTimeseries(
+	conditionId: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structMarketAnalyticsTimeseriesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getMarketTimeseries(params),
+			{ condition_id: conditionId },
+			buildRangeConfig(range, resolution),
+			`getMarketAnalyticsTimeseries:${conditionId}:${range}:${resolution}`,
+			"carryForward",
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getMarketAnalyticsTimeseries:${conditionId}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getTagAnalyticsTimeseries(
+	tag: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTagAnalyticsTimeseriesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getTagTimeseries(params),
+			{ tag },
+			buildRangeConfig(range, resolution),
+			`getTagAnalyticsTimeseries:${tag}:${range}:${resolution}`,
+			"carryForward",
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getTagAnalyticsTimeseries:${tag}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getTraderAnalyticsTimeseries(
+	address: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structTraderAnalyticsTimeseriesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.analytics.getTraderTimeseries(params),
+			{ address },
+			buildRangeConfig(range, resolution),
+			`getTraderAnalyticsTimeseries:${address}:${range}:${resolution}`,
+			"carryForward",
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getTraderAnalyticsTimeseries:${address}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
 
 export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 	if (points.length === 0) {

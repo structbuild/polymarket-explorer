@@ -40,6 +40,14 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   typedRoutes: true,
   serverExternalPackages: ["sharp"],
+  cacheComponents: true,
+  cacheLife: {
+    minutes: {
+      stale: 300,
+      revalidate: 60,
+      expire: 300,
+    },
+  },
   async headers() {
     return [
       {

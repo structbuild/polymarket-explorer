@@ -39,8 +39,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export const revalidate = 300;
-
 type Props = {
 	params: Promise<{ address: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -385,7 +383,19 @@ function TraderOverviewFallback() {
 	);
 }
 
-export default async function TraderPage({ params, searchParams }: Props) {
+export default function TraderPage({ params, searchParams }: Props) {
+	return (
+		<div className="flex w-full justify-center">
+			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
+				<Suspense fallback={<TraderPageFallback />}>
+					<TraderPageContent params={params} searchParams={searchParams} />
+				</Suspense>
+			</div>
+		</div>
+	);
+}
+
+async function TraderPageContent({ params, searchParams }: Props) {
 	const { address: rawAddress } = await params;
 	const address = normalizeWalletAddress(rawAddress);
 
@@ -417,51 +427,59 @@ export default async function TraderPage({ params, searchParams }: Props) {
 	const { displayName } = await loadTraderOpenGraphIdentity(address);
 
 	return (
-		<div className="flex w-full justify-center">
-			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
-				<Breadcrumbs
-					items={[
-						{ label: "Home", href: "/" },
-						{ label: "Traders", href: "/traders" },
-						{ label: displayName, href: `/traders/${address}` },
-					]}
+		<>
+			<Breadcrumbs
+				items={[
+					{ label: "Home", href: "/" },
+					{ label: "Traders", href: "/traders" },
+					{ label: displayName, href: `/traders/${address}` },
+				]}
+			/>
+			<Suspense fallback={<TraderOverviewFallback />}>
+				<TraderOverviewSection
+					address={address}
+					timeframe={pnlTimeframe}
+					profilePromise={profilePromise}
+					pnlSummaryPromise={pnlSummaryPromise}
+					insightsPromise={insightsPromise}
+					bestTradeMarketPromise={bestTradeMarketPromise}
+					cumulativePnlUsdPromise={cumulativePnlUsdPromise}
 				/>
-				<Suspense fallback={<TraderOverviewFallback />}>
-					<TraderOverviewSection
-						address={address}
-						timeframe={pnlTimeframe}
-						profilePromise={profilePromise}
-						pnlSummaryPromise={pnlSummaryPromise}
-						insightsPromise={insightsPromise}
-						bestTradeMarketPromise={bestTradeMarketPromise}
-						cumulativePnlUsdPromise={cumulativePnlUsdPromise}
-					/>
+			</Suspense>
+
+			<div>
+				<Suspense fallback={<TraderTabPanelFallback currentTab={tab} />}>
+					<TraderTabPanel tabDataPromise={tabDataPromise} />
 				</Suspense>
-
-				<div>
-					<Suspense fallback={<TraderTabPanelFallback currentTab={tab} />}>
-						<TraderTabPanel tabDataPromise={tabDataPromise} />
-					</Suspense>
-				</div>
-
-				<div className="mt-8">
-					<AnalyticsSection
-						title="Analytics"
-						range={range}
-						view={view}
-						resolution={resolution}
-						defaultResolution={defaultResolution}
-						excludeMetrics={["uniqueTraders"]}
-						appendMetrics={["fees", "tradeTypes"]}
-						pathname={`/traders/${address}`}
-						fetchers={{
-							deltas: () => getTraderAnalyticsDeltas(address, range, resolution),
-							timeseries: () => getTraderAnalyticsTimeseries(address, range, resolution),
-							changes: () => getTraderAnalyticsChanges(address, range),
-						}}
-					/>
-				</div>
 			</div>
-		</div>
+
+			<div className="mt-8">
+				<AnalyticsSection
+					title="Analytics"
+					range={range}
+					view={view}
+					resolution={resolution}
+					defaultResolution={defaultResolution}
+					excludeMetrics={["uniqueTraders"]}
+					appendMetrics={["fees", "tradeTypes"]}
+					pathname={`/traders/${address}`}
+					fetchers={{
+						deltas: () => getTraderAnalyticsDeltas(address, range, resolution),
+						timeseries: () => getTraderAnalyticsTimeseries(address, range, resolution),
+						changes: () => getTraderAnalyticsChanges(address, range),
+					}}
+				/>
+			</div>
+		</>
+	);
+}
+
+function TraderPageFallback() {
+	return (
+		<>
+			<div className="h-4 w-48 animate-pulse rounded bg-muted" />
+			<TraderOverviewFallback />
+			<div className="h-64 rounded-lg bg-card" />
+		</>
 	);
 }

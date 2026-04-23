@@ -3,7 +3,6 @@ import "server-only";
 import type { PaginatedResource } from "@/lib/struct/types";
 
 export const defaultPageSize = 24;
-export const shortRevalidateSeconds = 300;
 export const maxPaginationRequests = 1000;
 
 export type PaginatedResult<T> = {

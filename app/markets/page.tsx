@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -23,7 +24,17 @@ type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function MarketsPage({ searchParams }: Props) {
+export default function MarketsPage({ searchParams }: Props) {
+	return (
+		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+			<Suspense fallback={<MarketsPageFallback />}>
+				<MarketsPageContent searchParams={searchParams} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function MarketsPageContent({ searchParams }: Props) {
 	const { sort_by, sort_dir, timeframe, tab, cursor } = await loadMarketSearchParams(searchParams);
 	const activeCursor = cursor || undefined;
 	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, tab, activeCursor, sort_by, sort_dir, timeframe);
@@ -56,7 +67,7 @@ export default async function MarketsPage({ searchParams }: Props) {
 	if (tab !== DEFAULT_MARKET_STATUS_TAB) baseParams.tab = tab;
 
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+		<>
 			<Breadcrumbs
 				items={[
 					{ label: "Home", href: "/" },
@@ -99,6 +110,20 @@ export default async function MarketsPage({ searchParams }: Props) {
 				nextCursor={nextCursor}
 				hasMore={hasMore}
 			/>
+		</>
+	);
+}
+
+function MarketsPageFallback() {
+	return (
+		<div className="mt-6 space-y-4">
+			<div>
+				<div className="h-7 w-28 animate-pulse rounded bg-muted" />
+				<div className="mt-2 h-4 w-48 animate-pulse rounded bg-muted" />
+			</div>
+			<div className="rounded-lg bg-card px-4 py-12">
+				<div className="h-4 w-40 animate-pulse rounded bg-muted" />
+			</div>
 		</div>
 	);
 }

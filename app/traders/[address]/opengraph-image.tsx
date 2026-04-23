@@ -1,13 +1,13 @@
 import { ImageResponse } from "next/og";
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import { loadTraderOpenGraphData } from "@/lib/trader-open-graph";
 import type { PnlDataPoint } from "@/lib/polymarket/pnl";
 import { formatDateShort, formatDuration, formatNumber } from "@/lib/format";
-import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
+import { loadImageAsDataUrl, ogCacheLife, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 export const runtime = "nodejs";
-export const revalidate = 7200;
 export const size = ogImageSize;
 export const contentType = "image/png";
 export const alt = "Polymarket trader lifetime performance preview";
@@ -296,6 +296,21 @@ function renderInfoRow(label: string, value: string, tone?: string, isLast = fal
 	);
 }
 
+async function loadCachedTraderOpenGraphData(address: string) {
+	"use cache";
+	cacheLife(ogCacheLife);
+
+	const traderData = await loadTraderOpenGraphData(address);
+
+	if (!traderData.profile && !traderData.pnlSummary) {
+		return null;
+	}
+
+	const avatarDataUrl = await loadImageAsDataUrl(traderData.profile?.profile_image, 192);
+
+	return { avatarDataUrl, ...traderData };
+}
+
 export default async function OpenGraphImage({ params }: Props) {
 	const { address: rawAddress } = await params;
 	const address = normalizeWalletAddress(rawAddress);
@@ -304,15 +319,15 @@ export default async function OpenGraphImage({ params }: Props) {
 		notFound();
 	}
 
-	const { displayName, pnlSummary, pnlCandles, streaks, profile } = await loadTraderOpenGraphData(address);
+	const data = await loadCachedTraderOpenGraphData(address);
 
-	if (!profile && !pnlSummary) {
+	if (!data) {
 		notFound();
 	}
 
+	const { avatarDataUrl, displayName, pnlCandles, pnlSummary, profile, streaks } = data;
 	const chart = buildChartGeometry(pnlCandles);
 	const headlinePnl = chart?.lastPoint.value ?? 0;
-	const avatarDataUrl = await loadImageAsDataUrl(profile?.profile_image, 192);
 
 	const activeSince = formatDateShort(pnlSummary?.first_trade_at) || "Unknown";
 	const lastActive = formatDateShort(pnlSummary?.last_trade_at) || "Unknown";

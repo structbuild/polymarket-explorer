@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { buildPageMetadata } from "@/lib/site-metadata";
@@ -23,7 +24,17 @@ type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AnalyticsPage({ searchParams }: Props) {
+export default function AnalyticsPage({ searchParams }: Props) {
+	return (
+		<div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+			<Suspense fallback={<AnalyticsPageFallback />}>
+				<AnalyticsPageContent searchParams={searchParams} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function AnalyticsPageContent({ searchParams }: Props) {
 	const resolvedSearchParams = await searchParams;
 	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(
 		resolvedSearchParams,
@@ -38,22 +49,31 @@ export default async function AnalyticsPage({ searchParams }: Props) {
 				: `Global Polymarket activity over the last ${ANALYTICS_RANGE_LABELS[range].toLowerCase()}.`;
 
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
-			<AnalyticsSection
-				title="Analytics"
-				description={description}
-				range={range}
-				view={view}
-				resolution={resolution}
-				defaultResolution={defaultResolution}
-				headingLevel="h1"
-				pathname="/analytics"
-				fetchers={{
-					deltas: () => getAnalyticsDeltas(range, resolution),
-					timeseries: () => getAnalyticsTimeseries(range, resolution),
-					changes: () => getAnalyticsChanges(range),
-				}}
-			/>
+		<AnalyticsSection
+			title="Analytics"
+			description={description}
+			range={range}
+			view={view}
+			resolution={resolution}
+			defaultResolution={defaultResolution}
+			headingLevel="h1"
+			pathname="/analytics"
+			fetchers={{
+				deltas: () => getAnalyticsDeltas(range, resolution),
+				timeseries: () => getAnalyticsTimeseries(range, resolution),
+				changes: () => getAnalyticsChanges(range),
+			}}
+		/>
+	);
+}
+
+function AnalyticsPageFallback() {
+	return (
+		<div className="space-y-6 sm:space-y-8">
+			<div className="space-y-2">
+				<div className="h-8 w-36 animate-pulse rounded bg-muted" />
+				<div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
+			</div>
 		</div>
 	);
 }

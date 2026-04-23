@@ -1,7 +1,5 @@
 import { getSiteUrl } from "@/lib/env";
 
-export const revalidate = 3600;
-
 const SHARD_IDS = [0, 1, 2];
 
 export function GET() {

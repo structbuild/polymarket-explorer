@@ -56,8 +56,8 @@ export const ANALYTICS_RESOLUTION_DESCRIPTIONS: Record<AnalyticsResolution, stri
 };
 
 export const RESOLUTION_OPTIONS_BY_RANGE: Record<AnalyticsRange, readonly AnalyticsResolution[]> = {
-	"1d": [],
-	"7d": [],
+	"1d": ["60", "240"],
+	"7d": ["60", "240", "D"],
 	"30d": ["60", "240", "D"],
 	all: ["D", "W", "M"],
 };
