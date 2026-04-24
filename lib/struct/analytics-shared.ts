@@ -6,6 +6,8 @@ export type AnalyticsMetricId =
 	| "trades"
 	| "tradeTypes"
 	| "uniqueTraders"
+	| "newTraders"
+	| "makersTakers"
 	| "avgTradeSize"
 	| "yesNo"
 	| "yesNoCount"
@@ -151,6 +153,11 @@ export type AnalyticsPoint = {
 	yesVolumeUsd: number;
 	noVolumeUsd: number;
 	uniqueTraders: number;
+	uniqueMakers: number;
+	uniqueTakers: number;
+	newTraders: number;
+	newMakers: number;
+	newTakers: number;
 	txnCount: number;
 	buyCount: number;
 	sellCount: number;
@@ -204,6 +211,7 @@ export type AnalyticsSummary = {
 	totalFeesUsd: number;
 	totalTxnCount: number;
 	uniqueTradersTotal: number;
+	newTradersTotal: number;
 	avgTradeSizeUsd: number;
 };
 

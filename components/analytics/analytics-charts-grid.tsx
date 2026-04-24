@@ -78,6 +78,8 @@ const COLOR_YES = "var(--chart-1)";
 const COLOR_NO = "var(--chart-4)";
 const COLOR_SINGLE = "var(--chart-2)";
 const COLOR_TOTAL = "#64748b";
+const COLOR_MAKERS = "var(--chart-3)";
+const COLOR_TAKERS = "var(--chart-5)";
 
 const VOLUME_TOTAL_SERIES: AnalyticsSeries = {
 	key: "volumeUsd",
@@ -192,8 +194,30 @@ const CHART_SPECS: ChartSpec[] = [
 		kind: "timeSeries",
 		id: "uniqueTraders",
 		title: "Unique traders",
+		tooltip: "Distinct addresses that traded in the bucket.",
 		variant: "area",
 		series: [{ key: "uniqueTraders", label: "Traders", color: COLOR_SINGLE }],
+		valueFormat: "count",
+	},
+	{
+		kind: "timeSeries",
+		id: "newTraders",
+		title: "New traders",
+		tooltip: "First-time-ever traders who started trading in this bucket.",
+		variant: "area",
+		series: [{ key: "newTraders", label: "New traders", color: COLOR_SINGLE }],
+		valueFormat: "count",
+	},
+	{
+		kind: "timeSeries",
+		id: "makersTakers",
+		title: "Makers vs takers",
+		tooltip: "Distinct makers (order-resting side) and takers (order-initiator side) active in the bucket. A trader can appear in both.",
+		variant: "area",
+		series: [
+			{ key: "uniqueMakers", label: "Makers", color: COLOR_MAKERS },
+			{ key: "uniqueTakers", label: "Takers", color: COLOR_TAKERS },
+		],
 		valueFormat: "count",
 	},
 	{
@@ -253,6 +277,11 @@ function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<str
 		yesVolumeUsd: p.yesVolumeUsd,
 		noVolumeUsd: p.noVolumeUsd,
 		uniqueTraders: p.uniqueTraders,
+		uniqueMakers: p.uniqueMakers,
+		uniqueTakers: p.uniqueTakers,
+		newTraders: p.newTraders,
+		newMakers: p.newMakers,
+		newTakers: p.newTakers,
 		txnCount: p.txnCount,
 		buyCount: p.buyCount,
 		sellCount: p.sellCount,

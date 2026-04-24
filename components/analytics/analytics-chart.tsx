@@ -161,8 +161,8 @@ export function AnalyticsChart({
 		return data.map((d, i) => {
 			const out: AnalyticsDatum = { ...d };
 			for (const s of series) {
-				const tailKey = `${s.key}__tail`;
-				out[tailKey] = (i >= lastIdx - 1 ? d[s.key] : null) as number;
+				out[`${s.key}__solid`] = (i < lastIdx ? d[s.key] : null) as number;
+				out[`${s.key}__tail`] = (i >= lastIdx - 1 ? d[s.key] : null) as number;
 			}
 			return out;
 		});
@@ -341,39 +341,51 @@ export function AnalyticsChart({
 					</defs>
 					{sharedAxes}
 					{tooltip}
-					{visibleSeries.flatMap((s) => {
-						const main = (
-							<Area
-								key={s.key}
-								type="monotone"
-								dataKey={s.key}
-								name={s.label}
-								stroke={s.color}
-								strokeWidth={2}
-								fill={`url(#${gradientPrefix}-${s.key})`}
-								stackId={s.stackId}
-								{...(shareMode ? { isAnimationActive: false } : {})}
-							/>
-						);
-						if (!showShimmer) return [main];
-						const eraser = (
-							<Area
-								key={`${s.key}__eraser`}
-								type="monotone"
-								dataKey={`${s.key}__tail`}
-								stroke="var(--color-card)"
-								strokeWidth={3}
-								strokeDasharray="5 4"
-								fill="none"
-								dot={false}
-								activeDot={false}
-								tooltipType="none"
-								legendType="none"
-								isAnimationActive={false}
-							/>
-						);
-						return [main, eraser];
-					})}
+					{showShimmer
+						? visibleSeries.flatMap((s) => [
+								<Area
+									key={`${s.key}__ghost`}
+									type="monotone"
+									dataKey={s.key}
+									name={s.label}
+									stroke="transparent"
+									fill="none"
+									activeDot={false}
+									legendType="none"
+									isAnimationActive={false}
+								/>,
+								<Area
+									key={`${s.key}__tail`}
+									type="monotone"
+									dataKey={`${s.key}__tail`}
+									stroke={s.color}
+									strokeWidth={2}
+									strokeDasharray="4 4"
+									fill={`url(#${gradientPrefix}-${s.key})`}
+									fillOpacity={0.5}
+									connectNulls={false}
+									tooltipType="none"
+									legendType="none"
+									isAnimationActive={false}
+								/>,
+							])
+						: null}
+					{visibleSeries.map((s) => (
+						<Area
+							key={s.key}
+							type="monotone"
+							dataKey={showShimmer ? `${s.key}__solid` : s.key}
+							name={showShimmer ? undefined : s.label}
+							stroke={s.color}
+							strokeWidth={2}
+							fill={`url(#${gradientPrefix}-${s.key})`}
+							stackId={s.stackId}
+							connectNulls={false}
+							tooltipType={showShimmer ? "none" : undefined}
+							legendType={showShimmer ? "none" : undefined}
+							{...(shareMode ? { isAnimationActive: false } : {})}
+						/>
+					))}
 				</AreaChart>
 			</ChartContainer>
 		);

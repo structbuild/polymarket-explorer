@@ -17,7 +17,14 @@ import {
 import { cn } from "@/lib/utils";
 import { TAGS_TABLE_COLUMN_SIZES } from "./tags-table-columns";
 
-type NumericField = "volume_usd" | "unique_traders" | "txn_count" | "fees_usd";
+type NumericField =
+	| "volume_usd"
+	| "unique_traders"
+	| "unique_makers"
+	| "unique_takers"
+	| "new_traders"
+	| "txn_count"
+	| "fees_usd";
 
 type ColumnSpec = {
 	id: string;
@@ -33,7 +40,28 @@ const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 		id: "traders",
 		title: "Traders",
 		field: "unique_traders",
-		sortKey: "traders",
+		sortKey: "unique_traders",
+		currency: false,
+	},
+	{
+		id: "makers",
+		title: "Makers",
+		field: "unique_makers",
+		sortKey: "unique_makers",
+		currency: false,
+	},
+	{
+		id: "takers",
+		title: "Takers",
+		field: "unique_takers",
+		sortKey: "unique_takers",
+		currency: false,
+	},
+	{
+		id: "new_traders",
+		title: "New traders",
+		field: "new_traders",
+		sortKey: "new_traders",
 		currency: false,
 	},
 	{ id: "trades", title: "Trades", field: "txn_count", sortKey: "txns", currency: false },
@@ -79,12 +107,21 @@ function numericColumn(
 	};
 }
 
+function visibleNumericColumns(timeframe: TagSortTimeframe): readonly ColumnSpec[] {
+	if (timeframe !== "lifetime") return NUMERIC_COLUMNS;
+	return NUMERIC_COLUMNS.filter((spec) => spec.id !== "new_traders");
+}
+
 type SortState = {
 	sortBy: TagSortBy;
 	onSortChange: (sortBy: TagSortBy) => void;
 };
 
-function buildColumns(rankOffset: number, sort: SortState): ColumnDef<Tag, unknown>[] {
+function buildColumns(
+	rankOffset: number,
+	sort: SortState,
+	timeframe: TagSortTimeframe,
+): ColumnDef<Tag, unknown>[] {
 	return [
 		{
 			id: "rank",
@@ -115,7 +152,7 @@ function buildColumns(rankOffset: number, sort: SortState): ColumnDef<Tag, unkno
 				);
 			},
 		},
-		...NUMERIC_COLUMNS.map((spec) => numericColumn(spec, sort)),
+		...visibleNumericColumns(timeframe).map((spec) => numericColumn(spec, sort)),
 	];
 }
 
@@ -141,8 +178,8 @@ export function TagsTable({
 	onTimeframeChange,
 }: TagsTableProps) {
 	const columns = useMemo(
-		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }),
-		[rankOffset, sort, onSortChange],
+		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }, timeframe),
+		[rankOffset, sort, timeframe, onSortChange],
 	);
 
 	const timeframeToggle = (

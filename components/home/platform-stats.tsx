@@ -17,10 +17,12 @@ const stats: StatSpec[] = [
 	{ key: "markets", label: "Markets" },
 	{ key: "events", label: "Events" },
 	{ key: "unique_traders", label: "Traders" },
+	{ key: "unique_makers", label: "Makers" },
+	{ key: "unique_takers", label: "Takers" },
 	{ key: "positions", label: "Positions" },
 ];
 
-const GRID_CLASS = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6";
+const GRID_CLASS = "grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4";
 
 export async function PlatformStats() {
 	const counts = await getPlatformCounts();

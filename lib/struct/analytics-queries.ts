@@ -1,6 +1,11 @@
 import "server-only";
 
-import type { ChangeTimeframe, MetricPctChange, TimeBucketRow } from "@structbuild/sdk";
+import type {
+	ChangeTimeframe,
+	MetricPctChange,
+	TimeBucketRow,
+	TraderTimeBucketRow,
+} from "@structbuild/sdk";
 import { HttpError } from "@structbuild/sdk";
 import type { HttpResponse } from "@structbuild/sdk";
 import { cacheLife, cacheTag } from "next/cache";
@@ -78,7 +83,9 @@ function toNumber(value: number | undefined | null): number {
 	return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function mapRow(row: TimeBucketRow): AnalyticsPoint {
+type AnyTimeBucketRow = TimeBucketRow | TraderTimeBucketRow;
+
+function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 	return {
 		t: row.t,
 		volumeUsd: toNumber(row.v),
@@ -89,7 +96,12 @@ function mapRow(row: TimeBucketRow): AnalyticsPoint {
 		splitVolumeUsd: toNumber(row.spv),
 		yesVolumeUsd: toNumber(row.yv),
 		noVolumeUsd: toNumber(row.nv),
-		uniqueTraders: toNumber(row.ut),
+		uniqueTraders: toNumber("ut" in row ? row.ut : 0),
+		uniqueMakers: toNumber("um" in row ? row.um : 0),
+		uniqueTakers: toNumber("uk" in row ? row.uk : 0),
+		newTraders: toNumber("nt" in row ? row.nt : 0),
+		newMakers: toNumber("nm" in row ? row.nm : 0),
+		newTakers: toNumber("nk" in row ? row.nk : 0),
 		txnCount: toNumber(row.tc),
 		buyCount: toNumber(row.bc),
 		sellCount: toNumber(row.sc),
@@ -121,6 +133,11 @@ function emptyPoint(t: number): AnalyticsPoint {
 		yesVolumeUsd: 0,
 		noVolumeUsd: 0,
 		uniqueTraders: 0,
+		uniqueMakers: 0,
+		uniqueTakers: 0,
+		newTraders: 0,
+		newMakers: 0,
+		newTakers: 0,
 		txnCount: 0,
 		buyCount: 0,
 		sellCount: 0,
@@ -207,10 +224,13 @@ type TimeBucketsPageParams = {
 	to?: number;
 };
 
-async function fetchTimeBucketsWithPagination<Extra extends object>(
+async function fetchTimeBucketsWithPagination<
+	Extra extends object,
+	Row extends AnyTimeBucketRow,
+>(
 	fetchPage: (
 		params: Extra & TimeBucketsPageParams,
-	) => Promise<HttpResponse<TimeBucketRow[]>>,
+	) => Promise<HttpResponse<Row[]>>,
 	extraParams: Extra,
 	config: RangeConfig,
 	label: string,
@@ -587,6 +607,7 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 			totalFeesUsd: 0,
 			totalTxnCount: 0,
 			uniqueTradersTotal: 0,
+			newTradersTotal: 0,
 			avgTradeSizeUsd: 0,
 		};
 	}
@@ -595,12 +616,14 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 	let totalFeesUsd = 0;
 	let totalTxnCount = 0;
 	let uniqueTradersTotal = 0;
+	let newTradersTotal = 0;
 
 	for (const p of points) {
 		totalVolumeUsd += p.volumeUsd;
 		totalFeesUsd += p.feesUsd;
 		totalTxnCount += p.txnCount;
 		uniqueTradersTotal += p.uniqueTraders;
+		newTradersTotal += p.newTraders;
 	}
 
 	const avgTradeSizeUsd = totalTxnCount > 0 ? totalVolumeUsd / totalTxnCount : 0;
@@ -610,6 +633,7 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 		totalFeesUsd,
 		totalTxnCount,
 		uniqueTradersTotal,
+		newTradersTotal,
 		avgTradeSizeUsd,
 	};
 }

@@ -9,7 +9,11 @@ import { TagSearchInput } from "@/components/tags/tag-search-input";
 import { getSiteUrl } from "@/lib/env";
 import { TAGS_PAGE_SIZE, getPageCount } from "@/lib/pagination";
 import { SITE_NAME } from "@/lib/site-metadata";
-import { DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME } from "@/lib/struct/tag-shared";
+import {
+	DEFAULT_TAG_SORT,
+	DEFAULT_TAG_TIMEFRAME,
+	resolveTagSortForTimeframe,
+} from "@/lib/struct/tag-shared";
 import {
 	getTagsPaginated,
 	getTagCount,
@@ -29,8 +33,8 @@ export async function TagGridPage({
 	timeframe,
 	query,
 }: TagGridPageProps) {
-	const effectiveSort = sort ?? DEFAULT_TAG_SORT;
 	const effectiveTimeframe = timeframe ?? DEFAULT_TAG_TIMEFRAME;
+	const effectiveSort = resolveTagSortForTimeframe(sort ?? DEFAULT_TAG_SORT, effectiveTimeframe);
 	const trimmedQuery = query?.trim() ?? "";
 	const isSearching = trimmedQuery.length > 0;
 

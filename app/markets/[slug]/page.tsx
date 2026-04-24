@@ -188,6 +188,7 @@ async function MarketPageContent({
 							endTime={endTime}
 							cap={cap}
 							defaultCap={defaultCap}
+							excludeMetrics={["newTraders"]}
 							pathname={`/markets/${slug}`}
 							fetchers={{
 								deltas: () => getMarketAnalyticsDeltas(conditionId, range, resolution),

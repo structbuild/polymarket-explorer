@@ -6,7 +6,11 @@ import { useCallback, useTransition } from "react";
 import type { Tag, TagSortBy, TagSortTimeframe } from "@structbuild/sdk";
 
 import { TagsTable } from "@/components/tags/tags-table";
-import { DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME } from "@/lib/struct/tag-shared";
+import {
+	DEFAULT_TAG_SORT,
+	DEFAULT_TAG_TIMEFRAME,
+	resolveTagSortForTimeframe,
+} from "@/lib/struct/tag-shared";
 
 type SortableTagsTableProps = {
 	tags: Tag[];
@@ -34,8 +38,8 @@ export function SortableTagsTable({
 	const navigate = useCallback(
 		(patch: { sort?: TagSortBy; timeframe?: TagSortTimeframe }) => {
 			const params = new URLSearchParams(searchParams.toString());
-			const nextSort = patch.sort ?? sort;
 			const nextTimeframe = patch.timeframe ?? timeframe;
+			const nextSort = resolveTagSortForTimeframe(patch.sort ?? sort, nextTimeframe);
 			if (nextSort === DEFAULT_TAG_SORT) {
 				params.delete("sort");
 			} else {

@@ -460,7 +460,7 @@ async function TraderPageContent({ params, searchParams }: Props) {
 					view={view}
 					resolution={resolution}
 					defaultResolution={defaultResolution}
-					excludeMetrics={["uniqueTraders"]}
+					excludeMetrics={["uniqueTraders", "newTraders", "makersTakers"]}
 					appendMetrics={["fees", "tradeTypes"]}
 					pathname={`/traders/${address}`}
 					fetchers={{

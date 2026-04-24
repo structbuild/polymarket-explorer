@@ -195,6 +195,7 @@ async function TagPageContent({
 					view={view}
 					resolution={resolution}
 					defaultResolution={defaultResolution}
+					excludeMetrics={["newTraders"]}
 					pathname={`/tags/${canonicalSlug}`}
 					fetchers={{
 						deltas: () => getTagAnalyticsDeltas(tagKey, range, resolution),

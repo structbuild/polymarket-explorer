@@ -30,6 +30,7 @@ const KPIS: KpiSpec[] = [
 	{ id: "fees", key: "totalFeesUsd", label: "Fees", tooltip: "Shows only fees from orders matched/filled.", currency: true, compact: true, pctKey: "fees_usd" },
 	{ id: "trades", key: "totalTxnCount", label: "Trades", compact: true, pctKey: "txn_count" },
 	{ id: "uniqueTraders", key: "uniqueTradersTotal", label: "Unique traders", compact: true, pctKey: "unique_traders" },
+	{ id: "newTraders", key: "newTradersTotal", label: "New traders", tooltip: "First-time-ever traders who started trading in this window.", compact: true, pctKey: "new_traders" },
 	{ id: "avgTradeSize", key: "avgTradeSizeUsd", label: "Avg trade size", currency: true, compact: true },
 ];
 
@@ -59,10 +60,11 @@ const LG_GRID_BY_COUNT: Record<number, string> = {
 	3: "lg:grid-cols-3",
 	4: "lg:grid-cols-4",
 	5: "lg:grid-cols-5",
+	6: "lg:grid-cols-6",
 };
 
 function gridColsClass(count: number): string {
-	const lg = LG_GRID_BY_COUNT[count] ?? "lg:grid-cols-5";
+	const lg = LG_GRID_BY_COUNT[count] ?? "lg:grid-cols-6";
 	const sm = count <= 2 ? "sm:grid-cols-2" : "sm:grid-cols-3";
 	return `grid grid-cols-2 gap-3 ${sm} ${lg}`;
 }

@@ -1,11 +1,24 @@
 import type { TagSortBy, TagSortTimeframe } from "@structbuild/sdk";
 
-export const TAG_SORT_OPTIONS: readonly TagSortBy[] = ["volume", "txns", "traders", "fees"];
+export const TAG_SORT_OPTIONS = [
+	"volume",
+	"txns",
+	"unique_traders",
+	"unique_makers",
+	"unique_takers",
+	"new_traders",
+	"fees",
+] as const satisfies readonly TagSortBy[];
 
-export const TAG_SORT_LABELS: Record<TagSortBy, string> = {
+type TagSortOption = (typeof TAG_SORT_OPTIONS)[number];
+
+export const TAG_SORT_LABELS: Record<TagSortOption, string> = {
 	volume: "Volume",
 	txns: "Trades",
-	traders: "Traders",
+	unique_traders: "Traders",
+	unique_makers: "Makers",
+	unique_takers: "Takers",
+	new_traders: "New traders",
 	fees: "Fees",
 };
 
@@ -13,7 +26,7 @@ export const DEFAULT_TAG_SORT: TagSortBy = "volume";
 
 export function parseTagSort(value: string | string[] | undefined): TagSortBy {
 	const raw = Array.isArray(value) ? value[0] : value;
-	return TAG_SORT_OPTIONS.includes(raw as TagSortBy) ? (raw as TagSortBy) : DEFAULT_TAG_SORT;
+	return TAG_SORT_OPTIONS.includes(raw as TagSortOption) ? (raw as TagSortBy) : DEFAULT_TAG_SORT;
 }
 
 export const TAG_TIMEFRAME_OPTIONS: readonly TagSortTimeframe[] = ["24h", "7d", "30d", "lifetime"];
@@ -37,3 +50,10 @@ export function parseTagTimeframe(value: string | string[] | undefined): TagSort
 		: DEFAULT_TAG_TIMEFRAME;
 }
 
+export function resolveTagSortForTimeframe(
+	sort: TagSortBy,
+	timeframe: TagSortTimeframe,
+): TagSortBy {
+	if (timeframe === "lifetime" && sort === "new_traders") return DEFAULT_TAG_SORT;
+	return sort;
+}
