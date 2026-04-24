@@ -5,7 +5,10 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import { MarketStatusTabs } from "@/components/market/market-status-tabs";
+import { MARKET_SKELETON_COLUMNS } from "@/components/market/markets-table-columns";
 import { SortableMarketsTable } from "@/components/market/sortable-markets-table";
+import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
 import { DEFAULT_MARKET_STATUS_TAB } from "@/lib/market-search-params-shared";
@@ -116,14 +119,31 @@ async function MarketsPageContent({ searchParams }: Props) {
 
 function MarketsPageFallback() {
 	return (
-		<div className="mt-6 space-y-4">
-			<div>
-				<div className="h-7 w-28 animate-pulse rounded bg-muted" />
-				<div className="mt-2 h-4 w-48 animate-pulse rounded bg-muted" />
+		<>
+			<Skeleton className="h-5 w-32" />
+			<div className="mt-6 space-y-4">
+				<div>
+					<Skeleton className="h-7 w-28" />
+					<Skeleton className="mt-1 h-5 w-52" />
+				</div>
+				<DataTableSkeleton
+					columns={MARKET_SKELETON_COLUMNS}
+					rowCount={24}
+					toolbarLeft={
+						<div className="flex items-end gap-5">
+							<Skeleton className="h-7 w-14" />
+							<Skeleton className="h-7 w-20" />
+						</div>
+					}
+				/>
 			</div>
-			<div className="rounded-lg bg-card px-4 py-12">
-				<div className="h-4 w-40 animate-pulse rounded bg-muted" />
-			</div>
-		</div>
+			<nav
+				aria-hidden="true"
+				className="mt-8 flex items-center justify-center gap-3"
+			>
+				<Skeleton className="h-10 w-28" />
+				<Skeleton className="h-10 w-28" />
+			</nav>
+		</>
 	);
 }

@@ -5,7 +5,10 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import { TradersTable } from "@/components/trader/traders-table";
+import { TRADER_SKELETON_COLUMNS } from "@/components/trader/traders-table-columns";
 import { TradersTimeframeToggle } from "@/components/trader/traders-timeframe-toggle";
+import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSiteUrl } from "@/lib/env";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getGlobalLeaderboard } from "@/lib/struct/market-queries";
@@ -100,14 +103,28 @@ async function TradersPageContent({ searchParams }: Props) {
 
 function TradersPageFallback() {
 	return (
-		<div className="mt-6 space-y-4">
-			<div>
-				<div className="h-7 w-28 animate-pulse rounded bg-muted" />
-				<div className="mt-2 h-4 w-56 animate-pulse rounded bg-muted" />
+		<>
+			<Skeleton className="h-5 w-32" />
+			<div className="mt-6">
+				<DataTableSkeleton
+					columns={TRADER_SKELETON_COLUMNS}
+					rowCount={100}
+					toolbarLeft={
+						<div className="mb-3">
+							<Skeleton className="h-7 w-24" />
+							<Skeleton className="mt-1 h-5 w-72" />
+						</div>
+					}
+					toolbarRight={<Skeleton className="h-8 w-52" />}
+				/>
 			</div>
-			<div className="rounded-lg bg-card px-4 py-12">
-				<div className="h-4 w-44 animate-pulse rounded bg-muted" />
-			</div>
-		</div>
+			<nav
+				aria-hidden="true"
+				className="mt-8 flex items-center justify-center gap-3"
+			>
+				<Skeleton className="h-10 w-28" />
+				<Skeleton className="h-10 w-28" />
+			</nav>
+		</>
 	);
 }

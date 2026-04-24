@@ -7,6 +7,7 @@ import { getPageCount, parsePageParam, TAGS_PAGE_SIZE } from "@/lib/pagination";
 import { TagGridPage } from "@/components/tags/tag-grid-page";
 import { parseTagSort, parseTagTimeframe } from "@/lib/struct/tag-shared";
 import { getTagCount } from "@/lib/struct/market-queries";
+import { TagIndexPageFallback } from "@/components/tags/tag-index-page-fallback";
 
 type Props = {
 	params: Promise<{ page: string }>;
@@ -39,7 +40,7 @@ export default async function TagPaginatedPage({ params, searchParams }: Props) 
 	if (page === 1) redirect("/tags");
 
 	return (
-		<Suspense fallback={<TagPaginatedPageFallback />}>
+		<Suspense fallback={<TagIndexPageFallback />}>
 			<TagPaginatedPageContent page={page} searchParams={searchParams} />
 		</Suspense>
 	);
@@ -58,13 +59,4 @@ async function TagPaginatedPageContent({
 	const query = typeof resolved.q === "string" ? resolved.q : undefined;
 
 	return <TagGridPage page={page} sort={sort} timeframe={timeframe} query={query} />;
-}
-
-function TagPaginatedPageFallback() {
-	return (
-		<div className="space-y-4">
-			<div className="h-8 w-40 animate-pulse rounded bg-muted" />
-			<div className="h-4 w-64 animate-pulse rounded bg-muted" />
-		</div>
-	);
 }

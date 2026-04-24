@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { TagGridPage } from "@/components/tags/tag-grid-page";
+import { TagIndexPageFallback } from "@/components/tags/tag-index-page-fallback";
 import { parseTagSort, parseTagTimeframe } from "@/lib/struct/tag-shared";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -30,13 +31,4 @@ async function TagIndexPageContent({ searchParams }: Props) {
 	const timeframe = parseTagTimeframe(resolved.timeframe);
 	const query = typeof resolved.q === "string" ? resolved.q : undefined;
 	return <TagGridPage page={1} sort={sort} timeframe={timeframe} query={query} />;
-}
-
-function TagIndexPageFallback() {
-	return (
-		<div className="space-y-4">
-			<div className="h-8 w-40 animate-pulse rounded bg-muted" />
-			<div className="h-4 w-64 animate-pulse rounded bg-muted" />
-		</div>
-	);
 }

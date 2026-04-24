@@ -14,6 +14,7 @@ import { TooltipWrapper } from "@/components/ui/tooltip";
 import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, pnlColorClass } from "@/lib/format";
 import { cn, getTraderDisplayName, normalizeWalletAddress, truncateAddress } from "@/lib/utils";
+import { TRADER_TABLE_COLUMN_SIZES } from "./traders-table-columns";
 
 type NumericField = Extract<
 	keyof LeaderboardEntry,
@@ -66,7 +67,7 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 			id: "rank",
 			meta: { title: "Rank" },
 			header: "#",
-			size: 64,
+			size: TRADER_TABLE_COLUMN_SIZES.rank,
 			enableHiding: false,
 			cell: ({ row }) => (
 				<p className="text-muted-foreground tabular-nums">
@@ -81,7 +82,7 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 				cellClassName: "whitespace-normal align-top",
 			},
 			header: "Trader",
-			size: 176,
+			size: TRADER_TABLE_COLUMN_SIZES.trader,
 			enableHiding: false,
 			cell: ({ row }) => {
 				const entry = row.original;
@@ -123,7 +124,7 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 			id: "pnl",
 			meta: { title: "Realized PnL" },
 			header: "Realized PnL",
-			size: 128,
+			size: TRADER_TABLE_COLUMN_SIZES.pnl,
 			enableHiding: false,
 			cell: ({ row }) => {
 				const pnl = row.original.pnl ?? 0;
@@ -134,13 +135,13 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 				);
 			},
 		},
-		leaderboardNumeric({ id: "volume", title: "Volume", field: "total_volume_usd", size: 120, format: { compact: true, currency: true } }),
-		leaderboardNumeric({ id: "markets", title: "Markets", field: "markets_traded", size: 96, format: { decimals: 0 } }),
-		leaderboardNumeric({ id: "winRate", title: "Win Rate", field: "market_win_rate_pct", size: 112, format: { percent: true } }),
+		leaderboardNumeric({ id: "volume", title: "Volume", field: "total_volume_usd", size: TRADER_TABLE_COLUMN_SIZES.volume, format: { compact: true, currency: true } }),
+		leaderboardNumeric({ id: "markets", title: "Markets", field: "markets_traded", size: TRADER_TABLE_COLUMN_SIZES.markets, format: { decimals: 0 } }),
+		leaderboardNumeric({ id: "winRate", title: "Win Rate", field: "market_win_rate_pct", size: TRADER_TABLE_COLUMN_SIZES.winRate, format: { percent: true } }),
 		leaderboardNumeric({ id: "events", title: "Events", field: "events_traded", size: 96, format: { decimals: 0 } }),
 		leaderboardNumeric({ id: "marketsWon", title: "Won", field: "markets_won", size: 88, format: { decimals: 0 } }),
 		leaderboardNumeric({ id: "marketsLost", title: "Lost", field: "markets_lost", size: 88, format: { decimals: 0 } }),
-		leaderboardNumeric({ id: "trades", title: "Trades", field: "total_trades", size: 104, format: { decimals: 0, compact: true } }),
+		leaderboardNumeric({ id: "trades", title: "Trades", field: "total_trades", size: TRADER_TABLE_COLUMN_SIZES.trades, format: { decimals: 0, compact: true } }),
 		leaderboardNumeric({ id: "buys", title: "Buys", field: "total_buys", size: 96, format: { decimals: 0, compact: true } }),
 		leaderboardNumeric({ id: "sells", title: "Sells", field: "total_sells", size: 96, format: { decimals: 0, compact: true } }),
 		leaderboardNumeric({ id: "redemptions", title: "Redemptions", field: "total_redemptions", size: 128, format: { decimals: 0, compact: true } }),
@@ -150,14 +151,15 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 		leaderboardNumeric({ id: "redemptionVolume", title: "Redemption Vol", field: "redemption_volume_usd", size: 144, format: { compact: true, currency: true } }),
 		leaderboardNumeric({ id: "mergeVolume", title: "Merge Vol", field: "merge_volume_usd", size: 128, format: { compact: true, currency: true } }),
 		leaderboardNumeric({ id: "fees", title: "Fees", field: "total_fees", size: 112, format: { compact: true, currency: true } }),
-		leaderboardNumeric({ id: "bestTradePnl", title: "Best Trade", field: "best_trade_pnl_usd", size: 128, format: { compact: true, currency: true }, colorizePnl: true }),
+		leaderboardNumeric({ id: "bestTradePnl", title: "Best Trade", field: "best_trade_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.bestTradePnl, format: { compact: true, currency: true }, colorizePnl: true }),
 		durationCol<LeaderboardEntry>({
 			id: "avgHoldTime",
 			title: "Avg Hold",
+			size: TRADER_TABLE_COLUMN_SIZES.avgHoldTime,
 			accessor: (row) => row.avg_hold_time_seconds,
 		}),
 		dateCol<LeaderboardEntry>({ id: "firstTradeAt", title: "First Trade", accessor: (row) => row.first_trade_at }),
-		dateCol<LeaderboardEntry>({ id: "lastTradeAt", title: "Last Trade", accessor: (row) => row.last_trade_at }),
+		dateCol<LeaderboardEntry>({ id: "lastTradeAt", title: "Last Trade", size: TRADER_TABLE_COLUMN_SIZES.lastTradeAt, accessor: (row) => row.last_trade_at }),
 	];
 }
 

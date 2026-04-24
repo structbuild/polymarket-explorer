@@ -15,6 +15,7 @@ import {
 	TAG_TIMEFRAME_OPTIONS,
 } from "@/lib/struct/tag-shared";
 import { cn } from "@/lib/utils";
+import { TAGS_TABLE_COLUMN_SIZES } from "./tags-table-columns";
 
 type NumericField = "volume_usd" | "unique_traders" | "txn_count" | "fees_usd";
 
@@ -39,6 +40,8 @@ const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 	{ id: "fees", title: "Fees", field: "fees_usd", sortKey: "fees", currency: true },
 ];
 
+const NUMERIC_COLUMN_SIZE = TAGS_TABLE_COLUMN_SIZES.volume;
+
 function numericColumn(
 	spec: ColumnSpec,
 	sort: SortState,
@@ -56,7 +59,7 @@ function numericColumn(
 				{spec.title}
 			</SortableHeader>
 		),
-		size: 128,
+		size: NUMERIC_COLUMN_SIZE,
 		cell: ({ row }) => {
 			const value = row.original[spec.field] as number | null | undefined;
 			const isActive = sort.sortBy === spec.sortKey;
@@ -87,7 +90,7 @@ function buildColumns(rankOffset: number, sort: SortState): ColumnDef<Tag, unkno
 			id: "rank",
 			meta: { title: "#" },
 			header: "#",
-			size: 64,
+			size: TAGS_TABLE_COLUMN_SIZES.rank,
 			enableHiding: false,
 			cell: ({ row }) => (
 				<p className="text-muted-foreground tabular-nums">{rankOffset + row.index + 1}</p>
@@ -97,7 +100,7 @@ function buildColumns(rankOffset: number, sort: SortState): ColumnDef<Tag, unkno
 			id: "tag",
 			meta: { title: "Tag" },
 			header: "Tag",
-			size: 240,
+			size: TAGS_TABLE_COLUMN_SIZES.tag,
 			enableHiding: false,
 			cell: ({ row }) => {
 				const tag = row.original;
