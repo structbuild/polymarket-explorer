@@ -7,6 +7,7 @@ import { CheckIcon, CopyIcon, DownloadIcon, LoaderCircleIcon, Share2Icon, XIcon 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { captureElementAsPng } from "@/lib/share-image"
+import { cn } from "@/lib/utils"
 
 type ButtonResult =
 	| { tone: "success"; message: string }
@@ -22,7 +23,9 @@ type ShareImageDialogProps = {
 	buttonAriaLabel?: string
 	buttonSize?: "sm" | "xs" | "icon-sm" | "icon-xs"
 	buttonVariant?: "default" | "secondary" | "outline" | "ghost"
+	buttonClassName?: string
 	iconOnly?: boolean
+	dialogClassName?: string
 	onBeforeCapture?: () => Promise<void> | void
 	onAfterCapture?: () => void
 }
@@ -49,7 +52,9 @@ export function ShareImageDialog({
 	buttonAriaLabel,
 	buttonSize = "sm",
 	buttonVariant = "secondary",
+	buttonClassName,
 	iconOnly = false,
+	dialogClassName,
 	onBeforeCapture,
 	onAfterCapture,
 }: ShareImageDialogProps) {
@@ -213,7 +218,7 @@ export function ShareImageDialog({
 				}}
 				size={buttonSize}
 				variant={buttonVariant}
-				className="opacity-60 hover:opacity-100"
+				className={cn("opacity-80 hover:opacity-100", buttonClassName)}
 			>
 				{isGenerating ? <LoaderCircleIcon className="animate-spin" /> : <Share2Icon />}
 				{iconOnly ? null : isGenerating ? "Preparing..." : buttonLabel}
@@ -229,13 +234,18 @@ export function ShareImageDialog({
 					}
 				}}
 			>
-				<DialogContent className="max-h-[calc(100vh-1.5rem)] max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
+				<DialogContent
+					className={cn(
+						"flex max-h-[calc(100vh-1.5rem)] max-w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl",
+						dialogClassName
+					)}
+				>
 					<DialogHeader className="hidden">
 						<DialogTitle>{dialogTitle}</DialogTitle>
 						<DialogDescription>{dialogDescription}</DialogDescription>
 					</DialogHeader>
 
-					<div className="overflow-y-auto">
+					<div className="min-h-0 flex-1 overflow-y-auto">
 						<div className="overflow-hidden rounded-xl rounded-b-none border border-border/70 bg-card shadow-sm">
 							{previewUrl ? (
 								<Image

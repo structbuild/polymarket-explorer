@@ -126,11 +126,13 @@ function loadBestTradeMarket(pnlSummaryPromise: Promise<TraderPnlSummary | null>
 async function TraderInsightsSection({
 	address,
 	displayName,
+	profileImage,
 	timeframe,
 	insightsPromise,
 }: {
 	address: string;
 	displayName: string;
+	profileImage?: string | null;
 	timeframe: PnlTimeframe;
 	insightsPromise: Promise<TraderInsightsData>;
 }) {
@@ -138,7 +140,7 @@ async function TraderInsightsSection({
 
 	return (
 		<>
-			<PnlCard address={address} data={pnlCandles} displayName={displayName} annotations={chartAnnotations} timeframe={timeframe} />
+			<PnlCard address={address} data={pnlCandles} displayName={displayName} profileImage={profileImage} annotations={chartAnnotations} timeframe={timeframe} />
 			<div className="rounded-lg bg-card p-4 sm:p-6">
 				<PnlCalendar data={dailyPnl} />
 			</div>
@@ -320,7 +322,13 @@ async function TraderOverviewSection({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
 				<div className="min-w-0 space-y-4 lg:w-2/3">
 					<Suspense fallback={<TraderInsightsFallback />}>
-						<TraderInsightsSection address={address} displayName={displayName} timeframe={timeframe} insightsPromise={insightsPromise} />
+						<TraderInsightsSection
+							address={address}
+							displayName={displayName}
+							profileImage={profile?.profile_image}
+							timeframe={timeframe}
+							insightsPromise={insightsPromise}
+						/>
 					</Suspense>
 					{/* <TraderInfo address={address} profile={profile} /> */}
 				</div>
@@ -334,7 +342,13 @@ async function TraderOverviewSection({
 						/>
 					</Suspense>
 					<Suspense fallback={<TraderDnaFallback />}>
-						<TraderDnaSection pnlSummaryPromise={pnlSummaryPromise} cumulativePnlUsdPromise={cumulativePnlUsdPromise} />
+						<TraderDnaSection
+							pnlSummaryPromise={pnlSummaryPromise}
+							cumulativePnlUsdPromise={cumulativePnlUsdPromise}
+							address={address}
+							displayName={displayName}
+							profileImage={profile?.profile_image}
+						/>
 					</Suspense>
 				</div>
 			</div>
@@ -345,12 +359,26 @@ async function TraderOverviewSection({
 async function TraderDnaSection({
 	pnlSummaryPromise,
 	cumulativePnlUsdPromise,
+	address,
+	displayName,
+	profileImage,
 }: {
 	pnlSummaryPromise: Promise<TraderPnlSummary | null>;
 	cumulativePnlUsdPromise: Promise<number>;
+	address: string;
+	displayName: string;
+	profileImage?: string | null;
 }) {
 	const [pnlSummary, cumulativePnlUsd] = await Promise.all([pnlSummaryPromise, cumulativePnlUsdPromise]);
-	return <TraderDnaCard pnlSummary={pnlSummary} cumulativePnlUsd={cumulativePnlUsd} />;
+	return (
+		<TraderDnaCard
+			pnlSummary={pnlSummary}
+			cumulativePnlUsd={cumulativePnlUsd}
+			address={address}
+			displayName={displayName}
+			profileImage={profileImage}
+		/>
+	);
 }
 
 function TraderDnaFallback() {
@@ -405,7 +433,7 @@ async function TraderPageContent({ params, searchParams }: Props) {
 
 	const [{ tab, openPage, closedPage, activityPage, pnlTimeframe, openSortBy, openSortDirection, closedSortBy, closedSortDirection }, resolvedSearchParams] =
 		await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
-	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
+	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
 
 	const profilePromise = getTraderProfile(address);
 	const pnlSummaryPromise = getTraderPnlSummary(address);
@@ -460,7 +488,8 @@ async function TraderPageContent({ params, searchParams }: Props) {
 					view={view}
 					resolution={resolution}
 					defaultResolution={defaultResolution}
-					excludeMetrics={["uniqueTraders", "newTraders", "makersTakers"]}
+					defaultRange={defaultRange}
+					excludeMetrics={["uniqueTraders", "makersTakers"]}
 					appendMetrics={["fees", "tradeTypes"]}
 					pathname={`/traders/${address}`}
 					fetchers={{

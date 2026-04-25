@@ -12,7 +12,7 @@ export default function TraderError({
 	return (
 		<RouteError
 			title="Couldn't load this trader profile"
-			description="We weren't able to fetch trading history for this wallet. The Polymarket API may be temporarily unavailable."
+			description="We weren't able to fetch trading history for this wallet. Try again in a few minutes."
 			error={error}
 			reset={reset}
 		/>

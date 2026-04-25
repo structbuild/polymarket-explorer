@@ -6,7 +6,6 @@ export type AnalyticsMetricId =
 	| "trades"
 	| "tradeTypes"
 	| "uniqueTraders"
-	| "newTraders"
 	| "makersTakers"
 	| "avgTradeSize"
 	| "yesNo"
@@ -32,11 +31,14 @@ export const ANALYTICS_RANGE_DESCRIPTIONS: Record<AnalyticsRange, string> = {
 
 export const DEFAULT_ANALYTICS_RANGE: AnalyticsRange = "all";
 
-export function parseAnalyticsRange(value: string | string[] | undefined): AnalyticsRange {
+export function parseAnalyticsRange(
+	value: string | string[] | undefined,
+	defaultRange: AnalyticsRange = DEFAULT_ANALYTICS_RANGE,
+): AnalyticsRange {
 	const raw = Array.isArray(value) ? value[0] : value;
 	return ANALYTICS_RANGES.includes(raw as AnalyticsRange)
 		? (raw as AnalyticsRange)
-		: DEFAULT_ANALYTICS_RANGE;
+		: defaultRange;
 }
 
 export type AnalyticsResolution = "60" | "240" | "D" | "W" | "M";
@@ -118,17 +120,19 @@ export type AnalyticsParams = {
 	range: AnalyticsRange;
 	resolution: AnalyticsResolution;
 	defaultResolution: AnalyticsResolution;
+	defaultRange: AnalyticsRange;
 };
 
 export function parseAnalyticsParams(
 	searchParams: Record<string, string | string[] | undefined>,
 	scope: AnalyticsScope = "scoped",
+	defaultRange: AnalyticsRange = DEFAULT_ANALYTICS_RANGE,
 ): AnalyticsParams {
 	const view = parseAnalyticsView(searchParams.view);
-	const range = view === "cumulative" ? "all" : parseAnalyticsRange(searchParams.range);
+	const range = view === "cumulative" ? "all" : parseAnalyticsRange(searchParams.range, defaultRange);
 	const resolution = parseAnalyticsResolution(searchParams.resolution, range, scope);
 	const defaultResolution = getDefaultResolution(range, scope);
-	return { view, range, resolution, defaultResolution };
+	return { view, range, resolution, defaultResolution, defaultRange };
 }
 
 export const ANALYTICS_CAP_BUFFER_SECONDS = 7 * 86400;
@@ -155,9 +159,6 @@ export type AnalyticsPoint = {
 	uniqueTraders: number;
 	uniqueMakers: number;
 	uniqueTakers: number;
-	newTraders: number;
-	newMakers: number;
-	newTakers: number;
 	txnCount: number;
 	buyCount: number;
 	sellCount: number;
@@ -211,7 +212,6 @@ export type AnalyticsSummary = {
 	totalFeesUsd: number;
 	totalTxnCount: number;
 	uniqueTradersTotal: number;
-	newTradersTotal: number;
 	avgTradeSizeUsd: number;
 };
 

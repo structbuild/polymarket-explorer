@@ -91,6 +91,7 @@ type AnalyticsSectionProps = {
 	view: AnalyticsView;
 	resolution: AnalyticsResolution;
 	defaultResolution: AnalyticsResolution;
+	defaultRange?: AnalyticsRange;
 	fetchers: AnalyticsFetchers;
 	headingLevel?: "h1" | "h2";
 	excludeMetrics?: readonly AnalyticsMetricId[];
@@ -101,17 +102,6 @@ type AnalyticsSectionProps = {
 	pathname: string;
 };
 
-function getEffectiveExcludeMetrics(
-	excludeMetrics: readonly AnalyticsMetricId[] | undefined,
-	view: AnalyticsView,
-	range: AnalyticsRange,
-): readonly AnalyticsMetricId[] {
-	const base = excludeMetrics ?? [];
-	if (view !== "cumulative" && range !== "all") return base;
-	if (base.includes("newTraders")) return base;
-	return [...base, "newTraders"];
-}
-
 export function AnalyticsSection({
 	title,
 	description,
@@ -119,6 +109,7 @@ export function AnalyticsSection({
 	view,
 	resolution,
 	defaultResolution,
+	defaultRange,
 	fetchers,
 	headingLevel = "h2",
 	excludeMetrics,
@@ -130,7 +121,6 @@ export function AnalyticsSection({
 }: AnalyticsSectionProps) {
 	const Heading = headingLevel;
 	const refreshedAt = new Date();
-	const effectiveExcludeMetrics = getEffectiveExcludeMetrics(excludeMetrics, view, range);
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -143,7 +133,7 @@ export function AnalyticsSection({
 					) : null}
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
-					{view === "deltas" ? <AnalyticsRangeToggle range={range} /> : null}
+					{view === "deltas" ? <AnalyticsRangeToggle range={range} defaultRange={defaultRange} /> : null}
 					<AnalyticsResolutionToggle
 						range={range}
 						resolution={resolution}
@@ -158,9 +148,9 @@ export function AnalyticsSection({
 
 			<Suspense
 				key={`kpi-${range}-${view}-${resolution}`}
-				fallback={<AnalyticsKpiStripFallback excludeMetrics={effectiveExcludeMetrics} />}
+				fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}
 			>
-				<KpiLoader fetchers={fetchers} excludeMetrics={effectiveExcludeMetrics} />
+				<KpiLoader fetchers={fetchers} excludeMetrics={excludeMetrics} />
 			</Suspense>
 
 			<Suspense
@@ -168,7 +158,7 @@ export function AnalyticsSection({
 				fallback={
 					<AnalyticsChartsGridFallback
 						view={view}
-						excludeMetrics={effectiveExcludeMetrics}
+						excludeMetrics={excludeMetrics}
 						appendMetrics={appendMetrics}
 						pathname={pathname}
 						refreshedAt={refreshedAt}
@@ -178,7 +168,7 @@ export function AnalyticsSection({
 				<ChartsLoader
 					fetchers={fetchers}
 					view={view}
-					excludeMetrics={effectiveExcludeMetrics}
+					excludeMetrics={excludeMetrics}
 					appendMetrics={appendMetrics}
 					endTime={endTime}
 					cap={cap}

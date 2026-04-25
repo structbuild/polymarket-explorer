@@ -9,7 +9,13 @@ import {
 	type AnalyticsRange,
 } from "@/lib/struct/analytics-shared";
 
-export function AnalyticsRangeToggle({ range }: { range: AnalyticsRange }) {
+export function AnalyticsRangeToggle({
+	range,
+	defaultRange = DEFAULT_ANALYTICS_RANGE,
+}: {
+	range: AnalyticsRange;
+	defaultRange?: AnalyticsRange;
+}) {
 	return (
 		<AnalyticsUrlToggle
 			paramKey="range"
@@ -17,7 +23,7 @@ export function AnalyticsRangeToggle({ range }: { range: AnalyticsRange }) {
 			options={ANALYTICS_RANGES}
 			labels={ANALYTICS_RANGE_LABELS}
 			descriptions={ANALYTICS_RANGE_DESCRIPTIONS}
-			defaultValue={DEFAULT_ANALYTICS_RANGE}
+			defaultValue={defaultRange}
 			transformParams={(params) => {
 				params.delete("resolution");
 			}}

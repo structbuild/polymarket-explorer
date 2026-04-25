@@ -12,7 +12,7 @@ export default function TagError({
 	return (
 		<RouteError
 			title="Couldn't load markets for this tag"
-			description="We weren't able to fetch markets in this category. The Polymarket API may be temporarily unavailable."
+			description="We weren't able to fetch markets in this category. Try again in a few minutes."
 			error={error}
 			reset={reset}
 		/>

@@ -6,7 +6,6 @@ export const TAG_SORT_OPTIONS = [
 	"unique_traders",
 	"unique_makers",
 	"unique_takers",
-	"new_traders",
 	"fees",
 ] as const satisfies readonly TagSortBy[];
 
@@ -18,7 +17,6 @@ export const TAG_SORT_LABELS: Record<TagSortOption, string> = {
 	unique_traders: "Traders",
 	unique_makers: "Makers",
 	unique_takers: "Takers",
-	new_traders: "New traders",
 	fees: "Fees",
 };
 
@@ -48,12 +46,4 @@ export function parseTagTimeframe(value: string | string[] | undefined): TagSort
 	return TAG_TIMEFRAME_OPTIONS.includes(raw as TagSortTimeframe)
 		? (raw as TagSortTimeframe)
 		: DEFAULT_TAG_TIMEFRAME;
-}
-
-export function resolveTagSortForTimeframe(
-	sort: TagSortBy,
-	timeframe: TagSortTimeframe,
-): TagSortBy {
-	if (timeframe === "lifetime" && sort === "new_traders") return DEFAULT_TAG_SORT;
-	return sort;
 }

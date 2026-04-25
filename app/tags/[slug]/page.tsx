@@ -119,7 +119,7 @@ async function TagPageContent({
 }) {
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
-	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
+	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
 	const marketTab = parseMarketStatusTab(resolvedSearchParams.tab);
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
@@ -195,7 +195,7 @@ async function TagPageContent({
 					view={view}
 					resolution={resolution}
 					defaultResolution={defaultResolution}
-					excludeMetrics={["newTraders"]}
+					defaultRange={defaultRange}
 					pathname={`/tags/${canonicalSlug}`}
 					fetchers={{
 						deltas: () => getTagAnalyticsDeltas(tagKey, range, resolution),

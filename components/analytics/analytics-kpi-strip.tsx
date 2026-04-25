@@ -30,7 +30,6 @@ const KPIS: KpiSpec[] = [
 	{ id: "fees", key: "totalFeesUsd", label: "Fees", tooltip: "Shows only fees from orders matched/filled.", currency: true, compact: true, pctKey: "fees_usd" },
 	{ id: "trades", key: "totalTxnCount", label: "Trades", compact: true, pctKey: "txn_count" },
 	{ id: "uniqueTraders", key: "uniqueTradersTotal", label: "Unique traders", compact: true, pctKey: "unique_traders" },
-	{ id: "newTraders", key: "newTradersTotal", label: "New traders", tooltip: "First-time-ever traders who started trading in this window.", compact: true, pctKey: "new_traders" },
 	{ id: "avgTradeSize", key: "avgTradeSizeUsd", label: "Avg trade size", currency: true, compact: true },
 ];
 

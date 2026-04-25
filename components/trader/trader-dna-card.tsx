@@ -1,5 +1,10 @@
+"use client";
+
+import { useRef } from "react";
 import type { TraderPnlSummary } from "@structbuild/sdk";
 
+import { DnaShareDialog } from "@/components/trader/dna-share-dialog";
+import { ShareIdentityHeader } from "@/components/trader/share-identity-header";
 import { TraderDnaRadar } from "@/components/trader/trader-dna-radar";
 import { Badge } from "@/components/ui/badge";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -12,6 +17,9 @@ import {
 type TraderDnaCardProps = {
 	pnlSummary: TraderPnlSummary | null;
 	cumulativePnlUsd: number;
+	address: string;
+	displayName: string;
+	profileImage?: string | null;
 };
 
 const ARCHETYPE_CLASSES: Record<TraderArchetypeId, string> = {
@@ -26,20 +34,28 @@ const ARCHETYPE_CLASSES: Record<TraderArchetypeId, string> = {
 	trader: "bg-muted text-foreground",
 };
 
-export function TraderDnaCard({ pnlSummary, cumulativePnlUsd }: TraderDnaCardProps) {
+export function TraderDnaCard({ pnlSummary, cumulativePnlUsd, address, displayName, profileImage }: TraderDnaCardProps) {
+	const cardRef = useRef<HTMLDivElement>(null);
+
 	if (!pnlSummary) return null;
 	const dna = computeTraderDna({ summary: pnlSummary, cumulativePnlUsd });
 
 	return (
-		<div className="rounded-lg bg-card p-4 sm:p-6">
+		<div ref={cardRef} className="group/share-card rounded-lg bg-card p-4 sm:p-6">
+			<ShareIdentityHeader address={address} displayName={displayName} profileImage={profileImage} />
 			<div className="mb-3 flex items-center justify-between gap-2">
 				<div className="flex items-center gap-1.5">
-					<h2 className="text-sm font-medium text-foreground">Trader DNA</h2>
-					<InfoTooltip content="Seven-axis profile built from lifetime stats. Each axis is a 0–100 score relative to a fixed reference scale; the dashed polygon is the peer baseline (50)." />
+					<h2 className="text-sm text-foreground sm:text-base">Trader DNA</h2>
+					<span className="group-data-[share-mode=image]/share-card:hidden">
+						<InfoTooltip content="Seven-axis profile built from lifetime stats. Each axis is a 0–100 score relative to a fixed reference scale; the dashed polygon is the peer baseline (50)." />
+					</span>
 				</div>
-				<Badge className={cn("text-xs uppercase tracking-wide", ARCHETYPE_CLASSES[dna.archetype.id])}>
-					{dna.archetype.label}
-				</Badge>
+				<div className="flex items-center gap-1">
+					<Badge className={cn("text-xs uppercase tracking-wide", ARCHETYPE_CLASSES[dna.archetype.id])}>
+						{dna.archetype.label}
+					</Badge>
+					<DnaShareDialog address={address} displayName={displayName} targetRef={cardRef} />
+				</div>
 			</div>
 
 			<TraderDnaRadar axes={dna.axes} />

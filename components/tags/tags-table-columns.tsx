@@ -8,7 +8,6 @@ export const TAGS_TABLE_COLUMN_SIZES = {
 	traders: 128,
 	makers: 128,
 	takers: 128,
-	new_traders: 128,
 	trades: 128,
 	fees: 128,
 } as const;
@@ -47,12 +46,6 @@ export const TAGS_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
 	{
 		id: "takers",
 		size: TAGS_TABLE_COLUMN_SIZES.takers,
-		headerClassName: "w-14",
-		cell: <Skeleton className="h-4 w-12" />,
-	},
-	{
-		id: "new_traders",
-		size: TAGS_TABLE_COLUMN_SIZES.new_traders,
 		headerClassName: "w-14",
 		cell: <Skeleton className="h-4 w-12" />,
 	},

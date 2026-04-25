@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function truncateAddress(address: string, length: number = 6) {
-	return `${address.slice(0, length)}...${address.slice(-length)}`;
+	return `${address?.slice(0, length)}...${address?.slice(-length)}`;
 }
 
-export function getTraderDisplayName(trader: { address: string; name?: string | null; pseudonym?: string | null }) {
-	return trader.name ?? trader.pseudonym ?? truncateAddress(trader.address);
+export function getTraderDisplayName(trader: { address?: string; name?: string | null; pseudonym?: string | null }) {
+	return trader.name ?? trader.pseudonym ?? truncateAddress(trader.address ?? "");
 }
 
 export function isWalletAddress(value: string) {

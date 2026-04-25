@@ -99,9 +99,6 @@ function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 		uniqueTraders: toNumber("ut" in row ? row.ut : 0),
 		uniqueMakers: toNumber("um" in row ? row.um : 0),
 		uniqueTakers: toNumber("uk" in row ? row.uk : 0),
-		newTraders: toNumber("nt" in row ? row.nt : 0),
-		newMakers: toNumber("nm" in row ? row.nm : 0),
-		newTakers: toNumber("nk" in row ? row.nk : 0),
 		txnCount: toNumber(row.tc),
 		buyCount: toNumber(row.bc),
 		sellCount: toNumber(row.sc),
@@ -135,9 +132,6 @@ function emptyPoint(t: number): AnalyticsPoint {
 		uniqueTraders: 0,
 		uniqueMakers: 0,
 		uniqueTakers: 0,
-		newTraders: 0,
-		newMakers: 0,
-		newTakers: 0,
 		txnCount: 0,
 		buyCount: 0,
 		sellCount: 0,
@@ -607,7 +601,6 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 			totalFeesUsd: 0,
 			totalTxnCount: 0,
 			uniqueTradersTotal: 0,
-			newTradersTotal: 0,
 			avgTradeSizeUsd: 0,
 		};
 	}
@@ -616,14 +609,12 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 	let totalFeesUsd = 0;
 	let totalTxnCount = 0;
 	let uniqueTradersTotal = 0;
-	let newTradersTotal = 0;
 
 	for (const p of points) {
 		totalVolumeUsd += p.volumeUsd;
 		totalFeesUsd += p.feesUsd;
 		totalTxnCount += p.txnCount;
 		uniqueTradersTotal += p.uniqueTraders;
-		newTradersTotal += p.newTraders;
 	}
 
 	const avgTradeSizeUsd = totalTxnCount > 0 ? totalVolumeUsd / totalTxnCount : 0;
@@ -633,7 +624,6 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 		totalFeesUsd,
 		totalTxnCount,
 		uniqueTradersTotal,
-		newTradersTotal,
 		avgTradeSizeUsd,
 	};
 }
