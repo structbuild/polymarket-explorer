@@ -47,9 +47,9 @@ export function TraderInfo({ address, profile }: TraderInfoProps) {
 						<Muted />
 					)}
 				</InfoStat>
-				<InfoStat label="Verified">{profile?.verified_badge ? "Yes" : "No"}</InfoStat>
-				<InfoStat label="Creator">{profile?.is_creator ? "Yes" : "No"}</InfoStat>
-				<InfoStat label="Moderator">{profile?.is_mod ? "Yes" : "No"}</InfoStat>
+				<InfoStat label="Verified">{profile ? (profile.verified_badge ? "Yes" : "No") : <Muted />}</InfoStat>
+				<InfoStat label="Creator">{profile ? (profile.is_creator ? "Yes" : "No") : <Muted />}</InfoStat>
+				<InfoStat label="Moderator">{profile ? (profile.is_mod ? "Yes" : "No") : <Muted />}</InfoStat>
 			</div>
 			{profile?.bio ? (
 				<div className="mt-6 space-y-1">

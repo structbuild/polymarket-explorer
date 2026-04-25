@@ -11,6 +11,7 @@ import { normalizeWalletAddress } from "@/lib/utils";
 
 export const maxDuration = 60;
 
+// Per-shard caps keep each sitemap file well under the 50k URL limit; bump or shard further when datasets grow.
 const MARKET_CAP = 5000;
 const TRADER_CAP = 500;
 

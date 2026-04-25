@@ -19,6 +19,12 @@ export function TagSearchInput({ query }: { query: string }) {
 	const lastCommittedRef = useRef(query);
 
 	useEffect(() => {
+		return () => {
+			if (timerRef.current) clearTimeout(timerRef.current);
+		};
+	}, []);
+
+	useEffect(() => {
 		if (query === lastCommittedRef.current) return;
 		lastCommittedRef.current = query;
 		setValue(query);

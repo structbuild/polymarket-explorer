@@ -32,13 +32,15 @@ export type AnalyticsFetchers = {
 };
 
 async function KpiLoader({
+	deltasPromise,
 	fetchers,
 	excludeMetrics,
 }: {
+	deltasPromise: Promise<AnalyticsPoint[]>;
 	fetchers: AnalyticsFetchers;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 }) {
-	const [points, changes] = await Promise.all([fetchers.deltas(), fetchers.changes()]);
+	const [points, changes] = await Promise.all([deltasPromise, fetchers.changes()]);
 	return (
 		<AnalyticsKpiStrip
 			summary={summarizeAnalytics(points)}
@@ -51,6 +53,7 @@ async function KpiLoader({
 }
 
 async function ChartsLoader({
+	deltasPromise,
 	fetchers,
 	view,
 	excludeMetrics,
@@ -60,6 +63,7 @@ async function ChartsLoader({
 	pathname,
 	refreshedAt,
 }: {
+	deltasPromise?: Promise<AnalyticsPoint[]>;
 	fetchers: AnalyticsFetchers;
 	view: AnalyticsView;
 	excludeMetrics?: readonly AnalyticsMetricId[];
@@ -70,7 +74,9 @@ async function ChartsLoader({
 	refreshedAt: Date;
 }) {
 	const raw =
-		view === "cumulative" ? await fetchers.timeseries() : await fetchers.deltas();
+		view === "cumulative"
+			? await fetchers.timeseries()
+			: await (deltasPromise ?? fetchers.deltas());
 	const points = applyAnalyticsCap(raw, endTime, cap ?? false);
 	return (
 		<AnalyticsChartsGrid
@@ -121,6 +127,7 @@ export function AnalyticsSection({
 }: AnalyticsSectionProps) {
 	const Heading = headingLevel;
 	const refreshedAt = new Date();
+	const deltasPromise = fetchers.deltas();
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -150,7 +157,7 @@ export function AnalyticsSection({
 				key={`kpi-${range}-${view}-${resolution}`}
 				fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}
 			>
-				<KpiLoader fetchers={fetchers} excludeMetrics={excludeMetrics} />
+				<KpiLoader deltasPromise={deltasPromise} fetchers={fetchers} excludeMetrics={excludeMetrics} />
 			</Suspense>
 
 			<Suspense
@@ -166,6 +173,7 @@ export function AnalyticsSection({
 				}
 			>
 				<ChartsLoader
+					deltasPromise={view === "deltas" ? deltasPromise : undefined}
 					fetchers={fetchers}
 					view={view}
 					excludeMetrics={excludeMetrics}

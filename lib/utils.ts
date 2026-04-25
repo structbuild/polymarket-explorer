@@ -5,12 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function truncateAddress(address: string, length: number = 6) {
-	return `${address?.slice(0, length)}...${address?.slice(-length)}`;
+export function truncateAddress(address?: string | null, length: number = 6) {
+	if (!address) return "—";
+	if (address.length <= length * 2) return address;
+	return `${address.slice(0, length)}...${address.slice(-length)}`;
 }
 
 export function getTraderDisplayName(trader: { address?: string; name?: string | null; pseudonym?: string | null }) {
-	return trader.name ?? trader.pseudonym ?? truncateAddress(trader.address ?? "");
+	return trader.name ?? trader.pseudonym ?? truncateAddress(trader.address);
 }
 
 export function isWalletAddress(value: string) {

@@ -29,6 +29,7 @@ async function TagIndexPageContent({ searchParams }: Props) {
 	const resolved = await searchParams;
 	const sort = parseTagSort(resolved.sort);
 	const timeframe = parseTagTimeframe(resolved.timeframe);
-	const query = typeof resolved.q === "string" ? resolved.q : undefined;
+	const rawQuery = resolved.q;
+	const query = typeof rawQuery === "string" ? rawQuery : Array.isArray(rawQuery) ? rawQuery[0] : undefined;
 	return <TagGridPage page={1} sort={sort} timeframe={timeframe} query={query} />;
 }

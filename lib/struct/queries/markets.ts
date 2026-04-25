@@ -104,6 +104,7 @@ export async function getTopMarkets(
 	return fetchTopMarkets(limit, status, cursor, sortBy, sortDir, timeframe, excludeTags);
 }
 
+// Bypasses the "use cache" wrapper used by getTopMarkets so the home page always sees freshest data.
 export const getHomeTopMarkets = fetchTopMarkets;
 
 export async function getAllMarketSlugs(

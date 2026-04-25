@@ -62,8 +62,7 @@ function TagHeader({ tag, tagDisplay }: { tag: Tag; tagDisplay: string }) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-	const { slug: rawSlug } = await params;
-	const slug = decodeURIComponent(rawSlug);
+	const { slug } = await params;
 	const tag = await getTagBySlug(slug);
 
 	if (!tag) {
@@ -91,8 +90,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TagPage({ params, searchParams }: Props) {
-	const { slug: rawSlug } = await params;
-	const slug = decodeURIComponent(rawSlug);
+	const { slug } = await params;
 	const tag = await getTagBySlug(slug);
 
 	if (!tag) {

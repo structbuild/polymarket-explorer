@@ -170,7 +170,7 @@ export function TagsTable({
 			aria-label="Metrics timeframe"
 			value={[timeframe]}
 			onValueChange={(next) => {
-				const picked = Array.isArray(next) ? next[0] : next;
+				const picked = next[0];
 				if (picked && picked !== timeframe) {
 					onTimeframeChange(picked as TagSortTimeframe);
 				}

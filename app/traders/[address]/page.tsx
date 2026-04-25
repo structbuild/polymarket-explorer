@@ -200,27 +200,6 @@ function TraderHeaderFallback() {
 	);
 }
 
-function TraderInfoFallback() {
-	return (
-		<div className="rounded-lg bg-card p-4 sm:p-6">
-			<div className="mb-4 h-5 w-36 animate-pulse rounded bg-muted" />
-			<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-				{Array.from({ length: 7 }, (_, index) => (
-					<div key={index} className="space-y-1.5">
-						<div className="h-3 w-16 animate-pulse rounded bg-muted" />
-						<div className="h-4 w-20 animate-pulse rounded bg-muted" />
-					</div>
-				))}
-			</div>
-			<div className="mt-6 space-y-2">
-				<div className="h-3 w-12 animate-pulse rounded bg-muted" />
-				<div className="h-4 w-full animate-pulse rounded bg-muted" />
-				<div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
-			</div>
-		</div>
-	);
-}
-
 async function TraderPerformanceSummarySection({
 	pnlSummary,
 	insightsPromise,
@@ -400,7 +379,6 @@ function TraderOverviewFallback() {
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
 				<div className="min-w-0 space-y-4 lg:w-2/3">
 					<TraderInsightsFallback />
-					<TraderInfoFallback />
 				</div>
 				<div className="min-w-0 space-y-4 lg:w-1/3">
 					<TraderPerformanceSummaryFallback />

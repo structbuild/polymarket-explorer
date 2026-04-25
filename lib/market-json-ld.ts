@@ -74,12 +74,11 @@ export function buildMarketJsonLd({ market, url, siteName, imageUrl }: MarketJso
 			url,
 		};
 	} else if (leading) {
-		questionNode.acceptedAnswer = {
+		const leadingAnswer = {
 			"@type": "Answer",
 			text: answerBody,
 			...(dateModified && { dateCreated: dateModified }),
 			url,
-			...(leading.price != null && { upvoteCount: Math.round(leading.price * 100) }),
 		};
 		const otherAnswers = outcomes
 			.filter((o) => o !== leading && o.price != null)
@@ -87,12 +86,9 @@ export function buildMarketJsonLd({ market, url, siteName, imageUrl }: MarketJso
 				"@type": "Answer",
 				text: `${o.name} is trading at ${((o.price ?? 0) * 100).toFixed(0)}% on Polymarket.`,
 				...(dateModified && { dateCreated: dateModified }),
-				upvoteCount: Math.round((o.price ?? 0) * 100),
 				url,
 			}));
-		if (otherAnswers.length > 0) {
-			questionNode.suggestedAnswer = otherAnswers;
-		}
+		questionNode.suggestedAnswer = [leadingAnswer, ...otherAnswers];
 	}
 
 	graph.push({

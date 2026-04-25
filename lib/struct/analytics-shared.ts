@@ -281,7 +281,12 @@ export function sumSelectedComponentTotals(
 }
 
 export function deserializeVolumeComponents(raw: string): readonly VolumeComponentId[] {
-	const parsed = JSON.parse(raw);
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		return DEFAULT_KPI_VOLUME_COMPONENTS;
+	}
 	if (!Array.isArray(parsed)) return DEFAULT_KPI_VOLUME_COMPONENTS;
 	const valid = new Set<VolumeComponentId>(VOLUME_COMPONENT_IDS);
 	const filtered = parsed.filter(

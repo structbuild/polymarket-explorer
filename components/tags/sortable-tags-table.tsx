@@ -65,9 +65,10 @@ export function SortableTagsTable({
 
 	const handleTimeframeChange = useCallback(
 		(nextTimeframe: TagSortTimeframe) => {
+			if (nextTimeframe === timeframe) return;
 			navigate({ timeframe: nextTimeframe });
 		},
-		[navigate],
+		[navigate, timeframe],
 	);
 
 	return (

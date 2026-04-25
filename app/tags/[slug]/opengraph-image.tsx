@@ -33,8 +33,7 @@ async function loadTagOpenGraphData(slug: string) {
 }
 
 export default async function OpenGraphImage({ params }: Props) {
-	const { slug: rawSlug } = await params;
-	const slug = decodeURIComponent(rawSlug);
+	const { slug } = await params;
 	const data = await loadTagOpenGraphData(slug);
 
 	if (!data) {

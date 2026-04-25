@@ -23,8 +23,8 @@ export function MarketTags({ tags }: MarketTagsProps) {
 
 	return (
 		<div className="flex flex-wrap gap-1.5">
-			{visibleTags.map((tag) => (
-				<Link key={tag} href={`/tags/${slugify(tag)}` as Route}>
+			{visibleTags.map((tag, index) => (
+				<Link key={`${tag}-${index}`} href={`/tags/${slugify(tag)}` as Route}>
 					<Badge variant="secondary" className="h-7 px-3 capitalize">
 						{tag}
 					</Badge>

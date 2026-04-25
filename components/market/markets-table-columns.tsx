@@ -54,6 +54,12 @@ export const MARKET_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
 		cell: <Skeleton className="h-4 w-10" />,
 	},
 	{
+		id: "fees",
+		size: MARKET_TABLE_COLUMN_SIZES.fees,
+		headerClassName: "w-10",
+		cell: <Skeleton className="h-4 w-10" />,
+	},
+	{
 		id: "liquidity",
 		size: MARKET_TABLE_COLUMN_SIZES.liquidity,
 		headerClassName: "w-16",

@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useRef, useState, startTransition, type RefObject } from "react"
+import { useEffect, useRef, useState, type RefObject } from "react"
 import { CheckIcon, CopyIcon, DownloadIcon, LoaderCircleIcon, Share2Icon, XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -66,6 +66,7 @@ export function ShareImageDialog({
 	const [isCopying, setIsCopying] = useState(false)
 	const [downloadResult, setDownloadResult] = useState<ButtonResult>(null)
 	const [copyResult, setCopyResult] = useState<ButtonResult>(null)
+	const [previewError, setPreviewError] = useState<string | null>(null)
 
 	const previewUrlRef = useRef<string | null>(null)
 	const pendingCaptureRef = useRef<Promise<Blob> | null>(null)
@@ -132,10 +133,8 @@ export function ShareImageDialog({
 					URL.revokeObjectURL(previousUrl)
 				}
 
-				startTransition(() => {
-					setPreviewUrl(nextPreviewUrl)
-					setImageBlob(blob)
-				})
+				setPreviewUrl(nextPreviewUrl)
+				setImageBlob(blob)
 
 				return blob
 			})
@@ -198,12 +197,15 @@ export function ShareImageDialog({
 
 		setDownloadResult(null)
 		setCopyResult(null)
+		setPreviewError(null)
 
 		try {
 			await ensureImage(true)
 			setOpen(true)
-		} catch {
-			// Keep the dialog closed if preview generation fails.
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unable to generate the share image right now."
+			setPreviewError(message)
+			setOpen(true)
 		}
 	}
 
@@ -231,6 +233,7 @@ export function ShareImageDialog({
 					if (!nextOpen) {
 						setDownloadResult(null)
 						setCopyResult(null)
+						setPreviewError(null)
 					}
 				}}
 			>
@@ -240,7 +243,7 @@ export function ShareImageDialog({
 						dialogClassName
 					)}
 				>
-					<DialogHeader className="hidden">
+					<DialogHeader className="sr-only">
 						<DialogTitle>{dialogTitle}</DialogTitle>
 						<DialogDescription>{dialogDescription}</DialogDescription>
 					</DialogHeader>
@@ -264,7 +267,7 @@ export function ShareImageDialog({
 											Generating preview...
 										</span>
 									) : (
-										"Preview unavailable."
+										previewError ?? "Preview unavailable."
 									)}
 								</div>
 							)}
