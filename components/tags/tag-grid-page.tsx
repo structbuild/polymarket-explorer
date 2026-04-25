@@ -7,12 +7,12 @@ import { RoutePaginationNav } from "@/components/seo/route-pagination-nav";
 import { SortableTagsTable } from "@/components/tags/sortable-tags-table";
 import { TagSearchInput } from "@/components/tags/tag-search-input";
 import { getSiteUrl } from "@/lib/env";
-import { TAGS_PAGE_SIZE, getPageCount } from "@/lib/pagination";
+import { TAGS_PAGE_SIZE } from "@/lib/pagination";
 import { SITE_NAME } from "@/lib/site-metadata";
 import { DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME } from "@/lib/struct/tag-shared";
 import {
 	getTagsPaginated,
-	getTagCount,
+	getTagPageCount,
 	searchTags,
 } from "@/lib/struct/market-queries";
 
@@ -45,9 +45,9 @@ export async function TagGridPage({
 				effectiveSort,
 				effectiveTimeframe,
 			);
-	const totalTags = isSearching ? tags!.length : await getTagCount();
-
-	const totalPages = isSearching ? 1 : getPageCount(totalTags, TAGS_PAGE_SIZE);
+	const totalPages = isSearching
+		? 1
+		: await getTagPageCount(TAGS_PAGE_SIZE, effectiveSort, effectiveTimeframe);
 
 	if (!isSearching && page > totalPages && page !== 1) {
 		notFound();

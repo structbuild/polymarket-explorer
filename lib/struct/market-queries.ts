@@ -44,6 +44,7 @@ export {
 	getMarketsByTag,
 	getTagBySlug,
 	getTagCount,
+	getTagPageCount,
 	getTagsPaginated,
 	searchTags,
 	structAllTagsCacheTag,

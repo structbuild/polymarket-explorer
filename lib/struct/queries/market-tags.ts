@@ -87,17 +87,100 @@ export const getTagsPaginated = cache(
 		sort?: TagSortBy,
 		timeframe?: TagSortTimeframe,
 	): Promise<PaginatedResult<Tag>> => {
-		const tags = (await getAllTags(sort, timeframe)).filter(hasTagSlug);
-		const data = tags.slice(offset, offset + limit);
-		const hasMore = offset + limit < tags.length;
+		const client = getStructClient();
 
-		return {
-			data,
-			hasMore,
-			nextCursor: hasMore ? String(offset + limit) : null,
-		};
+		if (!client) {
+			return { data: [], hasMore: false, nextCursor: null };
+		}
+
+		const sortParams = sort
+			? { sort, timeframe: timeframe ?? ("lifetime" as TagSortTimeframe) }
+			: undefined;
+
+		try {
+			const response = await client.tags.getTags({
+				limit,
+				offset,
+				...sortParams,
+			});
+			const data = response.data.filter(hasTagSlug);
+			const hasMore = response.pagination?.has_more ?? response.data.length === limit;
+
+			return {
+				data,
+				hasMore,
+				nextCursor: hasMore ? String(offset + limit) : null,
+			};
+		} catch (error) {
+			logStructError("getTagsPaginated", error);
+			return { data: [], hasMore: false, nextCursor: null };
+		}
 	},
 );
+
+export async function getTagPageCount(
+	pageSize: number = defaultPageSize,
+	sort?: TagSortBy,
+	timeframe?: TagSortTimeframe,
+): Promise<number> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structAllTagsCacheTag);
+
+	if (!Number.isInteger(pageSize) || pageSize <= 0) {
+		return 1;
+	}
+
+	const totalTags = await getTagCount();
+	const upperPageCount = Math.max(1, Math.ceil(Math.max(0, totalTags) / pageSize));
+	const client = getStructClient();
+
+	if (!client || upperPageCount <= 1) {
+		return upperPageCount;
+	}
+
+	const tagClient = client;
+	const sortParams = sort
+		? { sort, timeframe: timeframe ?? ("lifetime" as TagSortTimeframe) }
+		: undefined;
+
+	async function pageExists(page: number): Promise<boolean | null> {
+		try {
+			const response = await tagClient.tags.getTags({
+				limit: 1,
+				offset: (page - 1) * pageSize,
+				...sortParams,
+			});
+			return response.data.some(hasTagSlug);
+		} catch (error) {
+			logStructError(`getTagPageCount:${page}`, error);
+			return null;
+		}
+	}
+
+	const upperExists = await pageExists(upperPageCount);
+	if (upperExists !== false) {
+		return upperPageCount;
+	}
+
+	let low = 1;
+	let high = upperPageCount;
+
+	while (low < high) {
+		const mid = Math.floor((low + high) / 2);
+		const exists = await pageExists(mid);
+		if (exists === null) {
+			return upperPageCount;
+		}
+		if (exists) {
+			low = mid + 1;
+		} else {
+			high = mid;
+		}
+	}
+
+	return Math.max(1, low - 1);
+}
 
 export const searchTags = cache(
 	async (
@@ -117,8 +200,19 @@ export async function getTagCount(): Promise<number> {
 	cacheLife("minutes");
 	cacheTag(structAllTagsCacheTag);
 
-	const tags = (await getAllTags()).filter(hasTagSlug);
-	return tags.length;
+	const client = getStructClient();
+
+	if (!client) {
+		return 0;
+	}
+
+	try {
+		const response = await client.analytics.getCounts();
+		return response.data.tags;
+	} catch (error) {
+		logStructError("getTagCount", error);
+		return 0;
+	}
 }
 
 export async function getTagBySlug(slug: string): Promise<Tag | null> {

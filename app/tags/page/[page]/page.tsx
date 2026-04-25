@@ -3,10 +3,15 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { buildPageMetadata } from "@/lib/site-metadata";
-import { getPageCount, parsePageParam, TAGS_PAGE_SIZE } from "@/lib/pagination";
+import { parsePageParam, TAGS_PAGE_SIZE } from "@/lib/pagination";
 import { TagGridPage } from "@/components/tags/tag-grid-page";
-import { parseTagSort, parseTagTimeframe } from "@/lib/struct/tag-shared";
-import { getTagCount } from "@/lib/struct/market-queries";
+import {
+	DEFAULT_TAG_SORT,
+	DEFAULT_TAG_TIMEFRAME,
+	parseTagSort,
+	parseTagTimeframe,
+} from "@/lib/struct/tag-shared";
+import { getTagPageCount } from "@/lib/struct/market-queries";
 import { TagIndexPageFallback } from "@/components/tags/tag-index-page-fallback";
 
 type Props = {
@@ -15,7 +20,11 @@ type Props = {
 };
 
 export async function generateStaticParams() {
-	const totalPages = getPageCount(await getTagCount(), TAGS_PAGE_SIZE);
+	const totalPages = await getTagPageCount(
+		TAGS_PAGE_SIZE,
+		DEFAULT_TAG_SORT,
+		DEFAULT_TAG_TIMEFRAME,
+	);
 	return [{ page: String(totalPages > 1 ? 2 : 1) }];
 }
 

@@ -9,6 +9,8 @@ export const TRADER_TIMEFRAME_LABELS: Record<TraderTimeframe, string> = {
 	lifetime: "All",
 };
 
+export const DEFAULT_TRADER_TIMEFRAME: TraderTimeframe = "30d";
+
 export function parseTraderTimeframe(value: string | string[] | undefined): TraderTimeframe {
 	const raw = Array.isArray(value) ? value[0] : value;
 
@@ -16,5 +18,5 @@ export function parseTraderTimeframe(value: string | string[] | undefined): Trad
 		return raw as TraderTimeframe;
 	}
 
-	return "lifetime";
+	return DEFAULT_TRADER_TIMEFRAME;
 }
