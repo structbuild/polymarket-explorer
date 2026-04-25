@@ -10,8 +10,9 @@ import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Polymarket Liquidity Rewards",
-	description: "Track Polymarket markets with active liquidity rewards, including reward rates, spreads, and liquidity.",
+	title: "Polymarket Liquidity Rewards · Live APR & Spreads",
+	description:
+		"Every Polymarket market with active liquidity rewards — reward rate, spread, and market depth. Find the best markets to market-make in.",
 	canonical: "/rewards",
 });
 

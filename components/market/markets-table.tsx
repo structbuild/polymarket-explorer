@@ -15,8 +15,10 @@ import { DataTable, useDataTableTimeframe, useTimeframeState } from "@/component
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
+import { ShowUnknownMarketsToggle } from "@/components/ui/show-unknown-markets-toggle";
 import { formatNumber, formatDateShort } from "@/lib/format";
 import { METRICS_TIMEFRAMES, type MetricsTimeframeChoice } from "@/lib/timeframes";
+import { MARKET_TABLE_COLUMN_SIZES } from "./markets-table-columns";
 
 export type { MarketTableRow } from "@/lib/market-table-map";
 
@@ -125,7 +127,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				cellClassName: "whitespace-normal align-top",
 			},
 			header: "Market",
-			size: 600,
+			size: MARKET_TABLE_COLUMN_SIZES.market,
 			cell: ({ row }) => {
 				const m = row.original;
 				const title = m.question ?? "Untitled Market";
@@ -166,7 +168,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				cellClassName: "whitespace-normal align-middle",
 			},
 			header: "Probability",
-			size: 112,
+			size: MARKET_TABLE_COLUMN_SIZES.probability,
 			cell: ({ row }) => (
 				<p className="text-foreground/90 whitespace-normal">
 					{formatNumber((row.original.outcomes?.[0]?.probability ?? 0) * 100, { percent: true })}
@@ -181,7 +183,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				id: "volume",
 				meta: { title: "Volume" },
 				header: headerOrSortable("volume", "Volume"),
-				size: 112,
+				size: MARKET_TABLE_COLUMN_SIZES.volume,
 				cell: ({ row }) => (
 					<MetricCell metrics={row.original.metrics} field="volume" format="currency" />
 				),
@@ -190,7 +192,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				id: "trades",
 				meta: { title: "Trades" },
 				header: headerOrSortable("trades", "Trades"),
-				size: 96,
+				size: MARKET_TABLE_COLUMN_SIZES.trades,
 				cell: ({ row }) => (
 					<MetricCell metrics={row.original.metrics} field="txns" format="integer" />
 				),
@@ -199,7 +201,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				id: "traders",
 				meta: { title: "Traders" },
 				header: headerOrSortable("traders", "Traders"),
-				size: 96,
+				size: MARKET_TABLE_COLUMN_SIZES.traders,
 				cell: ({ row }) => (
 					<MetricCell metrics={row.original.metrics} field="unique_traders" format="integer" />
 				),
@@ -208,7 +210,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				id: "fees",
 				meta: { title: "Fees" },
 				header: "Fees",
-				size: 96,
+				size: MARKET_TABLE_COLUMN_SIZES.fees,
 				cell: ({ row }) => (
 					<MetricCell metrics={row.original.metrics} field="fees" format="currency" />
 				),
@@ -221,7 +223,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 			id: "liquidity",
 			meta: { title: "Liquidity" },
 			header: headerOrSortable("liquidity", "Liquidity"),
-			size: 112,
+			size: MARKET_TABLE_COLUMN_SIZES.liquidity,
 			cell: ({ row }) => {
 				const liq = row.original.liquidityUsd ?? 0;
 				return (
@@ -242,7 +244,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 			id: "holders",
 			meta: { title: "Holders" },
 			header: headerOrSortable("holders", "Holders"),
-			size: 88,
+			size: MARKET_TABLE_COLUMN_SIZES.holders,
 			cell: ({ row }) => (
 				<p className="text-foreground/90 tabular-nums">
 					{row.original.totalHolders !== null
@@ -258,7 +260,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 			id: "ends",
 			meta: { title: "Ends" },
 			header: headerOrSortable("ends", "Ends"),
-			size: 120,
+			size: MARKET_TABLE_COLUMN_SIZES.ends,
 			cell: ({ row }) => (
 				<p className="text-muted-foreground">
 					{row.original.endTime !== null
@@ -272,7 +274,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 	cols.push({
 		id: "link",
 		header: "",
-		size: 96,
+		size: MARKET_TABLE_COLUMN_SIZES.link,
 		enableHiding: false,
 		cell: ({ row }) => {
 			const slug = row.original.slug;
@@ -380,6 +382,7 @@ export function MarketsTable(props: MarketsTableProps) {
 
 	const [localSortBy, setLocalSortBy] = useState<MarketSortBy>(defaultMarketSortBy);
 	const [localSortDirection, setLocalSortDirection] = useState<MarketSortDirection>(defaultMarketSortDirection);
+	const [showUnknown, setShowUnknown] = useState(false);
 	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, TABLE_TIMEFRAMES, DEFAULT_TIMEFRAME);
 	const timeframe = hasServerTimeframeControl ? serverTimeframe : internalTimeframe;
 	const setTimeframe = hasServerTimeframeControl ? serverOnTimeframeChange : setInternalTimeframe;
@@ -417,10 +420,17 @@ export function MarketsTable(props: MarketsTableProps) {
 		handleClientSortChange,
 	]);
 
-	const sortedMarkets = useMemo(() => {
-		if (!isClientSort) return markets;
+	const hasUnknownMarkets = useMemo(() => markets.some((m) => !m.question), [markets]);
 
-		const sorted = [...markets];
+	const visibleMarkets = useMemo(() => {
+		if (showUnknown) return markets;
+		return markets.filter((m) => m.question);
+	}, [markets, showUnknown]);
+
+	const sortedMarkets = useMemo(() => {
+		if (!isClientSort) return visibleMarkets;
+
+		const sorted = [...visibleMarkets];
 		const dir = localSortDirection === "asc" ? 1 : -1;
 
 		sorted.sort((a, b) => {
@@ -433,15 +443,24 @@ export function MarketsTable(props: MarketsTableProps) {
 		});
 
 		return sorted;
-	}, [markets, isClientSort, localSortBy, localSortDirection, timeframe]);
+	}, [visibleMarkets, isClientSort, localSortBy, localSortDirection, timeframe]);
 
-	const flags = useMemo(() => buildColumnFlags(markets), [markets]);
+	const flags = useMemo(() => buildColumnFlags(visibleMarkets), [visibleMarkets]);
 	const columns = useMemo(() => buildColumns(flags, sortState), [flags, sortState]);
 	const controlledTimeframeProps =
 		isClientSort || hasServerTimeframeControl
 			? { controlledTimeframe: timeframe, onControlledTimeframeChange: setTimeframe }
 			: {};
 	const timeframes = isServerSort && !hasServerTimeframeControl ? undefined : TABLE_TIMEFRAMES;
+
+	const mergedToolbarRight = hasUnknownMarkets ? (
+		<div className="flex items-center gap-3">
+			<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
+			{toolbarRight}
+		</div>
+	) : (
+		toolbarRight
+	);
 
 	return (
 		<DataTable
@@ -456,7 +475,7 @@ export function MarketsTable(props: MarketsTableProps) {
 			timeframes={timeframes}
 			defaultTimeframe={DEFAULT_TIMEFRAME}
 			toolbarLeft={toolbarLeft}
-			toolbarRight={toolbarRight}
+			toolbarRight={mergedToolbarRight}
 			{...controlledTimeframeProps}
 		/>
 	);

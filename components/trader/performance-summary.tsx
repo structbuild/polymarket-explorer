@@ -43,7 +43,7 @@ export function PerformanceSummary({ pnlSummary, bestTradeMarket, streaks }: Per
 						</div>
 					)}
 				</div>
-				{(pnlSummary?.best_trade_pnl_usd ?? 0) > 0 && bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground wrap-break-word sm:truncate">{bestTradeMarket.question}</p>}
+				{(pnlSummary?.best_trade_pnl_usd ?? 0) > 0 && bestTradeMarket && <p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{bestTradeMarket.question}</p>}
 				<Separator className="my-2" />
 			</div>
 			<InfoRow

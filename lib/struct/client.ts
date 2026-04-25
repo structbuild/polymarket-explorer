@@ -20,6 +20,7 @@ export function getStructClient() {
 
   client = new StructClient({
     apiKey: config.apiKey!,
+    baseUrl: "https://api.struct.to/v1",
     timeout: config.timeoutMs,
     retry: {
       maxRetries: 3,

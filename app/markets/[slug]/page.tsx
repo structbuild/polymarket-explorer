@@ -1,23 +1,39 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { MarketCharts, MarketChartsFallback } from "@/components/market/market-charts";
 import { MarketHeader } from "@/components/market/market-header";
 import { MarketTabPanel } from "@/components/market/market-tab-panel";
+import { RelatedMarkets } from "@/components/market/related-markets";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
+import { getSiteUrl } from "@/lib/env";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
+import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
-import { getMarketBySlug } from "@/lib/struct/market-queries";
-import { buildEntityPageTitle, buildPageMetadata } from "@/lib/site-metadata";
+import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
+import { parseAnalyticsCap, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { getAllMarketSlugs, getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
 
-export const revalidate = 300;
+const MARKET_SLUG_PLACEHOLDER = "__placeholder__";
 
 type Props = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateStaticParams() {
+	const marketSlugs = await getAllMarketSlugs(10);
+
+	if (marketSlugs.length > 0) {
+		return marketSlugs.map(({ slug }) => ({ slug }));
+	}
+
+	return [{ slug: MARKET_SLUG_PLACEHOLDER }];
+}
 
 function getLeadingOutcome(market: MarketResponse) {
 	const outcomes = market.outcomes ?? [];
@@ -38,19 +54,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	}
 
 	const leading = getLeadingOutcome(market);
-	const probability = leading?.price != null ? (leading.price * 100).toFixed(0) : "N/A";
+	const probability = leading?.price != null ? (leading.price * 100).toFixed(0) : null;
 	const volume = formatNumber(getMarketVolume(market), {
 		compact: true,
 		currency: true,
 	});
 	const holders = formatNumber(market.total_holders ?? 0, { decimals: 0 });
-	const marketName = market.question ?? market.title ?? "Prediction Market";
+	const marketName = (market.question ?? market.title ?? "Prediction Market").trim();
+	const marketNameNoPunct = marketName.replace(/[?.!,;:]+\s*$/u, "");
 	const leadingOutcome = leading?.name ?? "Leading outcome";
-	const oddsSummary = probability === "N/A" ? "Current odds are unavailable" : `${leadingOutcome} trades at ${probability}%`;
+
+	const shortOutcome = leadingOutcome && leadingOutcome.length <= 5 ? leadingOutcome : null;
+	const titleDescriptor = probability
+		? shortOutcome
+			? `${probability}% ${shortOutcome} · Polymarket`
+			: `${probability}% · Polymarket Odds`
+		: "Polymarket Odds";
+
+	const descriptionParts: string[] = [];
+	if (probability) {
+		descriptionParts.push(`${leadingOutcome} ${probability}%`);
+	}
+	descriptionParts.push(`${volume} volume`);
+	descriptionParts.push(`${holders} holders`);
+	const description = `${descriptionParts.join(" · ")}. Live Polymarket odds for: ${marketNameNoPunct}.`;
 
 	return buildPageMetadata({
-		title: buildEntityPageTitle(marketName, "Odds & Volume"),
-		description: `Track live Polymarket odds for ${marketName}. ${oddsSummary}, ${volume} in volume, and ${holders} holders.`,
+		title: buildEntityPageTitle(marketNameNoPunct, titleDescriptor),
+		description,
 		canonical: `/markets/${slug}`,
 		openGraph: {
 			type: "article",
@@ -73,38 +104,6 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 	return `${question.slice(0, maxLength)}…`;
 }
 
-function buildFaqJsonLd(market: MarketResponse) {
-	const topOutcome = getLeadingOutcome(market);
-	const question = market.question ?? market.title ?? "Market question for this market";
-	const description = market.description?.trim();
-
-	const probability = topOutcome?.price != null ? (topOutcome.price * 100).toFixed(0) : "N/A";
-	const volume = formatNumber(getMarketVolume(market), {
-		compact: true,
-		currency: true,
-	});
-	const date = new Date().toLocaleDateString("en-US", {
-		month: "long",
-		day: "numeric",
-		year: "numeric",
-	});
-
-	return {
-		"@context": "https://schema.org",
-		"@type": "FAQPage",
-		mainEntity: [
-			{
-				"@type": "Question",
-				name: question,
-				acceptedAnswer: {
-					"@type": "Answer",
-					text: `As of ${date}, Polymarket traders predict ${topOutcome?.name ?? "the leading outcome"} at ${probability}% probability. Total trading volume: ${volume}.${description ? ` ${description}` : ""}`,
-				},
-			},
-		],
-	};
-}
-
 export default async function MarketPage({ params, searchParams }: Props) {
 	const { slug } = await params;
 	const market = await getMarketBySlug(slug);
@@ -112,9 +111,16 @@ export default async function MarketPage({ params, searchParams }: Props) {
 	if (!market) {
 		notFound();
 	}
-
-	const { tab, tradesPage } = await loadMarketDetailSearchParams(searchParams);
 	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
+
+	const siteUrl = getSiteUrl();
+	const marketUrl = new URL(`/markets/${slug}`, siteUrl).toString();
+	const marketJsonLd = buildMarketJsonLd({
+		market,
+		url: marketUrl,
+		siteName: SITE_NAME,
+		imageUrl: market.image_url ?? undefined,
+	});
 
 	return (
 		<div className="flex w-full justify-center">
@@ -123,9 +129,7 @@ export default async function MarketPage({ params, searchParams }: Props) {
 					items={[
 						{ label: "Home", href: "/" },
 						{ label: "Markets", href: "/markets" },
-						...(breadcrumbTag
-							? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }]
-							: []),
+						...(breadcrumbTag ? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }] : []),
 						{
 							label: truncateQuestion(market.question ?? market.title ?? slug),
 							href: `/markets/${slug}`,
@@ -133,24 +137,99 @@ export default async function MarketPage({ params, searchParams }: Props) {
 					]}
 				/>
 
-				<JsonLd data={buildFaqJsonLd(market)} />
+				<JsonLd data={marketJsonLd} />
 
 				<MarketHeader market={market} slug={slug} />
 
-				{market.condition_id && (
-					<>
-						<Suspense fallback={<MarketChartsFallback />}>
-							<MarketCharts conditionId={market.condition_id} />
-						</Suspense>
-						<MarketTabPanel
-							currentTab={tab}
-							slug={slug}
-							conditionId={market.condition_id}
-							tradesPage={tradesPage}
-						/>
-					</>
-				)}
+				<Suspense fallback={<MarketPageFallback />}>
+					<MarketPageContent market={market} searchParams={searchParams} slug={slug} />
+				</Suspense>
 			</div>
 		</div>
 	);
+}
+
+async function MarketPageContent({
+	market,
+	searchParams,
+	slug,
+}: {
+	market: MarketResponse;
+	searchParams: Props["searchParams"];
+	slug: string;
+}) {
+	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([loadMarketDetailSearchParams(searchParams), searchParams]);
+	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
+	const endTime = typeof market.end_time === "number" && Number.isFinite(market.end_time) ? market.end_time : undefined;
+	const isResolved = market.status === "closed" || market.status === "resolved";
+	const defaultCap = isResolved && endTime !== undefined;
+	const cap = parseAnalyticsCap(resolvedSearchParams.cap) ?? defaultCap;
+	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
+	const conditionId = market.condition_id ?? null;
+	const relatedMarketsPromise = breadcrumbTag
+		? getMarketsByTag(breadcrumbTag, 8, undefined, "volume", "desc", isResolved ? "all" : "open")
+		: null;
+
+	return (
+		<>
+			{conditionId && (
+				<>
+					<Suspense fallback={<MarketChartsFallback />}>
+						<MarketCharts conditionId={conditionId} />
+					</Suspense>
+					<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
+					<div className="mt-8">
+						<AnalyticsSection
+							title="Analytics"
+							range={range}
+							view={view}
+							resolution={resolution}
+							defaultResolution={defaultResolution}
+							endTime={endTime}
+							cap={cap}
+							defaultCap={defaultCap}
+							pathname={`/markets/${slug}`}
+							fetchers={{
+								deltas: () => getMarketAnalyticsDeltas(conditionId, range, resolution),
+								timeseries: () => getMarketAnalyticsTimeseries(conditionId, range, resolution),
+								changes: () => getMarketAnalyticsChanges(conditionId, range),
+							}}
+						/>
+					</div>
+				</>
+			)}
+
+			{breadcrumbTag && relatedMarketsPromise && (
+				<Suspense>
+					<RelatedMarketsSection
+						relatedPromise={relatedMarketsPromise}
+						tag={breadcrumbTag}
+						currentSlug={slug}
+					/>
+				</Suspense>
+			)}
+		</>
+	);
+}
+
+function MarketPageFallback() {
+	return (
+		<div className="space-y-4">
+			<div className="h-32 rounded-lg bg-card" />
+			<div className="h-64 rounded-lg bg-card" />
+		</div>
+	);
+}
+
+async function RelatedMarketsSection({
+	relatedPromise,
+	tag,
+	currentSlug,
+}: {
+	relatedPromise: ReturnType<typeof getMarketsByTag>;
+	tag: string;
+	currentSlug: string;
+}) {
+	const { data } = await relatedPromise;
+	return <RelatedMarkets markets={data} tag={tag} currentSlug={currentSlug} />;
 }

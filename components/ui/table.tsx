@@ -1,20 +1,78 @@
 "use client"
 
 import * as React from "react"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
+import { useHorizontalScrollState } from "@/lib/hooks/use-horizontal-scroll-state"
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+const FADE_WIDTH = "2rem"
+const SCROLL_STEP_PX = 320
+
+function buildScrollMask(canScrollLeft: boolean, canScrollRight: boolean) {
+  if (!canScrollLeft && !canScrollRight) {
+    return undefined
+  }
+
+  const leftStop = canScrollLeft ? "transparent" : "black"
+  const rightStop = canScrollRight ? "transparent" : "black"
+
+  return `linear-gradient(to right, ${leftStop}, black ${FADE_WIDTH}, black calc(100% - ${FADE_WIDTH}), ${rightStop})`
+}
+
+type ScrollHintButtonProps = {
+  direction: "left" | "right"
+  onClick: () => void
+}
+
+function ScrollHintButton({ direction, onClick }: ScrollHintButtonProps) {
+  const Icon = direction === "left" ? ChevronLeftIcon : ChevronRightIcon
+  const ariaLabel = direction === "left" ? "Scroll table left" : "Scroll table right"
+
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onClick}
+      className={cn(
+        "absolute top-1/2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full border bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+        direction === "left" ? "left-2" : "right-2",
+      )}
     >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+      <Icon className="size-4" />
+    </button>
+  )
+}
+
+function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
+  const { canScrollLeft, canScrollRight } = useHorizontalScrollState(containerRef)
+  const maskImage = buildScrollMask(canScrollLeft, canScrollRight)
+
+  const scrollBy = (delta: number) => {
+    containerRef.current?.scrollBy({ left: delta, behavior: "smooth" })
+  }
+
+  return (
+    <div data-slot="table-wrapper" className="relative w-full">
+      <div
+        ref={containerRef}
+        data-slot="table-container"
+        className="w-full overflow-x-auto"
+        style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
+      >
+        <table
+          data-slot="table"
+          className={cn("w-full caption-bottom text-sm", className)}
+          {...props}
+        />
+      </div>
+      {canScrollLeft ? (
+        <ScrollHintButton direction="left" onClick={() => scrollBy(-SCROLL_STEP_PX)} />
+      ) : null}
+      {canScrollRight ? (
+        <ScrollHintButton direction="right" onClick={() => scrollBy(SCROLL_STEP_PX)} />
+      ) : null}
     </div>
   )
 }

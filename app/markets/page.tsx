@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
+import { MarketStatusTabs } from "@/components/market/market-status-tabs";
+import { MARKET_SKELETON_COLUMNS } from "@/components/market/markets-table-columns";
 import { SortableMarketsTable } from "@/components/market/sortable-markets-table";
+import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
+import { DEFAULT_MARKET_STATUS_TAB } from "@/lib/market-search-params-shared";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getTopMarkets } from "@/lib/struct/market-queries";
 import { loadMarketSearchParams } from "@/lib/market-search-params.server";
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Prediction Markets",
-	description: "Browse active Polymarket prediction markets with live probabilities, volume, and liquidity data.",
+	title: "Top Polymarket Markets · Live Odds & 24h Volume",
+	description:
+		"Every active Polymarket market, sorted by 24h volume. Track live probabilities, liquidity, and trader activity in real time.",
 	canonical: "/markets",
 });
 
@@ -20,10 +27,20 @@ type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function MarketsPage({ searchParams }: Props) {
-	const { sort_by, sort_dir, timeframe, cursor } = await loadMarketSearchParams(searchParams);
+export default function MarketsPage({ searchParams }: Props) {
+	return (
+		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+			<Suspense fallback={<MarketsPageFallback />}>
+				<MarketsPageContent searchParams={searchParams} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function MarketsPageContent({ searchParams }: Props) {
+	const { sort_by, sort_dir, timeframe, tab, cursor } = await loadMarketSearchParams(searchParams);
 	const activeCursor = cursor || undefined;
-	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, "open", activeCursor, sort_by, sort_dir, timeframe);
+	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, tab, activeCursor, sort_by, sort_dir, timeframe);
 	const siteUrl = getSiteUrl();
 
 	const jsonLd: Record<string, unknown> = {
@@ -50,9 +67,10 @@ export default async function MarketsPage({ searchParams }: Props) {
 	if (sort_by !== "volume") baseParams.sort_by = sort_by;
 	if (sort_dir !== "desc") baseParams.sort_dir = sort_dir;
 	if (timeframe !== "24h") baseParams.timeframe = timeframe;
+	if (tab !== DEFAULT_MARKET_STATUS_TAB) baseParams.tab = tab;
 
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+		<>
 			<Breadcrumbs
 				items={[
 					{ label: "Home", href: "/" },
@@ -61,22 +79,32 @@ export default async function MarketsPage({ searchParams }: Props) {
 			/>
 			<JsonLd data={jsonLd} />
 
-			<div className="mt-6">
-				<SortableMarketsTable
-					markets={markets.map(marketResponseToRow)}
-					paginationMode="none"
-					sortBy={sort_by}
-					sortDirection={sort_dir}
-					timeframe={timeframe}
-					toolbarLeft={
-						<div className="mb-3">
-							<h1 className="text-xl font-medium tracking-tight">Markets</h1>
-							<p className="mt-1 text-sm text-muted-foreground">
-								Browse active prediction markets.
-							</p>
-						</div>
-					}
-				/>
+			<div className="mt-6 space-y-4">
+				<div>
+					<h1 className="text-xl font-medium tracking-tight">Markets</h1>
+					<p className="mt-1 text-sm text-muted-foreground">
+						Browse prediction markets.
+					</p>
+				</div>
+				{markets.length > 0 ? (
+					<SortableMarketsTable
+						markets={markets.map(marketResponseToRow)}
+						paginationMode="none"
+						sortBy={sort_by}
+						sortDirection={sort_dir}
+						timeframe={timeframe}
+						toolbarLeft={<MarketStatusTabs />}
+					/>
+				) : (
+					<>
+						<MarketStatusTabs />
+						<p className="rounded-lg bg-card px-4 py-12 text-center text-muted-foreground">
+							{tab === "closed"
+								? "No closed markets found."
+								: "No open markets found."}
+						</p>
+					</>
+				)}
 			</div>
 			<PaginationNav
 				basePath="/markets"
@@ -85,6 +113,37 @@ export default async function MarketsPage({ searchParams }: Props) {
 				nextCursor={nextCursor}
 				hasMore={hasMore}
 			/>
-		</div>
+		</>
+	);
+}
+
+function MarketsPageFallback() {
+	return (
+		<>
+			<Skeleton className="h-5 w-32" />
+			<div className="mt-6 space-y-4">
+				<div>
+					<Skeleton className="h-7 w-28" />
+					<Skeleton className="mt-1 h-5 w-52" />
+				</div>
+				<DataTableSkeleton
+					columns={MARKET_SKELETON_COLUMNS}
+					rowCount={24}
+					toolbarLeft={
+						<div className="flex items-end gap-5">
+							<Skeleton className="h-7 w-14" />
+							<Skeleton className="h-7 w-20" />
+						</div>
+					}
+				/>
+			</div>
+			<nav
+				aria-hidden="true"
+				className="mt-8 flex items-center justify-center gap-3"
+			>
+				<Skeleton className="h-10 w-28" />
+				<Skeleton className="h-10 w-28" />
+			</nav>
+		</>
 	);
 }

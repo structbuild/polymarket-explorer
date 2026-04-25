@@ -1,20 +1,27 @@
 import { ImageResponse } from "next/og";
-import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
+import { cacheLife } from "next/cache";
+import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogCacheLife, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
 import { getTopMarkets } from "@/lib/struct/market-queries";
 
 export const runtime = "nodejs";
-export const revalidate = 7200;
 export const size = ogImageSize;
 export const contentType = "image/png";
 export const alt = "Browse Polymarket prediction market tags";
 
-export default async function OpenGraphImage() {
-	const { data: markets } = await getTopMarkets(ogFloatingPositions.length);
+async function loadTagOpenGraphImages() {
+	"use cache";
+	cacheLife(ogCacheLife);
 
+	const { data: markets } = await getTopMarkets(ogFloatingPositions.length);
 	const marketsWithImages = deduplicateByImage(markets, ogFloatingPositions.length);
-	const imageDataUrls = (
+
+	return (
 		await Promise.allSettled(marketsWithImages.map((m) => loadImageAsDataUrl(m.image_url, 128)))
 	).flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
+}
+
+export default async function OpenGraphImage() {
+	const imageDataUrls = await loadTagOpenGraphImages();
 
 	return new ImageResponse(
 		<OgCollectionLayout

@@ -1,15 +1,32 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 
 import { buildPageMetadata } from "@/lib/site-metadata";
-import { parsePageParam } from "@/lib/pagination";
+import { parsePageParam, TAGS_PAGE_SIZE } from "@/lib/pagination";
 import { TagGridPage } from "@/components/tags/tag-grid-page";
-
-export const revalidate = 3600;
+import {
+	DEFAULT_TAG_SORT,
+	DEFAULT_TAG_TIMEFRAME,
+	parseTagSort,
+	parseTagTimeframe,
+} from "@/lib/struct/tag-shared";
+import { getTagPageCount } from "@/lib/struct/market-queries";
+import { TagIndexPageFallback } from "@/components/tags/tag-index-page-fallback";
 
 type Props = {
 	params: Promise<{ page: string }>;
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateStaticParams() {
+	const totalPages = await getTagPageCount(
+		TAGS_PAGE_SIZE,
+		DEFAULT_TAG_SORT,
+		DEFAULT_TAG_TIMEFRAME,
+	);
+	return [{ page: String(totalPages > 1 ? 2 : 1) }];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { page: raw } = await params;
@@ -18,18 +35,37 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	if (!page || page === 1) return {};
 
 	return buildPageMetadata({
-		title: `Prediction Market Tags - Page ${page}`,
-		description: `Browse Polymarket tags and topics on page ${page}, including politics, crypto, sports, and more.`,
+		title: `Polymarket Categories · Page ${page}`,
+		description: `Browse Polymarket prediction market categories, page ${page} — politics, crypto, sports, culture, and more.`,
 		canonical: `/tags/page/${page}`,
 	});
 }
 
-export default async function TagPaginatedPage({ params }: Props) {
+export default async function TagPaginatedPage({ params, searchParams }: Props) {
 	const { page: raw } = await params;
 	const page = parsePageParam(raw);
 
 	if (!page) notFound();
 	if (page === 1) redirect("/tags");
 
-	return <TagGridPage page={page} />;
+	return (
+		<Suspense fallback={<TagIndexPageFallback />}>
+			<TagPaginatedPageContent page={page} searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function TagPaginatedPageContent({
+	page,
+	searchParams,
+}: {
+	page: number;
+	searchParams: Props["searchParams"];
+}) {
+	const resolved = await searchParams;
+	const sort = parseTagSort(resolved.sort);
+	const timeframe = parseTagTimeframe(resolved.timeframe);
+	const query = typeof resolved.q === "string" ? resolved.q : undefined;
+
+	return <TagGridPage page={page} sort={sort} timeframe={timeframe} query={query} />;
 }

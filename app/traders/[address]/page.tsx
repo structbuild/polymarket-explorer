@@ -1,16 +1,14 @@
+import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { PerformanceSummary } from "@/components/trader/performance-summary";
 import { PnlCalendar } from "@/components/trader/pnl-calendar";
 import { PnlCard } from "@/components/trader/pnl-card";
-import {
-	TraderTabPanel,
-	TraderTabPanelFallback,
-	loadTraderTabPanelData,
-} from "@/components/trader/trader-tab-panel";
+import { TraderDnaCard } from "@/components/trader/trader-dna-card";
+import { TraderTabPanel, TraderTabPanelFallback, loadTraderTabPanelData } from "@/components/trader/trader-tab-panel";
 import { TraderHeader } from "@/components/trader/trader-header";
-import { TraderInfo } from "@/components/trader/trader-info";
 import {
 	computeStreaks,
 	getPnlChartAnnotations,
+	getTraderCumulativePnlUsd,
 	getTraderDailyPnl,
 	getTraderPnlCandles,
 	type DailyPnlEntry,
@@ -18,10 +16,7 @@ import {
 	type PnlDataPoint,
 	type PnlStreaks,
 } from "@/lib/polymarket/pnl";
-import {
-	PNL_TIMEFRAMES,
-	type PnlTimeframe,
-} from "@/lib/polymarket/pnl-timeframes";
+import { PNL_TIMEFRAMES, type PnlTimeframe } from "@/lib/polymarket/pnl-timeframes";
 import {
 	getTraderOgImageAlt,
 	getTraderOgImageUrl,
@@ -32,25 +27,17 @@ import {
 	traderOgImageSize,
 } from "@/lib/trader-open-graph";
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
-import {
-	getMarketsByConditionIds,
-	getTraderPnlSummary,
-	getTraderProfile,
-} from "@/lib/struct/queries";
+import { getTraderAnalyticsChanges, getTraderAnalyticsDeltas, getTraderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
+import { parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { getMarketsByConditionIds, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type {
-	MarketResponse,
-	TraderPnlSummary,
-	UserProfile,
-} from "@structbuild/sdk";
+import type { MarketResponse, TraderPnlSummary, UserProfile } from "@structbuild/sdk";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-
-export const revalidate = 300;
 
 type Props = {
 	params: Promise<{ address: string }>;
@@ -72,14 +59,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		notFound();
 	}
 
-	const { displayName } = await loadTraderOpenGraphIdentity(address);
-	const description = getTraderPageDescription(displayName);
-	const socialTitle = getTraderSocialTitle(displayName);
+	const [{ displayName }, pnlSummary, cumulativePnlUsd] = await Promise.all([
+		loadTraderOpenGraphIdentity(address),
+		getTraderPnlSummary(address),
+		getTraderCumulativePnlUsd(address),
+	]);
+	const description = getTraderPageDescription(displayName, address, cumulativePnlUsd, pnlSummary);
+	const socialTitle = getTraderSocialTitle(displayName, cumulativePnlUsd);
 	const ogImage = getTraderOgImageUrl(address);
 	const ogAlt = getTraderOgImageAlt(displayName);
 
 	return buildPageMetadata({
-		title: getTraderPageTitle(displayName),
+		title: getTraderPageTitle(displayName, cumulativePnlUsd),
 		description,
 		canonical: `/traders/${address}`,
 		openGraph: {
@@ -119,9 +110,7 @@ function loadTraderInsights(address: string, timeframe: PnlTimeframe): Promise<T
 	});
 }
 
-function loadBestTradeMarket(
-	pnlSummaryPromise: Promise<TraderPnlSummary | null>,
-): Promise<MarketResponse | null> {
+function loadBestTradeMarket(pnlSummaryPromise: Promise<TraderPnlSummary | null>): Promise<MarketResponse | null> {
 	return pnlSummaryPromise.then(async (pnlSummary) => {
 		const bestTradeConditionId = pnlSummary?.best_trade_condition_id;
 
@@ -137,11 +126,13 @@ function loadBestTradeMarket(
 async function TraderInsightsSection({
 	address,
 	displayName,
+	profileImage,
 	timeframe,
 	insightsPromise,
 }: {
 	address: string;
 	displayName: string;
+	profileImage?: string | null;
 	timeframe: PnlTimeframe;
 	insightsPromise: Promise<TraderInsightsData>;
 }) {
@@ -149,13 +140,7 @@ async function TraderInsightsSection({
 
 	return (
 		<>
-			<PnlCard
-				address={address}
-				data={pnlCandles}
-				displayName={displayName}
-				annotations={chartAnnotations}
-				timeframe={timeframe}
-			/>
+			<PnlCard address={address} data={pnlCandles} displayName={displayName} profileImage={profileImage} annotations={chartAnnotations} timeframe={timeframe} />
 			<div className="rounded-lg bg-card p-4 sm:p-6">
 				<PnlCalendar data={dailyPnl} />
 			</div>
@@ -215,29 +200,6 @@ function TraderHeaderFallback() {
 	);
 }
 
-function TraderInfoFallback() {
-	return (
-		<div className="rounded-lg bg-card p-4 sm:p-6">
-			<div className="h-5 w-36 animate-pulse rounded bg-muted" />
-			<div className="my-2 h-px bg-border" />
-			<div className="space-y-3">
-				{Array.from({ length: 6 }, (_, index) => (
-					<div key={index} className="flex items-center justify-between gap-4">
-						<div className="h-4 w-20 animate-pulse rounded bg-muted" />
-						<div className="h-4 w-24 animate-pulse rounded bg-muted" />
-					</div>
-				))}
-				<div className="space-y-2 pt-1">
-					<div className="h-4 w-12 animate-pulse rounded bg-muted" />
-					<div className="h-4 w-full animate-pulse rounded bg-muted" />
-					<div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
-				</div>
-			</div>
-			<div className="my-2 h-px bg-border" />
-		</div>
-	);
-}
-
 async function TraderPerformanceSummarySection({
 	pnlSummary,
 	insightsPromise,
@@ -247,18 +209,9 @@ async function TraderPerformanceSummarySection({
 	insightsPromise: Promise<TraderInsightsData>;
 	bestTradeMarketPromise: Promise<MarketResponse | null>;
 }) {
-	const [{ streaks }, bestTradeMarket] = await Promise.all([
-		insightsPromise,
-		bestTradeMarketPromise,
-	]);
+	const [{ streaks }, bestTradeMarket] = await Promise.all([insightsPromise, bestTradeMarketPromise]);
 
-	return (
-		<PerformanceSummary
-			pnlSummary={pnlSummary}
-			bestTradeMarket={bestTradeMarket}
-			streaks={streaks}
-		/>
-	);
+	return <PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} streaks={streaks} />;
 }
 
 function TraderPerformanceSummaryFallback() {
@@ -284,6 +237,7 @@ async function TraderOverviewSection({
 	pnlSummaryPromise,
 	insightsPromise,
 	bestTradeMarketPromise,
+	cumulativePnlUsdPromise,
 }: {
 	address: string;
 	timeframe: PnlTimeframe;
@@ -291,11 +245,9 @@ async function TraderOverviewSection({
 	pnlSummaryPromise: Promise<TraderPnlSummary | null>;
 	insightsPromise: Promise<TraderInsightsData>;
 	bestTradeMarketPromise: Promise<MarketResponse | null>;
+	cumulativePnlUsdPromise: Promise<number>;
 }) {
-	const [profile, pnlSummary] = await Promise.all([
-		profilePromise,
-		pnlSummaryPromise,
-	]);
+	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
 
 	if (!profile && !pnlSummary) {
 		notFound();
@@ -307,9 +259,20 @@ async function TraderOverviewSection({
 		pseudonym: profile?.pseudonym,
 	});
 
+	const firstTradeIso =
+		pnlSummary?.first_trade_at && Number.isFinite(pnlSummary.first_trade_at)
+			? new Date(pnlSummary.first_trade_at * 1000).toISOString()
+			: undefined;
+	const lastTradeIso =
+		pnlSummary?.last_trade_at && Number.isFinite(pnlSummary.last_trade_at)
+			? new Date(pnlSummary.last_trade_at * 1000).toISOString()
+			: undefined;
+
 	const profileJsonLd = {
 		"@context": "https://schema.org",
 		"@type": "ProfilePage",
+		...(firstTradeIso && { datePublished: firstTradeIso }),
+		...(lastTradeIso && { dateModified: lastTradeIso }),
 		mainEntity: {
 			"@type": "Person",
 			name: displayName,
@@ -341,10 +304,12 @@ async function TraderOverviewSection({
 						<TraderInsightsSection
 							address={address}
 							displayName={displayName}
+							profileImage={profile?.profile_image}
 							timeframe={timeframe}
 							insightsPromise={insightsPromise}
 						/>
 					</Suspense>
+					{/* <TraderInfo address={address} profile={profile} /> */}
 				</div>
 
 				<div className="min-w-0 space-y-4 lg:w-1/3">
@@ -355,9 +320,54 @@ async function TraderOverviewSection({
 							bestTradeMarketPromise={bestTradeMarketPromise}
 						/>
 					</Suspense>
-					<TraderInfo address={address} profile={profile} />
+					<Suspense fallback={<TraderDnaFallback />}>
+						<TraderDnaSection
+							pnlSummaryPromise={pnlSummaryPromise}
+							cumulativePnlUsdPromise={cumulativePnlUsdPromise}
+							address={address}
+							displayName={displayName}
+							profileImage={profile?.profile_image}
+						/>
+					</Suspense>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+async function TraderDnaSection({
+	pnlSummaryPromise,
+	cumulativePnlUsdPromise,
+	address,
+	displayName,
+	profileImage,
+}: {
+	pnlSummaryPromise: Promise<TraderPnlSummary | null>;
+	cumulativePnlUsdPromise: Promise<number>;
+	address: string;
+	displayName: string;
+	profileImage?: string | null;
+}) {
+	const [pnlSummary, cumulativePnlUsd] = await Promise.all([pnlSummaryPromise, cumulativePnlUsdPromise]);
+	return (
+		<TraderDnaCard
+			pnlSummary={pnlSummary}
+			cumulativePnlUsd={cumulativePnlUsd}
+			address={address}
+			displayName={displayName}
+			profileImage={profileImage}
+		/>
+	);
+}
+
+function TraderDnaFallback() {
+	return (
+		<div className="rounded-lg bg-card p-4 sm:p-6">
+			<div className="mb-3 flex items-center justify-between gap-2">
+				<div className="h-4 w-24 animate-pulse rounded bg-muted" />
+				<div className="h-5 w-20 animate-pulse rounded-full bg-muted" />
+			</div>
+			<div className="aspect-square w-full animate-pulse rounded-md bg-muted" />
 		</div>
 	);
 }
@@ -372,14 +382,26 @@ function TraderOverviewFallback() {
 				</div>
 				<div className="min-w-0 space-y-4 lg:w-1/3">
 					<TraderPerformanceSummaryFallback />
-					<TraderInfoFallback />
+					<TraderDnaFallback />
 				</div>
 			</div>
 		</div>
 	);
 }
 
-export default async function TraderPage({ params, searchParams }: Props) {
+export default function TraderPage({ params, searchParams }: Props) {
+	return (
+		<div className="flex w-full justify-center">
+			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
+				<Suspense fallback={<TraderPageFallback />}>
+					<TraderPageContent params={params} searchParams={searchParams} />
+				</Suspense>
+			</div>
+		</div>
+	);
+}
+
+async function TraderPageContent({ params, searchParams }: Props) {
 	const { address: rawAddress } = await params;
 	const address = normalizeWalletAddress(rawAddress);
 
@@ -387,22 +409,15 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const {
-		tab,
-		openPage,
-		closedPage,
-		activityPage,
-		pnlTimeframe,
-		openSortBy,
-		openSortDirection,
-		closedSortBy,
-		closedSortDirection,
-	} = await loadTraderSearchParams(searchParams);
+	const [{ tab, openPage, closedPage, activityPage, pnlTimeframe, openSortBy, openSortDirection, closedSortBy, closedSortDirection }, resolvedSearchParams] =
+		await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
+	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
 
 	const profilePromise = getTraderProfile(address);
 	const pnlSummaryPromise = getTraderPnlSummary(address);
 	const insightsPromise = loadTraderInsights(address, pnlTimeframe);
 	const bestTradeMarketPromise = loadBestTradeMarket(pnlSummaryPromise);
+	const cumulativePnlUsdPromise = getTraderCumulativePnlUsd(address);
 	const tabDataPromise = loadTraderTabPanelData({
 		address,
 		currentTab: tab,
@@ -418,32 +433,60 @@ export default async function TraderPage({ params, searchParams }: Props) {
 	const { displayName } = await loadTraderOpenGraphIdentity(address);
 
 	return (
-		<div className="flex w-full justify-center">
-			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
-				<Breadcrumbs
-					items={[
-						{ label: "Home", href: "/" },
-						{ label: "Traders", href: "/traders" },
-						{ label: displayName, href: `/traders/${address}` },
-					]}
+		<>
+			<Breadcrumbs
+				items={[
+					{ label: "Home", href: "/" },
+					{ label: "Traders", href: "/traders" },
+					{ label: displayName, href: `/traders/${address}` },
+				]}
+			/>
+			<Suspense fallback={<TraderOverviewFallback />}>
+				<TraderOverviewSection
+					address={address}
+					timeframe={pnlTimeframe}
+					profilePromise={profilePromise}
+					pnlSummaryPromise={pnlSummaryPromise}
+					insightsPromise={insightsPromise}
+					bestTradeMarketPromise={bestTradeMarketPromise}
+					cumulativePnlUsdPromise={cumulativePnlUsdPromise}
 				/>
-				<Suspense fallback={<TraderOverviewFallback />}>
-					<TraderOverviewSection
-						address={address}
-						timeframe={pnlTimeframe}
-						profilePromise={profilePromise}
-						pnlSummaryPromise={pnlSummaryPromise}
-						insightsPromise={insightsPromise}
-						bestTradeMarketPromise={bestTradeMarketPromise}
-					/>
-				</Suspense>
+			</Suspense>
 
-				<div>
-					<Suspense fallback={<TraderTabPanelFallback currentTab={tab} />}>
-						<TraderTabPanel tabDataPromise={tabDataPromise} />
-					</Suspense>
-				</div>
+			<div>
+				<Suspense fallback={<TraderTabPanelFallback currentTab={tab} />}>
+					<TraderTabPanel tabDataPromise={tabDataPromise} />
+				</Suspense>
 			</div>
-		</div>
+
+			<div className="mt-8">
+				<AnalyticsSection
+					title="Analytics"
+					range={range}
+					view={view}
+					resolution={resolution}
+					defaultResolution={defaultResolution}
+					defaultRange={defaultRange}
+					excludeMetrics={["uniqueTraders", "makersTakers"]}
+					appendMetrics={["fees", "tradeTypes"]}
+					pathname={`/traders/${address}`}
+					fetchers={{
+						deltas: () => getTraderAnalyticsDeltas(address, range, resolution),
+						timeseries: () => getTraderAnalyticsTimeseries(address, range, resolution),
+						changes: () => getTraderAnalyticsChanges(address, range),
+					}}
+				/>
+			</div>
+		</>
+	);
+}
+
+function TraderPageFallback() {
+	return (
+		<>
+			<div className="h-4 w-48 animate-pulse rounded bg-muted" />
+			<TraderOverviewFallback />
+			<div className="h-64 rounded-lg bg-card" />
+		</>
 	);
 }

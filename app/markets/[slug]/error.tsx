@@ -12,7 +12,7 @@ export default function MarketError({
 	return (
 		<RouteError
 			title="Couldn't load this market"
-			description="We weren't able to fetch live data for this prediction market. The Polymarket API may be temporarily unavailable."
+			description="We weren't able to fetch live data for this prediction market. Try again in a few minutes."
 			error={error}
 			reset={reset}
 		/>

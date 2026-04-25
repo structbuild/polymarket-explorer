@@ -11,7 +11,7 @@ import {
 
 const parseAsPositivePage = createParser<number>(positivePageParserDef).withDefault(1);
 
-export const pnlTimeframeParser = parseAsStringLiteral(pnlTimeframeValues).withDefault("all");
+export const pnlTimeframeParser = parseAsStringLiteral(pnlTimeframeValues).withDefault("1w");
 
 export const traderSearchParamParsers = {
 	tab: parseAsStringLiteral(traderTabValues).withDefault("active"),

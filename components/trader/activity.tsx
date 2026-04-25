@@ -4,7 +4,7 @@ import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
 
@@ -17,6 +17,7 @@ import { ExternalLinkIcon, HashIcon, RefreshCwIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
 import { TooltipWrapper } from "../ui/tooltip";
+import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle";
 import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -203,30 +204,47 @@ export default function TraderActivity({ page, pageNumber }: Props) {
 		startTransition,
 	});
 
+	const [showUnknown, setShowUnknown] = useState(false);
+
+	const hasUnknownMarkets = page.data.some((trade) => !trade.question);
+
+	const data = useMemo(() => {
+		if (showUnknown) {
+			return page.data;
+		}
+		return page.data.filter((trade) => trade.question);
+	}, [page.data, showUnknown]);
+
 	return (
 		<DataTable
 			toolbarLeft={<TraderTabs />}
 			toolbarRight={
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => {
-						startTransition(async () => {
-							await refreshTraderTabAction(pathname, "activity");
-							router.refresh();
-						});
-					}}
-					disabled={isPending}
-				>
-					<RefreshCwIcon data-icon="inline-start" />
-					Refresh
-				</Button>
+				<div className="flex items-center gap-3">
+					{hasUnknownMarkets ? (
+						<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
+					) : null}
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							startTransition(async () => {
+								await refreshTraderTabAction(pathname, "activity");
+								router.refresh();
+							});
+						}}
+						disabled={isPending}
+					>
+						<RefreshCwIcon data-icon="inline-start" />
+						Refresh
+					</Button>
+				</div>
 			}
 			columns={columns}
-			data={page.data}
+			data={data}
 			storageKey="activity-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No trades to show."
+			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"
 			pageIndex={pageNumber - 1}

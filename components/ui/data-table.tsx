@@ -49,6 +49,7 @@ type BaseDataTableProps<TData> = {
 	storageKey?: string
 	defaultColumnVisibility?: VisibilityState
 	emptyMessage?: string
+	emptyClassName?: string
 	columnLayout?: "auto" | "fixed"
 	toolbarLeft?: React.ReactNode
 	toolbarRight?: React.ReactNode
@@ -106,6 +107,7 @@ type DataTableViewProps<TData> = BaseDataTableProps<TData> & {
 function DataTableView<TData>({
 	data,
 	emptyMessage = "No data to show.",
+	emptyClassName,
 	table,
 	pagination,
 	columnLayout = "auto",
@@ -243,7 +245,12 @@ function DataTableView<TData>({
 					</Table>
 				</div>
 			) : (
-				<div className="overflow-hidden rounded-lg bg-card px-4 py-12 text-center text-muted-foreground sm:px-6">
+				<div
+					className={cn(
+						"overflow-hidden rounded-lg bg-card px-4 py-12 text-center text-muted-foreground sm:px-6",
+						emptyClassName,
+					)}
+				>
 					{emptyMessage}
 				</div>
 			)}
@@ -337,6 +344,7 @@ function ClientPaginatedDataTable<TData>({
 	defaultPageSize = 25,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
 	emptyMessage,
+	emptyClassName,
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
@@ -402,6 +410,7 @@ function ClientPaginatedDataTable<TData>({
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}
+			emptyClassName={emptyClassName}
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
@@ -434,6 +443,7 @@ function NonPaginatedDataTable<TData>({
 	storageKey,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
 	emptyMessage,
+	emptyClassName,
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
@@ -468,6 +478,7 @@ function NonPaginatedDataTable<TData>({
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}
+			emptyClassName={emptyClassName}
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
@@ -493,6 +504,7 @@ function ServerPaginatedDataTable<TData>({
 	storageKey,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
 	emptyMessage,
+	emptyClassName,
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
@@ -536,6 +548,7 @@ function ServerPaginatedDataTable<TData>({
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}
+			emptyClassName={emptyClassName}
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}

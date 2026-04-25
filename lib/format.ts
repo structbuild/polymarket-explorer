@@ -31,11 +31,35 @@ export function formatDateCompact(seconds: number): string {
 	})
 }
 
+export function formatDateTimeCompact(seconds: number): string {
+	return new Date(seconds * 1000).toLocaleString("en-US", {
+		month: "short",
+		day: "numeric",
+		hour: "numeric",
+	})
+}
+
+export function formatTimeCompact(seconds: number): string {
+	return new Date(seconds * 1000).toLocaleTimeString("en-US", {
+		hour: "numeric",
+	})
+}
+
 export function formatDateFull(seconds: number): string {
 	return new Date(seconds * 1000).toLocaleDateString("en-US", {
 		month: "long",
 		day: "numeric",
 		year: "numeric",
+	})
+}
+
+export function formatDateTimeFull(seconds: number): string {
+	return new Date(seconds * 1000).toLocaleString("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
 	})
 }
 
@@ -89,6 +113,11 @@ type FormatNumberOptions = {
 	percent?: boolean;
 };
 
+function stripTrailingZeros(formatted: string): string {
+	if (!formatted.includes(".")) return formatted;
+	return formatted.replace(/\.?0+$/, "");
+}
+
 export function formatNumber(value: number | null | undefined, options: FormatNumberOptions = {}) {
 	const { compact = false, decimals, currency = false, percent = false } = options;
 
@@ -113,14 +142,14 @@ export function formatNumber(value: number | null | undefined, options: FormatNu
 		if (tier) {
 			const scaled = value / tier.threshold;
 			const fixed = decimals ?? (Math.abs(scaled) >= 100 ? 0 : Math.abs(scaled) >= 10 ? 1 : 2);
-			const formatted = Math.abs(scaled).toFixed(fixed);
+			const formatted = stripTrailingZeros(Math.abs(scaled).toFixed(fixed));
 			const sign = value < 0 ? "-" : "";
 			return `${sign}${currency ? "$" : ""}${formatted}${tier.suffix}`;
 		}
 
 		const fixed = decimals ?? (absValue >= 100 ? 0 : absValue >= 10 ? 1 : 2);
 		const sign = value < 0 ? "-" : "";
-		return `${sign}${currency ? "$" : ""}${absValue.toFixed(fixed)}`;
+		return `${sign}${currency ? "$" : ""}${stripTrailingZeros(absValue.toFixed(fixed))}`;
 	}
 
 	if (currency) {

@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { SearchDialog } from "@/components/search/search-dialog";
 import { MobileNav } from "./mobile-nav";
 import { NAV_ITEMS } from "./nav-items";
@@ -29,9 +30,15 @@ export function Header() {
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
 					<SearchDialog />
-					<MobileNav />
+					<Suspense fallback={<MobileNavFallback />}>
+						<MobileNav />
+					</Suspense>
 				</div>
 			</div>
 		</header>
 	);
+}
+
+function MobileNavFallback() {
+	return <div aria-hidden className="size-8 sm:hidden" />;
 }

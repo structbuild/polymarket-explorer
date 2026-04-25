@@ -1,5 +1,23 @@
 "use client"
 
+export function buildTraderShareFilename({
+	displayName,
+	address,
+	suffix,
+}: {
+	displayName: string
+	address: string
+	suffix: string
+}) {
+	const baseName = (displayName || address).trim().toLowerCase()
+	const slug = baseName
+		.normalize("NFKD")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+
+	return `${slug || address.toLowerCase()}-${suffix}.png`
+}
+
 const MIN_PIXEL_RATIO = 2
 const SHARE_MODE_ATTRIBUTE = "data-share-mode"
 const SHARE_MODE_IMAGE = "image"
@@ -36,6 +54,9 @@ async function createCaptureClone(node: HTMLElement, width: number) {
 	clone.style.width = `${width}px`
 	clone.style.maxWidth = `${width}px`
 
+	for (const el of clone.querySelectorAll<HTMLElement>('[data-share-ignore="true"]')) {
+		el.style.display = "none"
+	}
 	for (const el of clone.querySelectorAll<SVGElement>(".chart-annotation-label-html")) {
 		el.style.display = "none"
 	}

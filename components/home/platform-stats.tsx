@@ -1,14 +1,28 @@
+import type { GlobalCountsResponse } from "@structbuild/sdk";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
 import { getPlatformCounts } from "@/lib/struct/market-queries";
 
-const stats = [
-	{ key: "markets" as const, label: "Markets" },
-	{ key: "events" as const, label: "Events" },
-	{ key: "traders" as const, label: "Traders" },
-	{ key: "positions" as const, label: "Positions" },
-	{ key: "tags" as const, label: "Tags" },
+type StatSpec = {
+	key: keyof GlobalCountsResponse;
+	label: string;
+	currency?: boolean;
+	compact?: boolean;
+};
+
+const stats: StatSpec[] = [
+	{ key: "volume_usd", label: "Volume", currency: true, compact: true },
+	{ key: "txn_count", label: "Trades", compact: true },
+	{ key: "markets", label: "Markets" },
+	{ key: "events", label: "Events" },
+	{ key: "unique_traders", label: "Traders" },
+	{ key: "unique_makers", label: "Makers" },
+	{ key: "unique_takers", label: "Takers" },
+	{ key: "positions", label: "Positions" },
 ];
+
+const GRID_CLASS = "grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4";
 
 export async function PlatformStats() {
 	const counts = await getPlatformCounts();
@@ -18,13 +32,13 @@ export async function PlatformStats() {
 	}
 
 	return (
-		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-			{stats.map(({ key, label }) => (
+		<div className={GRID_CLASS}>
+			{stats.map(({ key, label, currency, compact }) => (
 				<Card key={key} size="sm" className="px-2 rounded-lg ring-0 ">
 					<CardContent className="flex flex-col gap-0.5">
 							<p className="text-sm text-muted-foreground">{label}</p>
 							<p className="text-xl font-medium tabular-nums">
-								{formatNumber(counts[key], { compact: false })}
+								{formatNumber(Number(counts[key] ?? 0), { compact, currency })}
 							</p>
 					</CardContent>
 				</Card>
@@ -35,8 +49,8 @@ export async function PlatformStats() {
 
 export function PlatformStatsFallback() {
 	return (
-		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-			{Array.from({ length: 5 }, (_, i) => (
+		<div className={GRID_CLASS}>
+			{Array.from({ length: stats.length }, (_, i) => (
 				<Card key={i} size="sm" className="px-2 rounded-lg ring-0 ">
 					<CardContent className="flex flex-col gap-0.5">
 						<div className="h-5 w-16 animate-pulse rounded bg-muted" />

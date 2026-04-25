@@ -16,8 +16,8 @@ import { Analytics } from "@vercel/analytics/next";
 export const metadata: Metadata = {
 	metadataBase: getSiteUrl(),
 	title: {
-		default: SITE_NAME,
-		template: `%s | ${SITE_NAME}`,
+		default: `${SITE_NAME} · Live Odds, Traders & Analytics`,
+		template: "%s",
 	},
 	description: SITE_DESCRIPTION,
 	alternates: {

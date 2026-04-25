@@ -1,29 +1,42 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
 import { TradersTable } from "@/components/trader/traders-table";
+import { TRADER_SKELETON_COLUMNS } from "@/components/trader/traders-table-columns";
 import { TradersTimeframeToggle } from "@/components/trader/traders-timeframe-toggle";
+import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSiteUrl } from "@/lib/env";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getGlobalLeaderboard } from "@/lib/struct/market-queries";
 import { parseTraderTimeframe } from "@/lib/trader-timeframes";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
-export const revalidate = 300;
-
 type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const metadata: Metadata = buildPageMetadata({
-	title: "Top Polymarket Traders",
-	description: "Compare top Polymarket traders by PnL, volume, markets traded, and win rate.",
+	title: "Top Polymarket Traders by PnL · Live Leaderboard",
+	description:
+		"Live Polymarket trader leaderboard — ranked by realized PnL, volume, markets traded, and win rate. See who's winning today.",
 	canonical: "/traders",
 });
 
-export default async function TradersPage({ searchParams }: Props) {
+export default function TradersPage({ searchParams }: Props) {
+	return (
+		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+			<Suspense fallback={<TradersPageFallback />}>
+				<TradersPageContent searchParams={searchParams} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function TradersPageContent({ searchParams }: Props) {
 	const resolvedSearchParams = await searchParams;
 	const timeframe = parseTraderTimeframe(resolvedSearchParams.timeframe);
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
@@ -52,7 +65,7 @@ export default async function TradersPage({ searchParams }: Props) {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+		<>
 			<Breadcrumbs
 				items={[
 					{ label: "Home", href: "/" },
@@ -84,6 +97,34 @@ export default async function TradersPage({ searchParams }: Props) {
 				nextCursor={nextCursor}
 				hasMore={hasMore}
 			/>
-		</div>
+		</>
+	);
+}
+
+function TradersPageFallback() {
+	return (
+		<>
+			<Skeleton className="h-5 w-32" />
+			<div className="mt-6">
+				<DataTableSkeleton
+					columns={TRADER_SKELETON_COLUMNS}
+					rowCount={100}
+					toolbarLeft={
+						<div className="mb-3">
+							<Skeleton className="h-7 w-24" />
+							<Skeleton className="mt-1 h-5 w-72" />
+						</div>
+					}
+					toolbarRight={<Skeleton className="h-8 w-52" />}
+				/>
+			</div>
+			<nav
+				aria-hidden="true"
+				className="mt-8 flex items-center justify-center gap-3"
+			>
+				<Skeleton className="h-10 w-28" />
+				<Skeleton className="h-10 w-28" />
+			</nav>
+		</>
 	);
 }

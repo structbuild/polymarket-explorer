@@ -1,12 +1,12 @@
 import { ImageResponse } from "next/og";
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import type { PositionChartDataPoint } from "@structbuild/sdk";
 import { formatDateShort, formatNumber } from "@/lib/format";
 import { getMarketBySlug, getMarketChart } from "@/lib/struct/market-queries";
-import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
+import { loadImageAsDataUrl, ogCacheLife, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 
 export const runtime = "nodejs";
-export const revalidate = 7200;
 export const size = ogImageSize;
 export const contentType = "image/png";
 export const alt = "Polymarket market prediction preview";
@@ -110,14 +110,33 @@ function buildChartGeometry(points: PositionChartDataPoint[]): ChartGeometry | n
 	};
 }
 
-export default async function OpenGraphImage({ params }: Props) {
-	const { slug } = await params;
+async function loadMarketOpenGraphData(slug: string) {
+	"use cache";
+	cacheLife(ogCacheLife);
+
 	const market = await getMarketBySlug(slug);
 
 	if (!market) {
+		return null;
+	}
+
+	const [imageDataUrl, chartOutcomes] = await Promise.all([
+		loadImageAsDataUrl(market.image_url, 192),
+		getMarketChart(market.condition_id),
+	]);
+
+	return { chartOutcomes, imageDataUrl, market };
+}
+
+export default async function OpenGraphImage({ params }: Props) {
+	const { slug } = await params;
+	const data = await loadMarketOpenGraphData(slug);
+
+	if (!data) {
 		notFound();
 	}
 
+	const { chartOutcomes, imageDataUrl, market } = data;
 	const question = market.question ?? market.title ?? slug;
 	const status = market.status ?? "unknown";
 	const metricsLifetime = market.metrics?.["lifetime"];
@@ -133,8 +152,6 @@ export default async function OpenGraphImage({ params }: Props) {
 	const primaryOutcome = outcomes[0];
 	const probability = primaryOutcome?.price ?? 0;
 	const probabilityPct = `${(probability * 100).toFixed(0)}%`;
-
-	const [imageDataUrl, chartOutcomes] = await Promise.all([loadImageAsDataUrl(market.image_url, 192), getMarketChart(market.condition_id)]);
 
 	const primaryChartOutcome = chartOutcomes?.find((o) => o.outcome_index === (primaryOutcome?.outcome_index ?? 0)) ?? chartOutcomes?.[0];
 	const chart = primaryChartOutcome ? buildChartGeometry(primaryChartOutcome.data ?? []) : null;

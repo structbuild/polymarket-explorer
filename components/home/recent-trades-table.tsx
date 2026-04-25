@@ -22,7 +22,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 	{
 		id: "age",
 		header: "Age",
-		size: 60,
+		size: 80,
 		cell: ({ row }) =>
 			row.original.confirmed_at != null ? (
 				<TimeAgo timestamp={row.original.confirmed_at} className="text-sm text-muted-foreground" />
@@ -33,7 +33,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 	{
 		id: "trader",
 		header: "Trader",
-		size: 180,
+		size: 192,
 		cell: ({ row }) => {
 			const trade = row.original;
 			if (!hasTradeTrader(trade)) {
@@ -44,7 +44,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 			return (
 				<Link
 					href={`/traders/${address}` as Route}
-					className="flex max-w-44 items-center gap-2 hover:underline"
+					className="w-full max-w-48 flex items-center gap-2 hover:underline"
 				>
 					{trade.trader.profile_image ? (
 						<Avatar className="rounded-sm after:rounded-sm">
@@ -70,7 +70,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 	{
 		id: "market",
 		header: "Market",
-		size: 200,
+		size: 520,
 		cell: ({ row }) => {
 			const trade = row.original;
 			if (!isOrderFilledTrade(trade)) return <p className="text-muted-foreground">—</p>;
@@ -78,7 +78,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 			const rawImageUrl = "image_url" in trade ? trade.image_url : null;
 			const imageUrl = rawImageUrl != null ? normalizePolymarketS3ImageUrl(rawImageUrl) : null;
 			const content = (
-				<div className="flex items-center gap-2">
+				<div className="flex w-full items-center gap-2">
 					{imageUrl && (
 						<Avatar className="rounded-sm after:rounded-sm">
 							<AvatarImage src={imageUrl} className="rounded-sm" />
@@ -91,20 +91,20 @@ const columns: ColumnDef<Trade, unknown>[] = [
 				return (
 					<Link
 						href={`/markets/${trade.slug}` as Route}
-						className="hover:underline"
+						className="flex w-full hover:underline"
 						title={label}
 					>
 						{content}
 					</Link>
 				);
 			}
-			return <div title={label}>{content}</div>;
+			return <div className="w-full" title={label}>{content}</div>;
 		},
 	},
 	{
 		id: "outcome",
 		header: "Outcome",
-		size: 120,
+		size: 140,
 		cell: ({ row }) => {
 			const trade = row.original;
 			if (!isOrderFilledTrade(trade)) return null;
@@ -118,7 +118,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 	{
 		id: "value",
 		header: "Value",
-		size: 90,
+		size: 100,
 		cell: ({ row }) => {
 			const trade = row.original;
 			if (!isOrderFilledTrade(trade)) return null;
@@ -133,7 +133,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 	{
 		id: "link",
 		header: "",
-		size: 40,
+		size: 48,
 		enableHiding: false,
 		cell: ({ row }) => (
 			<TooltipWrapper content="View on Polygonscan">

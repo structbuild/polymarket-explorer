@@ -41,6 +41,13 @@ export async function getTraderPnlCandles(address: string, interval = "all", fid
 	return getTraderPnlCandlesCached(normalizedAddress, interval, fidelity);
 }
 
+export async function getTraderCumulativePnlUsd(address: string): Promise<number> {
+	const points = await getTraderPnlCandles(address, "all", "1d");
+	if (points.length === 0) return 0;
+	const latest = points.reduce((max, point) => (point.t > max.t ? point : max), points[0]);
+	return latest.p;
+}
+
 const getTraderDailyPnlCached = cache(async (address: string): Promise<DailyPnlEntry[]> => {
 	const data = await fetchPnl(address, "all", "1d");
 	return toDailyPnl(data);
