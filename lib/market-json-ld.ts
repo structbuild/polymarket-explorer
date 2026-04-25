@@ -26,10 +26,13 @@ function isBinary(outcomes: MarketOutcome[]): boolean {
 }
 
 export function buildMarketJsonLd({ market, url, siteName, imageUrl }: MarketJsonLdContext) {
-	const question = (market.question ?? market.title ?? "Prediction market").trim();
+	const question =
+		[market.question, market.title]
+			.map((v) => v?.trim())
+			.find((v) => Boolean(v)) ?? "Prediction market";
 	const description = market.description?.trim() || undefined;
 	const outcomes = market.outcomes ?? [];
-	const isResolved = market.status === "closed" || market.status === "resolved";
+	const isResolved = market.status === "resolved";
 	const winningOutcome = market.winning_outcome;
 	const leading = getLeadingOutcome(outcomes);
 	const binary = isBinary(outcomes);
@@ -121,7 +124,10 @@ export function buildMarketJsonLd({ market, url, siteName, imageUrl }: MarketJso
 			eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
 			location: {
 				"@type": "VirtualLocation",
-				url: `https://polymarket.com/event/${market.event_slug ?? market.market_slug ?? ""}`,
+				url:
+					market.event_slug || market.market_slug
+						? `https://polymarket.com/event/${market.event_slug ?? market.market_slug}`
+						: url,
 			},
 			organizer: {
 				"@type": "Organization",

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { SearchIcon, XIcon } from "lucide-react";
 
@@ -12,7 +12,6 @@ const LISTING_PATH = "/tags";
 
 export function TagSearchInput({ query }: { query: string }) {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	const [value, setValue] = useState(query);
 	const [isPending, startTransition] = useTransition();
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,16 +30,21 @@ export function TagSearchInput({ query }: { query: string }) {
 	}, [query]);
 
 	function commit(next: string) {
-		const params = new URLSearchParams(searchParams.toString());
+		const current = new URLSearchParams(window.location.search);
+		const params = new URLSearchParams(current.toString());
 		const trimmed = next.trim();
+		if (next !== trimmed) {
+			setValue(trimmed);
+		}
 		if (trimmed) {
 			params.set("q", trimmed);
 		} else {
 			params.delete("q");
 		}
 		lastCommittedRef.current = trimmed;
-		const qs = params.toString();
-		const href = (qs ? `${LISTING_PATH}?${qs}` : LISTING_PATH) as Route;
+		const nextQs = params.toString();
+		if (nextQs === current.toString()) return;
+		const href = (nextQs ? `${LISTING_PATH}?${nextQs}` : LISTING_PATH) as Route;
 		startTransition(() => {
 			router.replace(href, { scroll: false });
 		});

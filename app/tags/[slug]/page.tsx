@@ -22,7 +22,7 @@ import {
 	getTagAnalyticsDeltas,
 	getTagAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
-import { parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { DEFAULT_ANALYTICS_VIEW, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
 import {
 	DEFAULT_MARKET_STATUS_TAB,
 	parseMarketStatusTab,
@@ -122,8 +122,12 @@ async function TagPageContent({
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
 	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab);
-	const paginationBaseParams: Record<string, string> =
-		marketTab === DEFAULT_MARKET_STATUS_TAB ? {} : { tab: marketTab };
+	const paginationBaseParams: Record<string, string> = {
+		...(marketTab !== DEFAULT_MARKET_STATUS_TAB ? { tab: marketTab } : {}),
+		...(view !== DEFAULT_ANALYTICS_VIEW ? { view } : {}),
+		...(range !== defaultRange ? { range } : {}),
+		...(resolution !== defaultResolution ? { resolution } : {}),
+	};
 	const siteUrl = getSiteUrl();
 	const tagDisplay = formatCapitalizeWords(tag.label);
 

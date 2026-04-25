@@ -4,6 +4,7 @@ import type {
 	GlobalCountsResponse,
 	MarketResponse,
 	MarketSortBy,
+	MarketStatus,
 	MetricsTimeframe,
 	SortDirection,
 } from "@structbuild/sdk";
@@ -26,11 +27,11 @@ export const structPlatformCountsCacheTag = "struct-platform-counts";
 
 async function fetchTopMarkets(
 	limit: number = defaultPageSize,
-	status: string = "open",
+	status: MarketStatus = "open",
 	cursor?: string,
-	sortBy: string = "volume",
-	sortDir: string = "desc",
-	timeframe: string = "24h",
+	sortBy: MarketSortBy = "volume",
+	sortDir: SortDirection = "desc",
+	timeframe: MetricsTimeframe = "24h",
 	excludeTags?: string,
 ): Promise<PaginatedResult<MarketResponse>> {
 	const client = getStructClient();
@@ -42,10 +43,10 @@ async function fetchTopMarkets(
 	try {
 		const response = await client.markets.getMarkets({
 			limit,
-			status: status as "open" | "closed" | "all",
-			sort_by: sortBy as MarketSortBy,
-			sort_dir: sortDir as SortDirection,
-			timeframe: timeframe as MetricsTimeframe,
+			status,
+			sort_by: sortBy,
+			sort_dir: sortDir,
+			timeframe,
 			include_metrics: true,
 			...(cursor ? { pagination_key: cursor } : {}),
 			...(excludeTags ? { exclude_tags: excludeTags } : {}),
@@ -84,17 +85,17 @@ export async function getMarketBySlug(slug: string): Promise<MarketResponse | nu
 		}
 
 		logStructError(`getMarketBySlug:${slug}`, error);
-		return null;
+		throw error;
 	}
 }
 
 export async function getTopMarkets(
 	limit: number = defaultPageSize,
-	status: string = "open",
+	status: MarketStatus = "open",
 	cursor?: string,
-	sortBy: string = "volume",
-	sortDir: string = "desc",
-	timeframe: string = "24h",
+	sortBy: MarketSortBy = "volume",
+	sortDir: SortDirection = "desc",
+	timeframe: MetricsTimeframe = "24h",
 	excludeTags?: string,
 ): Promise<PaginatedResult<MarketResponse>> {
 	"use cache";
@@ -109,10 +110,14 @@ export const getHomeTopMarkets = fetchTopMarkets;
 
 export async function getAllMarketSlugs(
 	maxCount?: number,
-): Promise<{ slug: string; lastModified: Date }[]> {
+): Promise<{ slug: string }[]> {
 	"use cache";
 	cacheLife("minutes");
 	cacheTag(structAllMarketSlugsCacheTag);
+
+	if (maxCount !== undefined && maxCount <= 0) {
+		return [];
+	}
 
 	const client = getStructClient();
 
@@ -120,9 +125,8 @@ export async function getAllMarketSlugs(
 		return [];
 	}
 
-	const results: { slug: string; lastModified: Date }[] = [];
+	const results: { slug: string }[] = [];
 	let paginationKey: string | undefined;
-	const now = new Date();
 
 	try {
 		const seenPaginationKeys = new Set<string>();
@@ -145,8 +149,8 @@ export async function getAllMarketSlugs(
 
 			for (const market of response.data) {
 				if (market.market_slug) {
-					results.push({ slug: market.market_slug, lastModified: now });
-					if (maxCount && results.length >= maxCount) {
+					results.push({ slug: market.market_slug });
+					if (maxCount !== undefined && results.length >= maxCount) {
 						break outer;
 					}
 				}
@@ -167,7 +171,7 @@ export async function getAllMarketSlugs(
 		return results;
 	} catch (error) {
 		logStructError("getAllMarketSlugs", error);
-		return results;
+		throw error;
 	}
 }
 

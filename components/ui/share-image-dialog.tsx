@@ -199,6 +199,13 @@ export function ShareImageDialog({
 		setCopyResult(null)
 		setPreviewError(null)
 
+		setPreviewUrl(null)
+		setImageBlob(null)
+		if (previewUrlRef.current) {
+			URL.revokeObjectURL(previewUrlRef.current)
+			previewUrlRef.current = null
+		}
+
 		try {
 			await ensureImage(true)
 			setOpen(true)

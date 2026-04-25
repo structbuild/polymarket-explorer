@@ -54,7 +54,7 @@ export function TraderInfo({ address, profile }: TraderInfoProps) {
 			{profile?.bio ? (
 				<div className="mt-6 space-y-1">
 					<p className="text-xs leading-4 text-muted-foreground">Bio</p>
-					<p className="text-sm wrap-break-word sm:text-base">{profile.bio}</p>
+					<p className="text-sm break-words sm:text-base">{profile.bio}</p>
 				</div>
 			) : null}
 		</div>

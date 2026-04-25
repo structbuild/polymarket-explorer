@@ -15,7 +15,7 @@ function StatItem({ label, value }: StatItemProps) {
 	return (
 		<div className="min-w-0 space-y-1">
 			<p className="text-xs leading-4 text-muted-foreground sm:text-sm">{label}</p>
-			<p className="text-base font-medium wrap-break-word sm:text-lg">{value}</p>
+			<p className="text-base font-medium break-words sm:text-lg">{value}</p>
 		</div>
 	);
 }

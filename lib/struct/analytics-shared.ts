@@ -244,7 +244,12 @@ export type ComponentTotals = Record<VolumeComponentId, number>;
 export function isDefaultVolumeComponents(
 	components: readonly VolumeComponentId[],
 ): boolean {
-	return components.length === VOLUME_COMPONENT_IDS.length;
+	if (components.length !== VOLUME_COMPONENT_IDS.length) return false;
+	const selected = new Set(components);
+	return (
+		selected.size === VOLUME_COMPONENT_IDS.length &&
+		VOLUME_COMPONENT_IDS.every((id) => selected.has(id))
+	);
 }
 
 export function computeVolumeComponentTotals(points: AnalyticsPoint[]): ComponentTotals {

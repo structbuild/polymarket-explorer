@@ -53,13 +53,13 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 						{href ? (
 							<Link
 								href={href}
-								className="line-clamp-2 text-base font-medium wrap-break-word text-foreground underline-offset-4 hover:underline"
+								className="line-clamp-2 text-base font-medium break-words text-foreground underline-offset-4 hover:underline"
 								title={market.question ?? ""}
 							>
 								{market.question}
 							</Link>
 						) : (
-							<p className="line-clamp-2 text-base font-medium wrap-break-word" title={market.question ?? ""}>
+							<p className="line-clamp-2 text-base font-medium break-words" title={market.question ?? ""}>
 								{market.question}
 							</p>
 						)}

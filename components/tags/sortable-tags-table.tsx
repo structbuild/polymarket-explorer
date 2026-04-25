@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useTransition } from "react";
 import type { Tag, TagSortBy, TagSortTimeframe } from "@structbuild/sdk";
 
@@ -28,14 +28,13 @@ export function SortableTagsTable({
 	toolbarRight,
 }: SortableTagsTableProps) {
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	const [, startTransition] = useTransition();
 
 	const navigate = useCallback(
 		(patch: { sort?: TagSortBy; timeframe?: TagSortTimeframe }) => {
-			const params = new URLSearchParams(searchParams.toString());
-			const nextSort = patch.sort ?? sort;
-			const nextTimeframe = patch.timeframe ?? timeframe;
+			const params = new URLSearchParams(window.location.search);
+			const nextSort = patch.sort ?? (params.get("sort") as TagSortBy | null) ?? sort;
+			const nextTimeframe = patch.timeframe ?? (params.get("timeframe") as TagSortTimeframe | null) ?? timeframe;
 			if (nextSort === DEFAULT_TAG_SORT) {
 				params.delete("sort");
 			} else {
@@ -52,7 +51,7 @@ export function SortableTagsTable({
 				router.replace(href, { scroll: false });
 			});
 		},
-		[router, searchParams, sort, timeframe],
+		[router, sort, timeframe],
 	);
 
 	const handleSortChange = useCallback(
