@@ -95,27 +95,23 @@ export const searchAll = cache(
 	},
 );
 
-async function getTraderProfileCached(address: string): Promise<UserProfile | null> {
+async function getTraderProfileCached(address: string): Promise<UserProfile> {
 	"use cache";
 	cacheLife("minutes");
 
 	const client = getStructClient();
 
 	if (!client) {
-		return null;
+		throw new Error("Struct client not configured");
 	}
 
-	try {
-		const response = await client.trader.getTraderProfile({ address });
-		return response.data;
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return null;
-		}
+	const response = await client.trader.getTraderProfile({ address });
 
-		logStructError(`getTraderProfile:${address}`, error);
-		throw error;
+	if (!response.data) {
+		throw new Error("Empty trader profile payload");
 	}
+
+	return response.data;
 }
 
 export async function getTraderProfile(address: string): Promise<UserProfile | null> {
@@ -125,30 +121,33 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 		return null;
 	}
 
-	return getTraderProfileCached(normalizedAddress);
+	try {
+		return await getTraderProfileCached(normalizedAddress);
+	} catch (error) {
+		if (readStatus(error) !== 404) {
+			logStructError(`getTraderProfile:${address}`, error);
+		}
+		return null;
+	}
 }
 
-async function getTraderPnlSummaryCached(address: string): Promise<TraderPnlSummary | null> {
+async function getTraderPnlSummaryCached(address: string): Promise<TraderPnlSummary> {
 	"use cache";
 	cacheLife("minutes");
 
 	const client = getStructClient();
 
 	if (!client) {
-		return null;
+		throw new Error("Struct client not configured");
 	}
 
-	try {
-		const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
-		return response.data;
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return null;
-		}
+	const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
 
-		logStructError(`getTraderPnlSummary:${address}`, error);
-		throw error;
+	if (!response.data) {
+		throw new Error("Empty trader pnl payload");
 	}
+
+	return response.data;
 }
 
 export async function getTraderPnlSummary(address: string): Promise<TraderPnlSummary | null> {
@@ -158,7 +157,14 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 		return null;
 	}
 
-	return getTraderPnlSummaryCached(normalizedAddress);
+	try {
+		return await getTraderPnlSummaryCached(normalizedAddress);
+	} catch (error) {
+		if (readStatus(error) !== 404) {
+			logStructError(`getTraderPnlSummary:${address}`, error);
+		}
+		return null;
+	}
 }
 
 export async function getMarketsByConditionIds(conditionIds: string[]): Promise<MarketResponse[] | null> {
