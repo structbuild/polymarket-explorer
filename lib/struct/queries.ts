@@ -147,7 +147,7 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 			return null;
 		}
 		logStructError(`getTraderProfile:${normalizedAddress}`, error);
-		return null;
+		throw error;
 	}
 }
 
@@ -192,7 +192,7 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 			return null;
 		}
 		logStructError(`getTraderPnlSummary:${normalizedAddress}`, error);
-		return null;
+		throw error;
 	}
 }
 

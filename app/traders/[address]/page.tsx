@@ -40,8 +40,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-const TRADER_ADDRESS_PLACEHOLDER = "__placeholder__";
-
 type Props = {
 	params: Promise<{ address: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -57,17 +55,14 @@ type TraderInsightsData = {
 export async function generateStaticParams() {
 	try {
 		const { data } = await getGlobalLeaderboard("lifetime", 10);
-		const addresses = data
+		return data
 			.map((entry) => normalizeWalletAddress(entry.trader.address))
 			.filter((address): address is string => Boolean(address))
-			.slice(0, 10);
-		if (addresses.length > 0) {
-			return addresses.map((address) => ({ address }));
-		}
+			.slice(0, 10)
+			.map((address) => ({ address }));
 	} catch {
-		// fall through to placeholder
+		return [];
 	}
-	return [{ address: TRADER_ADDRESS_PLACEHOLDER }];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -469,7 +464,11 @@ async function TraderPageContent({
 		closedSortDirection,
 	});
 
-	const { displayName } = await loadTraderOpenGraphIdentity(address);
+	const displayName = getTraderDisplayName({
+		address,
+		name: profile?.name,
+		pseudonym: profile?.pseudonym,
+	});
 
 	return (
 		<>
