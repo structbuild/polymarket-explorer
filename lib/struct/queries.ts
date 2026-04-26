@@ -95,25 +95,6 @@ export const searchAll = cache(
 	},
 );
 
-async function getTraderProfileCached(address: string): Promise<UserProfile> {
-	"use cache";
-	cacheLife("minutes");
-
-	const client = getStructClient();
-
-	if (!client) {
-		throw new Error("Struct client not configured");
-	}
-
-	const response = await client.trader.getTraderProfile({ address });
-
-	if (!response.data) {
-		throw new Error("Empty trader profile payload");
-	}
-
-	return response.data;
-}
-
 export async function getTraderProfile(address: string): Promise<UserProfile | null> {
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -121,33 +102,22 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 		return null;
 	}
 
-	try {
-		return await getTraderProfileCached(normalizedAddress);
-	} catch (error) {
-		if (readStatus(error) !== 404) {
-			logStructError(`getTraderProfile:${address}`, error);
-		}
-		return null;
-	}
-}
-
-async function getTraderPnlSummaryCached(address: string): Promise<TraderPnlSummary> {
-	"use cache";
-	cacheLife("minutes");
-
 	const client = getStructClient();
 
 	if (!client) {
-		throw new Error("Struct client not configured");
+		return null;
 	}
 
-	const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
-
-	if (!response.data) {
-		throw new Error("Empty trader pnl payload");
+	try {
+		const response = await client.trader.getTraderProfile({ address: normalizedAddress });
+		return response.data ?? null;
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return null;
+		}
+		logStructError(`getTraderProfile:${normalizedAddress}`, error);
+		return null;
 	}
-
-	return response.data;
 }
 
 export async function getTraderPnlSummary(address: string): Promise<TraderPnlSummary | null> {
@@ -157,12 +127,20 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 		return null;
 	}
 
+	const client = getStructClient();
+
+	if (!client) {
+		return null;
+	}
+
 	try {
-		return await getTraderPnlSummaryCached(normalizedAddress);
+		const response = await client.trader.getTraderPnl({ address: normalizedAddress, timeframe: "lifetime" });
+		return response.data ?? null;
 	} catch (error) {
-		if (readStatus(error) !== 404) {
-			logStructError(`getTraderPnlSummary:${address}`, error);
+		if (readStatus(error) === 404) {
+			return null;
 		}
+		logStructError(`getTraderPnlSummary:${normalizedAddress}`, error);
 		return null;
 	}
 }
