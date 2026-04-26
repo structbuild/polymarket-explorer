@@ -90,7 +90,7 @@ export default function RootLayout({
 								<NotificationBar />
 								<Header />
 								<main className="flex min-h-0 flex-1 flex-col">{children}</main>
-								<Footer />
+								{/* <Footer /> */}
 							</div>
 						</TooltipProvider>
 					</ThemeProvider>
