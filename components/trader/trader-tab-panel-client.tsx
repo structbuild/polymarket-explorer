@@ -1,7 +1,6 @@
 "use client"
 
 import type { TraderOutcomePnlEntry } from "@structbuild/sdk"
-import dynamic from "next/dynamic"
 
 import type {
 	TraderPositionSortBy,
@@ -9,13 +8,8 @@ import type {
 } from "@/lib/trader-search-params-shared"
 import type { PaginatedResource } from "@/lib/struct/types"
 import type { TradeRow } from "./types"
-import {
-	loadTraderActivity,
-	loadTraderPositions,
-} from "./trader-tab-panel-loaders"
-
-const TraderActivity = dynamic(loadTraderActivity)
-const TraderPositions = dynamic(loadTraderPositions)
+import TraderActivity from "./activity"
+import TraderPositions from "./positions"
 
 type TraderTabPanelClientProps =
 	| {

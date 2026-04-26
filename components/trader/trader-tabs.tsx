@@ -13,14 +13,8 @@ import {
 import { cn } from "@/lib/utils"
 
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs"
-import {
-	getTraderTabPanelBundleKind,
-	preloadTraderTabPanelBundle,
-	type TraderTabPanelBundleKind,
-} from "./trader-tab-panel-loaders"
 
 const prefetchedTabHrefs = new Set<string>()
-const prefetchedBundleKinds = new Set<TraderTabPanelBundleKind>()
 
 const backgroundPrefetchDelayMs = 250
 const idlePrefetchTimeoutMs = 2_000
@@ -113,17 +107,6 @@ export function TraderTabs({
 		if (!prefetchedTabHrefs.has(href)) {
 			prefetchedTabHrefs.add(href)
 			router.prefetch(href)
-		}
-
-		const currentBundleKind = getTraderTabPanelBundleKind(currentTab)
-		const nextBundleKind = getTraderTabPanelBundleKind(nextTab)
-
-		if (
-			currentBundleKind !== nextBundleKind &&
-			!prefetchedBundleKinds.has(nextBundleKind)
-		) {
-			prefetchedBundleKinds.add(nextBundleKind)
-			void preloadTraderTabPanelBundle(nextTab)
 		}
 	}, [currentTab, pathname, prefetchEnabled, router, search])
 
