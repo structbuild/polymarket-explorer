@@ -39,6 +39,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+const TRADER_ADDRESS_PLACEHOLDER = "__placeholder__";
+
 type Props = {
 	params: Promise<{ address: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -50,6 +52,10 @@ type TraderInsightsData = {
 	streaks: PnlStreaks;
 	chartAnnotations: PnlChartAnnotation[];
 };
+
+export async function generateStaticParams() {
+	return [{ address: TRADER_ADDRESS_PLACEHOLDER }];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { address: rawAddress } = await params;

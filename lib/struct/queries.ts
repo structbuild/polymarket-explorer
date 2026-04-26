@@ -43,6 +43,17 @@ function sanitizeLogValue(value: string, maxLength: number = maxTraderSearchQuer
 	return sanitized.length > maxLength ? `${sanitized.slice(0, maxLength)}...` : sanitized;
 }
 
+class TraderDataUnavailableError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "TraderDataUnavailableError";
+	}
+}
+
+function isTraderDataUnavailableError(error: unknown) {
+	return error instanceof TraderDataUnavailableError;
+}
+
 export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	const client = getStructClient();
 	const normalizedQuery = normalizeTraderSearchQuery(query);
@@ -95,6 +106,33 @@ export const searchAll = cache(
 	},
 );
 
+async function getTraderProfileCached(address: string): Promise<UserProfile> {
+	"use cache";
+	cacheLife("minutes");
+
+	const client = getStructClient();
+
+	if (!client) {
+		throw new TraderDataUnavailableError("Struct client is not configured");
+	}
+
+	try {
+		const response = await client.trader.getTraderProfile({ address });
+
+		if (!response.data) {
+			throw new TraderDataUnavailableError("Trader profile was empty");
+		}
+
+		return response.data;
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			throw new TraderDataUnavailableError("Trader profile was not found");
+		}
+
+		throw error;
+	}
+}
+
 export async function getTraderProfile(address: string): Promise<UserProfile | null> {
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -102,21 +140,41 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 		return null;
 	}
 
-	const client = getStructClient();
-
-	if (!client) {
-		return null;
-	}
-
 	try {
-		const response = await client.trader.getTraderProfile({ address: normalizedAddress });
-		return response.data ?? null;
+		return await getTraderProfileCached(normalizedAddress);
 	} catch (error) {
-		if (readStatus(error) === 404) {
+		if (isTraderDataUnavailableError(error)) {
 			return null;
 		}
 		logStructError(`getTraderProfile:${normalizedAddress}`, error);
 		return null;
+	}
+}
+
+async function getTraderPnlSummaryCached(address: string): Promise<TraderPnlSummary> {
+	"use cache";
+	cacheLife("minutes");
+
+	const client = getStructClient();
+
+	if (!client) {
+		throw new TraderDataUnavailableError("Struct client is not configured");
+	}
+
+	try {
+		const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
+
+		if (!response.data) {
+			throw new TraderDataUnavailableError("Trader PnL summary was empty");
+		}
+
+		return response.data;
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			throw new TraderDataUnavailableError("Trader PnL summary was not found");
+		}
+
+		throw error;
 	}
 }
 
@@ -127,17 +185,10 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 		return null;
 	}
 
-	const client = getStructClient();
-
-	if (!client) {
-		return null;
-	}
-
 	try {
-		const response = await client.trader.getTraderPnl({ address: normalizedAddress, timeframe: "lifetime" });
-		return response.data ?? null;
+		return await getTraderPnlSummaryCached(normalizedAddress);
 	} catch (error) {
-		if (readStatus(error) === 404) {
+		if (isTraderDataUnavailableError(error)) {
 			return null;
 		}
 		logStructError(`getTraderPnlSummary:${normalizedAddress}`, error);

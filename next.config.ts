@@ -37,6 +37,13 @@ const securityHeaders = [
   },
 ];
 
+const traderPageHeaders = [
+  {
+    key: "Cache-Control",
+    value: "private, no-store, no-cache, max-age=0, must-revalidate",
+  },
+];
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
   serverExternalPackages: ["sharp"],
@@ -56,6 +63,10 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        source: "/traders/:address",
+        headers: traderPageHeaders,
       },
     ];
   },
@@ -101,4 +112,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
