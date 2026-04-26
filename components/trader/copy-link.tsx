@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon, LinkIcon } from "lucide-react";
 import { useCopyToClipboard } from "@/lib/hooks/use-copy-to-clipboard";
 import { usePathname } from "next/navigation";
+import posthog from "posthog-js";
 
 export function CopyLink() {
 	const { isCopied, copy } = useCopyToClipboard();
@@ -11,6 +12,7 @@ export function CopyLink() {
 
 	const handleCopy = () => {
 		const url = `${window.location.origin}${pathname}`;
+		posthog.capture("link_copied", { pathname });
 		copy(url);
 	};
 

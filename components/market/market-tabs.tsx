@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { useCallback, useEffect, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
+import posthog from "posthog-js";
 
 import { marketDetailSearchParamParsers } from "@/lib/market-detail-search-params";
 import {
@@ -102,6 +103,7 @@ export function MarketTabs({
 			return;
 		}
 
+		posthog.capture("market_tab_changed", { tab: nextTab, previous_tab: currentTab });
 		void setSearchParams({ tab: nextTab });
 	}, [currentTab, setSearchParams]);
 

@@ -2,12 +2,16 @@
 
 import { openSearchDialog } from "@/components/search/search-dialog";
 import { SearchIcon } from "lucide-react";
+import posthog from "posthog-js";
 
 export function HomeSearchTrigger() {
 	return (
 		<button
 			type="button"
-			onClick={() => openSearchDialog()}
+			onClick={() => {
+				posthog.capture("search_opened");
+				openSearchDialog();
+			}}
 			className="relative flex h-9 w-full items-center gap-2 rounded-lg border bg-card/85 pl-3 pr-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 			aria-label="Search traders or markets"
 		>

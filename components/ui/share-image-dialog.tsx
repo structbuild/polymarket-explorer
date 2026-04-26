@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { useEffect, useRef, useState, type RefObject } from "react"
 import { CheckIcon, CopyIcon, DownloadIcon, LoaderCircleIcon, Share2Icon, XIcon } from "lucide-react"
+import posthog from "posthog-js"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -156,6 +157,7 @@ export function ShareImageDialog({
 			setDownloadResult(null)
 			const blob = await ensureImage()
 			downloadBlob(blob, filename)
+			posthog.capture("share_image_downloaded", { dialog_title: dialogTitle, filename })
 			setDownloadResult({ tone: "success", message: "Downloaded!" })
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unable to download the PNG right now."
@@ -179,6 +181,7 @@ export function ShareImageDialog({
 			setCopyResult(null)
 			const blob = await ensureImage()
 			await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+			posthog.capture("share_image_copied", { dialog_title: dialogTitle, filename })
 			setCopyResult({ tone: "success", message: "Copied!" })
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unable to copy the image to the clipboard right now."
@@ -208,6 +211,7 @@ export function ShareImageDialog({
 
 		try {
 			await ensureImage(true)
+			posthog.capture("share_image_opened", { dialog_title: dialogTitle, filename })
 			setOpen(true)
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unable to generate the share image right now."

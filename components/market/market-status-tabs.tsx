@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { useCallback, useEffect, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 
 import {
 	DEFAULT_MARKET_STATUS_TAB,
@@ -99,6 +100,7 @@ export function MarketStatusTabs({
 			return;
 		}
 
+		posthog.capture("market_status_tab_changed", { tab: nextTab, previous_tab: currentTab });
 		const href = buildTabHref(pathname, search, nextTab);
 		startTransition(() => {
 			router.push(href, { scroll: false });
