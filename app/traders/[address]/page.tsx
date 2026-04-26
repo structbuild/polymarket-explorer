@@ -249,10 +249,6 @@ async function TraderOverviewSection({
 }) {
 	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
 
-	if (!profile && !pnlSummary) {
-		notFound();
-	}
-
 	const displayName = getTraderDisplayName({
 		address,
 		name: profile?.name,
@@ -389,23 +385,7 @@ function TraderOverviewFallback() {
 	);
 }
 
-export default async function TraderPage({ params, searchParams }: Props) {
-	const { address: rawAddress } = await params;
-	const address = normalizeWalletAddress(rawAddress);
-
-	if (!address) {
-		notFound();
-	}
-
-	const [profile, pnlSummary] = await Promise.all([
-		getTraderProfile(address),
-		getTraderPnlSummary(address),
-	]);
-
-	if (!profile && !pnlSummary) {
-		notFound();
-	}
-
+export default function TraderPage({ params, searchParams }: Props) {
 	return (
 		<div className="flex w-full justify-center">
 			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
@@ -425,12 +405,21 @@ async function TraderPageContent({ params, searchParams }: Props) {
 		notFound();
 	}
 
+	const [profile, pnlSummary] = await Promise.all([
+		getTraderProfile(address),
+		getTraderPnlSummary(address),
+	]);
+
+	if (!profile && !pnlSummary) {
+		notFound();
+	}
+
 	const [{ tab, openPage, closedPage, activityPage, pnlTimeframe, openSortBy, openSortDirection, closedSortBy, closedSortDirection }, resolvedSearchParams] =
 		await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
 	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
 
-	const profilePromise = getTraderProfile(address);
-	const pnlSummaryPromise = getTraderPnlSummary(address);
+	const profilePromise = Promise.resolve(profile);
+	const pnlSummaryPromise = Promise.resolve(pnlSummary);
 	const insightsPromise = loadTraderInsights(address, pnlTimeframe);
 	const bestTradeMarketPromise = loadBestTradeMarket(pnlSummaryPromise);
 	const cumulativePnlUsdPromise = getTraderCumulativePnlUsd(address);
