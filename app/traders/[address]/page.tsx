@@ -29,6 +29,7 @@ import {
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { getTraderAnalyticsChanges, getTraderAnalyticsDeltas, getTraderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import { parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { getGlobalLeaderboard } from "@/lib/struct/market-queries";
 import { getMarketsByConditionIds, getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -38,6 +39,8 @@ import type { MarketResponse, TraderPnlSummary, UserProfile } from "@structbuild
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+
+const TRADER_ADDRESS_PLACEHOLDER = "__placeholder__";
 
 type Props = {
 	params: Promise<{ address: string }>;
@@ -50,6 +53,22 @@ type TraderInsightsData = {
 	streaks: PnlStreaks;
 	chartAnnotations: PnlChartAnnotation[];
 };
+
+export async function generateStaticParams() {
+	try {
+		const { data } = await getGlobalLeaderboard("lifetime", 10);
+		const addresses = data
+			.map((entry) => normalizeWalletAddress(entry.trader.address))
+			.filter((address): address is string => Boolean(address))
+			.slice(0, 10);
+		if (addresses.length > 0) {
+			return addresses.map((address) => ({ address }));
+		}
+	} catch {
+		// fall through to placeholder
+	}
+	return [{ address: TRADER_ADDRESS_PLACEHOLDER }];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { address: rawAddress } = await params;
@@ -249,10 +268,6 @@ async function TraderOverviewSection({
 }) {
 	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
 
-	if (!profile && !pnlSummary) {
-		notFound();
-	}
-
 	const displayName = getTraderDisplayName({
 		address,
 		name: profile?.name,
@@ -389,19 +404,7 @@ function TraderOverviewFallback() {
 	);
 }
 
-export default function TraderPage({ params, searchParams }: Props) {
-	return (
-		<div className="flex w-full justify-center">
-			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
-				<Suspense fallback={<TraderPageFallback />}>
-					<TraderPageContent params={params} searchParams={searchParams} />
-				</Suspense>
-			</div>
-		</div>
-	);
-}
-
-async function TraderPageContent({ params, searchParams }: Props) {
+export default async function TraderPage({ params, searchParams }: Props) {
 	const { address: rawAddress } = await params;
 	const address = normalizeWalletAddress(rawAddress);
 
@@ -409,12 +412,48 @@ async function TraderPageContent({ params, searchParams }: Props) {
 		notFound();
 	}
 
+	const [profile, pnlSummary] = await Promise.all([
+		getTraderProfile(address),
+		getTraderPnlSummary(address),
+	]);
+
+	if (!profile && !pnlSummary) {
+		notFound();
+	}
+
+	return (
+		<div className="flex w-full justify-center">
+			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
+				<Suspense fallback={<TraderPageFallback />}>
+					<TraderPageContent
+						address={address}
+						profile={profile}
+						pnlSummary={pnlSummary}
+						searchParams={searchParams}
+					/>
+				</Suspense>
+			</div>
+		</div>
+	);
+}
+
+async function TraderPageContent({
+	address,
+	profile,
+	pnlSummary,
+	searchParams,
+}: {
+	address: string;
+	profile: UserProfile | null;
+	pnlSummary: TraderPnlSummary | null;
+	searchParams: Props["searchParams"];
+}) {
 	const [{ tab, openPage, closedPage, activityPage, pnlTimeframe, openSortBy, openSortDirection, closedSortBy, closedSortDirection }, resolvedSearchParams] =
 		await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
 	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
 
-	const profilePromise = getTraderProfile(address);
-	const pnlSummaryPromise = getTraderPnlSummary(address);
+	const profilePromise = Promise.resolve(profile);
+	const pnlSummaryPromise = Promise.resolve(pnlSummary);
 	const insightsPromise = loadTraderInsights(address, pnlTimeframe);
 	const bestTradeMarketPromise = loadBestTradeMarket(pnlSummaryPromise);
 	const cumulativePnlUsdPromise = getTraderCumulativePnlUsd(address);

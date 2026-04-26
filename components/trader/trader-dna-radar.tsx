@@ -25,6 +25,8 @@ type TraderDnaRadarProps = {
 	axes: TraderAxis[];
 };
 
+const RADAR_INITIAL_DIMENSION = { width: 320, height: 320 } as const;
+
 function buildRows(axes: TraderAxis[]): RadarRow[] {
 	return axes.map((axis) => ({
 		axisId: axis.id,
@@ -59,8 +61,12 @@ function RadarTooltip({ active, payload }: RadarTooltipProps) {
 export function TraderDnaRadar({ axes }: TraderDnaRadarProps) {
 	const data = buildRows(axes);
 	return (
-		<div className="relative aspect-square w-full">
-			<ResponsiveContainer width="100%" height="100%">
+		<div className="relative aspect-square min-w-0 w-full">
+			<ResponsiveContainer
+				width="100%"
+				height="100%"
+				initialDimension={RADAR_INITIAL_DIMENSION}
+			>
 				<RadarChart data={data} outerRadius="72%" margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
 					<PolarGrid
 						stroke="var(--border)"
