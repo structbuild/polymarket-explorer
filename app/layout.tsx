@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { getSiteUrl } from "@/lib/env";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
 import { Header } from "@/components/layout/header";
+import { NotificationBar } from "@/components/layout/notification-bar";
 import Footer from "@/components/layout/footer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -86,6 +87,7 @@ export default function RootLayout({
 					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 						<TooltipProvider>
 							<div className="flex min-h-svh flex-col">
+								<NotificationBar />
 								<Header />
 								<main className="flex min-h-0 flex-1 flex-col">{children}</main>
 								<Footer />

@@ -262,6 +262,10 @@ export function SearchDialog() {
 					placeholder="Search traders or markets..."
 					className="h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent! shadow-none focus-visible:border-transparent focus-visible:ring-0"
 					autoFocus
+					autoComplete="off"
+					autoCorrect="off"
+					autoCapitalize="off"
+					spellCheck={false}
 				/>
 			</div>
 			<div className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain sm:max-h-[min(70svh,22rem)]">

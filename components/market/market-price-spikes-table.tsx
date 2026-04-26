@@ -4,7 +4,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { PriceJump } from "@structbuild/sdk";
 import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react";
 
-import { MarketTabs } from "@/components/market/market-tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { formatNumber } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
@@ -90,7 +89,6 @@ const columns: ColumnDef<SpikeRow, unknown>[] = [
 export function MarketPriceSpikesTable({ spikes }: { spikes: SpikeRow[] }) {
 	return (
 		<DataTable
-			toolbarLeft={<MarketTabs />}
 			columns={columns}
 			data={spikes}
 			storageKey="market-price-spikes-table"

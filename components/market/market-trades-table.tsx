@@ -9,7 +9,6 @@ import { Facehash } from "facehash";
 import { HashIcon } from "lucide-react";
 import { useQueryStates } from "nuqs";
 
-import { MarketTabs } from "@/components/market/market-tabs";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -177,7 +176,6 @@ export function MarketTradesTable({ page, pageNumber }: Props) {
 
 	return (
 		<DataTable
-			toolbarLeft={<MarketTabs />}
 			columns={columns}
 			data={page.data}
 			storageKey="market-trades-table"

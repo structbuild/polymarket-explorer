@@ -14,46 +14,48 @@ type MarketTabPanelProps = {
 	tradesPage: number;
 };
 
-export function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
-	const showStandaloneTabs =
-		currentTab === "holders" || currentTab === "holders-history";
-
-	return (
-		<div className="space-y-4">
-			{showStandaloneTabs ? <MarketTabs /> : null}
-			<MarketTabContent currentTab={currentTab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
-		</div>
-	);
+function fallbackForTab(tab: MarketDetailTab) {
+	switch (tab) {
+		case "spikes":
+			return <MarketPriceSpikesFallback />;
+		case "holders":
+			return <MarketHoldersFallback />;
+		case "holders-history":
+			return <MarketHoldersHistoryFallback />;
+		case "trades":
+		default:
+			return <MarketTradesFallback />;
+	}
 }
 
 function MarketTabContent({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
 	switch (currentTab) {
 		case "spikes":
-			return (
-				<Suspense fallback={<MarketPriceSpikesFallback />}>
-					<MarketPriceSpikes conditionId={conditionId} />
-				</Suspense>
-			);
+			return <MarketPriceSpikes conditionId={conditionId} />;
 		case "holders":
-			return (
-				<Suspense fallback={<MarketHoldersFallback />}>
-					<MarketHolders slug={slug} />
-				</Suspense>
-			);
+			return <MarketHolders slug={slug} />;
 		case "holders-history":
-			return (
-				<Suspense fallback={<MarketHoldersHistoryFallback />}>
-					<MarketHoldersHistory conditionId={conditionId} />
-				</Suspense>
-			);
+			return <MarketHoldersHistory conditionId={conditionId} />;
 		case "trades":
 		default:
-			return (
-				<Suspense fallback={<MarketTradesFallback />}>
-					<MarketTrades conditionId={conditionId} pageNumber={tradesPage} />
-				</Suspense>
-			);
+			return <MarketTrades conditionId={conditionId} pageNumber={tradesPage} />;
 	}
+}
+
+export function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
+	return (
+		<div className="space-y-4">
+			<MarketTabs />
+			<Suspense fallback={fallbackForTab(currentTab)}>
+				<MarketTabContent
+					currentTab={currentTab}
+					slug={slug}
+					conditionId={conditionId}
+					tradesPage={tradesPage}
+				/>
+			</Suspense>
+		</div>
+	);
 }
 
 export function MarketTabPanelFallback() {

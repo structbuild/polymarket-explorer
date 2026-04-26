@@ -41,8 +41,9 @@ export function TradersTimeframeToggle({
 				params.set("timeframe", picked);
 				params.delete("cursor");
 
+				const href = `${pathname}?${params.toString()}` as Route;
 				startTransition(() => {
-					router.push(`${pathname}?${params.toString()}` as Route);
+					router.push(href, { scroll: false });
 				});
 			}}
 			variant="outline"
