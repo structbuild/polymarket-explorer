@@ -1,4 +1,5 @@
 import { HomeActivityTabs } from "@/components/home/home-activity-tabs";
+import { HomeExploreGrid } from "@/components/home/home-explore-grid";
 import { HomeSearchTrigger } from "@/components/home/home-search-trigger";
 import { NewMarketsList, NewMarketsListFallback } from "@/components/home/new-markets-list";
 import { PlatformStats, PlatformStatsFallback } from "@/components/home/platform-stats";
@@ -46,6 +47,8 @@ export default function HomePage() {
 						</Suspense>
 					}
 				/>
+
+				<HomeExploreGrid />
 			</div>
 		</div>
 	);

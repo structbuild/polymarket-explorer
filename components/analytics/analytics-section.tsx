@@ -153,15 +153,11 @@ export function AnalyticsSection({
 				</div>
 			</div>
 
-			<Suspense
-				key={`kpi-${range}-${view}-${resolution}`}
-				fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}
-			>
+			<Suspense fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}>
 				<KpiLoader deltasPromise={deltasPromise} fetchers={fetchers} excludeMetrics={excludeMetrics} />
 			</Suspense>
 
 			<Suspense
-				key={`charts-${range}-${view}-${resolution}-${cap ? "cap" : "all"}`}
 				fallback={
 					<AnalyticsChartsGridFallback
 						view={view}

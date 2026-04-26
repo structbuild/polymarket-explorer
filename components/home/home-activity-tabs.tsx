@@ -11,10 +11,10 @@ export function HomeTabsBar() {
 			variant="text"
 			className="flex min-w-0 justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 		>
-			<TabsTrigger className="text-base! sm:text-xl!" value="markets">
+			<TabsTrigger className="text-lg! sm:text-xl!" value="markets">
 				New Markets
 			</TabsTrigger>
-			<TabsTrigger className="text-base! sm:text-xl!" value="trades">
+			<TabsTrigger className="text-lg! sm:text-xl!" value="trades">
 				Recent Trades
 			</TabsTrigger>
 		</TabsList>

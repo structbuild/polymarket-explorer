@@ -1,20 +1,133 @@
 "use client";
 
-import { searchAction, type SearchResult } from "@/app/actions";
+import { searchAction, type SearchResult, type SearchResultMarket, type SearchResultTrader } from "@/app/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { formatNumber } from "@/lib/format";
-import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
+import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { BarChart3Icon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 const DEBOUNCE_MS = 300;
 const OPEN_EVENT = "search-dialog:open";
+
+const RESOLVED_STATUSES = new Set(["resolved", "closed"]);
+
+function capitalize(value: string) {
+	return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function statusDotClass(status: string | null) {
+	if (!status) return "bg-muted-foreground/40";
+	const lowered = status.toLowerCase();
+	if (lowered === "active" || lowered === "open") return "bg-emerald-500";
+	if (RESOLVED_STATUSES.has(lowered)) return "bg-muted-foreground/60";
+	return "bg-amber-500";
+}
+
+function SearchRow({
+	href,
+	onSelect,
+	imageUrl,
+	fallback,
+	title,
+	meta,
+}: {
+	href: Route;
+	onSelect: () => void;
+	imageUrl?: string | null;
+	fallback: ReactNode;
+	title: string;
+	meta?: ReactNode;
+}) {
+	return (
+		<Link
+			href={href}
+			onClick={onSelect}
+			className="flex min-w-0 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent"
+		>
+			<Avatar size="default">
+				{imageUrl && <AvatarImage src={imageUrl} />}
+				<AvatarFallback>{fallback}</AvatarFallback>
+			</Avatar>
+			<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+				<span className="truncate text-sm" title={title}>
+					{title}
+				</span>
+				{meta && (
+					<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+						{meta}
+					</div>
+				)}
+			</div>
+		</Link>
+	);
+}
+
+function MarketMeta({ market }: { market: SearchResultMarket }) {
+	const status = market.status?.toLowerCase() ?? null;
+	const isResolved = status != null && RESOLVED_STATUSES.has(status);
+	const primaryOutcome =
+		market.outcomes.find((o) => o.name.toLowerCase() === "yes") ?? market.outcomes[0] ?? null;
+	const showProbability = !isResolved && primaryOutcome?.price != null;
+
+	const lifetimeVolume =
+		market.volume_lifetime_usd != null && market.volume_lifetime_usd > 0 ? market.volume_lifetime_usd : null;
+	const dailyVolume =
+		market.volume_24hr_usd != null && market.volume_24hr_usd > 0 ? market.volume_24hr_usd : null;
+	const volumeDisplay = lifetimeVolume
+		? { value: lifetimeVolume, suffix: "vol" }
+		: dailyVolume
+			? { value: dailyVolume, suffix: "vol" }
+			: null;
+
+	const parts: ReactNode[] = [];
+	if (market.status) {
+		parts.push(
+			<span key="status" className="inline-flex items-center gap-1">
+				<span className={cn("size-1.5 rounded-full", statusDotClass(status))} aria-hidden />
+				{capitalize(market.status)}
+			</span>,
+		);
+	}
+	if (showProbability && primaryOutcome) {
+		parts.push(
+			<span key="prob" className="font-medium text-foreground/80">
+				{Math.round((primaryOutcome.price ?? 0) * 100)}% {primaryOutcome.name}
+			</span>,
+		);
+	}
+	if (volumeDisplay) {
+		parts.push(
+			<span key="vol">
+				{formatNumber(volumeDisplay.value, { compact: true, currency: true })} {volumeDisplay.suffix}
+			</span>,
+		);
+	}
+
+	return (
+		<>
+			{parts.map((part, i) => (
+				<span key={i} className="inline-flex items-center gap-1.5">
+					{i > 0 && <span className="text-muted-foreground/40">·</span>}
+					{part}
+				</span>
+			))}
+		</>
+	);
+}
+
+function TraderMeta({ trader }: { trader: SearchResultTrader }) {
+	if (trader.volume_usd != null && trader.volume_usd > 0) {
+		return <span>{formatNumber(trader.volume_usd, { compact: true, currency: true })} vol</span>;
+	}
+	return <span className="truncate font-mono text-[11px]">{trader.address}</span>;
+}
 
 export function openSearchDialog() {
 	if (typeof window !== "undefined") {
@@ -162,27 +275,15 @@ export function SearchDialog() {
 							<span className="text-xs font-medium text-muted-foreground">Markets</span>
 						</div>
 						{results.markets.map((market) => (
-							<Link
+							<SearchRow
 								key={market.slug}
 								href={`/markets/${market.slug}` as Route}
-								onClick={() => handleOpenChange(false)}
-								className="flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
-							>
-								<Avatar size="sm">
-									{market.image_url && <AvatarImage src={market.image_url} />}
-									<AvatarFallback>
-										<BarChart3Icon className="size-3.5" />
-									</AvatarFallback>
-								</Avatar>
-								<span className="min-w-0 flex-1 truncate text-sm" title={market.question ?? market.slug}>
-									{market.question ?? market.slug}
-								</span>
-								{market.volume_usd != null && market.volume_usd > 0 && (
-									<span className="shrink-0 text-xs text-muted-foreground">
-										{formatNumber(market.volume_usd, { compact: true, currency: true })}
-									</span>
-								)}
-							</Link>
+								onSelect={() => handleOpenChange(false)}
+								imageUrl={market.image_url}
+								fallback={<BarChart3Icon className="size-4" />}
+								title={market.question ?? market.slug}
+								meta={<MarketMeta market={market} />}
+							/>
 						))}
 					</div>
 				)}
@@ -197,20 +298,15 @@ export function SearchDialog() {
 							const traderHref = `/traders/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route;
 
 							return (
-								<Link
+								<SearchRow
 									key={trader.address}
 									href={traderHref}
-									onClick={() => handleOpenChange(false)}
-									className="flex min-w-0 items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
-								>
-									<Avatar size="sm">
-										{trader.profile_image && <AvatarImage src={trader.profile_image} />}
-										<AvatarFallback>{displayLabel.slice(0, 2).toUpperCase()}</AvatarFallback>
-									</Avatar>
-									<span className="min-w-0 flex-1 truncate text-sm" title={displayLabel}>
-										{displayLabel}
-									</span>
-								</Link>
+									onSelect={() => handleOpenChange(false)}
+									imageUrl={trader.profile_image}
+									fallback={displayLabel.slice(0, 2).toUpperCase()}
+									title={displayLabel}
+									meta={<TraderMeta trader={trader} />}
+								/>
 							);
 						})}
 					</div>

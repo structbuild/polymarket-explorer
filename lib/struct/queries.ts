@@ -1,12 +1,14 @@
 import "server-only";
 
 import type {
+	Event,
 	MarketResponse,
 	StructClient,
 	Trade,
 	Trader,
 	TraderOutcomePnlEntry,
 	TraderPnlSummary,
+	TraderWithPnl,
 	UserProfile,
 } from "@structbuild/sdk";
 import { cacheLife, cacheTag } from "next/cache";
@@ -62,29 +64,36 @@ export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 	}
 });
 
-export const searchAll = cache(async (query: string): Promise<{ traders: Trader[]; markets: MarketResponse[] }> => {
-	const client = getStructClient();
-	const normalizedQuery = normalizeTraderSearchQuery(query);
+export const searchAll = cache(
+	async (query: string): Promise<{ traders: TraderWithPnl[]; markets: MarketResponse[]; events: Event[] }> => {
+		const client = getStructClient();
+		const normalizedQuery = normalizeTraderSearchQuery(query);
 
-	if (!client || normalizedQuery.length < 2) {
-		return { traders: [], markets: [] };
-	}
+		if (!client || normalizedQuery.length < 2) {
+			return { traders: [], markets: [], events: [] };
+		}
 
-	try {
-		const response = await client.search.search({
-			q: normalizedQuery,
-			limit: 10,
-			type: "traders,markets",
-		});
-		return {
-			traders: response.data.traders ?? [],
-			markets: (response.data.markets ?? []).map(normalizeMarketResponseImages),
-		};
-	} catch (error) {
-		logStructError(`searchAll:${sanitizeLogValue(normalizedQuery)}`, error);
-		return { traders: [], markets: [] };
-	}
-});
+		try {
+			const response = await client.search.search({
+				q: normalizedQuery,
+				limit: 10,
+				type: "traders,markets,events",
+				include_pnl: true,
+			});
+			return {
+				traders: response.data.traders ?? [],
+				markets: (response.data.markets ?? []).map(normalizeMarketResponseImages),
+				events: ((response.data.events ?? []) as Event[]).map((event) => ({
+					...normalizeMarketResponseImages(event),
+					markets: event.markets.map(normalizeMarketResponseImages),
+				})),
+			};
+		} catch (error) {
+			logStructError(`searchAll:${sanitizeLogValue(normalizedQuery)}`, error);
+			return { traders: [], markets: [], events: [] };
+		}
+	},
+);
 
 async function getTraderProfileCached(address: string): Promise<UserProfile | null> {
 	"use cache";

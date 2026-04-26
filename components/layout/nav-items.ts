@@ -12,5 +12,5 @@ export const NAV_ITEMS: NavItem[] = [
 	{ href: "/tags" as Route, label: "Tags" },
 	{ href: "/analytics" as Route, label: "Analytics" },
 	{ href: "/rewards" as Route, label: "Rewards" },
-	{ href: "https://www.struct.to/" as Route, label: "API", external: true },
+	{ href: "https://www.struct.to/rest-api" as Route, label: "API", external: true },
 ];
