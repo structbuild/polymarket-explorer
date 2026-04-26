@@ -389,7 +389,23 @@ function TraderOverviewFallback() {
 	);
 }
 
-export default function TraderPage({ params, searchParams }: Props) {
+export default async function TraderPage({ params, searchParams }: Props) {
+	const { address: rawAddress } = await params;
+	const address = normalizeWalletAddress(rawAddress);
+
+	if (!address) {
+		notFound();
+	}
+
+	const [profile, pnlSummary] = await Promise.all([
+		getTraderProfile(address),
+		getTraderPnlSummary(address),
+	]);
+
+	if (!profile && !pnlSummary) {
+		notFound();
+	}
+
 	return (
 		<div className="flex w-full justify-center">
 			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
