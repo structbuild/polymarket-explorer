@@ -20,6 +20,7 @@ export default function Footer() {
 				<div className="flex flex-wrap items-center justify-between gap-4 border-b pb-8">
 					<Link
 						href="/"
+						prefetch={false}
 						aria-label="Struct Polymarket Explorer home"
 						className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-80"
 					>
@@ -29,6 +30,7 @@ export default function Footer() {
 					<div className="flex items-center gap-5">
 					<Link
 							href="https://x.com/structbuild"
+							prefetch={false}
 							target="_blank"
 							rel="noopener noreferrer"
 							aria-label="Struct on X"
@@ -38,6 +40,7 @@ export default function Footer() {
 						</Link>
 						<Link
 							href="https://github.com/structbuild/polymarket-explorer"
+							prefetch={false}
 							target="_blank"
 							rel="noopener noreferrer"
 							aria-label="GitHub repository"

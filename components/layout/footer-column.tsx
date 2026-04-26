@@ -16,6 +16,7 @@ export function FooterColumn({ title, viewAllHref, viewAllLabel = "View all", ch
 			{viewAllHref && (
 				<Link
 					href={viewAllHref}
+					prefetch={false}
 					className="mt-4 text-sm text-muted-foreground/80 transition-colors duration-150 hover:text-primary"
 				>
 					{viewAllLabel} →
@@ -37,6 +38,7 @@ export function FooterColumnLink({ href, external, children, title }: FooterColu
 		<li className="min-w-0">
 			<Link
 				href={href as Route}
+				prefetch={false}
 				target={external ? "_blank" : undefined}
 				rel={external ? "noopener noreferrer" : undefined}
 				title={title}
