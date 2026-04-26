@@ -48,6 +48,9 @@ const nextConfig: NextConfig = {
       expire: 300,
     },
   },
+  experimental: {
+    serverComponentsHmrCache: false,
+  },
   async headers() {
     return [
       {
@@ -98,4 +101,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
