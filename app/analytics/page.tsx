@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
+import {
+	BuildersGlobalStats,
+	BuildersGlobalStatsFallback,
+} from "@/components/builders/builders-global-stats";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import {
 	getAnalyticsChanges,
@@ -12,6 +16,10 @@ import {
 	parseAnalyticsParams,
 	ANALYTICS_RANGE_LABELS,
 } from "@/lib/struct/analytics-shared";
+import {
+	getBuilderGlobal,
+	getBuilderGlobalChanges,
+} from "@/lib/struct/builder-queries";
 
 export const metadata: Metadata = buildPageMetadata({
 	title: "Polymarket Analytics · Volume, Trades & Fees",
@@ -26,11 +34,45 @@ type Props = {
 
 export default function AnalyticsPage({ searchParams }: Props) {
 	return (
-		<div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
+		<div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-4 sm:px-6 sm:py-6">
 			<Suspense fallback={<AnalyticsPageFallback />}>
 				<AnalyticsPageContent searchParams={searchParams} />
 			</Suspense>
+			<Suspense fallback={<BuildersStripFallback />}>
+				<BuildersStrip />
+			</Suspense>
 		</div>
+	);
+}
+
+async function BuildersStrip() {
+	const [row, changes] = await Promise.all([
+		getBuilderGlobal("lifetime"),
+		getBuilderGlobalChanges("24h"),
+	]);
+	if (!row) return null;
+	return (
+		<section className="space-y-3">
+			<div className="space-y-1">
+				<h2 className="text-base font-medium text-foreground/90">Builders</h2>
+				<p className="text-sm text-muted-foreground">
+					Cumulative routing across every builder code.
+				</p>
+			</div>
+			<BuildersGlobalStats row={row} changes={changes} />
+		</section>
+	);
+}
+
+function BuildersStripFallback() {
+	return (
+		<section className="space-y-3">
+			<div className="space-y-1">
+				<div className="h-5 w-24 animate-pulse rounded bg-muted" />
+				<div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
+			</div>
+			<BuildersGlobalStatsFallback />
+		</section>
 	);
 }
 

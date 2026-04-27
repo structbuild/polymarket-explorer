@@ -7,6 +7,7 @@ import {
 	getAllTags,
 	getGlobalLeaderboard,
 } from "@/lib/struct/market-queries";
+import { getAllBuilderCodes } from "@/lib/struct/builder-queries";
 import { normalizeWalletAddress } from "@/lib/utils";
 
 export const maxDuration = 60;
@@ -63,7 +64,7 @@ export async function GET(
 async function buildStaticAndTagsShard(
 	siteUrl: string,
 ): Promise<SitemapEntry[]> {
-	const tags = await getAllTags();
+	const [tags, builderCodes] = await Promise.all([getAllTags(), getAllBuilderCodes()]);
 	const tagsWithSlug = tags.filter((tag) => tag.slug);
 	const tagPageCount = getPageCount(tagsWithSlug.length, TAGS_PAGE_SIZE);
 
@@ -71,6 +72,7 @@ async function buildStaticAndTagsShard(
 		{ url: siteUrl, changeFrequency: "hourly", priority: 1 },
 		{ url: `${siteUrl}/markets`, changeFrequency: "hourly", priority: 0.9 },
 		{ url: `${siteUrl}/traders`, changeFrequency: "hourly", priority: 0.9 },
+		{ url: `${siteUrl}/builders`, changeFrequency: "daily", priority: 0.7 },
 		{ url: `${siteUrl}/rewards`, changeFrequency: "daily", priority: 0.7 },
 		{ url: `${siteUrl}/tags`, changeFrequency: "weekly", priority: 0.6 },
 	];
@@ -90,7 +92,13 @@ async function buildStaticAndTagsShard(
 		}),
 	);
 
-	return [...staticEntries, ...tagEntries, ...tagPageEntries];
+	const builderEntries: SitemapEntry[] = builderCodes.map(({ code }) => ({
+		url: `${siteUrl}/builders/${encodeURIComponent(code)}`,
+		changeFrequency: "daily",
+		priority: 0.6,
+	}));
+
+	return [...staticEntries, ...tagEntries, ...tagPageEntries, ...builderEntries];
 }
 
 async function buildTradersShard(siteUrl: string): Promise<SitemapEntry[]> {

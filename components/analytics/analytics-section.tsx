@@ -56,6 +56,7 @@ async function ChartsLoader({
 	deltasPromise,
 	fetchers,
 	view,
+	resolution,
 	excludeMetrics,
 	appendMetrics,
 	endTime,
@@ -66,6 +67,7 @@ async function ChartsLoader({
 	deltasPromise?: Promise<AnalyticsPoint[]>;
 	fetchers: AnalyticsFetchers;
 	view: AnalyticsView;
+	resolution: AnalyticsResolution;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
 	endTime?: number;
@@ -82,6 +84,7 @@ async function ChartsLoader({
 		<AnalyticsChartsGrid
 			points={points}
 			view={view}
+			resolution={resolution}
 			excludeMetrics={excludeMetrics}
 			appendMetrics={appendMetrics}
 			pathname={pathname}
@@ -172,6 +175,7 @@ export function AnalyticsSection({
 					deltasPromise={view === "deltas" ? deltasPromise : undefined}
 					fetchers={fetchers}
 					view={view}
+					resolution={resolution}
 					excludeMetrics={excludeMetrics}
 					appendMetrics={appendMetrics}
 					endTime={endTime}

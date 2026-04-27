@@ -168,6 +168,10 @@ export type AnalyticsPoint = {
 	yesCount: number;
 	noCount: number;
 	feesUsd: number;
+	builderFeesUsd: number;
+	newUsers: number;
+	avgRevenuePerUserUsd: number;
+	avgVolumePerUserUsd: number;
 	sharesVolume: number;
 	buyDistUnder10: number;
 	buyDist10to100: number;

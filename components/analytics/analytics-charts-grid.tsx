@@ -15,6 +15,7 @@ import {
 import type {
 	AnalyticsMetricId,
 	AnalyticsPoint,
+	AnalyticsResolution,
 	AnalyticsView,
 } from "@/lib/struct/analytics-shared";
 
@@ -334,6 +335,7 @@ function withViewVariant(spec: ChartSpec, view: AnalyticsView): ChartSpec {
 type AnalyticsChartsGridProps = {
 	points: AnalyticsPoint[];
 	view: AnalyticsView;
+	resolution: AnalyticsResolution;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
 	pathname: string;
@@ -343,6 +345,7 @@ type AnalyticsChartsGridProps = {
 export function AnalyticsChartsGrid({
 	points,
 	view,
+	resolution,
 	excludeMetrics,
 	appendMetrics,
 	pathname,
@@ -376,6 +379,7 @@ export function AnalyticsChartsGrid({
 							<AvgTradeSizeChart
 								points={points}
 								view={view}
+								resolution={resolution}
 								showIncomplete={view === "deltas"}
 							/>
 						) : (
@@ -385,6 +389,8 @@ export function AnalyticsChartsGrid({
 								series={spec.series}
 								valueFormat={spec.valueFormat}
 								interactiveLegend={spec.interactiveLegend}
+								resolution={resolution}
+								labelMode={view === "deltas" ? "bucket" : "point"}
 								showIncomplete={view === "deltas"}
 							/>
 						)}

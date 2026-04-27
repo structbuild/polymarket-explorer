@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { Tag } from "@structbuild/sdk";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
+import { TagBuildersSection } from "@/components/builders/tag-builders-section";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PaginationNav } from "@/components/seo/pagination-nav";
@@ -205,6 +206,12 @@ async function TagPageContent({
 						changes: () => getTagAnalyticsChanges(tagKey, range),
 					}}
 				/>
+			</div>
+
+			<div className="mt-8">
+				<Suspense fallback={null}>
+					<TagBuildersSection tagLabel={tag.label} />
+				</Suspense>
 			</div>
 		</>
 	);

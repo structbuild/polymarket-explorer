@@ -10,6 +10,7 @@ import { useAvgTradeSizeComponents } from "@/lib/hooks/use-avg-trade-size-compon
 import {
 	VOLUME_COMPONENT_LABELS,
 	type AnalyticsPoint,
+	type AnalyticsResolution,
 	type AnalyticsView,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
@@ -38,29 +39,41 @@ function buildSeriesLabel(components: readonly VolumeComponentId[]): string {
 type Props = {
 	points: AnalyticsPoint[];
 	view: AnalyticsView;
+	resolution: AnalyticsResolution;
 	showIncomplete?: boolean;
 };
 
-export function AvgTradeSizeChart({ points, view, showIncomplete }: Props) {
+export function AvgTradeSizeChart({ points, view, resolution, showIncomplete }: Props) {
 	const [components] = useAvgTradeSizeComponents();
 
 	const data = useMemo(() => {
+		if (view !== "cumulative") {
+			return points.map((p) => {
+				let vol = 0;
+				let cnt = 0;
+				for (const c of components) {
+					vol += p[COMPONENT_VOLUME_KEYS[c]] as number;
+					cnt += p[COMPONENT_COUNT_KEYS[c]] as number;
+				}
+				return { t: p.t, avgTradeSize: cnt > 0 ? vol / cnt : 0 };
+			});
+		}
+
 		let cumVol = 0;
 		let cumCnt = 0;
-		return points.map((p) => {
+		const cumulativeData: Array<{ t: number; avgTradeSize: number }> = [];
+		for (const p of points) {
 			let vol = 0;
 			let cnt = 0;
 			for (const c of components) {
 				vol += p[COMPONENT_VOLUME_KEYS[c]] as number;
 				cnt += p[COMPONENT_COUNT_KEYS[c]] as number;
 			}
-			if (view === "cumulative") {
-				cumVol += vol;
-				cumCnt += cnt;
-				return { t: p.t, avgTradeSize: cumCnt > 0 ? cumVol / cumCnt : 0 };
-			}
-			return { t: p.t, avgTradeSize: cnt > 0 ? vol / cnt : 0 };
-		});
+			cumVol += vol;
+			cumCnt += cnt;
+			cumulativeData.push({ t: p.t, avgTradeSize: cumCnt > 0 ? cumVol / cumCnt : 0 });
+		}
+		return cumulativeData;
 	}, [points, components, view]);
 
 	const series = useMemo<AnalyticsSeries[]>(
@@ -80,6 +93,8 @@ export function AvgTradeSizeChart({ points, view, showIncomplete }: Props) {
 			variant="area"
 			series={series}
 			valueFormat="currency"
+			resolution={resolution}
+			labelMode={view === "deltas" ? "bucket" : "point"}
 			showIncomplete={showIncomplete}
 		/>
 	);

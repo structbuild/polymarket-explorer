@@ -28,9 +28,17 @@ import {
 	formatTimeCompact,
 } from "@/lib/format";
 import { useShareMode } from "@/lib/hooks/use-share-mode";
+import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 import { cn } from "@/lib/utils";
 
 const SECONDS_PER_DAY = 86400;
+const RESOLUTION_SECONDS: Partial<Record<AnalyticsResolution, number>> = {
+	"60": 3600,
+	"240": 14400,
+	D: SECONDS_PER_DAY,
+	W: 7 * SECONDS_PER_DAY,
+};
+const INCOMPLETE_BUCKET_NOTE = "Partial bucket; still in progress.";
 
 function detectGranularity(data: { t: number }[]): "intraday-short" | "intraday" | "daily" {
 	let minDelta = Number.POSITIVE_INFINITY;
@@ -56,6 +64,8 @@ export type AnalyticsValueFormat = "currency" | "count";
 
 type AnalyticsDatum = { t: number } & Record<string, number>;
 
+type AnalyticsChartHeight = "default" | "lg" | "xl";
+
 type AnalyticsChartProps = {
 	data: AnalyticsDatum[];
 	variant: "area" | "bar";
@@ -63,11 +73,20 @@ type AnalyticsChartProps = {
 	valueFormat: AnalyticsValueFormat;
 	interactiveLegend?: boolean;
 	showIncomplete?: boolean;
+	resolution?: AnalyticsResolution;
+	labelMode?: "bucket" | "point";
+	height?: AnalyticsChartHeight;
 	className?: string;
 };
 
-const HEIGHT_CLASS =
-	"h-[240px] min-h-[240px] w-full sm:h-[300px] group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0 group-data-[share-mode=image]/share-card:flex-1";
+const HEIGHT_CLASSES: Record<AnalyticsChartHeight, string> = {
+	default: "h-[240px] min-h-[240px] sm:h-[300px]",
+	lg: "h-[320px] min-h-[320px] sm:h-[420px]",
+	xl: "h-[400px] min-h-[400px] sm:h-[520px]",
+};
+
+const HEIGHT_BASE_CLASS =
+	"w-full group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0 group-data-[share-mode=image]/share-card:flex-1";
 
 function stripTrailingZeros(formatted: string): string {
 	return formatted
@@ -82,6 +101,25 @@ function valueFormatter(value: number, format: AnalyticsValueFormat) {
 	return stripTrailingZeros(formatNumber(value, { compact: true }));
 }
 
+function getBucketEndSeconds(startSeconds: number, resolution: AnalyticsResolution): number {
+	if (resolution === "M") {
+		const end = new Date(startSeconds * 1000);
+		end.setUTCMonth(end.getUTCMonth() + 1);
+		return Math.floor(end.getTime() / 1000) - 1;
+	}
+	const step = RESOLUTION_SECONDS[resolution];
+	return step ? startSeconds + step - 1 : startSeconds;
+}
+
+function formatBucketLabel(startSeconds: number, resolution: AnalyticsResolution): string {
+	if (resolution === "D") return formatDateFull(startSeconds);
+
+	const endSeconds = getBucketEndSeconds(startSeconds, resolution);
+	const formatter =
+		resolution === "60" || resolution === "240" ? formatDateTimeFull : formatDateFull;
+	return `${formatter(startSeconds)} - ${formatter(endSeconds)}`;
+}
+
 export function AnalyticsChart({
 	data,
 	variant,
@@ -89,8 +127,12 @@ export function AnalyticsChart({
 	valueFormat,
 	interactiveLegend = false,
 	showIncomplete = true,
+	resolution,
+	labelMode = "bucket",
+	height = "default",
 	className,
 }: AnalyticsChartProps) {
+	const heightClass = `${HEIGHT_CLASSES[height]} ${HEIGHT_BASE_CLASS}`;
 	const chartConfig = useMemo<ChartConfig>(() => {
 		const config: ChartConfig = {};
 		for (const s of series) {
@@ -143,6 +185,7 @@ export function AnalyticsChart({
 
 	const gradientPrefix = useId().replace(/:/g, "");
 	const shareMode = useShareMode();
+	const [nowSeconds] = useState(() => Math.floor(Date.now() / 1000));
 
 	const granularity = useMemo(() => detectGranularity(data), [data]);
 	const lastIncompleteT = useMemo(() => {
@@ -151,9 +194,8 @@ export function AnalyticsChart({
 		const last = data[data.length - 1];
 		const step = last.t - data[data.length - 2].t;
 		if (step <= 0) return null;
-		const nowSeconds = Math.floor(Date.now() / 1000);
 		return last.t + step > nowSeconds ? last.t : null;
-	}, [data, showIncomplete]);
+	}, [data, showIncomplete, nowSeconds]);
 	const showShimmer = lastIncompleteT !== null && !shareMode;
 	const areaData = useMemo(() => {
 		if (!showShimmer || data.length < 2) return data;
@@ -173,11 +215,32 @@ export function AnalyticsChart({
 		return formatDateCompact;
 	}, [granularity]);
 	const tooltipLabelFormatter = granularity === "daily" ? formatDateFull : formatDateTimeFull;
+	const formatTooltipLabel = useCallback(
+		(seconds: number) => {
+			const label =
+				resolution && labelMode === "bucket"
+					? formatBucketLabel(seconds, resolution)
+					: tooltipLabelFormatter(seconds);
+			if (seconds !== lastIncompleteT) return label;
+			if (resolution && labelMode === "bucket") {
+				return (
+					<span className="grid gap-0.5">
+						<span>{label}</span>
+						<span className="font-normal text-muted-foreground">
+							{INCOMPLETE_BUCKET_NOTE}
+						</span>
+					</span>
+				);
+			}
+			return label;
+		},
+		[resolution, labelMode, lastIncompleteT, tooltipLabelFormatter],
+	);
 
 	if (data.length === 0) {
 		return (
 			<div
-				className={`flex items-center justify-center text-sm text-muted-foreground ${HEIGHT_CLASS}`}
+				className={`flex items-center justify-center text-sm text-muted-foreground ${heightClass}`}
 			>
 				No data available.
 			</div>
@@ -188,21 +251,12 @@ export function AnalyticsChart({
 		<ChartTooltip
 			content={
 				<ChartTooltipContent
+					indicator="line"
 					labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
 						const entry = payload?.[0]?.payload as { t?: number } | undefined;
-						return typeof entry?.t === "number" ? tooltipLabelFormatter(entry.t) : "";
+						return typeof entry?.t === "number" ? formatTooltipLabel(entry.t) : "";
 					}}
-					formatter={(
-						value: number | string | readonly (number | string)[] | undefined,
-						name: number | string | undefined,
-					) => (
-						<span className="flex w-full items-center justify-between gap-4">
-							<span className="text-muted-foreground">{name}</span>
-							<span className="font-mono font-medium tabular-nums">
-								{valueFormatter(value as number, valueFormat)}
-							</span>
-						</span>
-					)}
+					valueFormatter={(value) => valueFormatter(value as number, valueFormat)}
 				/>
 			}
 		/>
@@ -398,7 +452,7 @@ export function AnalyticsChart({
 			)}
 		>
 			{legend}
-			<div className={`relative ${HEIGHT_CLASS}`}>
+			<div className={`relative ${heightClass}`}>
 				{watermark}
 				{chartInner}
 			</div>

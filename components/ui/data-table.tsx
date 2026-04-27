@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, Fragment, useContext, useEffect, useState } from "react"
+import { createContext, Fragment, useContext, useEffect, useRef, useState } from "react"
 import {
 	type ColumnDef,
 	type PaginationState,
@@ -525,6 +525,25 @@ function ServerPaginatedDataTable<TData>({
 	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
 	const timeframe = controlledTimeframe ?? internalTimeframe
 	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
+	const tableTopRef = useRef<HTMLDivElement>(null)
+	const shouldScrollToTableRef = useRef(false)
+
+	useEffect(() => {
+		if (!shouldScrollToTableRef.current) {
+			return
+		}
+
+		shouldScrollToTableRef.current = false
+
+		window.requestAnimationFrame(() => {
+			tableTopRef.current?.scrollIntoView({ block: "start" })
+		})
+	}, [pageIndex])
+
+	function requestPageIndexChange(nextPageIndex: number) {
+		shouldScrollToTableRef.current = true
+		onPageIndexChange(nextPageIndex)
+	}
 
 	// eslint-disable-next-line
 	const table = useReactTable({
@@ -542,33 +561,35 @@ function ServerPaginatedDataTable<TData>({
 	const end = data.length === 0 ? 0 : pageIndex * pageSize + data.length
 
 	return (
-		<DataTableView
-			columns={columns}
-			data={data}
-			storageKey={storageKey}
-			defaultColumnVisibility={defaultColumnVisibility}
-			emptyMessage={emptyMessage}
-			emptyClassName={emptyClassName}
-			columnLayout={columnLayout}
-			toolbarLeft={toolbarLeft}
-			toolbarRight={toolbarRight}
-			timeframes={timeframes}
-			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
-			onTimeframeChange={setTimeframe}
-			table={table}
-			pagination={{
-				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],
-				label: start === 0 ? "0 rows" : `${start}–${end}`,
-				pageSize,
-				pageNumber: pageIndex + 1,
-				isLoading,
-				canPreviousPage: pageIndex > 0,
-				canNextPage: hasNextPage,
-				onPreviousPage: () => onPageIndexChange(pageIndex - 1),
-				onNextPage: () => onPageIndexChange(pageIndex + 1),
-				onPageNumberChange: (nextPageNumber) => onPageIndexChange(nextPageNumber - 1),
-			}}
-		/>
+		<div ref={tableTopRef} className="scroll-mt-6">
+			<DataTableView
+				columns={columns}
+				data={data}
+				storageKey={storageKey}
+				defaultColumnVisibility={defaultColumnVisibility}
+				emptyMessage={emptyMessage}
+				emptyClassName={emptyClassName}
+				columnLayout={columnLayout}
+				toolbarLeft={toolbarLeft}
+				toolbarRight={toolbarRight}
+				timeframes={timeframes}
+				timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
+				onTimeframeChange={setTimeframe}
+				table={table}
+				pagination={{
+					show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],
+					label: start === 0 ? "0 rows" : `${start}–${end}`,
+					pageSize,
+					pageNumber: pageIndex + 1,
+					isLoading,
+					canPreviousPage: pageIndex > 0,
+					canNextPage: hasNextPage,
+					onPreviousPage: () => requestPageIndexChange(pageIndex - 1),
+					onNextPage: () => requestPageIndexChange(pageIndex + 1),
+					onPageNumberChange: (nextPageNumber) => requestPageIndexChange(nextPageNumber - 1),
+				}}
+			/>
+		</div>
 	)
 }
 

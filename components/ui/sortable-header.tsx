@@ -2,6 +2,7 @@
 
 import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react"
 
+import { InfoTooltip } from "@/components/ui/info-tooltip"
 import { cn } from "@/lib/utils"
 
 type SortableHeaderProps<T extends string> = {
@@ -10,6 +11,7 @@ type SortableHeaderProps<T extends string> = {
 	currentSortBy: T
 	currentSortDirection: "asc" | "desc"
 	onSortChange: (sortBy: T) => void
+	tooltip?: string
 }
 
 export function SortableHeader<T extends string>({
@@ -18,6 +20,7 @@ export function SortableHeader<T extends string>({
 	currentSortBy,
 	currentSortDirection,
 	onSortChange,
+	tooltip,
 }: SortableHeaderProps<T>) {
 	const isActive = currentSortBy === sortBy
 	const SortIcon = isActive
@@ -27,16 +30,19 @@ export function SortableHeader<T extends string>({
 		: ArrowUpDownIcon
 
 	return (
-		<button
-			type="button"
-			className={cn(
-				"inline-flex items-center gap-1.5 text-left transition-colors hover:text-foreground",
-				isActive && "text-foreground",
-			)}
-			onClick={() => onSortChange(sortBy)}
-		>
-			<span>{children}</span>
-			<SortIcon className="size-4" />
-		</button>
+		<span className="inline-flex items-center gap-1.5">
+			<button
+				type="button"
+				className={cn(
+					"inline-flex items-center gap-1.5 text-left transition-colors hover:text-foreground",
+					isActive && "text-foreground",
+				)}
+				onClick={() => onSortChange(sortBy)}
+			>
+				<span>{children}</span>
+				<SortIcon className="size-4" />
+			</button>
+			{tooltip ? <InfoTooltip content={tooltip} className="align-middle" /> : null}
+		</span>
 	)
 }
