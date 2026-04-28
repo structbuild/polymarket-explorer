@@ -264,7 +264,7 @@ async function fetchTimeBucketsWithPagination<
 			});
 		} catch (error) {
 			if (collected.length === 0) throw error;
-			console.warn(`${label} pagination stopped at request ${requests + 1}`, error);
+			console.warn("%s pagination stopped at request %d", label, requests + 1, error);
 			break;
 		}
 

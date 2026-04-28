@@ -31,6 +31,38 @@ const CHART_CONFIG = {
 const ROW_HEIGHT_PX = 32;
 const CHART_PADDING_PX = 24;
 const MAX_CHART_HEIGHT_PX = 320;
+const MIN_BAR_PX_FOR_LABELS = 80;
+
+function n(v: unknown, fallback = 0): number {
+	if (typeof v === "number") return v;
+	if (typeof v === "string") {
+		const parsed = Number(v);
+		return Number.isFinite(parsed) ? parsed : fallback;
+	}
+	return fallback;
+}
+
+type BarLabelProps = Record<string, unknown>;
+
+function TagNameBarLabel(props: BarLabelProps) {
+	const x = n(props.x);
+	const y = n(props.y);
+	const width = n(props.width);
+	const height = n(props.height);
+	const value = props.value;
+	if (!width || width < MIN_BAR_PX_FOR_LABELS) return null;
+	return (
+		<text
+			x={x + 8}
+			y={y + height / 2}
+			fill="white"
+			fontSize={12}
+			dominantBaseline="middle"
+		>
+			{value != null ? String(value) : ""}
+		</text>
+	);
+}
 
 type BuilderTagBreakdownProps = {
 	rows: BuilderTagRow[];
@@ -133,8 +165,9 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 								dataKey="label"
 								position="insideLeft"
 								offset={8}
-								className="fill-white"
-								fontSize={12}
+								content={(props: unknown) => (
+									<TagNameBarLabel {...(props as BarLabelProps)} />
+								)}
 							/>
 							<LabelList
 								dataKey="volumeUsd"
