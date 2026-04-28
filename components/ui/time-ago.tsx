@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { formatTimeAgo } from "@/lib/format";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 
@@ -11,13 +10,8 @@ export function TimeAgo({
 	timestamp: number;
 	className?: string;
 }) {
-	const [displayTimeAgo, setDisplayTimeAgo] = useState("");
-	const [displayDate, setDisplayDate] = useState("");
-
-	useEffect(() => {
-		setDisplayTimeAgo(formatTimeAgo(timestamp));
-		setDisplayDate(new Date(timestamp * 1000).toLocaleString());
-	}, [timestamp]);
+	const displayTimeAgo = formatTimeAgo(timestamp);
+	const displayDate = new Date(timestamp * 1000).toLocaleString();
 
 	return (
 		<TooltipWrapper content={displayDate}>

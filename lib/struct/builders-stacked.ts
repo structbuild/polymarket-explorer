@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { BuilderSortBy, BuilderTimeframe, CompositionBucketRow } from "@structbuild/sdk";
+import type { BuilderTimeframe, CompositionBucketRow } from "@structbuild/sdk";
 
 import { getBuilderComposition } from "@/lib/struct/builder-queries";
 import {
@@ -24,15 +24,6 @@ function truncateCode(code: string, length = 4): string {
 function formatSlotLabel(code: string): string {
 	return truncateCode(code);
 }
-
-const COMPOSITION_METRIC: Record<BuildersStackedMetric, BuilderSortBy> = {
-	volume: "volume",
-	trades: "txns",
-	traders: "traders",
-	fees: "fees",
-	builderFees: "builder_fees",
-	newUsers: "new_users",
-};
 
 const RESOLUTION_SECONDS: Partial<Record<AnalyticsResolution, number>> = {
 	"60": 3600,
@@ -66,6 +57,22 @@ function computeCompositionCountBack(
 	return Math.ceil(timeframeSeconds / resolutionSeconds);
 }
 
+function getCompositionWindow(
+	timeframe: BuilderTimeframe,
+	resolution: AnalyticsResolution,
+	countBack: number,
+): { from: number; to: number } | null {
+	if (timeframe === "lifetime") return null;
+	const resolutionSeconds = RESOLUTION_SECONDS[resolution];
+	if (!resolutionSeconds) return null;
+
+	const nowSeconds = Math.floor(Date.now() / 1000);
+	const to = Math.floor(nowSeconds / resolutionSeconds) * resolutionSeconds;
+	const from = to - Math.max(countBack - 1, 0) * resolutionSeconds;
+
+	return { from, to };
+}
+
 export async function getBuildersStackedData({
 	timeframe,
 	resolution,
@@ -76,17 +83,23 @@ export async function getBuildersStackedData({
 	topN: number;
 }): Promise<BuildersStackedData> {
 	const countBack = computeCompositionCountBack(timeframe, resolution);
+	const window = getCompositionWindow(timeframe, resolution, countBack);
 
-	const entriesByMetric = await Promise.all(
-		BUILDERS_STACKED_METRICS.map((metric) =>
-			getBuilderComposition(COMPOSITION_METRIC[metric], resolution, countBack, topN, "delta"),
-		),
+	// Rank slots once by volume so legend and stack order stay stable across metric toggles.
+	const entries = await getBuilderComposition(
+		"volume",
+		resolution,
+		countBack,
+		topN,
+		"delta",
+		window?.from,
+		window?.to,
 	);
 
 	const byMetric = Object.fromEntries(
-		BUILDERS_STACKED_METRICS.map((metric, idx) => [
+		BUILDERS_STACKED_METRICS.map((metric) => [
 			metric,
-			buildMetricData(metric, entriesByMetric[idx] ?? [], topN),
+			buildMetricData(metric, entries, topN),
 		]),
 	) as Record<BuildersStackedMetric, BuildersStackedMetricData>;
 
@@ -101,7 +114,7 @@ function buildMetricData(
 	const slotsById = new Map<string, BuildersStackedSlot & { rank: number }>();
 	const rowsByTimestamp = new Map<number, BuildersStackedDatum>();
 
-	for (const entry of entries) {
+	for (const entry of sortCompositionEntries(entries)) {
 		const isOther = entry.code === OTHER_SLOT || entry.r === 0 || entry.r > topN;
 		const slotId = isOther ? OTHER_SLOT : `rank-${entry.r}`;
 		if (!slotsById.has(slotId)) {
@@ -128,6 +141,12 @@ function buildMetricData(
 	const data = [...rowsByTimestamp.values()].sort((a, b) => a.t - b.t);
 
 	return { slots, data };
+}
+
+function sortCompositionEntries(entries: CompositionBucketRow[]): CompositionBucketRow[] {
+	return [...entries].sort(
+		(a, b) => a.t - b.t || a.r - b.r || a.code.localeCompare(b.code),
+	);
 }
 
 function readMetricValue(entry: CompositionBucketRow, metric: BuildersStackedMetric): number {

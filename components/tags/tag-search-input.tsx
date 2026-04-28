@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
 const LISTING_PATH = "/tags";
 
 export function TagSearchInput({ query }: { query: string }) {
+	return <TagSearchInputField key={query} query={query} />;
+}
+
+function TagSearchInputField({ query }: { query: string }) {
 	const router = useRouter();
 	const [value, setValue] = useState(query);
 	const [isPending, startTransition] = useTransition();
@@ -22,12 +26,6 @@ export function TagSearchInput({ query }: { query: string }) {
 			if (timerRef.current) clearTimeout(timerRef.current);
 		};
 	}, []);
-
-	useEffect(() => {
-		if (query === lastCommittedRef.current) return;
-		lastCommittedRef.current = query;
-		setValue(query);
-	}, [query]);
 
 	function commit(next: string) {
 		const current = new URLSearchParams(window.location.search);

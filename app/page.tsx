@@ -4,7 +4,7 @@ import { HomeSearchTrigger } from "@/components/home/home-search-trigger";
 import { NewMarketsList, NewMarketsListFallback } from "@/components/home/new-markets-list";
 import { PlatformStats, PlatformStatsFallback } from "@/components/home/platform-stats";
 import { RecentTradesList, RecentTradesListFallback } from "@/components/home/recent-trades-list";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
+import { SITE_NAME } from "@/lib/site-metadata";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 

@@ -31,7 +31,7 @@ export async function getMarketTradesPage(
 	}
 
 	const offset = options?.offset ?? 0;
-	const { limit: _limit, offset: _offset, sort_desc, trade_types, ...restOptions } = (options ?? {}) as MarketTradesPageOptions;
+	const { sort_desc, trade_types, ...restOptions } = (options ?? {}) as MarketTradesPageOptions;
 
 	try {
 		const response = await client.markets.getTrades({

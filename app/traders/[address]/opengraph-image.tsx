@@ -325,7 +325,7 @@ export default async function OpenGraphImage({ params }: Props) {
 		notFound();
 	}
 
-	const { avatarDataUrl, displayName, pnlCandles, pnlSummary, profile, streaks } = data;
+	const { avatarDataUrl, displayName, pnlCandles, pnlSummary, streaks } = data;
 	const chart = buildChartGeometry(pnlCandles);
 	const headlinePnl = chart?.lastPoint.value ?? 0;
 

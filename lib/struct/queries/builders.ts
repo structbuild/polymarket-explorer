@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+	AnalyticsResolution as StructAnalyticsResolution,
 	BuilderFeeRate,
 	BuilderFeeRateHistoryEntry,
 	BuilderGlobalLatestRow,
@@ -67,6 +68,7 @@ export async function getBuildersPaginated(
 			limit,
 			offset,
 			sort,
+			sort_desc: true,
 			timeframe,
 		});
 		const data = response.data ?? [];
@@ -318,10 +320,12 @@ export async function getBuilderTopTraders(
 
 export async function getBuilderComposition(
 	metric: BuilderSortBy = "volume",
-	resolution: string = "60",
+	resolution: StructAnalyticsResolution = "60",
 	countBack: number = 500,
 	topN: number = 10,
 	series: CompositionSeries = "cumulative",
+	from?: number,
+	to?: number,
 ): Promise<CompositionBucketRow[]> {
 	"use cache";
 	cacheLife("minutes");
@@ -337,10 +341,15 @@ export async function getBuilderComposition(
 			count_back: countBack,
 			top_n: topN,
 			series,
+			...(from !== undefined ? { from } : {}),
+			...(to !== undefined ? { to } : {}),
 		});
 		return response.data?.data ?? [];
 	} catch (error) {
-		logStructError(`getBuilderComposition:${metric}:${resolution}:${countBack}:${topN}:${series}`, error);
+		logStructError(
+			`getBuilderComposition:${metric}:${resolution}:${countBack}:${topN}:${series}:${from ?? ""}:${to ?? ""}`,
+			error,
+		);
 		return [];
 	}
 }

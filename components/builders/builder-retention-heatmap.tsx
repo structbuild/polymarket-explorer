@@ -5,16 +5,23 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { formatDateCompact, formatDateFull, formatNumber } from "@/lib/format";
 
-const OFFSET_KEYS: readonly string[] = ["1", "7", "30"];
-const OFFSET_LABELS: Record<string, string> = {
-	"1": "D1",
-	"7": "D7",
-	"30": "D30",
+type RetentionOffsetKey = keyof CohortRetentionRow["retention"] & string;
+
+const OFFSET_KEYS = ["d1", "d7", "d30"] as const satisfies readonly RetentionOffsetKey[];
+const OFFSET_LABELS: Record<RetentionOffsetKey, string> = {
+	d1: "D1",
+	d7: "D7",
+	d30: "D30",
 };
-const OFFSET_DESCRIPTIONS: Record<string, string> = {
-	"1": "1 day later",
-	"7": "7 days later",
-	"30": "30 days later",
+const OFFSET_DESCRIPTIONS: Record<RetentionOffsetKey, string> = {
+	d1: "1 day later",
+	d7: "7 days later",
+	d30: "30 days later",
+};
+const OFFSET_DAYS: Record<RetentionOffsetKey, number> = {
+	d1: 1,
+	d7: 7,
+	d30: 30,
 };
 const DAY_SECONDS = 86400;
 
@@ -27,8 +34,8 @@ function cellTone(value: number | undefined): string {
 	return "bg-primary text-primary-foreground";
 }
 
-function offsetDate(cohortDay: number, offsetDays: string): string {
-	return formatDateFull(cohortDay + Number(offsetDays) * DAY_SECONDS);
+function offsetDate(cohortDay: number, offsetKey: RetentionOffsetKey): string {
+	return formatDateFull(cohortDay + OFFSET_DAYS[offsetKey] * DAY_SECONDS);
 }
 
 function formatRetentionPct(value: number): string {
@@ -37,14 +44,14 @@ function formatRetentionPct(value: number): string {
 
 function retentionTooltip(
 	row: CohortRetentionRow,
-	offsetDays: string,
+	offsetKey: RetentionOffsetKey,
 	value: number | undefined,
 	retained: number | undefined,
 ): string {
-	const label = OFFSET_LABELS[offsetDays];
+	const label = OFFSET_LABELS[offsetKey];
 	const cohortDate = formatDateFull(row.cohort_day);
-	const returnDate = offsetDate(row.cohort_day, offsetDays);
-	const offsetDescription = OFFSET_DESCRIPTIONS[offsetDays];
+	const returnDate = offsetDate(row.cohort_day, offsetKey);
+	const offsetDescription = OFFSET_DESCRIPTIONS[offsetKey];
 	const cohortSize = formatNumber(row.cohort_size);
 
 	if (value == null || !Number.isFinite(value)) {
