@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
@@ -166,9 +167,10 @@ type Props = {
 	conditionId: string;
 	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
+	toolbarLeft?: ReactNode;
 };
 
-export function MarketTradesTable({ conditionId, page, pageNumber }: Props) {
+export function MarketTradesTable({ conditionId, page, pageNumber, toolbarLeft }: Props) {
 	const [isPending, startTransition] = useTransition();
 	const [pageState, setPageState] = useState(() => ({
 		sourcePage: page,
@@ -196,6 +198,7 @@ export function MarketTradesTable({ conditionId, page, pageNumber }: Props) {
 			storageKey="market-trades-table"
 			emptyMessage="No trades to show."
 			columnLayout="fixed"
+			toolbarLeft={toolbarLeft}
 			paginationMode="server"
 			pageIndex={currentPageNumber - 1}
 			pageSize={currentPage.pageSize}

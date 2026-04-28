@@ -49,6 +49,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
 								) : (
 									<Link
 										href={item.href as Route}
+										prefetch={false}
 										className="whitespace-nowrap transition-colors hover:text-foreground"
 									>
 										{item.label}

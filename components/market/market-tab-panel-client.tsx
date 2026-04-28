@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 
 import { getMarketTabPageAction } from "@/app/actions";
 import { ChartCard } from "@/components/market/chart-card";
@@ -36,7 +37,7 @@ function tabForPanelData(data: MarketTabPanelData): MarketDetailTab {
 	return data.kind;
 }
 
-function renderPanelData(data: MarketTabPanelData) {
+function renderPanelData(data: MarketTabPanelData, marketTabsToolbar?: ReactNode) {
 	switch (data.kind) {
 		case "holders":
 			if (!data.data?.outcomes?.length) {
@@ -71,6 +72,7 @@ function renderPanelData(data: MarketTabPanelData) {
 					conditionId={data.conditionId}
 					page={data.page}
 					pageNumber={data.pageNumber}
+					toolbarLeft={marketTabsToolbar}
 				/>
 			);
 	}
@@ -118,12 +120,25 @@ export function MarketTabPanelClient({
 
 	return (
 		<div className="space-y-4">
-			<MarketTabs
-				value={currentTab}
-				onValueChange={handleTabChange}
-				pending={isPending}
-			/>
-			{renderPanelData(currentData)}
+			{currentData.kind === "trades" ? (
+				renderPanelData(currentData, (
+					<MarketTabs
+						value={currentTab}
+						onValueChange={handleTabChange}
+						pending={isPending}
+						omitTopSpacing
+					/>
+				))
+			) : (
+				<>
+					<MarketTabs
+						value={currentTab}
+						onValueChange={handleTabChange}
+						pending={isPending}
+					/>
+					{renderPanelData(currentData)}
+				</>
+			)}
 		</div>
 	);
 }

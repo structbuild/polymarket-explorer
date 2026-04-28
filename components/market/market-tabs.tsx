@@ -24,10 +24,12 @@ export function MarketTabs({
 	value,
 	onValueChange,
 	pending = false,
+	omitTopSpacing = false,
 }: {
 	value?: MarketDetailTab;
 	onValueChange?: (value: MarketDetailTab) => void;
 	pending?: boolean;
+	omitTopSpacing?: boolean;
 }) {
 	const [isPending, startTransition] = useTransition();
 	const [{ tab: uncontrolledTab }, setSearchParams] = useQueryStates(
@@ -61,7 +63,8 @@ export function MarketTabs({
 				variant="text"
 				aria-busy={isPending || pending}
 				className={cn(
-					"mt-4 flex w-full justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+					"flex w-full justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+					!omitTopSpacing && "mt-4",
 					(isPending || pending) && "opacity-70",
 				)}
 			>
