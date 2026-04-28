@@ -1,8 +1,9 @@
 import "server-only";
 
-import type { BuilderTimeframe, CompositionBucketRow } from "@structbuild/sdk";
+import type { BuilderMetadataInline, BuilderTimeframe, CompositionBucketRow } from "@structbuild/sdk";
 
 import { getBuilderComposition } from "@/lib/struct/builder-queries";
+import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import {
 	BUILDERS_STACKED_METRICS,
 	OTHER_SLOT,
@@ -15,14 +16,9 @@ import {
 } from "@/lib/struct/builders-stacked-shared";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 
-function truncateCode(code: string, length = 4): string {
-	const trimmed = code.trim();
-	if (!trimmed.startsWith("0x") || trimmed.length <= length * 2 + 2) return trimmed;
-	return `${trimmed.slice(0, length + 2)}…${trimmed.slice(-length)}`;
-}
 
-function formatSlotLabel(code: string): string {
-	return truncateCode(code);
+function formatSlotLabel(code: string, metadataByCode: Record<string, BuilderMetadataInline>): string {
+	return getBuilderDisplayName(code, metadataByCode[code] ?? null);
 }
 
 const RESOLUTION_SECONDS: Partial<Record<AnalyticsResolution, number>> = {
@@ -86,7 +82,7 @@ export async function getBuildersStackedData({
 	const window = getCompositionWindow(timeframe, resolution, countBack);
 
 	// Rank slots once by volume so legend and stack order stay stable across metric toggles.
-	const entries = await getBuilderComposition(
+	const { buckets: entries, builderMetadata } = await getBuilderComposition(
 		"volume",
 		resolution,
 		countBack,
@@ -99,7 +95,7 @@ export async function getBuildersStackedData({
 	const byMetric = Object.fromEntries(
 		BUILDERS_STACKED_METRICS.map((metric) => [
 			metric,
-			buildMetricData(metric, entries, topN),
+			buildMetricData(metric, entries, topN, builderMetadata),
 		]),
 	) as Record<BuildersStackedMetric, BuildersStackedMetricData>;
 
@@ -110,6 +106,7 @@ function buildMetricData(
 	metric: BuildersStackedMetric,
 	entries: CompositionBucketRow[],
 	topN: number,
+	builderMetadata: Record<string, BuilderMetadataInline>,
 ): BuildersStackedMetricData {
 	const slotsById = new Map<string, BuildersStackedSlot & { rank: number }>();
 	const rowsByTimestamp = new Map<number, BuildersStackedDatum>();
@@ -121,7 +118,7 @@ function buildMetricData(
 			slotsById.set(slotId, {
 				id: slotId,
 				code: isOther ? null : entry.code,
-				label: isOther ? "Other" : formatSlotLabel(entry.code),
+				label: isOther ? "Other" : formatSlotLabel(entry.code, builderMetadata),
 				rank: isOther ? topN + 1 : entry.r,
 			});
 		}

@@ -1,24 +1,36 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import { useState, useTransition, type ReactNode } from "react";
+import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import type { Trade } from "@structbuild/sdk";
 import { Facehash } from "facehash";
-import { HashIcon } from "lucide-react";
+import { HashIcon, RefreshCwIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
+import { useQueryStates } from "nuqs";
 
+import { getBuilderTradesPageAction } from "@/app/actions";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { TooltipWrapper } from "@/components/ui/tooltip";
+import { builderSearchParamParsers } from "@/lib/builder-search-params";
+import { maxBuilderTradesPageNumber } from "@/lib/builder-search-params-shared";
 import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, formatPriceCents } from "@/lib/format";
-import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
+import type { PaginatedResource } from "@/lib/struct/types";
 import { hasTradeTrader, isBuyTrade, isOrderFilledTrade } from "@/lib/trade-utils";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
-const columns: ColumnDef<Trade, unknown>[] = [
+type TradeRow = Trade;
+
+const defaultColumnVisibility: VisibilityState = {
+	builder_fee: false,
+};
+
+const columns: ColumnDef<TradeRow, unknown>[] = [
 	{
 		id: "age",
 		header: "Age",
@@ -39,8 +51,10 @@ const columns: ColumnDef<Trade, unknown>[] = [
 			if (!hasTradeTrader(trade)) {
 				return <p className="text-sm text-muted-foreground">—</p>;
 			}
+
 			const name = getTraderDisplayName(trade.trader);
 			const address = normalizeWalletAddress(trade.trader.address) ?? trade.trader.address;
+
 			return (
 				<Link
 					href={`/traders/${address}` as Route}
@@ -135,6 +149,20 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		},
 	},
 	{
+		id: "builder_fee",
+		header: "Builder fee",
+		size: 120,
+		cell: ({ row }) => {
+			const trade = row.original;
+			const builderFee = "builder_fee" in trade ? trade.builder_fee : null;
+			return (
+				<p className="tabular-nums">
+					{formatNumber(builderFee, { currency: true, compact: true })}
+				</p>
+			);
+		},
+	},
+	{
 		id: "link",
 		header: "",
 		size: 48,
@@ -152,22 +180,108 @@ const columns: ColumnDef<Trade, unknown>[] = [
 ];
 
 type Props = {
-	trades: Trade[];
-	toolbarLeft?: React.ReactNode;
-	toolbarRight?: React.ReactNode;
+	builderCode: string;
+	page: PaginatedResource<TradeRow, number>;
+	pageNumber: number;
+	toolbarLeft?: ReactNode;
+	toolbarRight?: ReactNode;
 };
 
-export function RecentTradesTable({ trades, toolbarLeft, toolbarRight }: Props) {
+export function BuilderRecentTradesTable({
+	builderCode,
+	page,
+	pageNumber,
+	toolbarLeft,
+	toolbarRight,
+}: Props) {
+	const [isPending, startTransition] = useTransition();
+	const [pageState, setPageState] = useState(() => ({
+		sourcePage: page,
+		sourcePageNumber: pageNumber,
+		page,
+		pageNumber,
+	}));
+	const [, setSearchParams] = useQueryStates(builderSearchParamParsers, {
+		history: "push",
+		scroll: false,
+		shallow: true,
+		startTransition,
+	});
+
+	const hasLocalPage =
+		pageState.sourcePage === page &&
+		pageState.sourcePageNumber === pageNumber;
+	const currentPage = hasLocalPage ? pageState.page : page;
+	const currentPageNumber = hasLocalPage ? pageState.pageNumber : pageNumber;
+
+	const toolbarRightWithRefresh = (
+		<>
+			<Button
+				variant="outline"
+				size="sm"
+				className="shrink-0"
+				disabled={isPending}
+				onClick={() => {
+					startTransition(async () => {
+						const result = await getBuilderTradesPageAction({
+							builderCode,
+							pageNumber: currentPageNumber,
+						});
+
+						setPageState({
+							sourcePage: page,
+							sourcePageNumber: pageNumber,
+							page: result.page,
+							pageNumber: result.pageNumber,
+						});
+					});
+				}}
+			>
+				<RefreshCwIcon data-icon="inline-start" />
+				Refresh
+			</Button>
+			{toolbarRight}
+		</>
+	);
+
 	return (
 		<DataTable
 			columns={columns}
-			data={trades}
-			storageKey="home-recent-trades"
+			data={currentPage.data}
+			storageKey={`builder-recent-trades-${builderCode}`}
+			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No trades to show."
 			columnLayout="fixed"
-			paginationMode="none"
 			toolbarLeft={toolbarLeft}
-			toolbarRight={toolbarRight}
+			toolbarRight={toolbarRightWithRefresh}
+			paginationMode="server"
+			pageIndex={currentPageNumber - 1}
+			pageSize={currentPage.pageSize}
+			hasNextPage={currentPage.hasMore}
+			isLoading={isPending}
+			onPageIndexChange={(nextPageIndex) => {
+				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxBuilderTradesPageNumber);
+
+				if (nextPageNumber === currentPageNumber) {
+					return;
+				}
+
+				startTransition(async () => {
+					void setSearchParams({ tradesPage: nextPageNumber });
+
+					const result = await getBuilderTradesPageAction({
+						builderCode,
+						pageNumber: nextPageNumber,
+					});
+
+					setPageState({
+						sourcePage: page,
+						sourcePageNumber: pageNumber,
+						page: result.page,
+						pageNumber: result.pageNumber,
+					});
+				});
+			}}
 		/>
 	);
 }

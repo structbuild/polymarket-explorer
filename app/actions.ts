@@ -22,7 +22,12 @@ import {
 	getTopMarkets,
 	getMarketTradesPage,
 } from "@/lib/struct/market-queries";
-import { getBuilderGlobalTags } from "@/lib/struct/builder-queries";
+import {
+	defaultBuilderTradesPageSize,
+	getBuilderGlobalTags,
+	getBuilderTradesPage,
+} from "@/lib/struct/builder-queries";
+import { maxBuilderTradesPageNumber } from "@/lib/builder-search-params-shared";
 import {
 	getBuilderSortOptionsForTimeframe,
 	parseBuilderTimeframe,
@@ -301,6 +306,22 @@ export async function getMarketTradesPageAction({
 	const page = await getMarketTradesPage(conditionId, {
 		limit: defaultMarketTradesPageSize,
 		offset: (safePageNumber - 1) * defaultMarketTradesPageSize,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getBuilderTradesPageAction({
+	builderCode,
+	pageNumber,
+}: {
+	builderCode: string;
+	pageNumber: number;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxBuilderTradesPageNumber);
+	const page = await getBuilderTradesPage(builderCode, {
+		limit: defaultBuilderTradesPageSize,
+		offset: (safePageNumber - 1) * defaultBuilderTradesPageSize,
 	});
 
 	return { page, pageNumber: safePageNumber };

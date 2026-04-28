@@ -27,7 +27,12 @@ export function BuilderAvatar({
 
 	if (normalized) {
 		return (
-			<Avatar className={cn("shrink-0 overflow-hidden rounded-md after:rounded-md", className)}>
+			<Avatar
+				className={cn(
+					"shrink-0 overflow-hidden rounded-md after:rounded-md after:border-0",
+					className,
+				)}
+			>
 				<AvatarImage src={normalized} alt={alt ?? ""} className="rounded-md object-cover" />
 				<AvatarFallback className="overflow-hidden rounded-md p-0">
 					{useFacehash ? (

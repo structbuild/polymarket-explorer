@@ -41,6 +41,7 @@ type BuildersStackedChartProps = {
 
 export function BuildersStackedChart({
 	stacked,
+	timeframeLabel,
 }: BuildersStackedChartProps) {
 	const [metric, setMetric] = useState<BuildersStackedMetric>("volume");
 	const metricData = stacked.byMetric[metric];
@@ -88,6 +89,7 @@ export function BuildersStackedChart({
 							<h2 className="text-base font-medium text-foreground/90">
 								Builder activity breakdown
 							</h2>
+							<p className="text-sm text-muted-foreground">{timeframeLabel}</p>
 						</div>
 						{chartMetricToggle}
 					</div>

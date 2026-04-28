@@ -1,5 +1,7 @@
 export type { BuilderLatestRowWithMetadata } from "@structbuild/sdk";
 
+export type { BuilderCompositionResult } from "@/lib/struct/queries/builders";
+
 export {
 	getBuildersPaginated,
 	getAllBuilderCodes,
@@ -11,6 +13,7 @@ export {
 	getBuilderRetention,
 	getBuilderTags,
 	getBuilderTopTraders,
+	getBuilderTradesPage,
 	getBuilderComposition,
 	getBuilderGlobal,
 	getBuilderGlobalChanges,
@@ -25,10 +28,12 @@ export {
 	structBuilderRetentionCacheTag,
 	structBuilderTagsCacheTag,
 	structBuilderTopTradersCacheTag,
+	structBuilderTradesCacheTag,
 	structBuilderCompositionCacheTag,
 	structBuilderGlobalCacheTag,
 	structBuilderGlobalChangesCacheTag,
 	structBuilderGlobalTagsCacheTag,
 	structTagBuildersCacheTag,
 	structAllBuilderCodesCacheTag,
+	defaultBuilderTradesPageSize,
 } from "@/lib/struct/queries/builders";
