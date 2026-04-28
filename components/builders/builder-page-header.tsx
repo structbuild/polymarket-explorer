@@ -39,8 +39,8 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 	const showContactCta = metadata === null;
 
 	return (
-		<div className="flex min-w-0 w-full flex-col gap-4 overflow-hidden lg:flex-row lg:items-start lg:justify-between">
-			<div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+		<div className="flex min-w-0 w-full flex-col gap-4 overflow-hidden lg:flex-row lg:items-center lg:justify-between">
+			<div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
 				<BuilderAvatar
 					builderCode={builderCode}
 					iconUrl={metadata?.icon_url}
@@ -58,11 +58,6 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 							displayText={codeLabel}
 						/>
 					</div>
-					{displayName !== codeLabel ? (
-						<p className="truncate font-mono text-sm text-muted-foreground" title={builderCode}>
-							{codeLabel}
-						</p>
-					) : null}
 					{description ? (
 						<p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
 					) : null}
@@ -72,11 +67,33 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 							to add a name, icon, and links.
 						</p>
 					) : null}
-					{websiteUrl || twitterUrl ? (
-						<div className="flex flex-wrap gap-2">
+				</div>
+			</div>
+
+			{showContactCta || websiteUrl || twitterUrl ? (
+				<div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 lg:items-end">
+					{showContactCta ? (
+						<Button
+							className="w-full sm:w-fit"
+							size="lg"
+							nativeButton={false}
+							render={
+								<a
+									href={BUILDER_METADATA_CONTACT_HREF}
+									rel="noopener noreferrer"
+									target="_blank"
+								/>
+							}
+						>
+							Contact us
+							<ExternalLinkIcon />
+						</Button>
+					) : (
+						<div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
 							{websiteUrl ? (
 								<Button
-									size="sm"
+									className="w-full sm:w-fit"
+									size="lg"
 									variant="secondary"
 									nativeButton={false}
 									render={
@@ -89,39 +106,20 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 							) : null}
 							{twitterUrl ? (
 								<Button
-									size="sm"
+									className="w-full sm:w-fit"
+									size="lg"
 									variant="secondary"
 									nativeButton={false}
 									render={
 										<a href={twitterUrl} rel="noopener noreferrer" target="_blank" />
 									}
 								>
-									X
+									X (Twitter)
 									<ExternalLinkIcon />
 								</Button>
 							) : null}
 						</div>
-					) : null}
-				</div>
-			</div>
-
-			{showContactCta ? (
-				<div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 lg:items-end">
-					<Button
-						className="w-full sm:w-fit"
-						size="lg"
-						nativeButton={false}
-						render={
-							<a
-								href={BUILDER_METADATA_CONTACT_HREF}
-								rel="noopener noreferrer"
-								target="_blank"
-							/>
-						}
-					>
-						Contact us
-						<ExternalLinkIcon />
-					</Button>
+					)}
 				</div>
 			) : null}
 		</div>
