@@ -6,7 +6,7 @@ import type { components } from "@structbuild/sdk"
 import type { Route } from "next"
 import Link from "next/link"
 import { ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
-import { useCallback, useMemo, useState, useTransition } from "react"
+import { type ReactNode, useCallback, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
 
@@ -437,6 +437,7 @@ type Props = {
 	status: "open" | "closed"
 	sortBy: TraderPositionSortBy
 	sortDirection: TraderSortDirection
+	tabs?: ReactNode
 }
 
 export default function TraderPositions({
@@ -446,6 +447,7 @@ export default function TraderPositions({
 	status,
 	sortBy,
 	sortDirection,
+	tabs,
 }: Props) {
 	const pathname = usePathname()
 	const router = useRouter()
@@ -561,7 +563,7 @@ export default function TraderPositions({
 
 	return (
 		<DataTable
-			toolbarLeft={<TraderTabs />}
+			toolbarLeft={tabs ?? <TraderTabs />}
 			toolbarRight={toolbarRight}
 			columns={columns}
 			data={data}

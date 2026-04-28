@@ -5,10 +5,9 @@ import type { Tag } from "@structbuild/sdk";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { TagBuildersSection } from "@/components/builders/tag-builders-section";
+import { TagMarketsStatusListing } from "@/components/market/market-status-listing";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
-import { PaginationNav } from "@/components/seo/pagination-nav";
-import { MarketsTable } from "@/components/market/markets-table";
 import { TagStatsRow } from "@/components/tags/tag-stats-row";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
@@ -24,12 +23,8 @@ import {
 	getTagAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
 import { DEFAULT_ANALYTICS_VIEW, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
-import {
-	DEFAULT_MARKET_STATUS_TAB,
-	parseMarketStatusTab,
-} from "@/lib/market-search-params-shared";
+import { parseMarketStatusTab } from "@/lib/market-search-params-shared";
 import { getAllTags, getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
-import { MarketStatusTabs } from "@/components/market/market-status-tabs";
 
 const TAG_SLUG_PLACEHOLDER = "__placeholder__";
 
@@ -124,7 +119,6 @@ async function TagPageContent({
 	const tagKey = tag.slug ?? tag.label;
 	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab);
 	const paginationBaseParams: Record<string, string> = {
-		...(marketTab !== DEFAULT_MARKET_STATUS_TAB ? { tab: marketTab } : {}),
 		...(view !== DEFAULT_ANALYTICS_VIEW ? { view } : {}),
 		...(range !== defaultRange ? { range } : {}),
 		...(resolution !== defaultResolution ? { resolution } : {}),
@@ -165,31 +159,17 @@ async function TagPageContent({
 
 			<div className="mt-6 space-y-4">
 				<TagHeader tag={tag} tagDisplay={tagDisplay} />
-				{markets.length > 0 ? (
-					<MarketsTable
-						markets={markets.map(marketResponseToRow)}
-						paginationMode="none"
-						sortingMode="client"
-						toolbarLeft={<MarketStatusTabs />}
-					/>
-				) : (
-					<>
-						<MarketStatusTabs />
-						<p className="rounded-lg bg-card px-4 py-12 text-center text-muted-foreground">
-							{marketTab === "closed"
-								? "No closed markets found for this tag."
-								: "No open markets found for this tag."}
-						</p>
-					</>
-				)}
+				<TagMarketsStatusListing
+					basePath={`/tags/${canonicalSlug}`}
+					baseParams={paginationBaseParams}
+					tagLabel={tag.label}
+					initialMarkets={markets.map(marketResponseToRow)}
+					initialTab={marketTab}
+					initialCursor={cursor ?? null}
+					initialHasMore={hasMore}
+					initialNextCursor={nextCursor}
+				/>
 			</div>
-			<PaginationNav
-				basePath={`/tags/${canonicalSlug}`}
-				baseParams={paginationBaseParams}
-				cursor={cursor ?? null}
-				nextCursor={nextCursor}
-				hasMore={hasMore}
-			/>
 
 			<div className="mt-8">
 				<AnalyticsSection

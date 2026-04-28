@@ -79,15 +79,21 @@ const tabLabels: Record<MarketDetailTab, string> = {
 };
 
 export function MarketTabs({
+	value,
+	onValueChange,
+	pending = false,
 	prefetchEnabled = true,
 }: {
+	value?: MarketDetailTab;
+	onValueChange?: (value: MarketDetailTab) => void;
+	pending?: boolean;
 	prefetchEnabled?: boolean;
 }) {
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const [{ tab: currentTab }, setSearchParams] = useQueryStates(
+	const [{ tab: uncontrolledTab }, setSearchParams] = useQueryStates(
 		{ tab: marketDetailSearchParamParsers.tab },
 		{
 			history: "push",
@@ -96,6 +102,7 @@ export function MarketTabs({
 			startTransition,
 		},
 	);
+	const currentTab = value ?? uncontrolledTab;
 	const search = searchParams.toString();
 
 	const setTab = useCallback((nextTab: MarketDetailTab) => {
@@ -104,8 +111,13 @@ export function MarketTabs({
 		}
 
 		posthog.capture("market_tab_changed", { tab: nextTab, previous_tab: currentTab });
+		if (onValueChange) {
+			onValueChange(nextTab);
+			return;
+		}
+
 		void setSearchParams({ tab: nextTab });
-	}, [currentTab, setSearchParams]);
+	}, [currentTab, onValueChange, setSearchParams]);
 
 	const prefetchTab = useCallback((nextTab: MarketDetailTab) => {
 		if (!prefetchEnabled || nextTab === currentTab) {
@@ -121,7 +133,7 @@ export function MarketTabs({
 	}, [currentTab, pathname, prefetchEnabled, router, search]);
 
 	useEffect(() => {
-		if (!prefetchEnabled || isPending || !canBackgroundPrefetch()) {
+		if (!prefetchEnabled || isPending || pending || !canBackgroundPrefetch()) {
 			return;
 		}
 
@@ -156,16 +168,16 @@ export function MarketTabs({
 
 			window.removeEventListener("load", startPrefetch);
 		};
-	}, [currentTab, isPending, prefetchEnabled, prefetchTab]);
+	}, [currentTab, isPending, pending, prefetchEnabled, prefetchTab]);
 
 	return (
 		<Tabs value={currentTab} onValueChange={(value) => setTab(value as MarketDetailTab)}>
 			<TabsList
 				variant="text"
-				aria-busy={isPending}
+				aria-busy={isPending || pending}
 				className={cn(
 					"mt-4 flex w-full justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-					isPending && "opacity-70",
+					(isPending || pending) && "opacity-70",
 				)}
 			>
 				{marketDetailTabValues.map((tab) => (

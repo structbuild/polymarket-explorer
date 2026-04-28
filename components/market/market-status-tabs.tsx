@@ -84,15 +84,21 @@ const tabLabels: Record<MarketStatusTab, string> = {
 };
 
 export function MarketStatusTabs({
+	value,
+	onValueChange,
+	pending = false,
 	prefetchEnabled = true,
 }: {
+	value?: MarketStatusTab;
+	onValueChange?: (value: MarketStatusTab) => void;
+	pending?: boolean;
 	prefetchEnabled?: boolean;
 }) {
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const currentTab = readCurrentTab(searchParams.get("tab"));
+	const currentTab = value ?? readCurrentTab(searchParams.get("tab"));
 	const search = searchParams.toString();
 
 	const setTab = useCallback((nextTab: MarketStatusTab) => {
@@ -101,11 +107,16 @@ export function MarketStatusTabs({
 		}
 
 		posthog.capture("market_status_tab_changed", { tab: nextTab, previous_tab: currentTab });
+		if (onValueChange) {
+			onValueChange(nextTab);
+			return;
+		}
+
 		const href = buildTabHref(pathname, search, nextTab);
 		startTransition(() => {
 			router.push(href, { scroll: false });
 		});
-	}, [currentTab, pathname, router, search]);
+	}, [currentTab, onValueChange, pathname, router, search]);
 
 	const prefetchTab = useCallback((nextTab: MarketStatusTab) => {
 		if (!prefetchEnabled || nextTab === currentTab) {
@@ -121,7 +132,7 @@ export function MarketStatusTabs({
 	}, [currentTab, pathname, prefetchEnabled, router, search]);
 
 	useEffect(() => {
-		if (!prefetchEnabled || isPending || !canBackgroundPrefetch()) {
+		if (!prefetchEnabled || isPending || pending || !canBackgroundPrefetch()) {
 			return;
 		}
 
@@ -156,16 +167,16 @@ export function MarketStatusTabs({
 
 			window.removeEventListener("load", startPrefetch);
 		};
-	}, [currentTab, isPending, prefetchEnabled, prefetchTab]);
+	}, [currentTab, isPending, pending, prefetchEnabled, prefetchTab]);
 
 	return (
 		<Tabs value={currentTab} onValueChange={(value) => setTab(value as MarketStatusTab)}>
 			<TabsList
 				variant="text"
-				aria-busy={isPending}
+				aria-busy={isPending || pending}
 				className={cn(
 					"flex w-full justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-					isPending && "opacity-70",
+					(isPending || pending) && "opacity-70",
 				)}
 			>
 				{marketStatusTabValues.map((tab) => (

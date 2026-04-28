@@ -4,7 +4,7 @@ import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { type ReactNode, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
 
@@ -192,9 +192,10 @@ type Props = {
 	address: string;
 	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
+	tabs?: ReactNode;
 };
 
-export default function TraderActivity({ address, page, pageNumber }: Props) {
+export default function TraderActivity({ address, page, pageNumber, tabs }: Props) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
@@ -230,7 +231,7 @@ export default function TraderActivity({ address, page, pageNumber }: Props) {
 
 	return (
 		<DataTable
-			toolbarLeft={<TraderTabs />}
+			toolbarLeft={tabs ?? <TraderTabs />}
 			toolbarRight={
 				<div className="flex items-center gap-3">
 					{hasUnknownMarkets ? (

@@ -1,10 +1,6 @@
-import { Suspense } from "react";
-
-import { MarketHolders, MarketHoldersFallback } from "@/components/market/market-holders";
-import { MarketHoldersHistory, MarketHoldersHistoryFallback } from "@/components/market/market-holders-history";
-import { MarketPriceSpikes, MarketPriceSpikesFallback } from "@/components/market/market-price-spikes";
-import { MarketTabs } from "@/components/market/market-tabs";
-import { MarketTrades, MarketTradesFallback } from "@/components/market/market-trades";
+import { getMarketTabPageAction } from "@/app/actions";
+import { MarketTabPanelClient } from "@/components/market/market-tab-panel-client";
+import { MarketTradesFallback } from "@/components/market/market-trades";
 import type { MarketDetailTab } from "@/lib/market-detail-search-params-shared";
 
 type MarketTabPanelProps = {
@@ -14,48 +10,17 @@ type MarketTabPanelProps = {
 	tradesPage: number;
 };
 
-function fallbackForTab(tab: MarketDetailTab) {
-	switch (tab) {
-		case "spikes":
-			return <MarketPriceSpikesFallback />;
-		case "holders":
-			return <MarketHoldersFallback />;
-		case "holders-history":
-			return <MarketHoldersHistoryFallback />;
-		case "trades":
-		default:
-			return <MarketTradesFallback />;
-	}
-}
+export async function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
+	const params = new URLSearchParams();
+	params.set("tradesPage", String(tradesPage));
+	const initialData = await getMarketTabPageAction({
+		slug,
+		conditionId,
+		tab: currentTab,
+		search: params.toString(),
+	});
 
-function MarketTabContent({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
-	switch (currentTab) {
-		case "spikes":
-			return <MarketPriceSpikes conditionId={conditionId} />;
-		case "holders":
-			return <MarketHolders slug={slug} />;
-		case "holders-history":
-			return <MarketHoldersHistory conditionId={conditionId} />;
-		case "trades":
-		default:
-			return <MarketTrades conditionId={conditionId} pageNumber={tradesPage} />;
-	}
-}
-
-export function MarketTabPanel({ currentTab, slug, conditionId, tradesPage }: MarketTabPanelProps) {
-	return (
-		<div className="space-y-4">
-			<MarketTabs />
-			<Suspense fallback={fallbackForTab(currentTab)}>
-				<MarketTabContent
-					currentTab={currentTab}
-					slug={slug}
-					conditionId={conditionId}
-					tradesPage={tradesPage}
-				/>
-			</Suspense>
-		</div>
-	);
+	return <MarketTabPanelClient initialData={initialData} />;
 }
 
 export function MarketTabPanelFallback() {

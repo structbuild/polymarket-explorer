@@ -70,15 +70,21 @@ function scheduleWhenIdle(callback: () => void) {
 }
 
 export function TraderTabs({
+	value,
+	onValueChange,
+	pending = false,
 	prefetchEnabled = true,
 }: {
+	value?: TraderTab
+	onValueChange?: (value: TraderTab) => void
+	pending?: boolean
 	prefetchEnabled?: boolean
 }) {
 	const [isPending, startTransition] = useTransition()
 	const router = useRouter()
 	const pathname = usePathname()
 	const searchParams = useSearchParams()
-	const [{ tab: currentTab }, setSearchParams] = useQueryStates(
+	const [{ tab: uncontrolledTab }, setSearchParams] = useQueryStates(
 		{ tab: traderSearchParamParsers.tab },
 		{
 			history: "push",
@@ -87,6 +93,7 @@ export function TraderTabs({
 			startTransition,
 		},
 	)
+	const currentTab = value ?? uncontrolledTab
 	const search = searchParams.toString()
 
 	const setTab = useCallback((nextTab: TraderTab) => {
@@ -94,8 +101,13 @@ export function TraderTabs({
 			return
 		}
 
+		if (onValueChange) {
+			onValueChange(nextTab)
+			return
+		}
+
 		void setSearchParams({ tab: nextTab })
-	}, [currentTab, setSearchParams])
+	}, [currentTab, onValueChange, setSearchParams])
 
 	const prefetchTab = useCallback((nextTab: TraderTab) => {
 		if (!prefetchEnabled || nextTab === currentTab) {
@@ -111,7 +123,7 @@ export function TraderTabs({
 	}, [currentTab, pathname, prefetchEnabled, router, search])
 
 	useEffect(() => {
-		if (!prefetchEnabled || isPending || !canBackgroundPrefetch()) {
+		if (!prefetchEnabled || isPending || pending || !canBackgroundPrefetch()) {
 			return
 		}
 
@@ -146,17 +158,17 @@ export function TraderTabs({
 
 			window.removeEventListener("load", startPrefetch)
 		}
-	}, [currentTab, isPending, prefetchEnabled, prefetchTab])
+	}, [currentTab, isPending, pending, prefetchEnabled, prefetchTab])
 
 	return (
 		<Tabs value={currentTab} onValueChange={(value) => setTab(value as TraderTab)}>
 			<div className="flex items-center gap-5">
 				<TabsList
 					variant="text"
-					aria-busy={isPending}
+					aria-busy={isPending || pending}
 					className={cn(
 						"flex w-full justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-						isPending && "opacity-70",
+						(isPending || pending) && "opacity-70",
 					)}
 				>
 					<TabsTrigger
