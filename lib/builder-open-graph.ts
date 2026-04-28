@@ -2,7 +2,7 @@ import "server-only";
 
 import type {
 	BuilderFeeRate,
-	BuilderLatestRow,
+	BuilderLatestRowWithMetadata,
 	BuilderMetadata,
 	BuilderTagRow,
 } from "@structbuild/sdk";
@@ -17,6 +17,7 @@ import {
 	getBuilderMetadata,
 	getBuilderTags,
 } from "@/lib/struct/builder-queries";
+import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import { formatBuilderCodeDisplay } from "@/lib/utils";
 
 export const builderOgImageSize = {
@@ -36,18 +37,12 @@ export type BuilderOpenGraphData = {
 	displayName: string;
 	codeLabel: string;
 	metadata: BuilderMetadata | null;
-	builder: BuilderLatestRow | null;
+	builder: BuilderLatestRowWithMetadata | null;
 	fees: BuilderFeeRate | null;
 	tags: BuilderTagRow[];
 };
 
-export function getBuilderDisplayName(code: string, metadata: BuilderMetadata | null) {
-	const name = metadata?.name?.trim();
-	if (name) return name;
-	return formatBuilderCodeDisplay(code);
-}
-
-export function getBuilderPageTitle(displayName: string, builder: BuilderLatestRow | null) {
+export function getBuilderPageTitle(displayName: string, builder: BuilderLatestRowWithMetadata | null) {
 	const volume = builder?.volume_usd ?? 0;
 	if (Number.isFinite(volume) && volume >= 1000) {
 		const volumeText = formatNumber(volume, { compact: true, currency: true });
@@ -56,14 +51,14 @@ export function getBuilderPageTitle(displayName: string, builder: BuilderLatestR
 	return buildEntityPageTitle(displayName, "Polymarket Builder");
 }
 
-export function getBuilderSocialTitle(displayName: string, builder: BuilderLatestRow | null) {
+export function getBuilderSocialTitle(displayName: string, builder: BuilderLatestRowWithMetadata | null) {
 	return getBuilderPageTitle(displayName, builder);
 }
 
 export function getBuilderPageDescription(
 	displayName: string,
 	codeLabel: string,
-	builder: BuilderLatestRow | null,
+	builder: BuilderLatestRowWithMetadata | null,
 ) {
 	const stats: string[] = [];
 	const volume = builder?.volume_usd;

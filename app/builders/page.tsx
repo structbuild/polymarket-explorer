@@ -48,7 +48,7 @@ import {
 import { getBuildersStackedData } from "@/lib/struct/builders-stacked";
 import { parseBuildersStackedResolution } from "@/lib/struct/builders-stacked-shared";
 import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
-import { formatBuilderCodeDisplay } from "@/lib/utils";
+import { getBuilderDisplayName } from "@/lib/builder-display-name";
 
 export const metadata: Metadata = buildPageMetadata({
 	title: "Polymarket Builders · Volume, Fees & Routing",
@@ -145,7 +145,7 @@ async function BuildersIndexContent({ searchParams }: Props) {
 			itemListElement: builders.map((builder, index) => ({
 				"@type": "ListItem",
 				position: offset + index + 1,
-				name: formatBuilderCodeDisplay(builder.builder_code),
+				name: getBuilderDisplayName(builder.builder_code, builder.metadata ?? null),
 				url: new URL(
 					`/builders/${encodeURIComponent(builder.builder_code)}`,
 					siteUrl,

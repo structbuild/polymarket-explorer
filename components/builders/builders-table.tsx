@@ -1,13 +1,15 @@
 "use client";
 
-import type { BuilderLatestRow, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
+import type { BuilderLatestRowWithMetadata, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Route } from "next";
 import Link from "next/link";
 import { useMemo } from "react";
 
+import { BuilderAvatar } from "@/components/builders/builder-avatar";
 import { DataTable } from "@/components/ui/data-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import { formatNumber } from "@/lib/format";
 import {
 	BUILDER_SORT_DESCRIPTIONS,
@@ -137,7 +139,7 @@ function formatNumericCell(value: number | null | undefined, format: ColumnSpec[
 	});
 }
 
-function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderLatestRow, unknown> {
+function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderLatestRowWithMetadata, unknown> {
 	return {
 		id: spec.id,
 		meta: { title: spec.title },
@@ -175,7 +177,7 @@ function buildColumns(
 	rankOffset: number,
 	sort: SortState,
 	timeframe: BuilderTimeframe,
-): ColumnDef<BuilderLatestRow, unknown>[] {
+): ColumnDef<BuilderLatestRowWithMetadata, unknown>[] {
 	const numericColumns = NUMERIC_COLUMNS.filter((spec) =>
 		isBuilderSortAvailableForTimeframe(spec.sortKey, timeframe),
 	);
@@ -199,14 +201,34 @@ function buildColumns(
 			enableHiding: false,
 			cell: ({ row }) => {
 				const code = row.original.builder_code;
+				const meta = row.original.metadata ?? null;
+				const displayName = getBuilderDisplayName(code, meta);
+				const codeLabel = formatBuilderCodeDisplay(code);
+				const hasCustomName = Boolean(meta?.name?.trim());
 				return (
-					<Link
-						href={`/builders/${encodeURIComponent(code)}` as Route}
-						title={code}
-						className="font-medium font-mono text-foreground underline-offset-4 hover:underline"
-					>
-						{formatBuilderCodeDisplay(code)}
-					</Link>
+					<div className="flex min-w-0 items-center gap-2.5">
+						<BuilderAvatar
+							builderCode={code}
+							iconUrl={meta?.icon_url}
+							alt={displayName}
+							className="size-9! sm:size-10!"
+							useFacehash={false}
+						/>
+						<div className="min-w-0 flex-1">
+							<Link
+								href={`/builders/${encodeURIComponent(code)}` as Route}
+								title={code}
+								className="block truncate font-medium text-foreground underline-offset-4 hover:underline"
+							>
+								{displayName}
+							</Link>
+							{hasCustomName ? (
+								<p className="truncate font-mono text-xs tabular-nums text-muted-foreground">
+									{codeLabel}
+								</p>
+							) : null}
+						</div>
+					</div>
 				);
 			},
 		},
@@ -215,7 +237,7 @@ function buildColumns(
 }
 
 type BuildersTableProps = {
-	builders: BuilderLatestRow[];
+	builders: BuilderLatestRowWithMetadata[];
 	sort: BuilderSortBy;
 	timeframe: BuilderTimeframe;
 	rankOffset?: number;

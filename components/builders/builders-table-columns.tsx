@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export const BUILDERS_TABLE_COLUMN_SIZES = {
 	rank: 64,
-	code: 240,
+	code: 300,
 	volume: 128,
 	traders: 128,
 	trades: 128,
@@ -27,7 +27,15 @@ export const BUILDERS_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
 		id: "code",
 		size: BUILDERS_TABLE_COLUMN_SIZES.code,
 		headerClassName: "w-20",
-		cell: <Skeleton className="h-4 w-32" />,
+		cell: (
+			<div className="flex items-center gap-2.5">
+				<Skeleton className="size-9 shrink-0 rounded-lg sm:size-10" />
+				<div className="flex min-w-0 flex-1 flex-col gap-1.5">
+					<Skeleton className="h-4 w-28 max-w-full" />
+					<Skeleton className="h-3 w-24 max-w-full" />
+				</div>
+			</div>
+		),
 	},
 	{
 		id: "volume",

@@ -4,7 +4,7 @@ import { ExternalLinkIcon } from "lucide-react";
 import { BuilderAvatar } from "@/components/builders/builder-avatar";
 import { CopyAddress } from "@/components/trader/copy-address";
 import { Button } from "@/components/ui/button";
-import { getBuilderDisplayName } from "@/lib/builder-open-graph";
+import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import { formatBuilderCodeDisplay } from "@/lib/utils";
 
 const BUILDER_METADATA_CONTACT_HREF = "https://x.com/structbuild";

@@ -1,3 +1,5 @@
+export type { BuilderLatestRowWithMetadata } from "@structbuild/sdk";
+
 export {
 	getBuildersPaginated,
 	getAllBuilderCodes,

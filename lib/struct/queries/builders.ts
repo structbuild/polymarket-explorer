@@ -5,7 +5,7 @@ import type {
 	BuilderFeeRate,
 	BuilderFeeRateHistoryEntry,
 	BuilderGlobalLatestRow,
-	BuilderLatestRow,
+	BuilderLatestRowWithMetadata,
 	BuilderMetadata,
 	BuilderSortBy,
 	BuilderTagRow,
@@ -53,7 +53,7 @@ export async function getBuildersPaginated(
 	offset: number = 0,
 	sort: BuilderSortBy = "volume",
 	timeframe: BuilderTimeframe = "lifetime",
-): Promise<PaginatedResult<BuilderLatestRow>> {
+): Promise<PaginatedResult<BuilderLatestRowWithMetadata>> {
 	"use cache";
 	cacheLife("minutes");
 	cacheTag(structBuildersListCacheTag);
@@ -134,7 +134,7 @@ export async function getAllBuilderCodes(maxCount?: number): Promise<{ code: str
 export async function getBuilderByCode(
 	code: string,
 	timeframe: BuilderTimeframe = "lifetime",
-): Promise<BuilderLatestRow | null> {
+): Promise<BuilderLatestRowWithMetadata | null> {
 	"use cache";
 	cacheLife("minutes");
 	cacheTag(structBuilderByCodeCacheTag);

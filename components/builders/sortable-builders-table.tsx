@@ -3,13 +3,13 @@
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useCallback, useTransition } from "react";
-import type { BuilderLatestRow, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
+import type { BuilderLatestRowWithMetadata, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import { BuildersTable } from "@/components/builders/builders-table";
 import { DEFAULT_BUILDER_SORT, DEFAULT_BUILDER_TIMEFRAME } from "@/lib/struct/builder-shared";
 
 type SortableBuildersTableProps = {
-	builders: BuilderLatestRow[];
+	builders: BuilderLatestRowWithMetadata[];
 	sort: BuilderSortBy;
 	timeframe: BuilderTimeframe;
 	rankOffset?: number;
