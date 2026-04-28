@@ -13,6 +13,26 @@ type TraderAvatarProps = {
 	rounded?: "md" | "lg";
 };
 
+function TraderAvatarFacehash({
+	className,
+	displayName,
+	rounded,
+}: {
+	className?: string;
+	displayName: string;
+	rounded: "md" | "lg";
+}) {
+	const roundedClass = rounded === "md" ? "rounded-md" : "rounded-lg";
+
+	return (
+		<Facehash
+			className={cn("border shrink-0 overflow-hidden", roundedClass, className)}
+			colorClasses={facehashColorClasses}
+			name={displayName}
+		/>
+	);
+}
+
 export function TraderAvatar({
 	displayName,
 	profileImage,
@@ -21,24 +41,38 @@ export function TraderAvatar({
 }: TraderAvatarProps) {
 	const roundedClass = rounded === "md" ? "rounded-md after:rounded-md" : "rounded-lg after:rounded-lg";
 	const imageRoundedClass = rounded === "md" ? "rounded-md" : "rounded-lg";
-	const facehashRoundedClass = rounded === "md" ? "rounded-md" : "rounded-lg";
 
 	if (profileImage) {
 		return (
 			<Avatar className={cn(roundedClass, className)}>
 				<AvatarImage src={profileImage} alt={`${displayName} avatar`} className={imageRoundedClass} />
-				<AvatarFallback className={cn(imageRoundedClass, "text-lg")}>
-					{displayName.slice(0, 2).toUpperCase()}
+				<span
+					aria-hidden="true"
+					className={cn("hidden size-full", imageRoundedClass)}
+					data-share-avatar-fallback="true"
+				>
+					<TraderAvatarFacehash
+						className="size-full border-0"
+						displayName={displayName}
+						rounded={rounded}
+					/>
+				</span>
+				<AvatarFallback className={cn(imageRoundedClass, "overflow-hidden p-0")}>
+					<TraderAvatarFacehash
+						className="size-full border-0"
+						displayName={displayName}
+						rounded={rounded}
+					/>
 				</AvatarFallback>
 			</Avatar>
 		);
 	}
 
 	return (
-		<Facehash
-			className={cn("border shrink-0 overflow-hidden", facehashRoundedClass, className)}
-			colorClasses={facehashColorClasses}
-			name={displayName}
+		<TraderAvatarFacehash
+			className={className}
+			displayName={displayName}
+			rounded={rounded}
 		/>
 	);
 }

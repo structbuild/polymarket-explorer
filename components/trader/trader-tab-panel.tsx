@@ -125,7 +125,7 @@ export function TraderTabPanelFallback({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between gap-4">
 				<div className="min-w-0 flex-1">
-					<TraderTabs prefetchEnabled={false} />
+					<TraderTabs />
 				</div>
 				<div className="shrink-0">
 					<div className="h-7 w-24 animate-pulse rounded-sm bg-muted" />
