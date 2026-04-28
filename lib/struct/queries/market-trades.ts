@@ -1,14 +1,11 @@
 import "server-only";
 
 import type { StructClient, Trade } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
 import { emptyOffsetPage } from "@/lib/struct/queries/_shared";
 import type { PaginatedResource } from "@/lib/struct/types";
-
-export const structMarketTradesCacheTag = "struct-market-trades-v2";
 
 export const defaultMarketTradesPageSize = 25;
 
@@ -19,10 +16,6 @@ export async function getMarketTradesPage(
 	conditionId: string,
 	options?: MarketTradesPageOptions,
 ): Promise<PaginatedResource<Trade, number>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketTradesCacheTag);
-
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultMarketTradesPageSize;
 

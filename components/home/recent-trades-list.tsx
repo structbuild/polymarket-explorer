@@ -1,21 +1,15 @@
-import { HomeTabsBar } from "@/components/home/home-activity-tabs";
-import { HomeRefreshButton } from "@/components/home/home-refresh-button";
 import { RecentTradesTable } from "@/components/home/recent-trades-table";
 import { getRecentTrades } from "@/lib/struct/market-queries";
 
 export async function RecentTradesList() {
 	const trades = await getRecentTrades(15);
 
-	return <RecentTradesTable trades={trades} toolbarLeft={<HomeTabsBar />} toolbarRight={<HomeRefreshButton />} />;
+	return <RecentTradesTable trades={trades} />;
 }
 
 export function RecentTradesListFallback() {
 	return (
 		<div className="space-y-3">
-			<div className="flex items-end justify-between gap-3">
-				<HomeTabsBar />
-				<div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
-			</div>
 			<div className="overflow-hidden rounded-lg bg-card">
 				{Array.from({ length: 15 }, (_, i) => (
 					<div key={i} className="flex items-center gap-3 border-t px-4 py-3 first:border-t-0">

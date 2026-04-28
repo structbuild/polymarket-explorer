@@ -407,23 +407,12 @@ export default async function TraderPage({ params, searchParams }: Props) {
 		notFound();
 	}
 
-	const [profile, pnlSummary] = await Promise.all([
-		getTraderProfile(address),
-		getTraderPnlSummary(address),
-	]);
-
-	if (!profile && !pnlSummary) {
-		notFound();
-	}
-
 	return (
 		<div className="flex w-full justify-center">
 			<div className="flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 sm:gap-8 sm:px-6 sm:pb-12">
 				<Suspense fallback={<TraderPageFallback />}>
 					<TraderPageContent
 						address={address}
-						profile={profile}
-						pnlSummary={pnlSummary}
 						searchParams={searchParams}
 					/>
 				</Suspense>
@@ -434,15 +423,20 @@ export default async function TraderPage({ params, searchParams }: Props) {
 
 async function TraderPageContent({
 	address,
-	profile,
-	pnlSummary,
 	searchParams,
 }: {
 	address: string;
-	profile: UserProfile | null;
-	pnlSummary: TraderPnlSummary | null;
 	searchParams: Props["searchParams"];
 }) {
+	const [profile, pnlSummary] = await Promise.all([
+		getTraderProfile(address),
+		getTraderPnlSummary(address),
+	]);
+
+	if (!profile && !pnlSummary) {
+		notFound();
+	}
+
 	const [{ tab, openPage, closedPage, activityPage, pnlTimeframe, openSortBy, openSortDirection, closedSortBy, closedSortDirection }, resolvedSearchParams] =
 		await Promise.all([loadTraderSearchParams(searchParams), searchParams]);
 	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");

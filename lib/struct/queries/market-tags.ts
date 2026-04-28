@@ -9,7 +9,6 @@ import type {
 	TagSortBy,
 	TagSortTimeframe,
 } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
@@ -22,10 +21,6 @@ import {
 	type PaginatedResult,
 } from "@/lib/struct/queries/_shared";
 
-export const structAllTagsCacheTag = "struct-all-tags-v2";
-export const structTagBySlugCacheTag = "struct-tag-by-slug-v2";
-export const structMarketsByTagCacheTag = "struct-markets-by-tag-v2";
-
 function hasTagSlug(tag: Tag): tag is Tag & { slug: string } {
 	return typeof tag.slug === "string" && tag.slug.length > 0;
 }
@@ -34,10 +29,6 @@ export async function getAllTags(
 	sort?: TagSortBy,
 	timeframe?: TagSortTimeframe,
 ): Promise<Tag[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAllTagsCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -123,10 +114,6 @@ export async function getTagPageCount(
 	sort?: TagSortBy,
 	timeframe?: TagSortTimeframe,
 ): Promise<number> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAllTagsCacheTag);
-
 	if (!Number.isInteger(pageSize) || pageSize <= 0) {
 		return 1;
 	}
@@ -196,10 +183,6 @@ export const searchTags = cache(
 );
 
 export async function getTagCount(): Promise<number> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAllTagsCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -216,10 +199,6 @@ export async function getTagCount(): Promise<number> {
 }
 
 export async function getTagBySlug(slug: string): Promise<Tag | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTagBySlugCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -251,10 +230,6 @@ export async function getMarketsByTag(
 	sortDir: string = "desc",
 	status: "open" | "closed" | "all" = "open",
 ): Promise<PaginatedResult<MarketResponse>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketsByTagCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {

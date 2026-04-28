@@ -11,7 +11,6 @@ import type {
 	TraderWithPnl,
 	UserProfile,
 } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 import { cache } from "react";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
@@ -25,9 +24,6 @@ export const defaultTraderTablePageSize = 25;
 const defaultPositionsLimit = defaultTraderTablePageSize;
 const defaultTradesLimit = defaultTraderTablePageSize;
 const maxTraderSearchQueryLength = 100;
-export const structTraderPositionsCacheTag = "struct-trader-positions-page";
-export const structTraderTradesCacheTag = "struct-trader-trades-page";
-export const structRewardsMarketsCacheTag = "struct-rewards-markets";
 
 export type GetTraderOutcomePnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
@@ -107,10 +103,7 @@ export const searchAll = cache(
 	},
 );
 
-async function getTraderProfileCached(address: string): Promise<UserProfile> {
-	"use cache";
-	cacheLife("minutes");
-
+async function fetchTraderProfile(address: string): Promise<UserProfile> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -142,7 +135,7 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 	}
 
 	try {
-		return await getTraderProfileCached(normalizedAddress);
+		return await fetchTraderProfile(normalizedAddress);
 	} catch (error) {
 		if (isTraderDataUnavailableError(error)) {
 			return null;
@@ -152,10 +145,7 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 	}
 }
 
-async function getTraderPnlSummaryCached(address: string): Promise<TraderPnlSummary> {
-	"use cache";
-	cacheLife("minutes");
-
+async function fetchTraderPnlSummary(address: string): Promise<TraderPnlSummary> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -187,7 +177,7 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 	}
 
 	try {
-		return await getTraderPnlSummaryCached(normalizedAddress);
+		return await fetchTraderPnlSummary(normalizedAddress);
 	} catch (error) {
 		if (isTraderDataUnavailableError(error)) {
 			return null;
@@ -198,9 +188,6 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnlSum
 }
 
 export async function getMarketsByConditionIds(conditionIds: string[]): Promise<MarketResponse[] | null> {
-	"use cache";
-	cacheLife("minutes");
-
 	const client = getStructClient();
 
 	if (!client || conditionIds.length === 0) {
@@ -226,15 +213,11 @@ function emptyPage<T>(limit: number): PaginatedResource<T, number> {
 	};
 }
 
-async function getTraderPositionsPageCached(
+async function fetchTraderPositionsPage(
 	address: string,
 	status: "open" | "closed",
 	options?: TraderPositionsOptions,
 ): Promise<PaginatedResource<TraderOutcomePnlEntry, number>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTraderPositionsCacheTag);
-
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultPositionsLimit;
 
@@ -292,18 +275,14 @@ export async function getTraderPositionsPage(
 		return emptyPage<TraderOutcomePnlEntry>(limit);
 	}
 
-	return getTraderPositionsPageCached(normalizedAddress, status, options);
+	return fetchTraderPositionsPage(normalizedAddress, status, options);
 }
 
 
-async function getTraderTradesPageCached(
+async function fetchTraderTradesPage(
 	address: string,
 	options?: TraderTradesPageOptions,
 ): Promise<PaginatedResource<Trade, number>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTraderTradesCacheTag);
-
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultTradesLimit;
 
@@ -357,14 +336,10 @@ export async function getTraderTradesPage(
 		return emptyPage<Trade>(limit);
 	}
 
-	return getTraderTradesPageCached(normalizedAddress, options);
+	return fetchTraderTradesPage(normalizedAddress, options);
 }
 
 export async function getRewardsMarkets(): Promise<MarketResponse[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structRewardsMarketsCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {

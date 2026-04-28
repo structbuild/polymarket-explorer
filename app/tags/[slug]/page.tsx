@@ -87,16 +87,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TagPage({ params, searchParams }: Props) {
 	const { slug } = await params;
-	const tag = await getTagBySlug(slug);
-
-	if (!tag) {
-		notFound();
-	}
 
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Suspense fallback={<TagPageFallback />}>
-				<TagPageContent searchParams={searchParams} slug={slug} tag={tag} />
+				<TagPageContent searchParams={searchParams} slug={slug} />
 			</Suspense>
 		</div>
 	);
@@ -105,12 +100,16 @@ export default async function TagPage({ params, searchParams }: Props) {
 async function TagPageContent({
 	searchParams,
 	slug,
-	tag,
 }: {
 	searchParams: Props["searchParams"];
 	slug: string;
-	tag: Tag;
 }) {
+	const tag = await getTagBySlug(slug);
+
+	if (!tag) {
+		notFound();
+	}
+
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
 	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");

@@ -12,7 +12,6 @@ import type {
 } from "@structbuild/sdk";
 import { HttpError } from "@structbuild/sdk";
 import type { HttpResponse } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { getStructClient } from "@/lib/struct/client";
 import {
@@ -67,25 +66,6 @@ const CHANGES_TIMEFRAME: Record<AnalyticsRange, ChangeTimeframe> = {
 	"30d": "30d",
 	all: "1y",
 };
-
-export const structAnalyticsDeltasCacheTag = "struct-analytics-deltas";
-export const structAnalyticsChangesCacheTag = "struct-analytics-changes";
-export const structAnalyticsTimeseriesCacheTag = "struct-analytics-timeseries";
-export const structMarketAnalyticsDeltasCacheTag = "struct-market-analytics-deltas";
-export const structMarketAnalyticsChangesCacheTag = "struct-market-analytics-changes";
-export const structMarketAnalyticsTimeseriesCacheTag = "struct-market-analytics-timeseries";
-export const structTagAnalyticsDeltasCacheTag = "struct-tag-analytics-deltas";
-export const structTagAnalyticsChangesCacheTag = "struct-tag-analytics-changes";
-export const structTagAnalyticsTimeseriesCacheTag = "struct-tag-analytics-timeseries";
-export const structTraderAnalyticsDeltasCacheTag = "struct-trader-analytics-deltas";
-export const structTraderAnalyticsChangesCacheTag = "struct-trader-analytics-changes";
-export const structTraderAnalyticsTimeseriesCacheTag = "struct-trader-analytics-timeseries";
-export const structBuilderAnalyticsDeltasCacheTag = "struct-builder-analytics-deltas";
-export const structBuilderAnalyticsChangesCacheTag = "struct-builder-analytics-changes";
-export const structBuilderAnalyticsTimeseriesCacheTag = "struct-builder-analytics-timeseries";
-export const structBuilderGlobalAnalyticsDeltasCacheTag = "struct-builder-global-analytics-deltas";
-export const structBuilderGlobalAnalyticsChangesCacheTag = "struct-builder-global-analytics-changes";
-export const structBuilderGlobalAnalyticsTimeseriesCacheTag = "struct-builder-global-analytics-timeseries";
 
 const MAX_PAGINATION_REQUESTS = 5;
 
@@ -320,10 +300,6 @@ export async function getAnalyticsDeltas(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAnalyticsDeltasCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -342,10 +318,6 @@ export async function getAnalyticsDeltas(
 }
 
 export async function getAnalyticsChanges(range: AnalyticsRange): Promise<MetricPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAnalyticsChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -363,10 +335,6 @@ export async function getMarketAnalyticsDeltas(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketAnalyticsDeltasCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -388,10 +356,6 @@ export async function getMarketAnalyticsChanges(
 	conditionId: string,
 	range: AnalyticsRange,
 ): Promise<MetricPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketAnalyticsChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -413,10 +377,6 @@ export async function getTagAnalyticsDeltas(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTagAnalyticsDeltasCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -438,10 +398,6 @@ export async function getTagAnalyticsChanges(
 	tag: string,
 	range: AnalyticsRange,
 ): Promise<MetricPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTagAnalyticsChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -460,10 +416,6 @@ export async function getTraderAnalyticsDeltas(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTraderAnalyticsDeltasCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -485,10 +437,6 @@ export async function getTraderAnalyticsChanges(
 	address: string,
 	range: AnalyticsRange,
 ): Promise<MetricPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTraderAnalyticsChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -509,10 +457,6 @@ export async function getAnalyticsTimeseries(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAnalyticsTimeseriesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -536,10 +480,6 @@ export async function getMarketAnalyticsTimeseries(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketAnalyticsTimeseriesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -563,10 +503,6 @@ export async function getTagAnalyticsTimeseries(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTagAnalyticsTimeseriesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -590,10 +526,6 @@ export async function getTraderAnalyticsTimeseries(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTraderAnalyticsTimeseriesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -642,10 +574,6 @@ export async function getBuilderAnalyticsDeltas(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderAnalyticsDeltasCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -668,10 +596,6 @@ export async function getBuilderAnalyticsTimeseries(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderAnalyticsTimeseriesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -694,10 +618,6 @@ export async function getBuilderAnalyticsChanges(
 	builderCode: string,
 	range: AnalyticsRange,
 ): Promise<MetricPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderAnalyticsChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -718,10 +638,6 @@ export async function getBuilderGlobalAnalyticsDeltas(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderGlobalAnalyticsDeltasCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -743,10 +659,6 @@ export async function getBuilderGlobalAnalyticsTimeseries(
 	range: AnalyticsRange,
 	resolution: AnalyticsResolution,
 ): Promise<AnalyticsPoint[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderGlobalAnalyticsTimeseriesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 	try {
@@ -768,10 +680,6 @@ export async function getBuilderGlobalAnalyticsTimeseries(
 export async function getBuilderGlobalAnalyticsChanges(
 	range: AnalyticsRange,
 ): Promise<MetricPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderGlobalAnalyticsChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 	try {

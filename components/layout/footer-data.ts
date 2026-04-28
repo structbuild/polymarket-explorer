@@ -1,7 +1,6 @@
 import "server-only";
 
 import type { LeaderboardEntry, MarketResponse, Tag } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { DEFAULT_MARKET_STATUS_TAB } from "@/lib/market-search-params-shared";
 import { getAllTags, getGlobalLeaderboard, getTopMarkets } from "@/lib/struct/market-queries";
@@ -10,7 +9,6 @@ import { DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME } from "@/lib/struct/tag-shared
 import { DEFAULT_TRADER_TIMEFRAME } from "@/lib/trader-timeframes";
 
 export const FOOTER_ROW_COUNT = 5;
-export const footerDataCacheTag = "footer-data";
 
 export type FooterData = {
 	topMarkets: MarketResponse[];
@@ -20,10 +18,6 @@ export type FooterData = {
 };
 
 export async function getFooterData(): Promise<FooterData> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(footerDataCacheTag);
-
 	const [topMarketsResult, allTags, leaderboardResult, rewardsMarkets] = await Promise.all([
 		getTopMarkets(FOOTER_ROW_COUNT, DEFAULT_MARKET_STATUS_TAB, undefined, "volume", "desc", "24h"),
 		getAllTags(DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME),

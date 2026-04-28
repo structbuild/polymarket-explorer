@@ -5,7 +5,6 @@ import type {
 	LeaderboardEntry,
 	MarketHoldersResponse,
 } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
@@ -16,20 +15,12 @@ import {
 	parseOffsetCursor,
 } from "@/lib/struct/queries/_shared";
 
-export const structMarketHoldersCacheTag = "struct-market-holders-v2";
-export const structMarketHoldersHistoryCacheTag = "struct-market-holders-history-v2";
-export const structGlobalLeaderboardCacheTag = "struct-global-leaderboard-v2";
-
 const MAX_LEADERBOARD_PAGE_SIZE = 50;
 
 export async function getMarketHolders(
 	marketSlug: string,
 	limit: number = 10,
 ): Promise<MarketHoldersResponse | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketHoldersCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -57,10 +48,6 @@ export async function getMarketHoldersHistory(
 	conditionId: string,
 	hours: number = 336,
 ): Promise<HolderHistoryCandle[] | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketHoldersHistoryCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -88,10 +75,6 @@ export async function getGlobalLeaderboard(
 	limit: number = MAX_LEADERBOARD_PAGE_SIZE,
 	cursor?: string,
 ): Promise<PaginatedResult<LeaderboardEntry>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structGlobalLeaderboardCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {

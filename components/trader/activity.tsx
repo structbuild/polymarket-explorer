@@ -243,7 +243,7 @@ export default function TraderActivity({ address, page, pageNumber, tabs }: Prop
 						size="sm"
 						onClick={() => {
 							startTransition(async () => {
-								await refreshTraderTabAction(pathname, "activity");
+								await refreshTraderTabAction(pathname);
 								router.refresh();
 							});
 						}}

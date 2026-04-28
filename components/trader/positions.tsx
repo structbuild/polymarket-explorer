@@ -582,7 +582,7 @@ export default function TraderPositions({
 				size="sm"
 				onClick={() => {
 					startTransition(async () => {
-						await refreshTraderTabAction(pathname, "positions")
+						await refreshTraderTabAction(pathname)
 						router.refresh()
 					})
 				}}

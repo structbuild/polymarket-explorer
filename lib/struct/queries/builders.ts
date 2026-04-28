@@ -25,7 +25,6 @@ import type {
 	StructClient,
 	Trade,
 } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
@@ -38,23 +37,6 @@ import {
 } from "@/lib/struct/queries/_shared";
 import type { PaginatedResource } from "@/lib/struct/types";
 
-export const structBuildersListCacheTag = "struct-builders-list";
-export const structBuilderByCodeCacheTag = "struct-builder-by-code";
-export const structBuilderMetadataCacheTag = "struct-builder-metadata";
-export const structBuilderConcentrationCacheTag = "struct-builder-concentration";
-export const structBuilderFeesCacheTag = "struct-builder-fees";
-export const structBuilderFeesHistoryCacheTag = "struct-builder-fees-history";
-export const structBuilderRetentionCacheTag = "struct-builder-retention";
-export const structBuilderTagsCacheTag = "struct-builder-tags";
-export const structBuilderTopTradersCacheTag = "struct-builder-top-traders";
-export const structBuilderTradesCacheTag = "struct-builder-trades-v2";
-export const structBuilderCompositionCacheTag = "struct-builder-composition";
-export const structBuilderGlobalCacheTag = "struct-builder-global";
-export const structBuilderGlobalChangesCacheTag = "struct-builder-global-changes";
-export const structBuilderGlobalTagsCacheTag = "struct-builder-global-tags";
-export const structTagBuildersCacheTag = "struct-tag-builders";
-export const structAllBuilderCodesCacheTag = "struct-all-builder-codes";
-
 export const defaultBuilderTradesPageSize = 25;
 
 export type GetBuilderTradesRequest = NonNullable<Parameters<StructClient["markets"]["getTrades"]>[0]>;
@@ -66,10 +48,6 @@ export async function getBuildersPaginated(
 	sort: BuilderSortBy = "volume",
 	timeframe: BuilderTimeframe = "lifetime",
 ): Promise<PaginatedResult<BuilderLatestRowWithMetadata>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuildersListCacheTag);
-
 	const client = getStructClient();
 	if (!client) {
 		return { data: [], hasMore: false, nextCursor: null };
@@ -97,10 +75,6 @@ export async function getBuildersPaginated(
 }
 
 export async function getAllBuilderCodes(maxCount?: number): Promise<{ code: string }[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAllBuilderCodesCacheTag);
-
 	if (maxCount !== undefined && maxCount <= 0) return [];
 
 	const client = getStructClient();
@@ -147,10 +121,6 @@ export async function getBuilderByCode(
 	code: string,
 	timeframe: BuilderTimeframe = "lifetime",
 ): Promise<BuilderLatestRowWithMetadata | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderByCodeCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 
@@ -165,10 +135,6 @@ export async function getBuilderByCode(
 }
 
 export async function getBuilderMetadata(code: string): Promise<BuilderMetadata | null> {
-	"use cache";
-	cacheLife("hours");
-	cacheTag(structBuilderMetadataCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 
@@ -186,10 +152,6 @@ export async function getBuilderConcentration(
 	code: string,
 	timeframe: BuilderTimeframe = "lifetime",
 ): Promise<ConcentrationResponse | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderConcentrationCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 
@@ -207,10 +169,6 @@ export async function getBuilderConcentration(
 }
 
 export async function getBuilderFees(code: string): Promise<BuilderFeeRate | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderFeesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 
@@ -228,10 +186,6 @@ export async function getBuilderFeesHistory(
 	code: string,
 	limit: number = 100,
 ): Promise<BuilderFeeRateHistoryEntry[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderFeesHistoryCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 
@@ -253,10 +207,6 @@ export async function getBuilderRetention(
 	from?: number,
 	to?: number,
 ): Promise<CohortRetentionRow[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderRetentionCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 
@@ -280,10 +230,6 @@ export async function getBuilderTags(
 	timeframe: BuilderTimeframe = "lifetime",
 	limit: number = 50,
 ): Promise<BuilderTagRow[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderTagsCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 
@@ -308,10 +254,6 @@ export async function getBuilderTopTraders(
 	timeframe: BuilderTimeframe = "lifetime",
 	limit: number = 50,
 ): Promise<TopTraderRow[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderTopTradersCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 
@@ -334,10 +276,6 @@ export async function getBuilderTradesPage(
 	code: string,
 	options?: BuilderTradesPageOptions,
 ): Promise<PaginatedResource<Trade, number>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderTradesCacheTag);
-
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultBuilderTradesPageSize;
 	const builderCode = code.trim();
@@ -401,10 +339,6 @@ export async function getBuilderComposition(
 	from?: number,
 	to?: number,
 ): Promise<BuilderCompositionResult> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderCompositionCacheTag);
-
 	const client = getStructClient();
 	if (!client) {
 		return { buckets: [], builderMetadata: {} };
@@ -447,10 +381,6 @@ function parseCompositionResponse(
 export async function getBuilderGlobal(
 	timeframe: BuilderTimeframe = "lifetime",
 ): Promise<BuilderGlobalLatestRow | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderGlobalCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 
@@ -467,10 +397,6 @@ export async function getBuilderGlobal(
 export async function getBuilderGlobalChanges(
 	timeframe: GlobalChangeTimeframe = "24h",
 ): Promise<GlobalPctChange | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderGlobalChangesCacheTag);
-
 	const client = getStructClient();
 	if (!client) return null;
 
@@ -490,10 +416,6 @@ export async function getBuilderGlobalTags(
 	limit: number = 50,
 	offset: number = 0,
 ): Promise<PaginatedResult<GlobalBuilderTagRow>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structBuilderGlobalTagsCacheTag);
-
 	const client = getStructClient();
 	if (!client) {
 		return { data: [], hasMore: false, nextCursor: null };
@@ -525,10 +447,6 @@ export async function getTagBuilders(
 	timeframe: BuilderTimeframe = "lifetime",
 	limit: number = 50,
 ): Promise<TagBuilderRow[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTagBuildersCacheTag);
-
 	const client = getStructClient();
 	if (!client) return [];
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import {
@@ -9,9 +9,6 @@ import {
 	getTraderTradesPage,
 	searchAll,
 	searchTraders,
-	structRewardsMarketsCacheTag,
-	structTraderPositionsCacheTag,
-	structTraderTradesCacheTag,
 } from "@/lib/struct/queries";
 import {
 	defaultMarketTradesPageSize,
@@ -467,16 +464,14 @@ export async function searchAction(query: string): Promise<SearchResult> {
 	};
 }
 
-export async function refreshTraderTabAction(pathname: string, kind: "positions" | "activity") {
+export async function refreshTraderTabAction(pathname: string) {
 	if (!pathname.startsWith("/traders/")) {
 		throw new Error("Invalid trader pathname");
 	}
 
-	updateTag(kind === "positions" ? structTraderPositionsCacheTag : structTraderTradesCacheTag);
 	revalidatePath(pathname);
 }
 
 export async function refreshRewardsPageAction() {
-	updateTag(structRewardsMarketsCacheTag);
 	revalidatePath("/rewards");
 }

@@ -5,20 +5,11 @@ import type {
 	PositionVolumeDataPoint,
 	PriceJump,
 } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
 
-export const structMarketChartCacheTag = "struct-market-chart-v2";
-export const structPositionVolumeChartCacheTag = "struct-position-volume-chart-v2";
-export const structMarketPriceJumpsCacheTag = "struct-market-price-jumps-v2";
-
 export async function getMarketChart(conditionId: string): Promise<PositionChartOutcome[] | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketChartCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -39,10 +30,6 @@ export async function getMarketChart(conditionId: string): Promise<PositionChart
 }
 
 export async function getPositionVolumeChart(positionId: string): Promise<PositionVolumeDataPoint[] | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structPositionVolumeChartCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -63,10 +50,6 @@ export async function getPositionVolumeChart(positionId: string): Promise<Positi
 }
 
 export async function getMarketPriceJumps(conditionId: string): Promise<PriceJump[] | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketPriceJumpsCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {

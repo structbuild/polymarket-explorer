@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { MarketCharts, MarketChartsFallback } from "@/components/market/market-charts";
 import { MarketHeader } from "@/components/market/market-header";
-import { MarketTabPanel } from "@/components/market/market-tab-panel";
+import { MarketTabPanel, MarketTabPanelFallback } from "@/components/market/market-tab-panel";
 import { RelatedMarkets } from "@/components/market/related-markets";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -106,12 +106,30 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 
 export default async function MarketPage({ params, searchParams }: Props) {
 	const { slug } = await params;
+
+	return (
+		<div className="flex w-full justify-center">
+			<div className="flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 sm:gap-6 sm:px-6 sm:pb-12">
+				<Suspense fallback={<MarketPageFallback />}>
+					<MarketPageContent searchParams={searchParams} slug={slug} />
+				</Suspense>
+			</div>
+		</div>
+	);
+}
+
+async function MarketPageContent({
+	searchParams,
+	slug,
+}: {
+	searchParams: Props["searchParams"];
+	slug: string;
+}) {
 	const market = await getMarketBySlug(slug);
 
 	if (!market) {
 		notFound();
 	}
-	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
 
 	const siteUrl = getSiteUrl();
 	const marketUrl = new URL(`/markets/${slug}`, siteUrl).toString();
@@ -122,42 +140,6 @@ export default async function MarketPage({ params, searchParams }: Props) {
 		imageUrl: market.image_url ?? undefined,
 	});
 
-	return (
-		<div className="flex w-full justify-center">
-			<div className="flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 sm:gap-6 sm:px-6 sm:pb-12">
-				<Breadcrumbs
-					items={[
-						{ label: "Home", href: "/" },
-						{ label: "Markets", href: "/markets" },
-						...(breadcrumbTag ? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }] : []),
-						{
-							label: truncateQuestion(market.question ?? market.title ?? slug),
-							href: `/markets/${slug}`,
-						},
-					]}
-				/>
-
-				<JsonLd data={marketJsonLd} />
-
-				<MarketHeader market={market} slug={slug} />
-
-				<Suspense fallback={<MarketPageFallback />}>
-					<MarketPageContent market={market} searchParams={searchParams} slug={slug} />
-				</Suspense>
-			</div>
-		</div>
-	);
-}
-
-async function MarketPageContent({
-	market,
-	searchParams,
-	slug,
-}: {
-	market: MarketResponse;
-	searchParams: Props["searchParams"];
-	slug: string;
-}) {
 	const [{ tab, tradesPage }, resolvedSearchParams] = await Promise.all([loadMarketDetailSearchParams(searchParams), searchParams]);
 	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(resolvedSearchParams);
 	const endTime = typeof market.end_time === "number" && Number.isFinite(market.end_time) ? market.end_time : undefined;
@@ -172,12 +154,30 @@ async function MarketPageContent({
 
 	return (
 		<>
+			<Breadcrumbs
+				items={[
+					{ label: "Home", href: "/" },
+					{ label: "Markets", href: "/markets" },
+					...(breadcrumbTag ? [{ label: formatCapitalizeWords(breadcrumbTag), href: `/tags/${slugify(breadcrumbTag)}` as string }] : []),
+					{
+						label: truncateQuestion(market.question ?? market.title ?? slug),
+						href: `/markets/${slug}`,
+					},
+				]}
+			/>
+
+			<JsonLd data={marketJsonLd} />
+
+			<MarketHeader market={market} slug={slug} />
+
 			{conditionId && (
 				<>
 					<Suspense fallback={<MarketChartsFallback />}>
 						<MarketCharts conditionId={conditionId} />
 					</Suspense>
-					<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
+					<Suspense fallback={<MarketTabPanelFallback />}>
+						<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
+					</Suspense>
 					<div className="mt-8">
 						<AnalyticsSection
 							title="Analytics"

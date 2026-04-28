@@ -4,17 +4,12 @@ export {
 	getHomeTopMarkets,
 	getAllMarketSlugs,
 	getPlatformCounts,
-	structMarketBySlugCacheTag,
-	structTopMarketsCacheTag,
-	structAllMarketSlugsCacheTag,
-	structPlatformCountsCacheTag,
 } from "@/lib/struct/queries/markets";
 
 export {
 	defaultMarketTradesPageSize,
 	getMarketTradesPage,
 	getRecentTrades,
-	structMarketTradesCacheTag,
 } from "@/lib/struct/queries/market-trades";
 export type {
 	GetMarketTradesRequest,
@@ -25,18 +20,12 @@ export {
 	getGlobalLeaderboard,
 	getMarketHolders,
 	getMarketHoldersHistory,
-	structGlobalLeaderboardCacheTag,
-	structMarketHoldersCacheTag,
-	structMarketHoldersHistoryCacheTag,
 } from "@/lib/struct/queries/market-holders";
 
 export {
 	getMarketChart,
 	getMarketPriceJumps,
 	getPositionVolumeChart,
-	structMarketChartCacheTag,
-	structMarketPriceJumpsCacheTag,
-	structPositionVolumeChartCacheTag,
 } from "@/lib/struct/queries/market-charts";
 
 export {
@@ -47,9 +36,6 @@ export {
 	getTagPageCount,
 	getTagsPaginated,
 	searchTags,
-	structAllTagsCacheTag,
-	structMarketsByTagCacheTag,
-	structTagBySlugCacheTag,
 } from "@/lib/struct/queries/market-tags";
 
 export type { PaginatedResult } from "@/lib/struct/queries/_shared";

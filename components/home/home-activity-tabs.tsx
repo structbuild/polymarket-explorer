@@ -1,5 +1,6 @@
 "use client";
 
+import { HomeRefreshButton } from "@/components/home/home-refresh-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, type ReactNode } from "react";
 
@@ -31,7 +32,15 @@ export function HomeActivityTabs({
 	const [tab, setTab] = useState<HomeActivityTab>("markets");
 
 	return (
-		<Tabs value={tab} onValueChange={(value) => setTab(value as HomeActivityTab)}>
+		<Tabs value={tab} onValueChange={(value) => setTab(value as HomeActivityTab)} className="gap-3">
+			<div className="flex flex-col gap-3 sm:min-h-8 sm:flex-row sm:items-end sm:justify-between">
+				<div className="min-w-0 flex-1">
+					<HomeTabsBar />
+				</div>
+				<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:items-end sm:justify-end">
+					<HomeRefreshButton />
+				</div>
+			</div>
 			<TabsContent value="markets" keepMounted>
 				{markets}
 			</TabsContent>

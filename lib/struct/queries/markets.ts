@@ -8,7 +8,6 @@ import type {
 	MetricsTimeframe,
 	SortDirection,
 } from "@structbuild/sdk";
-import { cacheLife, cacheTag } from "next/cache";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
@@ -19,11 +18,6 @@ import {
 	maxPaginationRequests,
 	type PaginatedResult,
 } from "@/lib/struct/queries/_shared";
-
-export const structMarketBySlugCacheTag = "struct-market-by-slug-v2";
-export const structTopMarketsCacheTag = "struct-top-markets";
-export const structAllMarketSlugsCacheTag = "struct-all-market-slugs";
-export const structPlatformCountsCacheTag = "struct-platform-counts";
 
 async function fetchTopMarkets(
 	limit: number = defaultPageSize,
@@ -65,10 +59,6 @@ async function fetchTopMarkets(
 }
 
 export async function getMarketBySlug(slug: string): Promise<MarketResponse | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structMarketBySlugCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
@@ -98,23 +88,14 @@ export async function getTopMarkets(
 	timeframe: MetricsTimeframe = "24h",
 	excludeTags?: string,
 ): Promise<PaginatedResult<MarketResponse>> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structTopMarketsCacheTag);
-
 	return fetchTopMarkets(limit, status, cursor, sortBy, sortDir, timeframe, excludeTags);
 }
 
-// Bypasses the "use cache" wrapper used by getTopMarkets so the home page always sees freshest data.
-export const getHomeTopMarkets = fetchTopMarkets;
+export const getHomeTopMarkets = getTopMarkets;
 
 export async function getAllMarketSlugs(
 	maxCount?: number,
 ): Promise<{ slug: string }[]> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structAllMarketSlugsCacheTag);
-
 	if (maxCount !== undefined && maxCount <= 0) {
 		return [];
 	}
@@ -176,10 +157,6 @@ export async function getAllMarketSlugs(
 }
 
 export async function getPlatformCounts(): Promise<GlobalCountsResponse | null> {
-	"use cache";
-	cacheLife("minutes");
-	cacheTag(structPlatformCountsCacheTag);
-
 	const client = getStructClient();
 
 	if (!client) {
