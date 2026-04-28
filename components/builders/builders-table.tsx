@@ -1,6 +1,6 @@
 "use client";
 
-import type { BuilderLatestRow, BuilderSortBy } from "@structbuild/sdk";
+import type { BuilderLatestRow, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Route } from "next";
 import Link from "next/link";
@@ -9,7 +9,10 @@ import { useMemo } from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { formatNumber } from "@/lib/format";
-import { BUILDER_SORT_DESCRIPTIONS } from "@/lib/struct/builder-shared";
+import {
+	BUILDER_SORT_DESCRIPTIONS,
+	isBuilderSortAvailableForTimeframe,
+} from "@/lib/struct/builder-shared";
 import { cn, formatBuilderCodeDisplay } from "@/lib/utils";
 import { BUILDERS_TABLE_COLUMN_SIZES } from "./builders-table-columns";
 
@@ -168,7 +171,15 @@ function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderLate
 	};
 }
 
-function buildColumns(rankOffset: number, sort: SortState): ColumnDef<BuilderLatestRow, unknown>[] {
+function buildColumns(
+	rankOffset: number,
+	sort: SortState,
+	timeframe: BuilderTimeframe,
+): ColumnDef<BuilderLatestRow, unknown>[] {
+	const numericColumns = NUMERIC_COLUMNS.filter((spec) =>
+		isBuilderSortAvailableForTimeframe(spec.sortKey, timeframe),
+	);
+
 	return [
 		{
 			id: "rank",
@@ -199,13 +210,14 @@ function buildColumns(rankOffset: number, sort: SortState): ColumnDef<BuilderLat
 				);
 			},
 		},
-		...NUMERIC_COLUMNS.map((spec) => numericColumn(spec, sort)),
+		...numericColumns.map((spec) => numericColumn(spec, sort)),
 	];
 }
 
 type BuildersTableProps = {
 	builders: BuilderLatestRow[];
 	sort: BuilderSortBy;
+	timeframe: BuilderTimeframe;
 	rankOffset?: number;
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
@@ -215,14 +227,15 @@ type BuildersTableProps = {
 export function BuildersTable({
 	builders,
 	sort,
+	timeframe,
 	rankOffset = 0,
 	toolbarLeft,
 	toolbarRight,
 	onSortChange,
 }: BuildersTableProps) {
 	const columns = useMemo(
-		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }),
-		[rankOffset, sort, onSortChange],
+		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }, timeframe),
+		[rankOffset, sort, onSortChange, timeframe],
 	);
 
 	return (

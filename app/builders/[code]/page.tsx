@@ -159,6 +159,7 @@ async function BuilderPageContent({
 					defaultResolution={defaultResolution}
 					defaultRange={defaultRange}
 					pathname={`/builders/${encodeURIComponent(builderCode)}`}
+					allowedComponents={["buy", "sell"]}
 					fetchers={{
 						deltas: () => getBuilderAnalyticsDeltas(code, range, resolution),
 						timeseries: () => getBuilderAnalyticsTimeseries(code, range, resolution),

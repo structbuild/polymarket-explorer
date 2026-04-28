@@ -12,11 +12,13 @@ import {
 	BuyDistributionPie,
 	BuyDistributionPieFallback,
 } from "@/components/analytics/buy-distribution-pie";
-import type {
-	AnalyticsMetricId,
-	AnalyticsPoint,
-	AnalyticsResolution,
-	AnalyticsView,
+import {
+	VOLUME_COMPONENT_IDS,
+	type AnalyticsMetricId,
+	type AnalyticsPoint,
+	type AnalyticsResolution,
+	type AnalyticsView,
+	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 function slugForFilename(value: string): string {
@@ -69,6 +71,11 @@ type AvgTradeSizeChartSpec = {
 };
 
 type ChartSpec = TimeSeriesChartSpec | BuyDistributionChartSpec | AvgTradeSizeChartSpec;
+
+export type AnalyticsMetricPlacement = {
+	metric: AnalyticsMetricId;
+	after: AnalyticsMetricId;
+};
 
 const COLOR_VOLUME_BUY = "#10b981";
 const COLOR_VOLUME_SELL = "#ef4444";
@@ -257,6 +264,47 @@ const CHART_SPECS: ChartSpec[] = [
 	},
 ];
 
+const EXTRA_CHART_SPECS: ChartSpec[] = [
+	{
+		kind: "timeSeries",
+		id: "builderFees",
+		title: "Builder fees",
+		tooltip: "Builder-attributed fee revenue.",
+		variant: "area",
+		series: [{ key: "builderFeesUsd", label: "Builder fees", color: COLOR_SINGLE }],
+		valueFormat: "currency",
+	},
+	{
+		kind: "timeSeries",
+		id: "newUsers",
+		title: "New builder users",
+		tooltip: "Traders whose first builder-attributed trade occurred in the bucket.",
+		variant: "area",
+		series: [{ key: "newUsers", label: "New users", color: COLOR_SINGLE }],
+		valueFormat: "count",
+	},
+	{
+		kind: "timeSeries",
+		id: "avgRevenuePerUser",
+		title: "ARPU",
+		tooltip: "Builder fees divided by unique traders.",
+		variant: "area",
+		series: [{ key: "avgRevenuePerUserUsd", label: "ARPU", color: COLOR_SINGLE }],
+		valueFormat: "currency",
+		keepNarrow: true,
+	},
+	{
+		kind: "timeSeries",
+		id: "avgVolumePerUser",
+		title: "AVPU",
+		tooltip: "Volume divided by unique traders.",
+		variant: "area",
+		series: [{ key: "avgVolumePerUserUsd", label: "AVPU", color: COLOR_SINGLE }],
+		valueFormat: "currency",
+		keepNarrow: true,
+	},
+];
+
 function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<string, number>> {
 	return points.map((p) => ({
 		t: p.t,
@@ -280,6 +328,10 @@ function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<str
 		yesCount: p.yesCount,
 		noCount: p.noCount,
 		feesUsd: p.feesUsd,
+		builderFeesUsd: p.builderFeesUsd,
+		newUsers: p.newUsers,
+		avgRevenuePerUserUsd: p.avgRevenuePerUserUsd,
+		avgVolumePerUserUsd: p.avgVolumePerUserUsd,
 		sharesVolume: p.sharesVolume,
 	}));
 }
@@ -297,10 +349,30 @@ function reorderAppended(
 	if (!appendMetrics || appendMetrics.length === 0) return specs;
 	const appended = new Set(appendMetrics);
 	const kept = specs.filter((spec) => !appended.has(spec.id));
+	const allSpecs = [...CHART_SPECS, ...EXTRA_CHART_SPECS];
 	const tail = appendMetrics
-		.map((id) => specs.find((spec) => spec.id === id))
+		.map((id) => allSpecs.find((spec) => spec.id === id))
 		.filter((spec): spec is ChartSpec => Boolean(spec));
 	return [...kept, ...tail];
+}
+
+function applyMetricPlacements(
+	specs: ChartSpec[],
+	placements?: readonly AnalyticsMetricPlacement[],
+): ChartSpec[] {
+	if (!placements || placements.length === 0) return specs;
+	const result = [...specs];
+	for (const { metric, after } of placements) {
+		const metricIndex = result.findIndex((spec) => spec.id === metric);
+		const afterIndex = result.findIndex((spec) => spec.id === after);
+		if (metricIndex === -1 || afterIndex === -1 || metricIndex === afterIndex + 1) {
+			continue;
+		}
+		const [spec] = result.splice(metricIndex, 1);
+		const nextAfterIndex = result.findIndex((item) => item.id === after);
+		result.splice(nextAfterIndex + 1, 0, spec);
+	}
+	return result;
 }
 
 function balanceLayout(specs: ChartSpec[]): ChartSpec[] {
@@ -332,12 +404,52 @@ function withViewVariant(spec: ChartSpec, view: AnalyticsView): ChartSpec {
 	};
 }
 
+const SERIES_COMPONENTS: Partial<Record<string, VolumeComponentId>> = {
+	buyVolumeUsd: "buy",
+	sellVolumeUsd: "sell",
+	redemptionVolumeUsd: "redeem",
+	mergeVolumeUsd: "merge",
+	splitVolumeUsd: "split",
+	buyCount: "buy",
+	sellCount: "sell",
+	redemptionCount: "redeem",
+	mergeCount: "merge",
+	splitCount: "split",
+};
+
+function withAllowedComponents(
+	spec: ChartSpec,
+	allowedComponents: readonly VolumeComponentId[],
+): ChartSpec {
+	if (spec.kind !== "timeSeries") return spec;
+	if (allowedComponents.length === VOLUME_COMPONENT_IDS.length) return spec;
+	const allowed = new Set(allowedComponents);
+	return {
+		...spec,
+		series: spec.series.filter((series) => {
+			const component = SERIES_COMPONENTS[series.key];
+			return !component || allowed.has(component);
+		}),
+		cumulative: spec.cumulative
+			? {
+					...spec.cumulative,
+					series: spec.cumulative.series?.filter((series) => {
+						const component = SERIES_COMPONENTS[series.key];
+						return !component || allowed.has(component);
+					}),
+				}
+			: undefined,
+	};
+}
+
 type AnalyticsChartsGridProps = {
 	points: AnalyticsPoint[];
 	view: AnalyticsView;
 	resolution: AnalyticsResolution;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
+	metricPlacements?: readonly AnalyticsMetricPlacement[];
+	allowedComponents?: readonly VolumeComponentId[];
 	pathname: string;
 	refreshedAt: Date;
 };
@@ -348,14 +460,17 @@ export function AnalyticsChartsGrid({
 	resolution,
 	excludeMetrics,
 	appendMetrics,
+	metricPlacements,
+	allowedComponents = VOLUME_COMPONENT_IDS,
 	pathname,
 	refreshedAt,
 }: AnalyticsChartsGridProps) {
 	const data = toChartData(points);
 	const specs = balanceLayout(
-		reorderAppended(visibleCharts(excludeMetrics), appendMetrics).map((spec) =>
-			withViewVariant(spec, view),
-		),
+		applyMetricPlacements(
+			reorderAppended(visibleCharts(excludeMetrics), appendMetrics),
+			metricPlacements,
+		).map((spec) => withViewVariant(withAllowedComponents(spec, allowedComponents), view)),
 	);
 
 	return (
@@ -367,7 +482,9 @@ export function AnalyticsChartsGrid({
 						tooltip={spec.tooltip}
 						filename={buildChartFilename(pathname, spec.title)}
 						headerAction={
-							spec.kind === "avgTradeSize" ? <AvgTradeSizeComponentsToggle /> : undefined
+							spec.kind === "avgTradeSize" ? (
+								<AvgTradeSizeComponentsToggle allowedComponents={allowedComponents} />
+							) : undefined
 						}
 						footer={
 							<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
@@ -381,6 +498,7 @@ export function AnalyticsChartsGrid({
 								view={view}
 								resolution={resolution}
 								showIncomplete={view === "deltas"}
+								allowedComponents={allowedComponents}
 							/>
 						) : (
 							<AnalyticsChart
@@ -405,6 +523,7 @@ type AnalyticsChartsGridFallbackProps = {
 	view?: AnalyticsView;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
+	metricPlacements?: readonly AnalyticsMetricPlacement[];
 	pathname: string;
 	refreshedAt: Date;
 };
@@ -413,14 +532,16 @@ export function AnalyticsChartsGridFallback({
 	view,
 	excludeMetrics,
 	appendMetrics,
+	metricPlacements,
 	pathname,
 	refreshedAt,
 }: AnalyticsChartsGridFallbackProps) {
 	const resolvedView: AnalyticsView = view ?? "deltas";
 	const specs = balanceLayout(
-		reorderAppended(visibleCharts(excludeMetrics), appendMetrics).map((spec) =>
-			withViewVariant(spec, resolvedView),
-		),
+		applyMetricPlacements(
+			reorderAppended(visibleCharts(excludeMetrics), appendMetrics),
+			metricPlacements,
+		).map((spec) => withViewVariant(spec, resolvedView)),
 	);
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

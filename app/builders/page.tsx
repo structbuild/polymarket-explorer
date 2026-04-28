@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { BuildersHeaderControls } from "@/components/builders/builders-header-controls";
 import {
 	BuildersGlobalStats,
 	BuildersGlobalStatsFallback,
 } from "@/components/builders/builders-global-stats";
+import {
+	BuildersGlobalTags,
+	BuildersGlobalTagsFallback,
+} from "@/components/builders/builders-global-tags";
 import {
 	BuildersStackedChart,
 	BuildersStackedChartFallback,
@@ -18,19 +23,30 @@ import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
 import { getSiteUrl } from "@/lib/env";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import {
+	getBuilderGlobalAnalyticsChanges,
+	getBuilderGlobalAnalyticsDeltas,
+	getBuilderGlobalAnalyticsTimeseries,
+} from "@/lib/struct/analytics-queries";
+import {
+	parseAnalyticsParams,
+	type AnalyticsResolution,
+	type VolumeComponentId,
+} from "@/lib/struct/analytics-shared";
+import {
 	getBuildersPaginated,
 	getBuilderGlobal,
 	getBuilderGlobalChanges,
+	getBuilderGlobalTags,
 } from "@/lib/struct/builder-queries";
 import {
 	BUILDER_TIMEFRAME_LABELS,
+	getBuilderSortOptionsForTimeframe,
 	parseBuilderSort,
 	parseBuilderTimeframe,
 } from "@/lib/struct/builder-shared";
 import { getBuildersStackedData } from "@/lib/struct/builders-stacked";
 import { parseBuildersStackedResolution } from "@/lib/struct/builders-stacked-shared";
-import type { BuilderTimeframe } from "@structbuild/sdk";
-import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
+import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 import { formatBuilderCodeDisplay } from "@/lib/utils";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -42,6 +58,34 @@ export const metadata: Metadata = buildPageMetadata({
 
 const BUILDERS_INDEX_LIMIT = 250;
 const BUILDERS_STACKED_TOP_N = 7;
+const BUILDERS_GLOBAL_TAGS_LIMIT = 12;
+const BUILDER_ANALYTICS_COMPONENTS = ["buy", "sell"] as const satisfies readonly VolumeComponentId[];
+const BUILDER_ANALYTICS_METRIC_PLACEMENTS = [
+	{ metric: "avgTradeSize", after: "buyDistribution" },
+] as const;
+const BUILDER_GLOBAL_TAG_SORT_OPTIONS = [
+	"volume",
+	"builder_fees",
+	"traders",
+	"txns",
+	"fees",
+	"new_users",
+	"avg_rev_per_user",
+	"avg_vol_per_user",
+] as const satisfies readonly BuilderSortBy[];
+
+type BuilderGlobalTagSort = (typeof BUILDER_GLOBAL_TAG_SORT_OPTIONS)[number];
+
+function parseBuilderGlobalTagSort(
+	value: string | string[] | undefined,
+	timeframe: BuilderTimeframe,
+): BuilderGlobalTagSort {
+	const raw = Array.isArray(value) ? value[0] : value;
+	return BUILDER_GLOBAL_TAG_SORT_OPTIONS.includes(raw as BuilderGlobalTagSort) &&
+		getBuilderSortOptionsForTimeframe(timeframe).includes(raw as BuilderSortBy)
+		? (raw as BuilderGlobalTagSort)
+		: "volume";
+}
 
 type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -59,14 +103,17 @@ export default function BuildersPage({ searchParams }: Props) {
 
 async function BuildersIndexContent({ searchParams }: Props) {
 	const resolved = await searchParams;
-	const sort = parseBuilderSort(resolved.sort);
 	const timeframe = parseBuilderTimeframe(resolved.timeframe);
+	const sort = parseBuilderSort(resolved.sort, timeframe);
 	const resolution = parseBuildersStackedResolution(timeframe, resolved.resolution);
+	const analytics = parseAnalyticsParams(resolved, "global", "30d");
+	const tagSort = parseBuilderGlobalTagSort(resolved.tagSort, timeframe);
 
-	const [{ data: builders }, globalRow, globalChanges] = await Promise.all([
+	const [{ data: builders }, globalRow, globalChanges, globalTags] = await Promise.all([
 		getBuildersPaginated(BUILDERS_INDEX_LIMIT, 0, sort, timeframe),
 		getBuilderGlobal(timeframe),
 		getBuilderGlobalChanges(timeframe === "lifetime" ? "1y" : timeframe === "1d" ? "24h" : timeframe),
+		getBuilderGlobalTags(tagSort, timeframe, BUILDERS_GLOBAL_TAGS_LIMIT),
 	]);
 
 	const siteUrl = getSiteUrl();
@@ -101,12 +148,12 @@ async function BuildersIndexContent({ searchParams }: Props) {
 			/>
 			<JsonLd data={jsonLd} />
 
-			<div className="mt-6 space-y-6">
+			<div className="mt-6 space-y-8">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 					<div>
 						<h1 className="text-xl font-medium tracking-tight">Builders</h1>
 						<p className="mt-1 text-sm text-muted-foreground">
-							Apps, bots, and integrators routing volume into Polymarket.
+							Analyze individual builders and their activity.
 						</p>
 					</div>
 					<BuildersHeaderControls timeframe={timeframe} resolution={resolution} />
@@ -121,7 +168,48 @@ async function BuildersIndexContent({ searchParams }: Props) {
 					/>
 				</Suspense>
 
-				<SortableBuildersTable builders={builders} sort={sort} timeframe={timeframe} />
+				<SortableBuildersTable
+					builders={builders}
+					sort={sort}
+					timeframe={timeframe}
+					initialLimit={25}
+					toolbarLeft={
+						<h2 className="text-lg font-medium text-foreground/90">
+							Builder leaderboard
+						</h2>
+					}
+				/>
+
+				<AnalyticsSection
+					title="Builder activity"
+					range={analytics.range}
+					view={analytics.view}
+					resolution={analytics.resolution}
+					defaultResolution={analytics.defaultResolution}
+					defaultRange={analytics.defaultRange}
+					pathname="/builders"
+					fetchers={{
+						deltas: () => getBuilderGlobalAnalyticsDeltas(analytics.range, analytics.resolution),
+						timeseries: () =>
+							getBuilderGlobalAnalyticsTimeseries(analytics.range, analytics.resolution),
+						changes: () => getBuilderGlobalAnalyticsChanges(analytics.range),
+					}}
+					appendMetrics={[
+						"builderFees",
+						"newUsers",
+						"avgRevenuePerUser",
+						"avgVolumePerUser",
+						"fees",
+						"uniqueTraders",
+						"avgTradeSize",
+					]}
+					metricPlacements={BUILDER_ANALYTICS_METRIC_PLACEMENTS}
+					allowedComponents={BUILDER_ANALYTICS_COMPONENTS}
+				/>
+
+				<Suspense fallback={<BuildersGlobalTagsFallback />}>
+					<BuildersGlobalTags rows={globalTags.data} sort={tagSort} timeframe={timeframe} />
+				</Suspense>
 			</div>
 		</>
 	);
@@ -158,6 +246,7 @@ function BuildersIndexFallback() {
 				<div className="h-8 w-56 max-w-full animate-pulse rounded bg-muted" />
 			</div>
 			<BuildersGlobalStatsFallback />
+			<BuildersGlobalTagsFallback />
 			<BuildersStackedChartFallback />
 			<DataTableSkeleton columns={BUILDERS_SKELETON_COLUMNS} rowCount={10} />
 		</div>

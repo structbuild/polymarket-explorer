@@ -36,6 +36,31 @@ import { cn } from "@/lib/utils"
 
 const PAGE_SIZES = [10, 25, 50, 100]
 const EMPTY_COLUMN_VISIBILITY: VisibilityState = {}
+const serverPaginationScrollStoragePrefix = "data-table:server-pagination-scroll:"
+
+function getSessionStorageItem(key: string) {
+	try {
+		return window.sessionStorage.getItem(key)
+	} catch {
+		return null
+	}
+}
+
+function setSessionStorageItem(key: string, value: string) {
+	try {
+		window.sessionStorage.setItem(key, value)
+	} catch {
+		// Session storage is only a cross-remount fallback for scroll restoration.
+	}
+}
+
+function removeSessionStorageItem(key: string) {
+	try {
+		window.sessionStorage.removeItem(key)
+	} catch {
+		// Session storage is only a cross-remount fallback for scroll restoration.
+	}
+}
 
 const DataTableTimeframeContext = createContext<MetricsTimeframeChoice | null>(null)
 
@@ -527,21 +552,44 @@ function ServerPaginatedDataTable<TData>({
 	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
 	const tableTopRef = useRef<HTMLDivElement>(null)
 	const shouldScrollToTableRef = useRef(false)
+	const scrollStorageKey = storageKey
+		? `${serverPaginationScrollStoragePrefix}${storageKey}`
+		: null
 
 	useEffect(() => {
-		if (!shouldScrollToTableRef.current) {
+		const shouldRestoreFromStorage =
+			scrollStorageKey != null &&
+			getSessionStorageItem(scrollStorageKey) === "1"
+
+		if (!shouldScrollToTableRef.current && !shouldRestoreFromStorage) {
 			return
 		}
 
 		shouldScrollToTableRef.current = false
+		if (scrollStorageKey != null) {
+			removeSessionStorageItem(scrollStorageKey)
+		}
 
-		window.requestAnimationFrame(() => {
+		const scrollToTable = () => {
 			tableTopRef.current?.scrollIntoView({ block: "start" })
-		})
-	}, [pageIndex])
+		}
+
+		const animationFrameId = window.requestAnimationFrame(scrollToTable)
+		const timeoutId = window.setTimeout(scrollToTable, 100)
+		const settledTimeoutId = window.setTimeout(scrollToTable, 300)
+
+		return () => {
+			window.cancelAnimationFrame(animationFrameId)
+			window.clearTimeout(timeoutId)
+			window.clearTimeout(settledTimeoutId)
+		}
+	}, [pageIndex, scrollStorageKey])
 
 	function requestPageIndexChange(nextPageIndex: number) {
 		shouldScrollToTableRef.current = true
+		if (scrollStorageKey != null) {
+			setSessionStorageItem(scrollStorageKey, "1")
+		}
 		onPageIndexChange(nextPageIndex)
 	}
 

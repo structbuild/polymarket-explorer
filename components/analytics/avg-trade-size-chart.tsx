@@ -13,6 +13,7 @@ import {
 	type AnalyticsResolution,
 	type AnalyticsView,
 	type VolumeComponentId,
+	VOLUME_COMPONENT_IDS,
 } from "@/lib/struct/analytics-shared";
 
 const COMPONENT_VOLUME_KEYS: Record<VolumeComponentId, keyof AnalyticsPoint> = {
@@ -41,10 +42,23 @@ type Props = {
 	view: AnalyticsView;
 	resolution: AnalyticsResolution;
 	showIncomplete?: boolean;
+	allowedComponents?: readonly VolumeComponentId[];
 };
 
-export function AvgTradeSizeChart({ points, view, resolution, showIncomplete }: Props) {
-	const [components] = useAvgTradeSizeComponents();
+export function AvgTradeSizeChart({
+	points,
+	view,
+	resolution,
+	showIncomplete,
+	allowedComponents = VOLUME_COMPONENT_IDS,
+}: Props) {
+	const [storedComponents] = useAvgTradeSizeComponents();
+	const components = useMemo(() => {
+		const selected = storedComponents.filter((component) =>
+			allowedComponents.includes(component),
+		);
+		return selected.length > 0 ? selected : allowedComponents;
+	}, [storedComponents, allowedComponents]);
 
 	const data = useMemo(() => {
 		if (view !== "cumulative") {

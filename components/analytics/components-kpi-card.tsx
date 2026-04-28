@@ -7,6 +7,7 @@ import { formatNumber } from "@/lib/format";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import {
 	DEFAULT_KPI_VOLUME_COMPONENTS,
+	VOLUME_COMPONENT_IDS,
 	deserializeVolumeComponents,
 	isDefaultVolumeComponents,
 	sumSelectedComponentTotals,
@@ -37,6 +38,7 @@ export function ComponentsKpiCard({
 	componentPcts = {},
 	currency = false,
 	toggleLabel,
+	allowedComponents,
 }: {
 	storageKey: string;
 	label: string;
@@ -46,6 +48,7 @@ export function ComponentsKpiCard({
 	componentPcts?: ComponentPctMap;
 	currency?: boolean;
 	toggleLabel?: string;
+	allowedComponents?: readonly VolumeComponentId[];
 }) {
 	const [components, setComponents] = useLocalStorage<readonly VolumeComponentId[]>(
 		storageKey,
@@ -53,9 +56,16 @@ export function ComponentsKpiCard({
 		{ deserialize: deserializeVolumeComponents },
 	);
 
-	const isDefault = isDefaultVolumeComponents(components);
-	const total = isDefault ? defaultTotal : sumSelectedComponentTotals(totals, components);
-	const pct = resolvePct(components, aggregatePct, componentPcts);
+	const allowed = allowedComponents ?? VOLUME_COMPONENT_IDS;
+	const selectedComponents = components.filter((component) => allowed.includes(component));
+	const effectiveComponents =
+		selectedComponents.length > 0 ? selectedComponents : allowed;
+	const isDefault =
+		allowed.length === VOLUME_COMPONENT_IDS.length
+			? isDefaultVolumeComponents(effectiveComponents)
+			: effectiveComponents.length === allowed.length;
+	const total = isDefault ? defaultTotal : sumSelectedComponentTotals(totals, effectiveComponents);
+	const pct = resolvePct(effectiveComponents, aggregatePct, componentPcts);
 	const pctLabel = formatPctChange(pct);
 
 	return (
@@ -64,8 +74,9 @@ export function ComponentsKpiCard({
 				<div className="flex items-start justify-between gap-1">
 					<p className="text-sm text-muted-foreground">{label}</p>
 					<VolumeComponentsToggle
-						components={components}
+						components={effectiveComponents}
 						onChange={setComponents}
+						allowedComponents={allowed}
 						label={toggleLabel ?? `Include in ${label.toLowerCase()}`}
 					/>
 				</div>

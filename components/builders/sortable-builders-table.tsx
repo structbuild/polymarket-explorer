@@ -2,10 +2,12 @@
 
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { ChevronsDownIcon } from "lucide-react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import type { BuilderLatestRow, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import { BuildersTable } from "@/components/builders/builders-table";
+import { Button } from "@/components/ui/button";
 import { DEFAULT_BUILDER_SORT, DEFAULT_BUILDER_TIMEFRAME } from "@/lib/struct/builder-shared";
 
 type SortableBuildersTableProps = {
@@ -13,6 +15,7 @@ type SortableBuildersTableProps = {
 	sort: BuilderSortBy;
 	timeframe: BuilderTimeframe;
 	rankOffset?: number;
+	initialLimit?: number;
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
 };
@@ -24,11 +27,25 @@ export function SortableBuildersTable({
 	sort,
 	timeframe,
 	rankOffset,
+	initialLimit,
 	toolbarLeft,
 	toolbarRight,
 }: SortableBuildersTableProps) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
+	const [showAll, setShowAll] = useState(false);
+	const isCapped = initialLimit !== undefined && builders.length > initialLimit && !showAll;
+	const visibleBuilders = useMemo(
+		() => (isCapped ? builders.slice(0, initialLimit) : builders),
+		[builders, initialLimit, isCapped],
+	);
+	const showAllButton =
+		initialLimit !== undefined && builders.length > initialLimit && !showAll ? (
+			<Button variant="outline" size="sm" onClick={() => setShowAll(true)}>
+				<ChevronsDownIcon data-icon="inline-start" />
+				Show all
+			</Button>
+		) : null;
 
 	const navigate = useCallback(
 		(patch: { sort?: BuilderSortBy; timeframe?: BuilderTimeframe }) => {
@@ -64,13 +81,17 @@ export function SortableBuildersTable({
 	);
 
 	return (
-		<BuildersTable
-			builders={builders}
-			sort={sort}
-			rankOffset={rankOffset}
-			toolbarLeft={toolbarLeft}
-			toolbarRight={toolbarRight}
-			onSortChange={handleSortChange}
-		/>
+		<div className="space-y-3">
+			<BuildersTable
+				builders={visibleBuilders}
+				sort={sort}
+				timeframe={timeframe}
+				rankOffset={rankOffset}
+				toolbarLeft={toolbarLeft}
+				toolbarRight={toolbarRight}
+				onSortChange={handleSortChange}
+			/>
+			{showAllButton ? <div className="flex justify-center">{showAllButton}</div> : null}
+		</div>
 	);
 }

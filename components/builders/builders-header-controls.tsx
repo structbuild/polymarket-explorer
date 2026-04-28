@@ -1,6 +1,6 @@
 "use client";
 
-import type { BuilderTimeframe } from "@structbuild/sdk";
+import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
 import {
@@ -13,6 +13,7 @@ import {
 	BUILDER_TIMEFRAME_LABELS,
 	BUILDER_TIMEFRAME_OPTIONS,
 	DEFAULT_BUILDER_TIMEFRAME,
+	isBuilderSortAvailableForTimeframe,
 } from "@/lib/struct/builder-shared";
 import { resolveStackedRange } from "@/lib/struct/builders-stacked-shared";
 
@@ -43,8 +44,16 @@ export function BuildersHeaderControls({
 				descriptions={BUILDER_TIMEFRAME_DESCRIPTIONS}
 				defaultValue={DEFAULT_BUILDER_TIMEFRAME}
 				ariaLabelPrefix="Show timeframe"
-				transformParams={(params) => {
+				transformParams={(params, nextTimeframe) => {
 					params.delete("resolution");
+					const sort = params.get("sort");
+					if (sort && !isBuilderSortAvailableForTimeframe(sort as BuilderSortBy, nextTimeframe)) {
+						params.delete("sort");
+					}
+					const tagSort = params.get("tagSort");
+					if (tagSort && !isBuilderSortAvailableForTimeframe(tagSort as BuilderSortBy, nextTimeframe)) {
+						params.delete("tagSort");
+					}
 				}}
 			/>
 			<AnalyticsUrlToggle

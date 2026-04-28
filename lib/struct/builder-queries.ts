@@ -11,6 +11,7 @@ export {
 	getBuilderComposition,
 	getBuilderGlobal,
 	getBuilderGlobalChanges,
+	getBuilderGlobalTags,
 	getTagBuilders,
 	structBuildersListCacheTag,
 	structBuilderByCodeCacheTag,
@@ -23,6 +24,7 @@ export {
 	structBuilderCompositionCacheTag,
 	structBuilderGlobalCacheTag,
 	structBuilderGlobalChangesCacheTag,
+	structBuilderGlobalTagsCacheTag,
 	structTagBuildersCacheTag,
 	structAllBuilderCodesCacheTag,
 } from "@/lib/struct/queries/builders";

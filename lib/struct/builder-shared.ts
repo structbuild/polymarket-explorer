@@ -19,6 +19,10 @@ export const BUILDER_SORT_OPTIONS = [
 
 type BuilderSortOption = (typeof BUILDER_SORT_OPTIONS)[number];
 
+const LIFETIME_UNSUPPORTED_BUILDER_SORT_OPTIONS = new Set<BuilderSortBy>([
+	"new_users",
+]);
+
 export const BUILDER_SORT_LABELS: Record<BuilderSortOption, string> = {
 	volume: "Volume",
 	txns: "Trades",
@@ -42,9 +46,28 @@ export const BUILDER_SORT_DESCRIPTIONS: Partial<Record<BuilderSortOption, string
 
 export const DEFAULT_BUILDER_SORT: BuilderSortBy = "volume";
 
-export function parseBuilderSort(value: string | string[] | undefined): BuilderSortBy {
+export function isBuilderSortAvailableForTimeframe(
+	sort: BuilderSortBy,
+	timeframe: BuilderTimeframe,
+): boolean {
+	return timeframe !== "lifetime" || !LIFETIME_UNSUPPORTED_BUILDER_SORT_OPTIONS.has(sort);
+}
+
+export function getBuilderSortOptionsForTimeframe(
+	timeframe: BuilderTimeframe,
+): readonly BuilderSortBy[] {
+	return BUILDER_SORT_OPTIONS.filter((option) =>
+		isBuilderSortAvailableForTimeframe(option, timeframe),
+	);
+}
+
+export function parseBuilderSort(
+	value: string | string[] | undefined,
+	timeframe?: BuilderTimeframe,
+): BuilderSortBy {
 	const raw = Array.isArray(value) ? value[0] : value;
-	return BUILDER_SORT_OPTIONS.includes(raw as BuilderSortOption)
+	return BUILDER_SORT_OPTIONS.includes(raw as BuilderSortOption) &&
+		(timeframe == null || isBuilderSortAvailableForTimeframe(raw as BuilderSortBy, timeframe))
 		? (raw as BuilderSortBy)
 		: DEFAULT_BUILDER_SORT;
 }

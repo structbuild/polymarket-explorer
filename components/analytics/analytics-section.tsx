@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import {
 	AnalyticsChartsGrid,
 	AnalyticsChartsGridFallback,
+	type AnalyticsMetricPlacement,
 } from "@/components/analytics/analytics-charts-grid";
 import {
 	AnalyticsKpiStrip,
@@ -18,11 +19,13 @@ import {
 	applyAnalyticsCap,
 	computeTradeCountComponentTotals,
 	computeVolumeComponentTotals,
+	restrictAnalyticsComponents,
 	type AnalyticsMetricId,
 	type AnalyticsPoint,
 	type AnalyticsRange,
 	type AnalyticsResolution,
 	type AnalyticsView,
+	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 export type AnalyticsFetchers = {
@@ -35,19 +38,23 @@ async function KpiLoader({
 	deltasPromise,
 	fetchers,
 	excludeMetrics,
+	allowedComponents,
 }: {
 	deltasPromise: Promise<AnalyticsPoint[]>;
 	fetchers: AnalyticsFetchers;
 	excludeMetrics?: readonly AnalyticsMetricId[];
+	allowedComponents?: readonly VolumeComponentId[];
 }) {
 	const [points, changes] = await Promise.all([deltasPromise, fetchers.changes()]);
+	const scopedPoints = restrictAnalyticsComponents(points, allowedComponents);
 	return (
 		<AnalyticsKpiStrip
-			summary={summarizeAnalytics(points)}
-			volumeComponentTotals={computeVolumeComponentTotals(points)}
-			tradeCountComponentTotals={computeTradeCountComponentTotals(points)}
+			summary={summarizeAnalytics(scopedPoints)}
+			volumeComponentTotals={computeVolumeComponentTotals(scopedPoints)}
+			tradeCountComponentTotals={computeTradeCountComponentTotals(scopedPoints)}
 			changes={changes}
 			excludeMetrics={excludeMetrics}
+			allowedComponents={allowedComponents}
 		/>
 	);
 }
@@ -59,10 +66,12 @@ async function ChartsLoader({
 	resolution,
 	excludeMetrics,
 	appendMetrics,
+	metricPlacements,
 	endTime,
 	cap,
 	pathname,
 	refreshedAt,
+	allowedComponents,
 }: {
 	deltasPromise?: Promise<AnalyticsPoint[]>;
 	fetchers: AnalyticsFetchers;
@@ -70,16 +79,21 @@ async function ChartsLoader({
 	resolution: AnalyticsResolution;
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
+	metricPlacements?: readonly AnalyticsMetricPlacement[];
 	endTime?: number;
 	cap?: boolean;
 	pathname: string;
 	refreshedAt: Date;
+	allowedComponents?: readonly VolumeComponentId[];
 }) {
 	const raw =
 		view === "cumulative"
 			? await fetchers.timeseries()
 			: await (deltasPromise ?? fetchers.deltas());
-	const points = applyAnalyticsCap(raw, endTime, cap ?? false);
+	const points = restrictAnalyticsComponents(
+		applyAnalyticsCap(raw, endTime, cap ?? false),
+		allowedComponents,
+	);
 	return (
 		<AnalyticsChartsGrid
 			points={points}
@@ -87,8 +101,10 @@ async function ChartsLoader({
 			resolution={resolution}
 			excludeMetrics={excludeMetrics}
 			appendMetrics={appendMetrics}
+			metricPlacements={metricPlacements}
 			pathname={pathname}
 			refreshedAt={refreshedAt}
+			allowedComponents={allowedComponents}
 		/>
 	);
 }
@@ -105,9 +121,11 @@ type AnalyticsSectionProps = {
 	headingLevel?: "h1" | "h2";
 	excludeMetrics?: readonly AnalyticsMetricId[];
 	appendMetrics?: readonly AnalyticsMetricId[];
+	metricPlacements?: readonly AnalyticsMetricPlacement[];
 	endTime?: number;
 	cap?: boolean;
 	defaultCap?: boolean;
+	allowedComponents?: readonly VolumeComponentId[];
 	pathname: string;
 };
 
@@ -123,9 +141,11 @@ export function AnalyticsSection({
 	headingLevel = "h2",
 	excludeMetrics,
 	appendMetrics,
+	metricPlacements,
 	endTime,
 	cap = false,
 	defaultCap = false,
+	allowedComponents,
 	pathname,
 }: AnalyticsSectionProps) {
 	const Heading = headingLevel;
@@ -134,8 +154,8 @@ export function AnalyticsSection({
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<div className="flex flex-col gap-1">
-					<Heading className="text-xl font-medium text-foreground/90 sm:text-2xl">
+				<div className="flex flex-col gap-0.5">
+					<Heading className="text-lg font-medium text-foreground/90">
 						{title}
 					</Heading>
 					{description ? (
@@ -157,7 +177,12 @@ export function AnalyticsSection({
 			</div>
 
 			<Suspense fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}>
-				<KpiLoader deltasPromise={deltasPromise} fetchers={fetchers} excludeMetrics={excludeMetrics} />
+				<KpiLoader
+					deltasPromise={deltasPromise}
+					fetchers={fetchers}
+					excludeMetrics={excludeMetrics}
+					allowedComponents={allowedComponents}
+				/>
 			</Suspense>
 
 			<Suspense
@@ -166,6 +191,7 @@ export function AnalyticsSection({
 						view={view}
 						excludeMetrics={excludeMetrics}
 						appendMetrics={appendMetrics}
+						metricPlacements={metricPlacements}
 						pathname={pathname}
 						refreshedAt={refreshedAt}
 					/>
@@ -178,10 +204,12 @@ export function AnalyticsSection({
 					resolution={resolution}
 					excludeMetrics={excludeMetrics}
 					appendMetrics={appendMetrics}
+					metricPlacements={metricPlacements}
 					endTime={endTime}
 					cap={cap}
 					pathname={pathname}
 					refreshedAt={refreshedAt}
+					allowedComponents={allowedComponents}
 				/>
 			</Suspense>
 		</div>

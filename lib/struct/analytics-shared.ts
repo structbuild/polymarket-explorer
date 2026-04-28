@@ -2,12 +2,16 @@ export type AnalyticsRange = "1d" | "7d" | "30d" | "all";
 
 export type AnalyticsMetricId =
 	| "volume"
+	| "builderFees"
 	| "fees"
 	| "trades"
 	| "tradeTypes"
 	| "uniqueTraders"
+	| "newUsers"
 	| "makersTakers"
 	| "avgTradeSize"
+	| "avgRevenuePerUser"
+	| "avgVolumePerUser"
 	| "yesNo"
 	| "yesNoCount"
 	| "shares"
@@ -209,6 +213,55 @@ export function applyAnalyticsCap(
 	if (!cap || endTime === undefined) return points;
 	const cutoff = endTime + ANALYTICS_CAP_BUFFER_SECONDS;
 	return points.filter((p) => p.t <= cutoff);
+}
+
+export function restrictAnalyticsComponents(
+	points: AnalyticsPoint[],
+	allowedComponents?: readonly VolumeComponentId[],
+): AnalyticsPoint[] {
+	if (!allowedComponents || allowedComponents.length === VOLUME_COMPONENT_IDS.length) {
+		return points;
+	}
+
+	const allowed = new Set(allowedComponents);
+	return points.map((p) => {
+		const buyVolumeUsd = allowed.has("buy") ? p.buyVolumeUsd : 0;
+		const sellVolumeUsd = allowed.has("sell") ? p.sellVolumeUsd : 0;
+		const redemptionVolumeUsd = allowed.has("redeem") ? p.redemptionVolumeUsd : 0;
+		const mergeVolumeUsd = allowed.has("merge") ? p.mergeVolumeUsd : 0;
+		const splitVolumeUsd = allowed.has("split") ? p.splitVolumeUsd : 0;
+		const buyCount = allowed.has("buy") ? p.buyCount : 0;
+		const sellCount = allowed.has("sell") ? p.sellCount : 0;
+		const redemptionCount = allowed.has("redeem") ? p.redemptionCount : 0;
+		const mergeCount = allowed.has("merge") ? p.mergeCount : 0;
+		const splitCount = allowed.has("split") ? p.splitCount : 0;
+
+		return {
+			...p,
+			volumeUsd:
+				buyVolumeUsd +
+				sellVolumeUsd +
+				redemptionVolumeUsd +
+				mergeVolumeUsd +
+				splitVolumeUsd,
+			buyVolumeUsd,
+			sellVolumeUsd,
+			redemptionVolumeUsd,
+			mergeVolumeUsd,
+			splitVolumeUsd,
+			txnCount:
+				buyCount +
+				sellCount +
+				redemptionCount +
+				mergeCount +
+				splitCount,
+			buyCount,
+			sellCount,
+			redemptionCount,
+			mergeCount,
+			splitCount,
+		};
+	});
 }
 
 export type AnalyticsSummary = {
