@@ -29,6 +29,7 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 				</h2>
 				<Link
 					href={`/tags/${tagSlug}` as Route}
+					prefetch={false}
 					className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 				>
 					View all
@@ -55,6 +56,7 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 						<li key={m.condition_id}>
 							<Link
 								href={`/markets/${m.market_slug}` as Route}
+								prefetch={false}
 								className="group flex items-start gap-3 rounded-lg bg-card p-4 transition-colors hover:bg-accent"
 							>
 								{m.image_url ? (

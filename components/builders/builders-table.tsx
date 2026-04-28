@@ -217,6 +217,7 @@ function buildColumns(
 						<div className="min-w-0 flex-1">
 							<Link
 								href={`/builders/${encodeURIComponent(code)}` as Route}
+								prefetch={false}
 								title={code}
 								className="block truncate font-medium text-foreground underline-offset-4 hover:underline"
 							>

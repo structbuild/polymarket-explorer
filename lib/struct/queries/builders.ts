@@ -47,7 +47,7 @@ export const structBuilderFeesHistoryCacheTag = "struct-builder-fees-history";
 export const structBuilderRetentionCacheTag = "struct-builder-retention";
 export const structBuilderTagsCacheTag = "struct-builder-tags";
 export const structBuilderTopTradersCacheTag = "struct-builder-top-traders";
-export const structBuilderTradesCacheTag = "struct-builder-trades-v1";
+export const structBuilderTradesCacheTag = "struct-builder-trades-v2";
 export const structBuilderCompositionCacheTag = "struct-builder-composition";
 export const structBuilderGlobalCacheTag = "struct-builder-global";
 export const structBuilderGlobalChangesCacheTag = "struct-builder-global-changes";
@@ -340,6 +340,11 @@ export async function getBuilderTradesPage(
 
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultBuilderTradesPageSize;
+	const builderCode = code.trim();
+
+	if (!builderCode) {
+		return emptyOffsetPage<Trade>(limit);
+	}
 
 	if (!client) {
 		return emptyOffsetPage<Trade>(limit);
@@ -350,15 +355,20 @@ export async function getBuilderTradesPage(
 
 	try {
 		const response = await client.markets.getTrades({
-			builder_codes: code,
+			builder_codes: builderCode,
 			...restOptions,
 			limit: limit + 1,
 			offset,
 			sort_desc: sort_desc ?? true,
 			trade_types: trade_types ?? "OrderFilled,OrdersMatched",
 		});
-		const data = response.data.slice(0, limit);
-		const hasMore = response.data.length > limit;
+		const normalizedBuilderCode = builderCode.toLowerCase();
+		const matchingRows = response.data.filter(
+			(trade) =>
+				("builder_code" in trade ? trade.builder_code?.toLowerCase() : null) === normalizedBuilderCode,
+		);
+		const data = matchingRows.slice(0, limit);
+		const hasMore = matchingRows.length > limit;
 		const nextCursor = hasMore ? offset + data.length : null;
 
 		return {
@@ -372,7 +382,7 @@ export async function getBuilderTradesPage(
 			return emptyOffsetPage<Trade>(limit);
 		}
 
-		logStructError(`getBuilderTradesPage:${code}`, error);
+		logStructError(`getBuilderTradesPage:${builderCode}`, error);
 		return emptyOffsetPage<Trade>(limit);
 	}
 }

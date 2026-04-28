@@ -70,6 +70,7 @@ export function HomeExploreGrid() {
 					<Link
 						key={href}
 						href={href}
+						prefetch={false}
 						className={cn(
 							"group relative flex flex-col justify-between gap-4 overflow-hidden rounded-lg bg-card p-4 md:p-5 ring-1 ring-foreground/10 transition-colors hover:bg-accent",
 							isOrphan && "col-span-2 md:col-span-1",

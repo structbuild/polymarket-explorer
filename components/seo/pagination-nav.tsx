@@ -34,14 +34,14 @@ export function PaginationNav({ basePath, baseParams = {}, page, cursor, nextCur
 	return (
 		<nav aria-label="Pagination" className="mt-8 flex items-center justify-center gap-3">
 			{showPrev ? (
-				<Link href={buildHref(basePath, baseParams, null)} className={linkClass}>
+				<Link href={buildHref(basePath, baseParams, null)} prefetch={false} className={linkClass}>
 					First page
 				</Link>
 			) : (
 				<span className={disabledClass}>First page</span>
 			)}
 			{showNext ? (
-				<Link href={buildHref(basePath, baseParams, nextCursor, page != null ? page + 1 : undefined)} className={linkClass}>
+				<Link href={buildHref(basePath, baseParams, nextCursor, page != null ? page + 1 : undefined)} prefetch={false} className={linkClass}>
 					Next page
 				</Link>
 			) : (

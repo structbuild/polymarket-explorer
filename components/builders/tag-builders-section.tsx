@@ -71,6 +71,7 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 										</span>
 										<Link
 											href={`/builders/${encodeURIComponent(row.builder_code)}` as Route}
+											prefetch={false}
 											title={row.builder_code}
 											className="min-w-0 truncate font-mono text-sm font-medium text-foreground underline-offset-4 hover:underline sm:font-normal"
 										>
@@ -119,7 +120,7 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 
 				<div className="flex items-center justify-between border-t border-border/60 pt-3 text-xs text-muted-foreground">
 					<span>Share is calculated across the displayed builders.</span>
-					<Link href="/builders" className="font-medium text-foreground underline-offset-4 hover:underline">
+					<Link href="/builders" prefetch={false} className="font-medium text-foreground underline-offset-4 hover:underline">
 						View all builders
 					</Link>
 				</div>

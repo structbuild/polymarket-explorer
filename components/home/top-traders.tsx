@@ -17,6 +17,7 @@ export async function TopTraders() {
 					<Link
 						key={trader.address}
 						href={`/traders/${normalizeWalletAddress(trader.address) ?? trader.address}` as Route}
+						prefetch={false}
 						className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs text-foreground/90 opacity-80 backdrop-blur-sm transition-colors hover:bg-accent hover:opacity-100 sm:h-9 sm:gap-2 sm:px-3 sm:text-sm"
 					>
 						{trader.profile_image && (

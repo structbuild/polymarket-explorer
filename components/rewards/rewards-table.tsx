@@ -53,6 +53,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 						{href ? (
 							<Link
 								href={href}
+								prefetch={false}
 								className="line-clamp-2 text-base font-medium break-words text-foreground underline-offset-4 hover:underline"
 								title={market.question ?? ""}
 							>

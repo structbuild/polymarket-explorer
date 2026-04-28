@@ -174,7 +174,7 @@ async function BuilderPageContent({
 		]);
 
 	const siteUrl = getSiteUrl();
-	const builderCode = builder.builder_code;
+	const builderCode = builder.builder_code?.trim() || code;
 	const codeLabel = formatBuilderCodeDisplay(builderCode);
 	const pageHeaderMetadata =
 		metadata ?? (builder.metadata ? { builder_code: builderCode, ...builder.metadata } : null);

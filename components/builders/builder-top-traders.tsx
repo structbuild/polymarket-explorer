@@ -49,6 +49,7 @@ export function BuilderTopTraders({ rows }: BuilderTopTradersProps) {
 									<td className="whitespace-nowrap px-2 py-1">
 										<Link
 											href={`/traders/${row.trader}` as Route}
+											prefetch={false}
 											title={row.trader}
 											className="font-mono text-foreground underline-offset-4 hover:underline"
 										>

@@ -114,6 +114,7 @@ function buildColumns(
 							) : href ? (
 								<Link
 									href={href}
+									prefetch={false}
 									className="block truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 									title={title}
 								>

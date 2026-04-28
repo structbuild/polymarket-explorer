@@ -39,6 +39,7 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 			return (
 				<Link
 					href={`/traders/${row.original.trader.address}` as Route}
+					prefetch={false}
 					className="max-w-48 flex min-w-0 items-center gap-2.5 hover:underline"
 				>
 					<TraderAvatar

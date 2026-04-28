@@ -149,6 +149,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 							{href ? (
 								<Link
 									href={href}
+									prefetch={false}
 									className="line-clamp-2 text-left text-base font-medium text-foreground underline-offset-4 hover:underline"
 								>
 									{title}

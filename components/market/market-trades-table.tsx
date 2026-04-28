@@ -56,6 +56,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			return (
 				<Link
 					href={`/traders/${address}` as Route}
+					prefetch={false}
 					className="max-w-48 flex items-center gap-3 hover:underline"
 				>
 					{trade.trader.profile_image ? (

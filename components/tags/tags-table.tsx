@@ -128,6 +128,7 @@ function buildColumns(rankOffset: number, sort: SortState): ColumnDef<Tag, unkno
 				return (
 					<Link
 						href={`/tags/${slug}` as Route}
+						prefetch={false}
 						className="font-medium text-foreground underline-offset-4 hover:underline"
 					>
 						{formatCapitalizeWords(tag.label)}

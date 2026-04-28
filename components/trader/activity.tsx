@@ -71,6 +71,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 					{href ? (
 						<Link
 							href={href}
+							prefetch={false}
 							className="min-w-0 flex-1 truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 							title={title}
 						>

@@ -279,6 +279,7 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 												<div className="grid min-w-56 gap-1.5">
 													<Link
 														href={`/tags/${payload.slug}` as Route}
+														prefetch={false}
 														className="font-medium text-foreground underline-offset-4 hover:underline"
 													>
 														{payload.label}

@@ -108,6 +108,7 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 								<TooltipWrapper content={displayName}>
 									<Link
 										href={`/traders/${address}` as Route}
+										prefetch={false}
 										className="font-medium text-foreground underline-offset-4 hover:underline"
 									>
 										{displayName}

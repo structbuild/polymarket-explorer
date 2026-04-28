@@ -68,7 +68,7 @@ export function RoutePaginationNav({
 	return (
 		<nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2">
 			{hasPrev ? (
-				<Link href={pageHref(basePath, currentPage - 1, searchParams)} rel="prev" className={linkClass}>
+				<Link href={pageHref(basePath, currentPage - 1, searchParams)} prefetch={false} rel="prev" className={linkClass}>
 					Previous
 				</Link>
 			) : (
@@ -85,14 +85,14 @@ export function RoutePaginationNav({
 						{item}
 					</span>
 				) : (
-					<Link key={item} href={pageHref(basePath, item, searchParams)} className={linkClass}>
+					<Link key={item} href={pageHref(basePath, item, searchParams)} prefetch={false} className={linkClass}>
 						{item}
 					</Link>
 				),
 			)}
 
 			{hasNext ? (
-				<Link href={pageHref(basePath, currentPage + 1, searchParams)} rel="next" className={linkClass}>
+				<Link href={pageHref(basePath, currentPage + 1, searchParams)} prefetch={false} rel="next" className={linkClass}>
 					Next
 				</Link>
 			) : (
