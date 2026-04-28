@@ -8,9 +8,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
 import { useAvgTradeSizeComponents } from "@/lib/hooks/use-avg-trade-size-components";
 import {
+	VOLUME_COMPONENT_IDS,
 	computeAvgTradeSizePctChange,
 	sumSelectedComponentTotals,
 	type ComponentTotals,
+	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 export function AvgTradeSizeKpiCard({
@@ -18,13 +20,20 @@ export function AvgTradeSizeKpiCard({
 	volumeTotals,
 	tradeCountTotals,
 	changes,
+	allowedComponents,
 }: {
 	label: string;
 	volumeTotals: ComponentTotals;
 	tradeCountTotals: ComponentTotals;
 	changes: MetricPctChange | null;
+	allowedComponents?: readonly VolumeComponentId[];
 }) {
-	const [components, setComponents] = useAvgTradeSizeComponents();
+	const [storedComponents, setComponents] = useAvgTradeSizeComponents();
+	const allowed = allowedComponents ?? VOLUME_COMPONENT_IDS;
+	const selectedComponents = storedComponents.filter((component) =>
+		allowed.includes(component),
+	);
+	const components = selectedComponents.length > 0 ? selectedComponents : allowed;
 
 	const volumeSum = sumSelectedComponentTotals(volumeTotals, components);
 	const countSum = sumSelectedComponentTotals(tradeCountTotals, components);
@@ -41,6 +50,7 @@ export function AvgTradeSizeKpiCard({
 					<VolumeComponentsToggle
 						components={components}
 						onChange={setComponents}
+						allowedComponents={allowed}
 						label="Use for avg trade size"
 					/>
 				</div>

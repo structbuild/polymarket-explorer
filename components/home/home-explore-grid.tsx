@@ -53,7 +53,7 @@ const ITEMS: ExploreItem[] = [
 	},
 	{
 		href: "https://www.struct.to/rest-api" as Route,
-		label: "API",
+		label: "API Access",
 		description: "The API powering this platform.",
 		Icon: CpuIcon,
 	},

@@ -13,7 +13,7 @@ export async function MarketTrades({
 		offset: (pageNumber - 1) * defaultMarketTradesPageSize,
 	});
 
-	return <MarketTradesTable page={page} pageNumber={pageNumber} />;
+	return <MarketTradesTable conditionId={conditionId} page={page} pageNumber={pageNumber} />;
 }
 
 export function MarketTradesFallback() {

@@ -15,6 +15,7 @@ import { TraderTabs } from "./trader-tabs"
 type TraderTabPanelData =
 	| {
 			kind: "positions"
+			address: string
 			status: "open" | "closed"
 			pageNumber: number
 			sortBy: TraderPositionSortBy
@@ -23,6 +24,7 @@ type TraderTabPanelData =
 	  }
 	| {
 			kind: "activity"
+			address: string
 			pageNumber: number
 			page: Awaited<ReturnType<typeof getTraderTradesPage>>
 	  }
@@ -61,6 +63,7 @@ export function loadTraderTabPanelData({
 				sort_direction: closedSortDirection,
 			}).then((page) => ({
 				kind: "positions" as const,
+				address,
 				status: "closed" as const,
 				pageNumber: closedPage,
 				sortBy: closedSortBy,
@@ -74,6 +77,7 @@ export function loadTraderTabPanelData({
 				sort_desc: true,
 			}).then((page) => ({
 				kind: "activity" as const,
+				address,
 				pageNumber: activityPage,
 				page,
 			}))
@@ -86,6 +90,7 @@ export function loadTraderTabPanelData({
 				sort_direction: openSortDirection,
 			}).then((page) => ({
 				kind: "positions" as const,
+				address,
 				status: "open" as const,
 				pageNumber: openPage,
 				sortBy: openSortBy,
@@ -120,7 +125,7 @@ export function TraderTabPanelFallback({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between gap-4">
 				<div className="min-w-0 flex-1">
-					<TraderTabs prefetchEnabled={false} />
+					<TraderTabs />
 				</div>
 				<div className="shrink-0">
 					<div className="h-7 w-24 animate-pulse rounded-sm bg-muted" />

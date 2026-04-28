@@ -16,6 +16,16 @@ type Props<T extends string> = {
 	ariaLabelPrefix?: string;
 	descriptions?: Partial<Record<T, string>>;
 	transformParams?: (params: URLSearchParams, next: T) => void;
+	pending?: boolean;
+	onNavigate?: ({
+		href,
+		next,
+		params,
+	}: {
+		href: Route;
+		next: T;
+		params: URLSearchParams;
+	}) => void;
 };
 
 export function AnalyticsUrlToggle<T extends string>({
@@ -27,6 +37,8 @@ export function AnalyticsUrlToggle<T extends string>({
 	ariaLabelPrefix = "Show",
 	descriptions,
 	transformParams,
+	pending,
+	onNavigate,
 }: Props<T>) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -49,6 +61,12 @@ export function AnalyticsUrlToggle<T extends string>({
 
 		const query = params.toString();
 		const href = (query ? `${pathname}?${query}` : pathname) as Route;
+
+		if (onNavigate) {
+			onNavigate({ href, next: candidate, params });
+			return;
+		}
+
 		startTransition(() => {
 			router.replace(href, { scroll: false });
 		});
@@ -60,7 +78,7 @@ export function AnalyticsUrlToggle<T extends string>({
 			onValueChange={handleChange}
 			variant="outline"
 			size="sm"
-			data-pending={isPending ? "" : undefined}
+			data-pending={isPending || pending ? "" : undefined}
 			className="data-[pending]:opacity-70"
 		>
 			{options.map((opt) => {

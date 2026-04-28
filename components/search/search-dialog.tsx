@@ -6,9 +6,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { formatNumber } from "@/lib/format";
-import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
+import { cn, formatBuilderCodeDisplay, getTraderDisplayName, isBytes32Hex, normalizeWalletAddress } from "@/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { BarChart3Icon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
+import { BarChart3Icon, BlocksIcon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -17,6 +17,7 @@ const DEBOUNCE_MS = 300;
 const OPEN_EVENT = "search-dialog:open";
 
 const RESOLVED_STATUSES = new Set(["resolved", "closed"]);
+const UNPREFIXED_BYTES32_HEX_PATTERN = /^[0-9a-fA-F]{64}$/;
 
 function capitalize(value: string) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
@@ -28,6 +29,13 @@ function statusDotClass(status: string | null) {
 	if (lowered === "active" || lowered === "open") return "bg-emerald-500";
 	if (RESOLVED_STATUSES.has(lowered)) return "bg-muted-foreground/60";
 	return "bg-amber-500";
+}
+
+function normalizeBuilderCodeQuery(value: string) {
+	const trimmed = value.trim();
+	if (isBytes32Hex(trimmed)) return trimmed.toLowerCase();
+	if (UNPREFIXED_BYTES32_HEX_PATTERN.test(trimmed)) return `0x${trimmed.toLowerCase()}`;
+	return null;
 }
 
 function SearchRow({
@@ -246,7 +254,8 @@ export function SearchDialog() {
 		}, DEBOUNCE_MS);
 	}, [loadResults]);
 
-	const hasResults = results.traders.length > 0 || results.markets.length > 0;
+	const builderCode = normalizeBuilderCodeQuery(query);
+	const hasResults = builderCode != null || results.traders.length > 0 || results.markets.length > 0;
 
 	const content = (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -289,6 +298,21 @@ export function SearchDialog() {
 								meta={<MarketMeta market={market} />}
 							/>
 						))}
+					</div>
+				)}
+				{builderCode && (
+					<div>
+						<div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
+							<BlocksIcon className="size-3.5 text-muted-foreground" />
+							<span className="text-xs font-medium text-muted-foreground">Builders</span>
+						</div>
+						<SearchRow
+							href={`/builders/${encodeURIComponent(builderCode)}` as Route}
+							onSelect={() => handleOpenChange(false)}
+							fallback={<BlocksIcon className="size-4" />}
+							title={formatBuilderCodeDisplay(builderCode)}
+							meta={<span className="truncate font-mono text-[11px]">{builderCode}</span>}
+						/>
 					</div>
 				)}
 				{results.traders.length > 0 && (

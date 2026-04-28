@@ -20,6 +20,7 @@ export function Header() {
 							<Link
 								key={item.href}
 								href={item.href}
+								prefetch={false}
 								target={item.external ? "_blank" : undefined}
 								className="rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 							>

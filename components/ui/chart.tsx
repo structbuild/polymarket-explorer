@@ -127,6 +127,7 @@ function ChartTooltipContent({
   labelFormatter,
   labelClassName,
   formatter,
+  valueFormatter,
   color,
   nameKey,
   labelKey,
@@ -137,6 +138,10 @@ function ChartTooltipContent({
     indicator?: "line" | "dot" | "dashed"
     nameKey?: string
     labelKey?: string
+    valueFormatter?: (
+      value: TooltipValueType,
+      name: TooltipNameType | undefined
+    ) => React.ReactNode
   } & Omit<
     RechartsPrimitive.DefaultTooltipContentProps<
       TooltipValueType,
@@ -200,9 +205,12 @@ function ChartTooltipContent({
         {payload
           .filter((item) => item.type !== "none")
           .map((item, index) => {
-            const key = `${nameKey ?? item.name ?? item.dataKey ?? "value"}`
+            const key = `${nameKey ?? item.dataKey ?? item.name ?? "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
-            const indicatorColor = color ?? item.payload?.fill ?? item.color
+            const configuredColor =
+              itemConfig && "color" in itemConfig ? itemConfig.color : undefined
+            const indicatorColor =
+              color ?? configuredColor ?? item.payload?.fill ?? item.color
 
             return (
               <div
@@ -242,19 +250,21 @@ function ChartTooltipContent({
                     )}
                     <div
                       className={cn(
-                        "flex flex-1 justify-between leading-none",
+                        "flex min-w-0 flex-1 justify-between gap-4 leading-none",
                         nestLabel ? "items-end" : "items-center"
                       )}
                     >
-                      <div className="grid gap-1.5">
+                      <div className="grid min-w-0 gap-1.5">
                         {nestLabel ? tooltipLabel : null}
-                        <span className="text-muted-foreground">
+                        <span className="truncate text-muted-foreground">
                           {itemConfig?.label ?? item.name}
                         </span>
                       </div>
                       {item.value != null && (
-                        <span className="font-mono font-medium text-foreground tabular-nums">
-                          {typeof item.value === "number"
+                        <span className="shrink-0 font-mono font-medium text-foreground tabular-nums">
+                          {valueFormatter
+                            ? valueFormatter(item.value, item.name)
+                            : typeof item.value === "number"
                             ? item.value.toLocaleString()
                             : String(item.value)}
                         </span>

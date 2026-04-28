@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 const NOTIFICATION = {
-	version: "1",
-	message: "API & Explorer Update: Analytics, CLOB v2, Oracle",
-	cta: "Learn more",
-	href: "https://www.struct.to/blog/v0.5-release",
+	version: "2",
+	message: "API & Explorer Update: Builder Analytics & Dashboards",
+	cta: "Check it out",
+	href: "/builders",
 } as const;
 
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useCallback, useEffect, useTransition } from "react";
+import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 
@@ -13,35 +13,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
-
-const prefetchedTabHrefs = new Set<string>();
-
-const backgroundPrefetchDelayMs = 250;
-const idlePrefetchTimeoutMs = 2_000;
-
-type NavigatorWithConnection = Navigator & {
-	connection?: {
-		saveData?: boolean;
-		effectiveType?: string;
-	};
-};
-
-function canBackgroundPrefetch() {
-	if (typeof navigator === "undefined") {
-		return false;
-	}
-
-	const connection = (navigator as NavigatorWithConnection).connection;
-
-	if (connection?.saveData) {
-		return false;
-	}
-
-	return (
-		connection?.effectiveType !== "slow-2g" &&
-		connection?.effectiveType !== "2g"
-	);
-}
 
 function buildTabHref(pathname: string, search: string, tab: MarketStatusTab) {
 	const params = new URLSearchParams(search);
@@ -65,34 +36,25 @@ function readCurrentTab(value: string | null): MarketStatusTab {
 		: DEFAULT_MARKET_STATUS_TAB;
 }
 
-function scheduleWhenIdle(callback: () => void) {
-	if (typeof window.requestIdleCallback === "function") {
-		const idleId = window.requestIdleCallback(callback, {
-			timeout: idlePrefetchTimeoutMs,
-		});
-
-		return () => window.cancelIdleCallback(idleId);
-	}
-
-	const timeoutId = window.setTimeout(callback, backgroundPrefetchDelayMs);
-	return () => window.clearTimeout(timeoutId);
-}
-
 const tabLabels: Record<MarketStatusTab, string> = {
 	open: "Open",
 	closed: "Closed",
 };
 
 export function MarketStatusTabs({
-	prefetchEnabled = true,
+	value,
+	onValueChange,
+	pending = false,
 }: {
-	prefetchEnabled?: boolean;
+	value?: MarketStatusTab;
+	onValueChange?: (value: MarketStatusTab) => void;
+	pending?: boolean;
 }) {
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const currentTab = readCurrentTab(searchParams.get("tab"));
+	const currentTab = value ?? readCurrentTab(searchParams.get("tab"));
 	const search = searchParams.toString();
 
 	const setTab = useCallback((nextTab: MarketStatusTab) => {
@@ -101,71 +63,25 @@ export function MarketStatusTabs({
 		}
 
 		posthog.capture("market_status_tab_changed", { tab: nextTab, previous_tab: currentTab });
+		if (onValueChange) {
+			onValueChange(nextTab);
+			return;
+		}
+
 		const href = buildTabHref(pathname, search, nextTab);
 		startTransition(() => {
 			router.push(href, { scroll: false });
 		});
-	}, [currentTab, pathname, router, search]);
-
-	const prefetchTab = useCallback((nextTab: MarketStatusTab) => {
-		if (!prefetchEnabled || nextTab === currentTab) {
-			return;
-		}
-
-		const href = buildTabHref(pathname, search, nextTab);
-
-		if (!prefetchedTabHrefs.has(href)) {
-			prefetchedTabHrefs.add(href);
-			router.prefetch(href);
-		}
-	}, [currentTab, pathname, prefetchEnabled, router, search]);
-
-	useEffect(() => {
-		if (!prefetchEnabled || isPending || !canBackgroundPrefetch()) {
-			return;
-		}
-
-		const nextTabs = marketStatusTabValues.filter((tab) => tab !== currentTab);
-		const timeoutIds: number[] = [];
-		let cancelIdleWork = () => {};
-
-		const startPrefetch = () => {
-			cancelIdleWork = scheduleWhenIdle(() => {
-				nextTabs.forEach((tab, index) => {
-					const timeoutId = window.setTimeout(() => {
-						prefetchTab(tab);
-					}, index * backgroundPrefetchDelayMs);
-
-					timeoutIds.push(timeoutId);
-				});
-			});
-		};
-
-		if (document.readyState === "complete") {
-			startPrefetch();
-		} else {
-			window.addEventListener("load", startPrefetch, { once: true });
-		}
-
-		return () => {
-			cancelIdleWork();
-
-			timeoutIds.forEach((timeoutId) => {
-				window.clearTimeout(timeoutId);
-			});
-
-			window.removeEventListener("load", startPrefetch);
-		};
-	}, [currentTab, isPending, prefetchEnabled, prefetchTab]);
+	}, [currentTab, onValueChange, pathname, router, search]);
 
 	return (
 		<Tabs value={currentTab} onValueChange={(value) => setTab(value as MarketStatusTab)}>
 			<TabsList
 				variant="text"
-				aria-busy={isPending}
+				aria-busy={isPending || pending}
 				className={cn(
 					"flex w-full justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-					isPending && "opacity-70",
+					(isPending || pending) && "opacity-70",
 				)}
 			>
 				{marketStatusTabValues.map((tab) => (
@@ -173,8 +89,6 @@ export function MarketStatusTabs({
 						key={tab}
 						className="text-base! sm:text-xl!"
 						value={tab}
-						onMouseEnter={() => prefetchTab(tab)}
-						onFocus={() => prefetchTab(tab)}
 					>
 						{tabLabels[tab]}
 					</TabsTrigger>

@@ -10,6 +10,7 @@ import type {
 	AnalyticsMetricId,
 	AnalyticsSummary,
 	ComponentTotals,
+	VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 const VOLUME_STORAGE_KEY = "analytics:volumeComponents";
@@ -45,6 +46,7 @@ type AnalyticsKpiStripProps = {
 	volumeComponentTotals: ComponentTotals;
 	tradeCountComponentTotals: ComponentTotals;
 	excludeMetrics?: readonly AnalyticsMetricId[];
+	allowedComponents?: readonly VolumeComponentId[];
 };
 
 function visibleKpis(excludeMetrics?: readonly AnalyticsMetricId[]): KpiSpec[] {
@@ -74,6 +76,7 @@ export function AnalyticsKpiStrip({
 	volumeComponentTotals,
 	tradeCountComponentTotals,
 	excludeMetrics,
+	allowedComponents,
 }: AnalyticsKpiStripProps) {
 	const kpis = visibleKpis(excludeMetrics);
 	const volumeComponentPcts = {
@@ -93,6 +96,7 @@ export function AnalyticsKpiStrip({
 							totals={volumeComponentTotals}
 							aggregatePct={changes?.volume_usd ?? null}
 							componentPcts={volumeComponentPcts}
+							allowedComponents={allowedComponents}
 							currency
 						/>
 					);
@@ -106,6 +110,7 @@ export function AnalyticsKpiStrip({
 							defaultTotal={summary[kpi.key]}
 							totals={tradeCountComponentTotals}
 							aggregatePct={changes?.txn_count ?? null}
+							allowedComponents={allowedComponents}
 							toggleLabel="Include in trades"
 						/>
 					);
@@ -118,6 +123,7 @@ export function AnalyticsKpiStrip({
 							volumeTotals={volumeComponentTotals}
 							tradeCountTotals={tradeCountComponentTotals}
 							changes={changes}
+							allowedComponents={allowedComponents}
 						/>
 					);
 				}

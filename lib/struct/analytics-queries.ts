@@ -1,7 +1,11 @@
 import "server-only";
 
 import type {
+	BuilderPctChange,
+	BuilderTimeBucketRow,
 	ChangeTimeframe,
+	GlobalChangeTimeframe,
+	GlobalPctChange,
 	MetricPctChange,
 	TimeBucketRow,
 	TraderTimeBucketRow,
@@ -76,6 +80,12 @@ export const structTagAnalyticsTimeseriesCacheTag = "struct-tag-analytics-timese
 export const structTraderAnalyticsDeltasCacheTag = "struct-trader-analytics-deltas";
 export const structTraderAnalyticsChangesCacheTag = "struct-trader-analytics-changes";
 export const structTraderAnalyticsTimeseriesCacheTag = "struct-trader-analytics-timeseries";
+export const structBuilderAnalyticsDeltasCacheTag = "struct-builder-analytics-deltas";
+export const structBuilderAnalyticsChangesCacheTag = "struct-builder-analytics-changes";
+export const structBuilderAnalyticsTimeseriesCacheTag = "struct-builder-analytics-timeseries";
+export const structBuilderGlobalAnalyticsDeltasCacheTag = "struct-builder-global-analytics-deltas";
+export const structBuilderGlobalAnalyticsChangesCacheTag = "struct-builder-global-analytics-changes";
+export const structBuilderGlobalAnalyticsTimeseriesCacheTag = "struct-builder-global-analytics-timeseries";
 
 const MAX_PAGINATION_REQUESTS = 5;
 
@@ -83,7 +93,7 @@ function toNumber(value: number | undefined | null): number {
 	return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-type AnyTimeBucketRow = TimeBucketRow | TraderTimeBucketRow;
+type AnyTimeBucketRow = TimeBucketRow | TraderTimeBucketRow | BuilderTimeBucketRow;
 
 function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 	return {
@@ -91,9 +101,9 @@ function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 		volumeUsd: toNumber(row.v),
 		buyVolumeUsd: toNumber(row.bv),
 		sellVolumeUsd: toNumber(row.sv),
-		redemptionVolumeUsd: toNumber(row.rv),
-		mergeVolumeUsd: toNumber(row.mv),
-		splitVolumeUsd: toNumber(row.spv),
+		redemptionVolumeUsd: toNumber("rv" in row ? row.rv : 0),
+		mergeVolumeUsd: toNumber("mv" in row ? row.mv : 0),
+		splitVolumeUsd: toNumber("spv" in row ? row.spv : 0),
 		yesVolumeUsd: toNumber(row.yv),
 		noVolumeUsd: toNumber(row.nv),
 		uniqueTraders: toNumber("ut" in row ? row.ut : 0),
@@ -102,12 +112,16 @@ function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 		txnCount: toNumber(row.tc),
 		buyCount: toNumber(row.bc),
 		sellCount: toNumber(row.sc),
-		redemptionCount: toNumber(row.rc),
-		mergeCount: toNumber(row.mc),
-		splitCount: toNumber(row.sp),
+		redemptionCount: toNumber("rc" in row ? row.rc : 0),
+		mergeCount: toNumber("mc" in row ? row.mc : 0),
+		splitCount: toNumber("sp" in row ? row.sp : 0),
 		yesCount: toNumber(row.yc),
 		noCount: toNumber(row.nc),
 		feesUsd: toNumber(row.f),
+		builderFeesUsd: toNumber("bf" in row ? row.bf : 0),
+		newUsers: toNumber("nu" in row ? row.nu : 0),
+		avgRevenuePerUserUsd: toNumber("ar" in row ? row.ar : 0),
+		avgVolumePerUserUsd: toNumber("av" in row ? row.av : 0),
 		sharesVolume: toNumber(row.sh),
 		buyDistUnder10: toNumber(row.bd_u10),
 		buyDist10to100: toNumber(row.bd_100),
@@ -141,6 +155,10 @@ function emptyPoint(t: number): AnalyticsPoint {
 		yesCount: 0,
 		noCount: 0,
 		feesUsd: 0,
+		builderFeesUsd: 0,
+		newUsers: 0,
+		avgRevenuePerUserUsd: 0,
+		avgVolumePerUserUsd: 0,
 		sharesVolume: 0,
 		buyDistUnder10: 0,
 		buyDist10to100: 0,
@@ -246,7 +264,7 @@ async function fetchTimeBucketsWithPagination<
 			});
 		} catch (error) {
 			if (collected.length === 0) throw error;
-			console.warn(`${label} pagination stopped at request ${requests + 1}`, error);
+			console.warn("%s pagination stopped at request %d", label, requests + 1, error);
 			break;
 		}
 
@@ -591,6 +609,178 @@ export async function getTraderAnalyticsTimeseries(
 			`getTraderAnalyticsTimeseries:${address}:${range}:${resolution}`,
 			error,
 		);
+	}
+}
+
+const BUILDER_GLOBAL_CHANGES_TIMEFRAME: Record<AnalyticsRange, GlobalChangeTimeframe> = {
+	"1d": "24h",
+	"7d": "7d",
+	"30d": "30d",
+	all: "1y",
+};
+
+function projectBuilderChanges(
+	source: BuilderPctChange | GlobalPctChange,
+): MetricPctChange {
+	return {
+		volume_usd: source.volume_usd,
+		buy_volume_usd: source.buy_volume_usd,
+		sell_volume_usd: source.sell_volume_usd,
+		unique_traders: source.unique_traders,
+		unique_makers: source.unique_makers,
+		unique_takers: source.unique_takers,
+		txn_count: source.txn_count,
+		fees_usd: source.fees_usd,
+		shares_volume: source.shares_volume,
+		yes_volume_usd: source.yes_volume_usd,
+		no_volume_usd: source.no_volume_usd,
+	};
+}
+
+export async function getBuilderAnalyticsDeltas(
+	builderCode: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structBuilderAnalyticsDeltasCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.builders.getBuilderDeltas(params),
+			{ builder_code: builderCode },
+			buildRangeConfig(range, resolution),
+			`getBuilderAnalyticsDeltas:${builderCode}:${range}:${resolution}`,
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getBuilderAnalyticsDeltas:${builderCode}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getBuilderAnalyticsTimeseries(
+	builderCode: string,
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structBuilderAnalyticsTimeseriesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.builders.getBuilderTimeseries(params),
+			{ builder_code: builderCode },
+			buildRangeConfig(range, resolution),
+			`getBuilderAnalyticsTimeseries:${builderCode}:${range}:${resolution}`,
+			"carryForward",
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getBuilderAnalyticsTimeseries:${builderCode}:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getBuilderAnalyticsChanges(
+	builderCode: string,
+	range: AnalyticsRange,
+): Promise<MetricPctChange | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structBuilderAnalyticsChangesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return null;
+	try {
+		const response = await client.builders.getBuilderChanges({
+			builder_code: builderCode,
+			timeframe: CHANGES_TIMEFRAME[range],
+		});
+		return response.data ? projectBuilderChanges(response.data) : null;
+	} catch (error) {
+		return handleChangesError(
+			`getBuilderAnalyticsChanges:${builderCode}:${range}`,
+			error,
+		);
+	}
+}
+
+export async function getBuilderGlobalAnalyticsDeltas(
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structBuilderGlobalAnalyticsDeltasCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.builders.getGlobalDeltas(params),
+			{},
+			buildRangeConfig(range, resolution),
+			`getBuilderGlobalAnalyticsDeltas:${range}:${resolution}`,
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getBuilderGlobalAnalyticsDeltas:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getBuilderGlobalAnalyticsTimeseries(
+	range: AnalyticsRange,
+	resolution: AnalyticsResolution,
+): Promise<AnalyticsPoint[]> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structBuilderGlobalAnalyticsTimeseriesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return [];
+	try {
+		return await fetchTimeBucketsWithPagination(
+			(params) => client.builders.getGlobalTimeseries(params),
+			{},
+			buildRangeConfig(range, resolution),
+			`getBuilderGlobalAnalyticsTimeseries:${range}:${resolution}`,
+			"carryForward",
+		);
+	} catch (error) {
+		return handleDeltasError(
+			`getBuilderGlobalAnalyticsTimeseries:${range}:${resolution}`,
+			error,
+		);
+	}
+}
+
+export async function getBuilderGlobalAnalyticsChanges(
+	range: AnalyticsRange,
+): Promise<MetricPctChange | null> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag(structBuilderGlobalAnalyticsChangesCacheTag);
+
+	const client = getStructClient();
+	if (!client) return null;
+	try {
+		const response = await client.builders.getGlobalChanges({
+			timeframe: BUILDER_GLOBAL_CHANGES_TIMEFRAME[range],
+		});
+		return response.data ? projectBuilderChanges(response.data) : null;
+	} catch (error) {
+		return handleChangesError(`getBuilderGlobalAnalyticsChanges:${range}`, error);
 	}
 }
 

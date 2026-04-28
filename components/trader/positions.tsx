@@ -6,11 +6,11 @@ import type { components } from "@structbuild/sdk"
 import type { Route } from "next"
 import Link from "next/link"
 import { ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
-import { useCallback, useMemo, useState, useTransition } from "react"
+import { type ReactNode, useCallback, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
 
-import { refreshTraderTabAction } from "@/app/actions"
+import { getTraderPositionsPageAction, refreshTraderTabAction } from "@/app/actions"
 import type {
 	TraderPositionSortBy,
 	TraderSortDirection,
@@ -18,6 +18,7 @@ import type {
 import type { PaginatedResource } from "@/lib/struct/types"
 import { traderSearchParamParsers } from "@/lib/trader-search-params"
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
+import { getTraderPositionPnlDisplay } from "@/lib/trader-position-pnl"
 
 import { Badge } from "../ui/badge"
 import { DataTable } from "../ui/data-table"
@@ -49,6 +50,8 @@ function formatSharesLine(row: TraderOutcomePnlEntry) {
 }
 
 const defaultColumnVisibility: VisibilityState = {
+	realized_pnl: false,
+	current_value: false,
 	total_shares_bought: false,
 	total_shares_sold: false,
 	total_buy_usd: false,
@@ -175,6 +178,35 @@ function buildColumns(
 						)}{" "}
 						<span className="text-muted-foreground">/</span>{" "}
 						{formatPriceCents(entry.current_price ?? entry.avg_exit_price)}
+					</p>
+				)
+			},
+		},
+		{
+			id: "pnl",
+			meta: { title: "PnL" },
+			header: () => (
+				<span className="flex items-center gap-1.5">
+					PnL
+					<TooltipWrapper content="Unrealized PnL on currently-held shares: shares × (current price − entry price). Closed positions show realized PnL.">
+						<InfoIcon className="size-4 text-muted-foreground" />
+					</TooltipWrapper>
+				</span>
+			),
+			size: 150,
+			cell: ({ row }) => {
+				const entry = row.original
+				const pnl = getTraderPositionPnlDisplay(entry)
+
+				return (
+					<p className={cn(pnlColorClass(pnl.colorValue))}>
+						{formatNumber(pnl.value, { currency: true, compact: true })}
+						{pnl.percent != null ? (
+							<span className="text-muted-foreground">
+								{" "}
+								({formatNumber(pnl.percent, { percent: true })})
+							</span>
+						) : null}
 					</p>
 				)
 			},
@@ -431,66 +463,113 @@ function buildColumns(
 }
 
 type Props = {
+	address: string
 	page: PaginatedResource<TraderOutcomePnlEntry, number>
 	pageNumber: number
 	status: "open" | "closed"
 	sortBy: TraderPositionSortBy
 	sortDirection: TraderSortDirection
+	tabs?: ReactNode
 }
 
 export default function TraderPositions({
+	address,
 	page,
 	pageNumber,
 	status,
 	sortBy,
 	sortDirection,
+	tabs,
 }: Props) {
 	const pathname = usePathname()
 	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
+	const [tableState, setTableState] = useState(() => ({
+		sourcePage: page,
+		sourcePageNumber: pageNumber,
+		sourceSortBy: sortBy,
+		sourceSortDirection: sortDirection,
+		page,
+		pageNumber,
+		sortBy,
+		sortDirection,
+	}))
 	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
 		scroll: false,
-		shallow: false,
+		shallow: true,
 		startTransition,
 	})
-	const pageKey = status === "open" ? "openPage" : "closedPage"
 
 	const [showUnknown, setShowUnknown] = useState(false)
 
-	const hasUnknownMarkets = page.data.some((entry) => !entry.title)
+	const hasLocalTableState =
+		tableState.sourcePage === page &&
+		tableState.sourcePageNumber === pageNumber &&
+		tableState.sourceSortBy === sortBy &&
+		tableState.sourceSortDirection === sortDirection
+	const currentPage = hasLocalTableState ? tableState.page : page
+	const currentPageNumber = hasLocalTableState ? tableState.pageNumber : pageNumber
+	const currentSortBy = hasLocalTableState ? tableState.sortBy : sortBy
+	const currentSortDirection = hasLocalTableState ? tableState.sortDirection : sortDirection
+
+	const hasUnknownMarkets = currentPage.data.some((entry) => !entry.title)
+
+	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection) => {
+		startTransition(async () => {
+			if (status === "open") {
+				void setSearchParams({
+					openSortBy: nextSortBy,
+					openSortDirection: nextSortDirection,
+					openPage: nextPageNumber,
+				})
+			} else {
+				void setSearchParams({
+					closedSortBy: nextSortBy,
+					closedSortDirection: nextSortDirection,
+					closedPage: nextPageNumber,
+				})
+			}
+
+			const result = await getTraderPositionsPageAction({
+				address,
+				status,
+				pageNumber: nextPageNumber,
+				sortBy: nextSortBy,
+				sortDirection: nextSortDirection,
+			})
+
+			setTableState({
+				sourcePage: page,
+				sourcePageNumber: pageNumber,
+				sourceSortBy: sortBy,
+				sourceSortDirection: sortDirection,
+				page: result.page,
+				pageNumber: result.pageNumber,
+				sortBy: nextSortBy,
+				sortDirection: nextSortDirection,
+			})
+		})
+	}, [address, page, pageNumber, setSearchParams, sortBy, sortDirection, startTransition, status])
 
 	const handleSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		const nextSortDirection: TraderSortDirection =
-			nextSortBy === sortBy && sortDirection === "desc" ? "asc" : "desc"
+			nextSortBy === currentSortBy && currentSortDirection === "desc" ? "asc" : "desc"
 
-		if (status === "open") {
-			void setSearchParams({
-				openSortBy: nextSortBy,
-				openSortDirection: nextSortDirection,
-				openPage: 1,
-			})
-			return
-		}
-
-		void setSearchParams({
-			closedSortBy: nextSortBy,
-			closedSortDirection: nextSortDirection,
-			closedPage: 1,
-		})
-	}, [setSearchParams, sortBy, sortDirection, status])
+		loadPage(1, nextSortBy, nextSortDirection)
+	}, [currentSortBy, currentSortDirection, loadPage])
 
 	const columns = useMemo(
-		() => buildColumns(status, sortBy, sortDirection, handleSortChange),
-		[handleSortChange, sortBy, sortDirection, status],
+		() => buildColumns(status, currentSortBy, currentSortDirection, handleSortChange),
+		[handleSortChange, currentSortBy, currentSortDirection, status],
 	)
 
 	const data = useMemo(() => {
 		if (showUnknown) {
-			return page.data
+			return currentPage.data
 		}
-		return page.data.filter((entry) => entry.title)
-	}, [page.data, showUnknown])
+		return currentPage.data.filter((entry) => entry.title)
+	}, [currentPage.data, showUnknown])
 
 	const toolbarRight = (
 		<div className="flex items-center gap-3">
@@ -516,7 +595,7 @@ export default function TraderPositions({
 
 	return (
 		<DataTable
-			toolbarLeft={<TraderTabs />}
+			toolbarLeft={tabs ?? <TraderTabs />}
 			toolbarRight={toolbarRight}
 			columns={columns}
 			data={data}
@@ -526,18 +605,18 @@ export default function TraderPositions({
 			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"
-			pageIndex={pageNumber - 1}
-			pageSize={page.pageSize}
-			hasNextPage={page.hasMore}
+			pageIndex={currentPageNumber - 1}
+			pageSize={currentPage.pageSize}
+			hasNextPage={currentPage.hasMore}
 			isLoading={isPending}
 			onPageIndexChange={(nextPageIndex) => {
 				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxTraderPageNumber)
 
-				if (nextPageNumber === pageNumber) {
+				if (nextPageNumber === currentPageNumber) {
 					return
 				}
 
-				void setSearchParams({ [pageKey]: nextPageNumber })
+				loadPage(nextPageNumber, currentSortBy, currentSortDirection)
 			}}
 		/>
 	)

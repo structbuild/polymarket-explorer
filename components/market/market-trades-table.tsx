@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -9,6 +9,7 @@ import { Facehash } from "facehash";
 import { HashIcon } from "lucide-react";
 import { useQueryStates } from "nuqs";
 
+import { getMarketTradesPageAction } from "@/app/actions";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -161,39 +162,66 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 ];
 
 type Props = {
+	conditionId: string;
 	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
 };
 
-export function MarketTradesTable({ page, pageNumber }: Props) {
+export function MarketTradesTable({ conditionId, page, pageNumber }: Props) {
 	const [isPending, startTransition] = useTransition();
+	const [pageState, setPageState] = useState(() => ({
+		sourcePage: page,
+		sourcePageNumber: pageNumber,
+		page,
+		pageNumber,
+	}));
 	const [, setSearchParams] = useQueryStates(marketDetailSearchParamParsers, {
 		history: "push",
 		scroll: false,
-		shallow: false,
+		shallow: true,
 		startTransition,
 	});
+
+	const hasLocalPage =
+		pageState.sourcePage === page &&
+		pageState.sourcePageNumber === pageNumber;
+	const currentPage = hasLocalPage ? pageState.page : page;
+	const currentPageNumber = hasLocalPage ? pageState.pageNumber : pageNumber;
 
 	return (
 		<DataTable
 			columns={columns}
-			data={page.data}
+			data={currentPage.data}
 			storageKey="market-trades-table"
 			emptyMessage="No trades to show."
 			columnLayout="fixed"
 			paginationMode="server"
-			pageIndex={pageNumber - 1}
-			pageSize={page.pageSize}
-			hasNextPage={page.hasMore}
+			pageIndex={currentPageNumber - 1}
+			pageSize={currentPage.pageSize}
+			hasNextPage={currentPage.hasMore}
 			isLoading={isPending}
 			onPageIndexChange={(nextPageIndex) => {
 				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxMarketTradesPageNumber);
 
-				if (nextPageNumber === pageNumber) {
+				if (nextPageNumber === currentPageNumber) {
 					return;
 				}
 
-				void setSearchParams({ tradesPage: nextPageNumber });
+				startTransition(async () => {
+					void setSearchParams({ tradesPage: nextPageNumber });
+
+					const result = await getMarketTradesPageAction({
+						conditionId,
+						pageNumber: nextPageNumber,
+					});
+
+					setPageState({
+						sourcePage: page,
+						sourcePageNumber: pageNumber,
+						page: result.page,
+						pageNumber: result.pageNumber,
+					});
+				});
 			}}
 		/>
 	);

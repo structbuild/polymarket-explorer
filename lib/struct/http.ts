@@ -12,5 +12,5 @@ export function readStatus(error: unknown) {
 }
 
 export function logStructError(label: string, error: unknown) {
-	console.error(`Struct SDK request failed: ${label}`, error);
+	console.error("Struct SDK request failed: %s", label, error);
 }
