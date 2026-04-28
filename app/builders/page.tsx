@@ -21,6 +21,7 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
 import { getSiteUrl } from "@/lib/env";
+import { parsePageParam } from "@/lib/pagination";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import {
 	getBuilderGlobalAnalyticsChanges,
@@ -56,7 +57,7 @@ export const metadata: Metadata = buildPageMetadata({
 	canonical: "/builders",
 });
 
-const BUILDERS_INDEX_LIMIT = 250;
+const BUILDERS_PAGE_SIZE = 50;
 const BUILDERS_STACKED_TOP_N = 7;
 const BUILDERS_GLOBAL_TAGS_LIMIT = 12;
 const BUILDER_ANALYTICS_COMPONENTS = ["buy", "sell"] as const satisfies readonly VolumeComponentId[];
@@ -108,9 +109,12 @@ async function BuildersIndexContent({ searchParams }: Props) {
 	const resolution = parseBuildersStackedResolution(timeframe, resolved.resolution);
 	const analytics = parseAnalyticsParams(resolved, "global", "30d");
 	const tagSort = parseBuilderGlobalTagSort(resolved.tagSort, timeframe);
+	const pageParam = typeof resolved.page === "string" ? parsePageParam(resolved.page) : null;
+	const page = pageParam ?? 1;
+	const offset = (page - 1) * BUILDERS_PAGE_SIZE;
 
-	const [{ data: builders }, globalRow, globalChanges, globalTags] = await Promise.all([
-		getBuildersPaginated(BUILDERS_INDEX_LIMIT, 0, sort, timeframe),
+	const [{ data: builders, hasMore }, globalRow, globalChanges, globalTags] = await Promise.all([
+		getBuildersPaginated(BUILDERS_PAGE_SIZE, offset, sort, timeframe),
 		getBuilderGlobal(timeframe),
 		getBuilderGlobalChanges(timeframe === "lifetime" ? "1y" : timeframe === "1d" ? "24h" : timeframe),
 		getBuilderGlobalTags(tagSort, timeframe, BUILDERS_GLOBAL_TAGS_LIMIT),
@@ -128,7 +132,7 @@ async function BuildersIndexContent({ searchParams }: Props) {
 			numberOfItems: builders.length,
 			itemListElement: builders.map((builder, index) => ({
 				"@type": "ListItem",
-				position: index + 1,
+				position: offset + index + 1,
 				name: formatBuilderCodeDisplay(builder.builder_code),
 				url: new URL(
 					`/builders/${encodeURIComponent(builder.builder_code)}`,
@@ -172,7 +176,10 @@ async function BuildersIndexContent({ searchParams }: Props) {
 					builders={builders}
 					sort={sort}
 					timeframe={timeframe}
-					initialLimit={25}
+					pageIndex={page - 1}
+					pageSize={BUILDERS_PAGE_SIZE}
+					hasNextPage={hasMore}
+					rankOffset={offset}
 					toolbarLeft={
 						<h2 className="text-lg font-medium text-foreground/90">
 							Builder leaderboard
@@ -248,7 +255,7 @@ function BuildersIndexFallback() {
 			<BuildersGlobalStatsFallback />
 			<BuildersGlobalTagsFallback />
 			<BuildersStackedChartFallback />
-			<DataTableSkeleton columns={BUILDERS_SKELETON_COLUMNS} rowCount={10} />
+			<DataTableSkeleton columns={BUILDERS_SKELETON_COLUMNS} rowCount={BUILDERS_PAGE_SIZE} />
 		</div>
 	);
 }

@@ -20,7 +20,7 @@ const STATS: readonly StatSpec[] = [
 	{ key: "builder_fees", pctKey: "builder_fees", label: "Builder fees", currency: true, compact: true },
 	{ key: "unique_traders", pctKey: "unique_traders", label: "Traders", compact: true },
 	{ key: "txn_count", pctKey: "txn_count", label: "Trades", compact: true },
-	{ key: "distinct_builders", label: "Builders", compact: true },
+	{ key: "distinct_builders", pctKey: "distinct_builders", label: "Builders", compact: true },
 	{
 		key: "new_users",
 		pctKey: "new_users",

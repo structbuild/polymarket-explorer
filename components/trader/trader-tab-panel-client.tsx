@@ -14,6 +14,7 @@ import TraderPositions from "./positions"
 type TraderTabPanelClientProps =
 	| {
 			kind: "positions"
+			address: string
 			status: "open" | "closed"
 			pageNumber: number
 			sortBy: TraderPositionSortBy
@@ -22,17 +23,19 @@ type TraderTabPanelClientProps =
 	  }
 	| {
 			kind: "activity"
+			address: string
 			pageNumber: number
 			page: PaginatedResource<TradeRow, number>
 	  }
 
 export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 	if (props.kind === "activity") {
-		return <TraderActivity page={props.page} pageNumber={props.pageNumber} />
+		return <TraderActivity address={props.address} page={props.page} pageNumber={props.pageNumber} />
 	}
 
 	return (
 		<TraderPositions
+			address={props.address}
 			page={props.page}
 			pageNumber={props.pageNumber}
 			status={props.status}

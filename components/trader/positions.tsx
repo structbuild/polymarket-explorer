@@ -10,7 +10,7 @@ import { useCallback, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
 
-import { refreshTraderTabAction } from "@/app/actions"
+import { getTraderPositionsPageAction, refreshTraderTabAction } from "@/app/actions"
 import type {
 	TraderPositionSortBy,
 	TraderSortDirection,
@@ -431,6 +431,7 @@ function buildColumns(
 }
 
 type Props = {
+	address: string
 	page: PaginatedResource<TraderOutcomePnlEntry, number>
 	pageNumber: number
 	status: "open" | "closed"
@@ -439,6 +440,7 @@ type Props = {
 }
 
 export default function TraderPositions({
+	address,
 	page,
 	pageNumber,
 	status,
@@ -448,49 +450,92 @@ export default function TraderPositions({
 	const pathname = usePathname()
 	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
+	const [tableState, setTableState] = useState(() => ({
+		sourcePage: page,
+		sourcePageNumber: pageNumber,
+		sourceSortBy: sortBy,
+		sourceSortDirection: sortDirection,
+		page,
+		pageNumber,
+		sortBy,
+		sortDirection,
+	}))
 	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
 		scroll: false,
-		shallow: false,
+		shallow: true,
 		startTransition,
 	})
-	const pageKey = status === "open" ? "openPage" : "closedPage"
 
 	const [showUnknown, setShowUnknown] = useState(false)
 
-	const hasUnknownMarkets = page.data.some((entry) => !entry.title)
+	const hasLocalTableState =
+		tableState.sourcePage === page &&
+		tableState.sourcePageNumber === pageNumber &&
+		tableState.sourceSortBy === sortBy &&
+		tableState.sourceSortDirection === sortDirection
+	const currentPage = hasLocalTableState ? tableState.page : page
+	const currentPageNumber = hasLocalTableState ? tableState.pageNumber : pageNumber
+	const currentSortBy = hasLocalTableState ? tableState.sortBy : sortBy
+	const currentSortDirection = hasLocalTableState ? tableState.sortDirection : sortDirection
+
+	const hasUnknownMarkets = currentPage.data.some((entry) => !entry.title)
+
+	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection) => {
+		startTransition(async () => {
+			if (status === "open") {
+				void setSearchParams({
+					openSortBy: nextSortBy,
+					openSortDirection: nextSortDirection,
+					openPage: nextPageNumber,
+				})
+			} else {
+				void setSearchParams({
+					closedSortBy: nextSortBy,
+					closedSortDirection: nextSortDirection,
+					closedPage: nextPageNumber,
+				})
+			}
+
+			const result = await getTraderPositionsPageAction({
+				address,
+				status,
+				pageNumber: nextPageNumber,
+				sortBy: nextSortBy,
+				sortDirection: nextSortDirection,
+			})
+
+			setTableState({
+				sourcePage: page,
+				sourcePageNumber: pageNumber,
+				sourceSortBy: sortBy,
+				sourceSortDirection: sortDirection,
+				page: result.page,
+				pageNumber: result.pageNumber,
+				sortBy: nextSortBy,
+				sortDirection: nextSortDirection,
+			})
+		})
+	}, [address, page, pageNumber, setSearchParams, sortBy, sortDirection, startTransition, status])
 
 	const handleSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		const nextSortDirection: TraderSortDirection =
-			nextSortBy === sortBy && sortDirection === "desc" ? "asc" : "desc"
+			nextSortBy === currentSortBy && currentSortDirection === "desc" ? "asc" : "desc"
 
-		if (status === "open") {
-			void setSearchParams({
-				openSortBy: nextSortBy,
-				openSortDirection: nextSortDirection,
-				openPage: 1,
-			})
-			return
-		}
-
-		void setSearchParams({
-			closedSortBy: nextSortBy,
-			closedSortDirection: nextSortDirection,
-			closedPage: 1,
-		})
-	}, [setSearchParams, sortBy, sortDirection, status])
+		loadPage(1, nextSortBy, nextSortDirection)
+	}, [currentSortBy, currentSortDirection, loadPage])
 
 	const columns = useMemo(
-		() => buildColumns(status, sortBy, sortDirection, handleSortChange),
-		[handleSortChange, sortBy, sortDirection, status],
+		() => buildColumns(status, currentSortBy, currentSortDirection, handleSortChange),
+		[handleSortChange, currentSortBy, currentSortDirection, status],
 	)
 
 	const data = useMemo(() => {
 		if (showUnknown) {
-			return page.data
+			return currentPage.data
 		}
-		return page.data.filter((entry) => entry.title)
-	}, [page.data, showUnknown])
+		return currentPage.data.filter((entry) => entry.title)
+	}, [currentPage.data, showUnknown])
 
 	const toolbarRight = (
 		<div className="flex items-center gap-3">
@@ -526,18 +571,18 @@ export default function TraderPositions({
 			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"
-			pageIndex={pageNumber - 1}
-			pageSize={page.pageSize}
-			hasNextPage={page.hasMore}
+			pageIndex={currentPageNumber - 1}
+			pageSize={currentPage.pageSize}
+			hasNextPage={currentPage.hasMore}
 			isLoading={isPending}
 			onPageIndexChange={(nextPageIndex) => {
 				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxTraderPageNumber)
 
-				if (nextPageNumber === pageNumber) {
+				if (nextPageNumber === currentPageNumber) {
 					return
 				}
 
-				void setSearchParams({ [pageKey]: nextPageNumber })
+				loadPage(nextPageNumber, currentSortBy, currentSortDirection)
 			}}
 		/>
 	)

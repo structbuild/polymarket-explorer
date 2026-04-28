@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, Fragment, useContext, useEffect, useRef, useState } from "react"
+import { createContext, Fragment, useContext, useEffect, useState } from "react"
 import {
 	type ColumnDef,
 	type PaginationState,
@@ -36,49 +36,6 @@ import { cn } from "@/lib/utils"
 
 const PAGE_SIZES = [10, 25, 50, 100]
 const EMPTY_COLUMN_VISIBILITY: VisibilityState = {}
-const serverPaginationScrollStoragePrefix = "data-table:server-pagination-scroll:"
-
-function getSessionStorageItem(key: string) {
-	try {
-		return window.sessionStorage.getItem(key)
-	} catch {
-		return null
-	}
-}
-
-function setSessionStorageItem(key: string, value: string) {
-	try {
-		window.sessionStorage.setItem(key, value)
-	} catch {
-		// Session storage is only a cross-remount fallback for scroll restoration.
-	}
-}
-
-function removeSessionStorageItem(key: string) {
-	try {
-		window.sessionStorage.removeItem(key)
-	} catch {
-		// Session storage is only a cross-remount fallback for scroll restoration.
-	}
-}
-
-function restoreScrollY(scrollY: number) {
-	window.scrollTo({ top: scrollY, left: window.scrollX, behavior: "instant" })
-}
-
-function scheduleScrollYPreservation(scrollY: number) {
-	restoreScrollY(scrollY)
-
-	const animationFrameId = window.requestAnimationFrame(() => restoreScrollY(scrollY))
-	const timeoutIds = [0, 50, 100, 200, 400].map((delay) =>
-		window.setTimeout(() => restoreScrollY(scrollY), delay),
-	)
-
-	return () => {
-		window.cancelAnimationFrame(animationFrameId)
-		timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId))
-	}
-}
 
 const DataTableTimeframeContext = createContext<MetricsTimeframeChoice | null>(null)
 
@@ -568,44 +525,6 @@ function ServerPaginatedDataTable<TData>({
 	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
 	const timeframe = controlledTimeframe ?? internalTimeframe
 	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
-	const shouldScrollToTableRef = useRef(false)
-	const scrollStorageKey = storageKey
-		? `${serverPaginationScrollStoragePrefix}${storageKey}`
-		: null
-
-	useEffect(() => {
-		const storedScrollY =
-			scrollStorageKey != null &&
-			getSessionStorageItem(scrollStorageKey)
-
-		if (!shouldScrollToTableRef.current && !storedScrollY) {
-			return
-		}
-
-		shouldScrollToTableRef.current = false
-		if (scrollStorageKey != null) {
-			removeSessionStorageItem(scrollStorageKey)
-		}
-
-		const scrollY = Number(storedScrollY)
-
-		if (!Number.isFinite(scrollY)) {
-			return
-		}
-
-		return scheduleScrollYPreservation(scrollY)
-	}, [pageIndex, scrollStorageKey])
-
-	function requestPageIndexChange(nextPageIndex: number) {
-		const scrollY = window.scrollY
-
-		shouldScrollToTableRef.current = true
-		if (scrollStorageKey != null) {
-			setSessionStorageItem(scrollStorageKey, String(scrollY))
-		}
-		scheduleScrollYPreservation(scrollY)
-		onPageIndexChange(nextPageIndex)
-	}
 
 	// eslint-disable-next-line
 	const table = useReactTable({
@@ -623,35 +542,33 @@ function ServerPaginatedDataTable<TData>({
 	const end = data.length === 0 ? 0 : pageIndex * pageSize + data.length
 
 	return (
-		<div>
-			<DataTableView
-				columns={columns}
-				data={data}
-				storageKey={storageKey}
-				defaultColumnVisibility={defaultColumnVisibility}
-				emptyMessage={emptyMessage}
-				emptyClassName={emptyClassName}
-				columnLayout={columnLayout}
-				toolbarLeft={toolbarLeft}
-				toolbarRight={toolbarRight}
-				timeframes={timeframes}
-				timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
-				onTimeframeChange={setTimeframe}
-				table={table}
-				pagination={{
-					show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],
-					label: start === 0 ? "0 rows" : `${start}–${end}`,
-					pageSize,
-					pageNumber: pageIndex + 1,
-					isLoading,
-					canPreviousPage: pageIndex > 0,
-					canNextPage: hasNextPage,
-					onPreviousPage: () => requestPageIndexChange(pageIndex - 1),
-					onNextPage: () => requestPageIndexChange(pageIndex + 1),
-					onPageNumberChange: (nextPageNumber) => requestPageIndexChange(nextPageNumber - 1),
-				}}
-			/>
-		</div>
+		<DataTableView
+			columns={columns}
+			data={data}
+			storageKey={storageKey}
+			defaultColumnVisibility={defaultColumnVisibility}
+			emptyMessage={emptyMessage}
+			emptyClassName={emptyClassName}
+			columnLayout={columnLayout}
+			toolbarLeft={toolbarLeft}
+			toolbarRight={toolbarRight}
+			timeframes={timeframes}
+			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
+			onTimeframeChange={setTimeframe}
+			table={table}
+			pagination={{
+				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],
+				label: start === 0 ? "0 rows" : `${start}–${end}`,
+				pageSize,
+				pageNumber: pageIndex + 1,
+				isLoading,
+				canPreviousPage: pageIndex > 0,
+				canNextPage: hasNextPage,
+				onPreviousPage: () => onPageIndexChange(pageIndex - 1),
+				onNextPage: () => onPageIndexChange(pageIndex + 1),
+				onPageNumberChange: (nextPageNumber) => onPageIndexChange(nextPageNumber - 1),
+			}}
+		/>
 	)
 }
 

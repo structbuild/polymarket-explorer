@@ -1,14 +1,33 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import {
+	defaultTraderTablePageSize,
+	getTraderPositionsPage,
+	getTraderTradesPage,
 	searchAll,
 	searchTraders,
 	structRewardsMarketsCacheTag,
 	structTraderPositionsCacheTag,
 	structTraderTradesCacheTag,
 } from "@/lib/struct/queries";
+import {
+	defaultMarketTradesPageSize,
+	getMarketTradesPage,
+} from "@/lib/struct/market-queries";
+import { getBuilderGlobalTags } from "@/lib/struct/builder-queries";
+import {
+	getBuilderSortOptionsForTimeframe,
+	parseBuilderTimeframe,
+} from "@/lib/struct/builder-shared";
+import { maxMarketTradesPageNumber } from "@/lib/market-detail-search-params-shared";
+import {
+	maxTraderPageNumber,
+	type TraderPositionSortBy,
+	type TraderSortDirection,
+} from "@/lib/trader-search-params-shared";
 
 export type SearchResultMarket = {
 	slug: string;
@@ -32,6 +51,91 @@ export type SearchResult = {
 	traders: SearchResultTrader[];
 	markets: SearchResultMarket[];
 };
+
+function clampPageNumber(pageNumber: number, maxPageNumber: number) {
+	if (!Number.isSafeInteger(pageNumber)) {
+		return 1;
+	}
+
+	return Math.min(Math.max(pageNumber, 1), maxPageNumber);
+}
+
+export async function getTraderPositionsPageAction({
+	address,
+	status,
+	pageNumber,
+	sortBy,
+	sortDirection,
+}: {
+	address: string;
+	status: "open" | "closed";
+	pageNumber: number;
+	sortBy: TraderPositionSortBy;
+	sortDirection: TraderSortDirection;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const page = await getTraderPositionsPage(address, status, {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_by: sortBy,
+		sort_direction: sortDirection,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getTraderActivityPageAction({
+	address,
+	pageNumber,
+}: {
+	address: string;
+	pageNumber: number;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const page = await getTraderTradesPage(address, {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_desc: true,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getMarketTradesPageAction({
+	conditionId,
+	pageNumber,
+}: {
+	conditionId: string;
+	pageNumber: number;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxMarketTradesPageNumber);
+	const page = await getMarketTradesPage(conditionId, {
+		limit: defaultMarketTradesPageSize,
+		offset: (safePageNumber - 1) * defaultMarketTradesPageSize,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getBuilderGlobalTagsAction({
+	sort,
+	timeframe,
+}: {
+	sort: BuilderSortBy;
+	timeframe: BuilderTimeframe;
+}) {
+	const safeTimeframe = parseBuilderTimeframe(timeframe);
+	const safeSort = getBuilderSortOptionsForTimeframe(safeTimeframe).includes(sort)
+		? sort
+		: "volume";
+	const result = await getBuilderGlobalTags(safeSort, safeTimeframe, 12);
+
+	return {
+		rows: result.data,
+		sort: safeSort,
+		timeframe: safeTimeframe,
+	};
+}
 
 export async function searchTradersAction(query: string) {
 	const results = await searchTraders(query);

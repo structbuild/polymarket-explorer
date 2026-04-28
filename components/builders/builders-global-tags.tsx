@@ -2,10 +2,11 @@
 
 import type { Route } from "next";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
 import type { BuilderSortBy, BuilderTimeframe, GlobalBuilderTagRow } from "@structbuild/sdk";
 
+import { getBuilderGlobalTagsAction } from "@/app/actions";
 import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -127,7 +128,21 @@ function parseTagSort(sort: BuilderSortBy): TagSortOption {
 }
 
 export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTagsProps) {
-	const activeSort = parseTagSort(sort);
+	const [isPending, startTransition] = useTransition();
+	const [tagState, setTagState] = useState(() => ({
+		sourceRows: rows,
+		sourceSort: sort,
+		sourceTimeframe: timeframe,
+		rows,
+		sort,
+	}));
+	const hasLocalTags =
+		tagState.sourceRows === rows &&
+		tagState.sourceSort === sort &&
+		tagState.sourceTimeframe === timeframe;
+	const currentRows = hasLocalTags ? tagState.rows : rows;
+	const currentSort = hasLocalTags ? tagState.sort : sort;
+	const activeSort = parseTagSort(currentSort);
 	const metric = SORT_TO_METRIC[activeSort];
 	const sortOptions = useMemo(
 		() =>
@@ -137,8 +152,8 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 		[timeframe],
 	);
 	const data = useMemo<TagDatum[]>(() => {
-		const total = rows.reduce((sum, row) => sum + (row.volume_usd ?? 0), 0);
-		return rows.map((row) => ({
+		const total = currentRows.reduce((sum, row) => sum + (row.volume_usd ?? 0), 0);
+		return currentRows.map((row) => ({
 			tag: row.tag,
 			label: formatCapitalizeWords(row.tag),
 			slug: slugify(row.tag),
@@ -153,9 +168,9 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 			distinctBuilders: row.distinct_builders ?? 0,
 			sharePct: total > 0 ? ((row.volume_usd ?? 0) / total) * 100 : 0,
 		}));
-	}, [rows]);
+	}, [currentRows]);
 
-	if (rows.length === 0) {
+	if (currentRows.length === 0) {
 		return (
 			<Card variant="analytics">
 				<CardContent className="text-sm text-muted-foreground">
@@ -195,6 +210,24 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 					ariaLabelPrefix="Rank tags by"
 					transformParams={(params, next) => {
 						params.set("tagSort", next);
+					}}
+					pending={isPending}
+					onNavigate={({ href, next }) => {
+						window.history.replaceState(window.history.state, "", href);
+						startTransition(async () => {
+							const result = await getBuilderGlobalTagsAction({
+								sort: next,
+								timeframe,
+							});
+
+							setTagState({
+								sourceRows: rows,
+								sourceSort: sort,
+								sourceTimeframe: timeframe,
+								rows: result.rows,
+								sort: result.sort,
+							});
+						});
 					}}
 				/>
 			</div>

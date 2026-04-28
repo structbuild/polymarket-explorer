@@ -2,12 +2,10 @@
 
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { ChevronsDownIcon } from "lucide-react";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useTransition } from "react";
 import type { BuilderLatestRow, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import { BuildersTable } from "@/components/builders/builders-table";
-import { Button } from "@/components/ui/button";
 import { DEFAULT_BUILDER_SORT, DEFAULT_BUILDER_TIMEFRAME } from "@/lib/struct/builder-shared";
 
 type SortableBuildersTableProps = {
@@ -15,7 +13,9 @@ type SortableBuildersTableProps = {
 	sort: BuilderSortBy;
 	timeframe: BuilderTimeframe;
 	rankOffset?: number;
-	initialLimit?: number;
+	pageIndex: number;
+	pageSize: number;
+	hasNextPage: boolean;
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
 };
@@ -27,25 +27,14 @@ export function SortableBuildersTable({
 	sort,
 	timeframe,
 	rankOffset,
-	initialLimit,
+	pageIndex,
+	pageSize,
+	hasNextPage,
 	toolbarLeft,
 	toolbarRight,
 }: SortableBuildersTableProps) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
-	const [showAll, setShowAll] = useState(false);
-	const isCapped = initialLimit !== undefined && builders.length > initialLimit && !showAll;
-	const visibleBuilders = useMemo(
-		() => (isCapped ? builders.slice(0, initialLimit) : builders),
-		[builders, initialLimit, isCapped],
-	);
-	const showAllButton =
-		initialLimit !== undefined && builders.length > initialLimit && !showAll ? (
-			<Button variant="outline" size="sm" onClick={() => setShowAll(true)}>
-				<ChevronsDownIcon data-icon="inline-start" />
-				Show all
-			</Button>
-		) : null;
 
 	const navigate = useCallback(
 		(patch: { sort?: BuilderSortBy; timeframe?: BuilderTimeframe }) => {
@@ -63,6 +52,7 @@ export function SortableBuildersTable({
 			} else {
 				params.set("timeframe", nextTimeframe);
 			}
+			params.delete("page");
 			const qs = params.toString();
 			const href = (qs ? `${LISTING_PATH}?${qs}` : LISTING_PATH) as Route;
 			startTransition(() => {
@@ -80,18 +70,37 @@ export function SortableBuildersTable({
 		[navigate, sort],
 	);
 
+	const handlePageIndexChange = useCallback(
+		(nextPageIndex: number) => {
+			const nextPage = Math.max(1, nextPageIndex + 1);
+			const params = new URLSearchParams(window.location.search);
+			if (nextPage === 1) {
+				params.delete("page");
+			} else {
+				params.set("page", String(nextPage));
+			}
+			const qs = params.toString();
+			const href = (qs ? `${LISTING_PATH}?${qs}` : LISTING_PATH) as Route;
+			startTransition(() => {
+				router.replace(href, { scroll: false });
+			});
+		},
+		[router],
+	);
+
 	return (
-		<div className="space-y-3">
-			<BuildersTable
-				builders={visibleBuilders}
-				sort={sort}
-				timeframe={timeframe}
-				rankOffset={rankOffset}
-				toolbarLeft={toolbarLeft}
-				toolbarRight={toolbarRight}
-				onSortChange={handleSortChange}
-			/>
-			{showAllButton ? <div className="flex justify-center">{showAllButton}</div> : null}
-		</div>
+		<BuildersTable
+			builders={builders}
+			sort={sort}
+			timeframe={timeframe}
+			rankOffset={rankOffset}
+			pageIndex={pageIndex}
+			pageSize={pageSize}
+			hasNextPage={hasNextPage}
+			toolbarLeft={toolbarLeft}
+			toolbarRight={toolbarRight}
+			onSortChange={handleSortChange}
+			onPageIndexChange={handlePageIndexChange}
+		/>
 	);
 }

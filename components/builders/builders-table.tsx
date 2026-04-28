@@ -219,9 +219,13 @@ type BuildersTableProps = {
 	sort: BuilderSortBy;
 	timeframe: BuilderTimeframe;
 	rankOffset?: number;
+	pageIndex?: number;
+	pageSize?: number;
+	hasNextPage?: boolean;
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
 	onSortChange: (sortBy: BuilderSortBy) => void;
+	onPageIndexChange?: (pageIndex: number) => void;
 };
 
 export function BuildersTable({
@@ -229,9 +233,13 @@ export function BuildersTable({
 	sort,
 	timeframe,
 	rankOffset = 0,
+	pageIndex = 0,
+	pageSize = 50,
+	hasNextPage = false,
 	toolbarLeft,
 	toolbarRight,
 	onSortChange,
+	onPageIndexChange,
 }: BuildersTableProps) {
 	const columns = useMemo(
 		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }, timeframe),
@@ -240,7 +248,12 @@ export function BuildersTable({
 
 	return (
 		<DataTable
-			paginationMode="none"
+			paginationMode="server"
+			pageIndex={pageIndex}
+			pageSize={pageSize}
+			hasNextPage={hasNextPage}
+			onPageIndexChange={onPageIndexChange ?? (() => {})}
+			storageKey="builders-leaderboard"
 			columns={columns}
 			data={builders}
 			emptyMessage="No builders found."

@@ -8,7 +8,7 @@ import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
 
-import { refreshTraderTabAction } from "@/app/actions";
+import { getTraderActivityPageAction, refreshTraderTabAction } from "@/app/actions";
 import type { PaginatedResource } from "@/lib/struct/types";
 import { traderSearchParamParsers } from "@/lib/trader-search-params";
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared";
@@ -189,31 +189,44 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 ];
 
 type Props = {
+	address: string;
 	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
 };
 
-export default function TraderActivity({ page, pageNumber }: Props) {
+export default function TraderActivity({ address, page, pageNumber }: Props) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
+	const [pageState, setPageState] = useState(() => ({
+		sourcePage: page,
+		sourcePageNumber: pageNumber,
+		page,
+		pageNumber,
+	}));
 	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
 		scroll: false,
-		shallow: false,
+		shallow: true,
 		startTransition,
 	});
 
 	const [showUnknown, setShowUnknown] = useState(false);
 
-	const hasUnknownMarkets = page.data.some((trade) => !trade.question);
+	const hasLocalPage =
+		pageState.sourcePage === page &&
+		pageState.sourcePageNumber === pageNumber;
+	const currentPage = hasLocalPage ? pageState.page : page;
+	const currentPageNumber = hasLocalPage ? pageState.pageNumber : pageNumber;
+
+	const hasUnknownMarkets = currentPage.data.some((trade) => !trade.question);
 
 	const data = useMemo(() => {
 		if (showUnknown) {
-			return page.data;
+			return currentPage.data;
 		}
-		return page.data.filter((trade) => trade.question);
-	}, [page.data, showUnknown]);
+		return currentPage.data.filter((trade) => trade.question);
+	}, [currentPage.data, showUnknown]);
 
 	return (
 		<DataTable
@@ -247,18 +260,32 @@ export default function TraderActivity({ page, pageNumber }: Props) {
 			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"
-			pageIndex={pageNumber - 1}
-			pageSize={page.pageSize}
-			hasNextPage={page.hasMore}
+			pageIndex={currentPageNumber - 1}
+			pageSize={currentPage.pageSize}
+			hasNextPage={currentPage.hasMore}
 			isLoading={isPending}
 			onPageIndexChange={(nextPageIndex) => {
 				const nextPageNumber = Math.min(Math.max(nextPageIndex + 1, 1), maxTraderPageNumber);
 
-				if (nextPageNumber === pageNumber) {
+				if (nextPageNumber === currentPageNumber) {
 					return;
 				}
 
-				void setSearchParams({ activityPage: nextPageNumber });
+				startTransition(async () => {
+					void setSearchParams({ activityPage: nextPageNumber });
+
+					const result = await getTraderActivityPageAction({
+						address,
+						pageNumber: nextPageNumber,
+					});
+
+					setPageState({
+						sourcePage: page,
+						sourcePageNumber: pageNumber,
+						page: result.page,
+						pageNumber: result.pageNumber,
+					});
+				});
 			}}
 		/>
 	);
