@@ -18,6 +18,7 @@ import type {
 import type { PaginatedResource } from "@/lib/struct/types"
 import { traderSearchParamParsers } from "@/lib/trader-search-params"
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
+import { getTraderPositionPnlDisplay } from "@/lib/trader-position-pnl"
 
 import { Badge } from "../ui/badge"
 import { DataTable } from "../ui/data-table"
@@ -49,6 +50,8 @@ function formatSharesLine(row: TraderOutcomePnlEntry) {
 }
 
 const defaultColumnVisibility: VisibilityState = {
+	realized_pnl: false,
+	current_value: false,
 	total_shares_bought: false,
 	total_shares_sold: false,
 	total_buy_usd: false,
@@ -175,6 +178,35 @@ function buildColumns(
 						)}{" "}
 						<span className="text-muted-foreground">/</span>{" "}
 						{formatPriceCents(entry.current_price ?? entry.avg_exit_price)}
+					</p>
+				)
+			},
+		},
+		{
+			id: "pnl",
+			meta: { title: "PnL" },
+			header: () => (
+				<span className="flex items-center gap-1.5">
+					PnL
+					<TooltipWrapper content="Unrealized PnL on currently-held shares: shares × (current price − entry price). Closed positions show realized PnL.">
+						<InfoIcon className="size-4 text-muted-foreground" />
+					</TooltipWrapper>
+				</span>
+			),
+			size: 150,
+			cell: ({ row }) => {
+				const entry = row.original
+				const pnl = getTraderPositionPnlDisplay(entry)
+
+				return (
+					<p className={cn(pnlColorClass(pnl.colorValue))}>
+						{formatNumber(pnl.value, { currency: true, compact: true })}
+						{pnl.percent != null ? (
+							<span className="text-muted-foreground">
+								{" "}
+								({formatNumber(pnl.percent, { percent: true })})
+							</span>
+						) : null}
 					</p>
 				)
 			},

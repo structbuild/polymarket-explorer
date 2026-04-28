@@ -1,15 +1,8 @@
 import type { MetricPctChange } from "@structbuild/sdk";
 import { Suspense } from "react";
 
-import {
-	AnalyticsChartsGrid,
-	AnalyticsChartsGridFallback,
-	type AnalyticsMetricPlacement,
-} from "@/components/analytics/analytics-charts-grid";
-import {
-	AnalyticsKpiStrip,
-	AnalyticsKpiStripFallback,
-} from "@/components/analytics/analytics-kpi-strip";
+import { AnalyticsChartsGrid, AnalyticsChartsGridFallback, type AnalyticsMetricPlacement } from "@/components/analytics/analytics-charts-grid";
+import { AnalyticsKpiStrip, AnalyticsKpiStripFallback } from "@/components/analytics/analytics-kpi-strip";
 import { AnalyticsCapToggle } from "@/components/analytics/cap-toggle";
 import { AnalyticsRangeToggle } from "@/components/analytics/range-toggle";
 import { AnalyticsResolutionToggle } from "@/components/analytics/resolution-toggle";
@@ -86,14 +79,8 @@ async function ChartsLoader({
 	refreshedAt: Date;
 	allowedComponents?: readonly VolumeComponentId[];
 }) {
-	const raw =
-		view === "cumulative"
-			? await fetchers.timeseries()
-			: await (deltasPromise ?? fetchers.deltas());
-	const points = restrictAnalyticsComponents(
-		applyAnalyticsCap(raw, endTime, cap ?? false),
-		allowedComponents,
-	);
+	const raw = view === "cumulative" ? await fetchers.timeseries() : await (deltasPromise ?? fetchers.deltas());
+	const points = restrictAnalyticsComponents(applyAnalyticsCap(raw, endTime, cap ?? false), allowedComponents);
 	return (
 		<AnalyticsChartsGrid
 			points={points}
@@ -110,7 +97,7 @@ async function ChartsLoader({
 }
 
 type AnalyticsSectionProps = {
-	title: string;
+	title?: string;
 	description?: string;
 	range: AnalyticsRange;
 	view: AnalyticsView;
@@ -158,26 +145,18 @@ export function AnalyticsSection({
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-				<div className="flex flex-col gap-0.5">
-					<Heading className="text-lg font-medium text-foreground/90">
-						{title}
-					</Heading>
-					{description ? (
-						<p className="text-sm text-muted-foreground">{description}</p>
-					) : null}
-				</div>
+				{title && (
+					<div className="flex flex-col gap-0.5">
+						<Heading className="text-lg font-medium text-foreground/90">{title}</Heading>
+						{description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+					</div>
+				)}
 				{showControls ? (
 					<div className="flex flex-wrap items-center gap-2">
 						{view === "deltas" ? <AnalyticsRangeToggle range={range} defaultRange={defaultRange} /> : null}
-						<AnalyticsResolutionToggle
-							range={range}
-							resolution={resolution}
-							defaultResolution={defaultResolution}
-						/>
+						<AnalyticsResolutionToggle range={range} resolution={resolution} defaultResolution={defaultResolution} />
 						<AnalyticsViewToggle view={view} />
-						{endTime !== undefined ? (
-							<AnalyticsCapToggle cap={cap} defaultCap={defaultCap} />
-						) : null}
+						{endTime !== undefined ? <AnalyticsCapToggle cap={cap} defaultCap={defaultCap} /> : null}
 					</div>
 				) : null}
 			</div>

@@ -18,6 +18,7 @@ import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
 import type { PaginatedResource } from "@/lib/struct/types";
+import { defaultTraderPositionSortBy } from "@/lib/trader-search-params-shared";
 import { normalizeWalletAddress } from "@/lib/utils";
 
 export const defaultTraderTablePageSize = 25;
@@ -256,7 +257,7 @@ async function getTraderPositionsPageCached(
 			status,
 			...restOptions,
 			limit: requestLimit,
-			sort_by: sort_by ?? (status === "open" ? "current_value" : "realized_pnl_usd"),
+			sort_by: sort_by ?? defaultTraderPositionSortBy[status],
 			sort_direction: sort_direction ?? "desc",
 		};
 		const response = await client.trader.getTraderOutcomePnl(params);

@@ -62,7 +62,19 @@ const BUILDERS_STACKED_TOP_N = 7;
 const BUILDERS_GLOBAL_TAGS_LIMIT = 12;
 const BUILDER_ANALYTICS_COMPONENTS = ["buy", "sell"] as const satisfies readonly VolumeComponentId[];
 const BUILDER_ANALYTICS_METRIC_PLACEMENTS = [
-	{ metric: "avgTradeSize", after: "buyDistribution" },
+	{ metric: "builderFees", after: "volume" },
+	{ metric: "newUsers", after: "builderFees" },
+	{ metric: "uniqueTraders", after: "newUsers" },
+	{ metric: "makersTakers", after: "uniqueTraders" },
+	{ metric: "tradeTypes", after: "makersTakers" },
+	{ metric: "avgTradeSize", after: "tradeTypes" },
+	{ metric: "fees", after: "avgTradeSize" },
+	{ metric: "avgRevenuePerUser", after: "fees" },
+	{ metric: "avgVolumePerUser", after: "avgRevenuePerUser" },
+	{ metric: "yesNo", after: "avgVolumePerUser" },
+	{ metric: "yesNoCount", after: "yesNo" },
+	{ metric: "shares", after: "yesNoCount" },
+	{ metric: "buyDistribution", after: "shares" },
 ] as const;
 const BUILDER_GLOBAL_TAG_SORT_OPTIONS = [
 	"volume",

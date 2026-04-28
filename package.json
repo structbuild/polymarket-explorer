@@ -7,13 +7,14 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:pnl": "node --test tests/trader-position-pnl.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
-    "@structbuild/sdk": "0.4.2-staging.4",
+    "@structbuild/sdk": "0.4.2-staging.5",
     "@tanstack/react-hotkeys": "^0.4.2",
     "@tanstack/react-table": "^8.21.3",
     "@vercel/analytics": "^2.0.1",

@@ -5,6 +5,7 @@ import type {
 	BuilderFeeRateHistoryEntry,
 	BuilderGlobalLatestRow,
 	BuilderLatestRow,
+	BuilderMetadata,
 	BuilderSortBy,
 	BuilderTagRow,
 	BuilderTimeframe,
@@ -32,6 +33,7 @@ import {
 
 export const structBuildersListCacheTag = "struct-builders-list";
 export const structBuilderByCodeCacheTag = "struct-builder-by-code";
+export const structBuilderMetadataCacheTag = "struct-builder-metadata";
 export const structBuilderConcentrationCacheTag = "struct-builder-concentration";
 export const structBuilderFeesCacheTag = "struct-builder-fees";
 export const structBuilderFeesHistoryCacheTag = "struct-builder-fees-history";
@@ -144,6 +146,24 @@ export async function getBuilderByCode(
 	} catch (error) {
 		if (readStatus(error) === 404) return null;
 		logStructError(`getBuilderByCode:${code}:${timeframe}`, error);
+		return null;
+	}
+}
+
+export async function getBuilderMetadata(code: string): Promise<BuilderMetadata | null> {
+	"use cache";
+	cacheLife("hours");
+	cacheTag(structBuilderMetadataCacheTag);
+
+	const client = getStructClient();
+	if (!client) return null;
+
+	try {
+		const response = await client.builders.getBuilderMetadata({ builder_code: code });
+		return response.data ?? null;
+	} catch (error) {
+		if (readStatus(error) === 404) return null;
+		logStructError(`getBuilderMetadata:${code}`, error);
 		return null;
 	}
 }
@@ -318,7 +338,7 @@ export async function getBuilderComposition(
 			top_n: topN,
 			series,
 		});
-		return response.data ?? [];
+		return response.data?.data ?? [];
 	} catch (error) {
 		logStructError(`getBuilderComposition:${metric}:${resolution}:${countBack}:${topN}:${series}`, error);
 		return [];

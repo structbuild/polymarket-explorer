@@ -26,8 +26,8 @@ export const traderSortDirectionValues = ["asc", "desc"] as const;
 export type TraderSortDirection = (typeof traderSortDirectionValues)[number];
 
 export const defaultTraderPositionSortBy = {
-	open: "current_value",
-	closed: "realized_pnl_usd",
+	open: "last_trade_at",
+	closed: "last_trade_at",
 } as const satisfies Record<"open" | "closed", TraderPositionSortBy>;
 
 export { pnlTimeframeValues, type PnlTimeframe } from "@/lib/polymarket/pnl-timeframes";

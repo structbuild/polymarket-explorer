@@ -12,13 +12,21 @@ import { BuilderFeeHistory } from "@/components/builders/builder-fee-history";
 import { BuilderRetentionHeatmap } from "@/components/builders/builder-retention-heatmap";
 import { BuilderStatsRow } from "@/components/builders/builder-stats-row";
 import { BuilderTagBreakdown } from "@/components/builders/builder-tag-breakdown";
-import { BuilderPageHeading } from "@/components/builders/builder-page-heading";
+import { BuilderPageHeader } from "@/components/builders/builder-page-header";
 import { BuilderTopTraders } from "@/components/builders/builder-top-traders";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
+import {
+	builderOgImageSize,
+	getBuilderOgImageAlt,
+	getBuilderOgImageUrl,
+	getBuilderPageDescription,
+	getBuilderPageTitle,
+	getBuilderSocialTitle,
+	loadBuilderOpenGraphIdentity,
+} from "@/lib/builder-open-graph";
 import { getSiteUrl } from "@/lib/env";
-import { formatNumber } from "@/lib/format";
-import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
+import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { formatBuilderCodeDisplay } from "@/lib/utils";
 import {
 	getBuilderAnalyticsChanges,
@@ -32,6 +40,7 @@ import {
 import {
 	getAllBuilderCodes,
 	getBuilderByCode,
+	getBuilderMetadata,
 	getBuilderConcentration,
 	getBuilderFees,
 	getBuilderFeesHistory,
@@ -41,6 +50,20 @@ import {
 } from "@/lib/struct/builder-queries";
 
 const BUILDER_CODE_PLACEHOLDER = "__placeholder__";
+const BUILDER_ANALYTICS_APPEND_METRICS = ["builderFees", "newUsers"] as const;
+const BUILDER_ANALYTICS_METRIC_PLACEMENTS = [
+	{ metric: "builderFees", after: "volume" },
+	{ metric: "newUsers", after: "builderFees" },
+	{ metric: "uniqueTraders", after: "newUsers" },
+	{ metric: "makersTakers", after: "uniqueTraders" },
+	{ metric: "tradeTypes", after: "makersTakers" },
+	{ metric: "avgTradeSize", after: "tradeTypes" },
+	{ metric: "fees", after: "avgTradeSize" },
+	{ metric: "yesNo", after: "fees" },
+	{ metric: "yesNoCount", after: "yesNo" },
+	{ metric: "shares", after: "yesNoCount" },
+	{ metric: "buyDistribution", after: "shares" },
+] as const;
 
 type Props = {
 	params: Promise<{ code: string }>;
@@ -61,32 +84,43 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { code } = await params;
-	const builder = await getBuilderByCode(code);
+	const [builder, identity] = await Promise.all([
+		getBuilderByCode(code),
+		loadBuilderOpenGraphIdentity(code),
+	]);
 
 	if (!builder) {
 		return {};
 	}
 
-	const volume =
-		builder.volume_usd > 0
-			? formatNumber(builder.volume_usd, { compact: true, currency: true })
-			: null;
-	const traders =
-		builder.unique_traders > 0
-			? formatNumber(builder.unique_traders, { decimals: 0 })
-			: null;
 	const isEmpty = builder.volume_usd === 0 && builder.txn_count === 0;
-
-	const stats: string[] = [];
-	if (volume) stats.push(`${volume} volume`);
-	if (traders) stats.push(`${traders} traders`);
-	const descriptionStats = stats.length ? `${stats.join(", ")}. ` : "";
-	const codeLabel = formatBuilderCodeDisplay(code);
+	const { displayName, codeLabel } = identity;
+	const title = getBuilderPageTitle(displayName, builder);
+	const socialTitle = getBuilderSocialTitle(displayName, builder);
+	const description = getBuilderPageDescription(displayName, codeLabel, builder);
+	const ogImage = getBuilderOgImageUrl(code);
+	const ogAlt = getBuilderOgImageAlt(displayName);
 
 	return buildPageMetadata({
-		title: buildEntityPageTitle(codeLabel, "Polymarket Builder"),
-		description: `Builder ${codeLabel} on Polymarket. ${descriptionStats}Routing volume, fees earned, top traders, retention, and tag breakdown.`,
+		title,
+		description,
 		canonical: `/builders/${encodeURIComponent(code)}`,
+		openGraph: {
+			title: socialTitle,
+			type: "profile",
+			images: [
+				{
+					url: ogImage,
+					width: builderOgImageSize.width,
+					height: builderOgImageSize.height,
+					alt: ogAlt,
+				},
+			],
+		},
+		twitter: {
+			title: socialTitle,
+			images: [ogImage],
+		},
 		...(isEmpty && { robots: { index: false, follow: true } }),
 	});
 }
@@ -96,7 +130,7 @@ export default async function BuilderPage({ params, searchParams }: Props) {
 
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-			<Suspense fallback={<BuilderPageFallback code={code} />}>
+			<Suspense fallback={<BuilderPageFallback />}>
 				<BuilderPageContent code={code} searchParams={searchParams} />
 			</Suspense>
 		</div>
@@ -120,14 +154,16 @@ async function BuilderPageContent({
 		notFound();
 	}
 
-	const [fees, concentration, retention, topTraders, tagBreakdown, feeHistory] = await Promise.all([
-		getBuilderFees(code),
-		getBuilderConcentration(code, builderTimeframe),
-		getBuilderRetention(code),
-		getBuilderTopTraders(code, "volume", builderTimeframe, 25),
-		getBuilderTags(code, "volume", builderTimeframe, 12),
-		getBuilderFeesHistory(code, 25),
-	]);
+	const [fees, concentration, retention, topTraders, tagBreakdown, feeHistory, metadata] =
+		await Promise.all([
+			getBuilderFees(code),
+			getBuilderConcentration(code, builderTimeframe),
+			getBuilderRetention(code),
+			getBuilderTopTraders(code, "volume", builderTimeframe, 25),
+			getBuilderTags(code, "volume", builderTimeframe, 12),
+			getBuilderFeesHistory(code, 25),
+			getBuilderMetadata(code),
+		]);
 
 	const siteUrl = getSiteUrl();
 	const builderCode = builder.builder_code;
@@ -151,11 +187,14 @@ async function BuilderPageContent({
 			/>
 			<JsonLd data={jsonLd} />
 
-			<div className="mt-6 space-y-8">
-				<div className="flex flex-col gap-6">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-						<BuilderPageHeading builderCode={builderCode} />
-						<div className="flex flex-wrap items-center gap-2">
+			<div className="mt-6 space-y-6">
+				<div className="flex flex-col gap-6 mb-10">
+					<BuilderPageHeader builderCode={builderCode} metadata={metadata} />
+				</div>
+
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+						<h2 className="text-lg font-medium text-foreground/90">Analytics</h2>
+						<div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
 							{view === "deltas" ? (
 								<AnalyticsRangeToggle range={range} defaultRange={defaultRange} />
 							) : null}
@@ -167,11 +206,8 @@ async function BuilderPageContent({
 							<AnalyticsViewToggle view={view} />
 						</div>
 					</div>
-					<BuilderStatsRow row={builder} fees={fees} />
-				</div>
-
+				<BuilderStatsRow row={builder} fees={fees} />
 				<AnalyticsSection
-					title="Analytics"
 					range={range}
 					view={view}
 					resolution={resolution}
@@ -186,6 +222,8 @@ async function BuilderPageContent({
 						timeseries: () => getBuilderAnalyticsTimeseries(code, range, resolution),
 						changes: () => getBuilderAnalyticsChanges(code, range),
 					}}
+					appendMetrics={BUILDER_ANALYTICS_APPEND_METRICS}
+					metricPlacements={BUILDER_ANALYTICS_METRIC_PLACEMENTS}
 				/>
 
 				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -204,15 +242,25 @@ async function BuilderPageContent({
 	);
 }
 
-function BuilderPageFallback({ code }: { code: string }) {
+function BuilderPageFallback() {
 	return (
 		<div className="mt-6 space-y-6">
-			<div>
-				<div className="text-foreground/40">
-					<BuilderPageHeading builderCode={code} />
+			<div className="flex flex-col gap-6">
+				<div className="flex min-h-36 min-w-0 flex-col gap-4 overflow-hidden rounded-lg bg-card p-4 sm:flex-row sm:items-start sm:gap-5 sm:p-6">
+					<div className="size-16 animate-pulse rounded-lg bg-muted sm:size-24" />
+					<div className="min-w-0 flex-1 space-y-3">
+						<div className="h-9 w-48 max-w-full animate-pulse rounded bg-muted" />
+						<div className="h-4 w-64 max-w-full animate-pulse rounded bg-muted" />
+						<div className="h-14 w-full max-w-xl animate-pulse rounded bg-muted" />
+					</div>
 				</div>
-				<div className="mt-2 h-4 w-72 animate-pulse rounded bg-muted" />
-				<div className="mt-3 h-4 w-96 animate-pulse rounded bg-muted" />
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+					<div className="h-7 w-28 animate-pulse rounded bg-muted" />
+					<div className="flex shrink-0 flex-wrap justify-end gap-2">
+						<div className="h-9 w-30 animate-pulse rounded-md bg-muted" />
+						<div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
+					</div>
+				</div>
 			</div>
 			<div className="h-64 rounded-lg bg-card" />
 		</div>
