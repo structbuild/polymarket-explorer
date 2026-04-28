@@ -33,6 +33,24 @@ function removeSessionStorageItem(key: string) {
 	}
 }
 
+function restoreScrollY(scrollY: number) {
+	window.scrollTo({ top: scrollY, left: window.scrollX, behavior: "instant" });
+}
+
+function scheduleScrollYPreservation(scrollY: number) {
+	restoreScrollY(scrollY);
+
+	const animationFrameId = window.requestAnimationFrame(() => restoreScrollY(scrollY));
+	const timeoutIds = [0, 50, 100, 200, 400].map((delay) =>
+		window.setTimeout(() => restoreScrollY(scrollY), delay),
+	);
+
+	return () => {
+		window.cancelAnimationFrame(animationFrameId);
+		timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+	};
+}
+
 type Props<T extends string> = {
 	paramKey: string;
 	value: T;
@@ -58,33 +76,26 @@ export function AnalyticsUrlToggle<T extends string>({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [isPending, startTransition] = useTransition();
-	const rootRef = useRef<HTMLDivElement>(null);
 	const shouldScrollToToggleRef = useRef(false);
 	const scrollStorageKey = `${urlToggleScrollStoragePrefix}${pathname}:${paramKey}`;
 
 	useEffect(() => {
-		const shouldRestoreFromStorage = getSessionStorageItem(scrollStorageKey) === "1";
+		const storedScrollY = getSessionStorageItem(scrollStorageKey);
 
-		if (!shouldScrollToToggleRef.current && !shouldRestoreFromStorage) {
+		if (!shouldScrollToToggleRef.current && !storedScrollY) {
 			return;
 		}
 
 		shouldScrollToToggleRef.current = false;
 		removeSessionStorageItem(scrollStorageKey);
 
-		const scrollToToggle = () => {
-			rootRef.current?.scrollIntoView({ block: "nearest" });
-		};
+		const scrollY = Number(storedScrollY);
 
-		const animationFrameId = window.requestAnimationFrame(scrollToToggle);
-		const timeoutId = window.setTimeout(scrollToToggle, 100);
-		const settledTimeoutId = window.setTimeout(scrollToToggle, 300);
+		if (!Number.isFinite(scrollY)) {
+			return;
+		}
 
-		return () => {
-			window.cancelAnimationFrame(animationFrameId);
-			window.clearTimeout(timeoutId);
-			window.clearTimeout(settledTimeoutId);
-		};
+		return scheduleScrollYPreservation(scrollY);
 	}, [scrollStorageKey, value]);
 
 	function handleChange(raw: string | string[] | null) {
@@ -103,15 +114,18 @@ export function AnalyticsUrlToggle<T extends string>({
 
 		const query = params.toString();
 		const href = (query ? `${pathname}?${query}` : pathname) as Route;
+		const scrollY = window.scrollY;
+
 		shouldScrollToToggleRef.current = true;
-		setSessionStorageItem(scrollStorageKey, "1");
+		setSessionStorageItem(scrollStorageKey, String(scrollY));
+		scheduleScrollYPreservation(scrollY);
 		startTransition(() => {
 			router.replace(href, { scroll: false });
 		});
 	}
 
 	return (
-		<div ref={rootRef} className="scroll-mt-6">
+		<div>
 			<ToggleGroup
 				value={[value]}
 				onValueChange={handleChange}

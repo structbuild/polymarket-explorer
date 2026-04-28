@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import type { BuilderLatestRow } from "@structbuild/sdk";
+import type { BuilderTimeframe } from "@structbuild/sdk";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
+import { AnalyticsRangeToggle } from "@/components/analytics/range-toggle";
+import { AnalyticsResolutionToggle } from "@/components/analytics/resolution-toggle";
+import { AnalyticsViewToggle } from "@/components/analytics/view-toggle";
 import { BuilderConcentrationCard } from "@/components/builders/builder-concentration-card";
 import { BuilderFeeHistory } from "@/components/builders/builder-fee-history";
 import { BuilderRetentionHeatmap } from "@/components/builders/builder-retention-heatmap";
@@ -22,7 +25,10 @@ import {
 	getBuilderAnalyticsDeltas,
 	getBuilderAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
-import { parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import {
+	type AnalyticsRange,
+	parseAnalyticsParams,
+} from "@/lib/struct/analytics-shared";
 import {
 	getAllBuilderCodes,
 	getBuilderByCode,
@@ -40,6 +46,10 @@ type Props = {
 	params: Promise<{ code: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function rangeToBuilderTimeframe(range: AnalyticsRange): BuilderTimeframe {
+	return range === "all" ? "lifetime" : range;
+}
 
 export async function generateStaticParams() {
 	const codes = (await getAllBuilderCodes(10)).map(({ code }) => code);
@@ -83,43 +93,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BuilderPage({ params, searchParams }: Props) {
 	const { code } = await params;
-	const builder = await getBuilderByCode(code);
-
-	if (!builder) {
-		notFound();
-	}
 
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Suspense fallback={<BuilderPageFallback code={code} />}>
-				<BuilderPageContent code={code} builder={builder} searchParams={searchParams} />
+				<BuilderPageContent code={code} searchParams={searchParams} />
 			</Suspense>
 		</div>
 	);
 }
 
 async function BuilderPageContent({
-	builder,
 	code,
 	searchParams,
 }: {
-	builder: BuilderLatestRow;
 	code: string;
 	searchParams: Props["searchParams"];
 }) {
-	const resolved = await searchParams;
-	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(
-		resolved,
-		"scoped",
-		"30d",
-	);
+	const resolvedSearchParams = await searchParams;
+	const analyticsParams = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
+	const { view, range, resolution, defaultResolution, defaultRange } = analyticsParams;
+	const builderTimeframe = rangeToBuilderTimeframe(range);
+	const builder = await getBuilderByCode(code, builderTimeframe);
+
+	if (!builder) {
+		notFound();
+	}
 
 	const [fees, concentration, retention, topTraders, tagBreakdown, feeHistory] = await Promise.all([
 		getBuilderFees(code),
-		getBuilderConcentration(code, "30d"),
+		getBuilderConcentration(code, builderTimeframe),
 		getBuilderRetention(code),
-		getBuilderTopTraders(code, "volume", "lifetime", 25),
-		getBuilderTags(code, "volume", "lifetime", 12),
+		getBuilderTopTraders(code, "volume", builderTimeframe, 25),
+		getBuilderTags(code, "volume", builderTimeframe, 12),
 		getBuilderFeesHistory(code, 25),
 	]);
 
@@ -147,7 +153,20 @@ async function BuilderPageContent({
 
 			<div className="mt-6 space-y-8">
 				<div className="flex flex-col gap-6">
-					<BuilderPageHeading builderCode={builderCode} />
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+						<BuilderPageHeading builderCode={builderCode} />
+						<div className="flex flex-wrap items-center gap-2">
+							{view === "deltas" ? (
+								<AnalyticsRangeToggle range={range} defaultRange={defaultRange} />
+							) : null}
+							<AnalyticsResolutionToggle
+								range={range}
+								resolution={resolution}
+								defaultResolution={defaultResolution}
+							/>
+							<AnalyticsViewToggle view={view} />
+						</div>
+					</div>
 					<BuilderStatsRow row={builder} fees={fees} />
 				</div>
 
@@ -160,6 +179,8 @@ async function BuilderPageContent({
 					defaultRange={defaultRange}
 					pathname={`/builders/${encodeURIComponent(builderCode)}`}
 					allowedComponents={["buy", "sell"]}
+					showControls={false}
+					showKpis={false}
 					fetchers={{
 						deltas: () => getBuilderAnalyticsDeltas(code, range, resolution),
 						timeseries: () => getBuilderAnalyticsTimeseries(code, range, resolution),

@@ -127,6 +127,8 @@ type AnalyticsSectionProps = {
 	defaultCap?: boolean;
 	allowedComponents?: readonly VolumeComponentId[];
 	pathname: string;
+	showControls?: boolean;
+	showKpis?: boolean;
 };
 
 export function AnalyticsSection({
@@ -147,10 +149,12 @@ export function AnalyticsSection({
 	defaultCap = false,
 	allowedComponents,
 	pathname,
+	showControls = true,
+	showKpis = true,
 }: AnalyticsSectionProps) {
 	const Heading = headingLevel;
 	const refreshedAt = new Date();
-	const deltasPromise = fetchers.deltas();
+	const deltasPromise = view === "deltas" || showKpis ? fetchers.deltas() : undefined;
 	return (
 		<div className="space-y-6 sm:space-y-8">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -162,28 +166,32 @@ export function AnalyticsSection({
 						<p className="text-sm text-muted-foreground">{description}</p>
 					) : null}
 				</div>
-				<div className="flex flex-wrap items-center gap-2">
-					{view === "deltas" ? <AnalyticsRangeToggle range={range} defaultRange={defaultRange} /> : null}
-					<AnalyticsResolutionToggle
-						range={range}
-						resolution={resolution}
-						defaultResolution={defaultResolution}
-					/>
-					<AnalyticsViewToggle view={view} />
-					{endTime !== undefined ? (
-						<AnalyticsCapToggle cap={cap} defaultCap={defaultCap} />
-					) : null}
-				</div>
+				{showControls ? (
+					<div className="flex flex-wrap items-center gap-2">
+						{view === "deltas" ? <AnalyticsRangeToggle range={range} defaultRange={defaultRange} /> : null}
+						<AnalyticsResolutionToggle
+							range={range}
+							resolution={resolution}
+							defaultResolution={defaultResolution}
+						/>
+						<AnalyticsViewToggle view={view} />
+						{endTime !== undefined ? (
+							<AnalyticsCapToggle cap={cap} defaultCap={defaultCap} />
+						) : null}
+					</div>
+				) : null}
 			</div>
 
-			<Suspense fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}>
-				<KpiLoader
-					deltasPromise={deltasPromise}
-					fetchers={fetchers}
-					excludeMetrics={excludeMetrics}
-					allowedComponents={allowedComponents}
-				/>
-			</Suspense>
+			{showKpis ? (
+				<Suspense fallback={<AnalyticsKpiStripFallback excludeMetrics={excludeMetrics} />}>
+					<KpiLoader
+						deltasPromise={deltasPromise ?? fetchers.deltas()}
+						fetchers={fetchers}
+						excludeMetrics={excludeMetrics}
+						allowedComponents={allowedComponents}
+					/>
+				</Suspense>
+			) : null}
 
 			<Suspense
 				fallback={
@@ -198,7 +206,7 @@ export function AnalyticsSection({
 				}
 			>
 				<ChartsLoader
-					deltasPromise={view === "deltas" ? deltasPromise : undefined}
+					deltasPromise={deltasPromise}
 					fetchers={fetchers}
 					view={view}
 					resolution={resolution}

@@ -62,6 +62,24 @@ function removeSessionStorageItem(key: string) {
 	}
 }
 
+function restoreScrollY(scrollY: number) {
+	window.scrollTo({ top: scrollY, left: window.scrollX, behavior: "instant" })
+}
+
+function scheduleScrollYPreservation(scrollY: number) {
+	restoreScrollY(scrollY)
+
+	const animationFrameId = window.requestAnimationFrame(() => restoreScrollY(scrollY))
+	const timeoutIds = [0, 50, 100, 200, 400].map((delay) =>
+		window.setTimeout(() => restoreScrollY(scrollY), delay),
+	)
+
+	return () => {
+		window.cancelAnimationFrame(animationFrameId)
+		timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId))
+	}
+}
+
 const DataTableTimeframeContext = createContext<MetricsTimeframeChoice | null>(null)
 
 export function useDataTableTimeframe(): MetricsTimeframeChoice | null {
@@ -550,18 +568,17 @@ function ServerPaginatedDataTable<TData>({
 	const [internalTimeframe, setInternalTimeframe] = useTimeframeState(storageKey, timeframes, defaultTimeframe)
 	const timeframe = controlledTimeframe ?? internalTimeframe
 	const setTimeframe = onControlledTimeframeChange ?? setInternalTimeframe
-	const tableTopRef = useRef<HTMLDivElement>(null)
 	const shouldScrollToTableRef = useRef(false)
 	const scrollStorageKey = storageKey
 		? `${serverPaginationScrollStoragePrefix}${storageKey}`
 		: null
 
 	useEffect(() => {
-		const shouldRestoreFromStorage =
+		const storedScrollY =
 			scrollStorageKey != null &&
-			getSessionStorageItem(scrollStorageKey) === "1"
+			getSessionStorageItem(scrollStorageKey)
 
-		if (!shouldScrollToTableRef.current && !shouldRestoreFromStorage) {
+		if (!shouldScrollToTableRef.current && !storedScrollY) {
 			return
 		}
 
@@ -570,26 +587,23 @@ function ServerPaginatedDataTable<TData>({
 			removeSessionStorageItem(scrollStorageKey)
 		}
 
-		const scrollToTable = () => {
-			tableTopRef.current?.scrollIntoView({ block: "start" })
+		const scrollY = Number(storedScrollY)
+
+		if (!Number.isFinite(scrollY)) {
+			return
 		}
 
-		const animationFrameId = window.requestAnimationFrame(scrollToTable)
-		const timeoutId = window.setTimeout(scrollToTable, 100)
-		const settledTimeoutId = window.setTimeout(scrollToTable, 300)
-
-		return () => {
-			window.cancelAnimationFrame(animationFrameId)
-			window.clearTimeout(timeoutId)
-			window.clearTimeout(settledTimeoutId)
-		}
+		return scheduleScrollYPreservation(scrollY)
 	}, [pageIndex, scrollStorageKey])
 
 	function requestPageIndexChange(nextPageIndex: number) {
+		const scrollY = window.scrollY
+
 		shouldScrollToTableRef.current = true
 		if (scrollStorageKey != null) {
-			setSessionStorageItem(scrollStorageKey, "1")
+			setSessionStorageItem(scrollStorageKey, String(scrollY))
 		}
+		scheduleScrollYPreservation(scrollY)
 		onPageIndexChange(nextPageIndex)
 	}
 
@@ -609,7 +623,7 @@ function ServerPaginatedDataTable<TData>({
 	const end = data.length === 0 ? 0 : pageIndex * pageSize + data.length
 
 	return (
-		<div ref={tableTopRef} className="scroll-mt-6">
+		<div>
 			<DataTableView
 				columns={columns}
 				data={data}
