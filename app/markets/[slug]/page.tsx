@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { MarketCharts, MarketChartsFallback } from "@/components/market/market-charts";
@@ -14,7 +15,7 @@ import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import { parseAnalyticsCap, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
-import { getAllMarketSlugs, getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
 
@@ -26,12 +27,6 @@ type Props = {
 };
 
 export async function generateStaticParams() {
-	const marketSlugs = await getAllMarketSlugs(10);
-
-	if (marketSlugs.length > 0) {
-		return marketSlugs.map(({ slug }) => ({ slug }));
-	}
-
 	return [{ slug: MARKET_SLUG_PLACEHOLDER }];
 }
 
@@ -105,6 +100,8 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 }
 
 export default async function MarketPage({ params, searchParams }: Props) {
+	await connection();
+
 	const { slug } = await params;
 
 	return (
