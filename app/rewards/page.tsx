@@ -2,10 +2,13 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 
+import { REWARDS_SKELETON_COLUMNS } from "@/components/rewards/rewards-table-columns";
 import { RewardsRefreshButton } from "@/components/rewards/rewards-refresh-button";
 import { RewardsTable } from "@/components/rewards/rewards-table";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
+import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getSiteUrl } from "@/lib/env";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getRewardsMarkets } from "@/lib/struct/queries";
@@ -51,7 +54,26 @@ async function RewardsContent() {
 }
 
 function RewardsFallback() {
-	return <div className="overflow-hidden rounded-lg bg-card px-4 py-12 text-center text-muted-foreground sm:px-6">Loading reward markets…</div>;
+	return (
+		<div role="status" aria-busy="true" aria-label="Loading reward markets">
+			<span className="sr-only">Loading reward markets</span>
+			<div aria-hidden="true">
+				<DataTableSkeleton columns={REWARDS_SKELETON_COLUMNS} rowCount={25} />
+			</div>
+			<div
+				aria-hidden="true"
+				className="mt-3 flex items-center justify-between gap-4 px-1 text-sm text-muted-foreground"
+			>
+				<Skeleton className="h-4 w-24" />
+				<div className="flex items-center gap-2">
+					<Skeleton className="h-7 w-20" />
+					<Skeleton className="h-7 w-16" />
+					<Skeleton className="size-8" />
+					<Skeleton className="size-8" />
+				</div>
+			</div>
+		</div>
+	);
 }
 
 export default function RewardsPage() {
