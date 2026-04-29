@@ -93,20 +93,34 @@ export function BuildersStackedChart({
 			}}
 			pending={isPending}
 			onNavigate={({ href, next }) => {
+				const previousHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+				const previousStackedState = stackedState;
+
 				window.history.replaceState(window.history.state, "", href);
 				startTransition(async () => {
-					const result = await getBuildersStackedDataAction({
-						metric: next,
-						timeframe,
-						resolution,
-					});
+					try {
+						const result = await getBuildersStackedDataAction({
+							metric: next,
+							timeframe,
+							resolution,
+						});
 
-					setStackedState({
-						sourceStacked: stacked,
-						sourceTimeframe: timeframe,
-						sourceResolution: resolution,
-						stacked: result,
-					});
+						setStackedState({
+							sourceStacked: stacked,
+							sourceTimeframe: timeframe,
+							sourceResolution: resolution,
+							stacked: result,
+						});
+					} catch (error) {
+						console.error("Failed to load builder breakdown data:", error);
+						window.history.replaceState(window.history.state, "", previousHref);
+						setStackedState({
+							sourceStacked: previousStackedState.sourceStacked,
+							sourceTimeframe: previousStackedState.sourceTimeframe,
+							sourceResolution: previousStackedState.sourceResolution,
+							stacked: previousStackedState.stacked,
+						});
+					}
 				});
 			}}
 		/>

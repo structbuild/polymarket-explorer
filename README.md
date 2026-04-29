@@ -100,6 +100,7 @@ All data fetching happens server-side. The Struct API key never reaches the clie
 | `STRUCTBUILD_API_KEY` | Yes | - | Struct SDK API key for fetching Polymarket data |
 | `STRUCTBUILD_TIMEOUT_MS` | No | `10000` | API request timeout in milliseconds |
 | `NEXT_PUBLIC_SITE_URL` | No | `http://localhost:3000` | Public URL used for metadata and sitemap generation |
+| `ENABLE_COMPONENT_CACHE` | No | `false` | Enables Next.js component caching when set to `true`, `1`, `yes`, or `on` |
 
 ## Project Structure
 

@@ -30,28 +30,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	});
 }
 
-export default async function TagPaginatedPage({ params, searchParams }: Props) {
-	const { page: raw } = await params;
-	const page = parsePageParam(raw);
-
-	if (!page) notFound();
-	if (page === 1) redirect("/tags");
-
+export default function TagPaginatedPage({ params, searchParams }: Props) {
 	return (
 		<Suspense fallback={<TagIndexPageFallback />}>
-			<TagPaginatedPageContent page={page} searchParams={searchParams} />
+			<TagPaginatedPageContent params={params} searchParams={searchParams} />
 		</Suspense>
 	);
 }
 
 async function TagPaginatedPageContent({
-	page,
+	params,
 	searchParams,
 }: {
-	page: number;
+	params: Props["params"];
 	searchParams: Props["searchParams"];
 }) {
 	await connection();
+
+	const { page: raw } = await params;
+	const page = parsePageParam(raw);
+
+	if (!page) notFound();
+	if (page === 1) redirect("/tags");
 
 	const resolved = await searchParams;
 	const sort = parseTagSort(resolved.sort);

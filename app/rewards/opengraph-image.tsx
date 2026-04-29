@@ -4,6 +4,7 @@ import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingP
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
 export const runtime = "nodejs";
+export const revalidate = 300;
 export const size = ogImageSize;
 export const contentType = "image/png";
 export const alt = "Polymarket liquidity rewards overview";
