@@ -10,6 +10,7 @@ import {
 } from "@/components/layout/footer-column";
 import { getFooterData } from "@/components/layout/footer-data";
 import { FooterStructCta } from "@/components/layout/footer-struct-column";
+import { FooterThemeToggle } from "@/components/layout/footer-theme-toggle";
 import { Github } from "@/components/ui/svgs/github";
 import { StructLogo } from "@/components/ui/svgs/struct-logo";
 import { formatCapitalizeWords } from "@/lib/format";
@@ -31,7 +32,8 @@ export default function Footer() {
 						<span className="text-sm text-muted-foreground">Polymarket Explorer</span>
 					</Link>
 					<div className="flex items-center gap-5">
-					<Link
+						<FooterThemeToggle />
+						<Link
 							href="https://x.com/structbuild"
 							prefetch={false}
 							target="_blank"
