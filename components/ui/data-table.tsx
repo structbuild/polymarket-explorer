@@ -53,6 +53,8 @@ type BaseDataTableProps<TData> = {
 	columnLayout?: "auto" | "fixed"
 	toolbarLeft?: React.ReactNode
 	toolbarRight?: React.ReactNode
+	toolbarAfterTimeframe?: React.ReactNode
+	homeToolbarGrid?: boolean
 	timeframes?: readonly MetricsTimeframeChoice[]
 	defaultTimeframe?: MetricsTimeframeChoice
 	controlledTimeframe?: MetricsTimeframeChoice
@@ -113,9 +115,11 @@ function DataTableView<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	toolbarAfterTimeframe,
 	timeframes,
 	timeframe,
 	onTimeframeChange,
+	homeToolbarGrid = false,
 }: DataTableViewProps<TData>) {
 	const hasRows = data.length > 0
 	const hideableColumns = table.getAllColumns().filter((col) => col.getCanHide())
@@ -175,16 +179,26 @@ function DataTableView<TData>({
 		</Popover>
 	) : null
 
+	const fullSpanRowClass = homeToolbarGrid ? "sm:col-span-2 sm:row-start-2" : ""
 	return (
 		<DataTableTimeframeContext.Provider value={timeframe ?? null}>
-		<div className="space-y-3">
-			{toolbarLeft || toolbarRight || toolbar || timeframeToggle ? (
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:min-h-8">
-					<div className="min-w-0 flex-1">{toolbarLeft}</div>
-					{(toolbarRight || toolbar || timeframeToggle) ? (
-						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:items-end sm:justify-end">
+		<div className={homeToolbarGrid ? "contents" : "space-y-3"}>
+			{toolbarLeft || toolbarRight || toolbarAfterTimeframe || toolbar || timeframeToggle ? (
+				<div
+					className={
+						homeToolbarGrid
+							? "flex w-full flex-col gap-3 justify-self-end sm:col-start-2 sm:row-start-1 sm:w-auto sm:items-end"
+							: "flex min-h-8 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+					}
+				>
+					{(!homeToolbarGrid || toolbarLeft) ? (
+						<div className={cn("min-w-0", !homeToolbarGrid && "flex-1")}>{toolbarLeft}</div>
+					) : null}
+					{(toolbarRight || toolbarAfterTimeframe || toolbar || timeframeToggle) ? (
+						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end">
 							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
 							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
+							{toolbarAfterTimeframe && <Fragment key="toolbar-after-tf">{toolbarAfterTimeframe}</Fragment>}
 							{toolbar && <Fragment key="toolbar">{toolbar}</Fragment>}
 						</div>
 					) : null}
@@ -192,7 +206,7 @@ function DataTableView<TData>({
 			) : null}
 
 			{hasRows ? (
-				<div className="overflow-hidden rounded-lg bg-card">
+				<div className={cn("overflow-hidden rounded-lg bg-card", fullSpanRowClass)}>
 					<Table className={cn(columnLayout === "fixed" && "w-max min-w-full table-fixed")}>
 						{columnLayout === "fixed" ? (
 							<colgroup>
@@ -248,6 +262,7 @@ function DataTableView<TData>({
 				<div
 					className={cn(
 						"overflow-hidden rounded-lg bg-card px-4 py-12 text-center text-muted-foreground sm:px-6",
+						fullSpanRowClass,
 						emptyClassName,
 					)}
 				>
@@ -256,7 +271,7 @@ function DataTableView<TData>({
 			)}
 
 			{pagination.show && (
-				<div className="flex items-center justify-between gap-4 px-1 text-sm text-muted-foreground">
+				<div className={cn("flex items-center justify-between gap-4 px-1 text-sm text-muted-foreground", fullSpanRowClass)}>
 					<p>{pagination.label}</p>
 					<div className="flex items-center gap-2">
 						{pagination.isLoading ? <p>Loading…</p> : null}
@@ -348,10 +363,12 @@ function ClientPaginatedDataTable<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	toolbarAfterTimeframe,
 	timeframes,
 	defaultTimeframe,
 	controlledTimeframe,
 	onControlledTimeframeChange,
+	homeToolbarGrid,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -414,6 +431,8 @@ function ClientPaginatedDataTable<TData>({
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			toolbarAfterTimeframe={toolbarAfterTimeframe}
+			homeToolbarGrid={homeToolbarGrid}
 			timeframes={timeframes}
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
@@ -447,10 +466,12 @@ function NonPaginatedDataTable<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	toolbarAfterTimeframe,
 	timeframes,
 	defaultTimeframe,
 	controlledTimeframe,
 	onControlledTimeframeChange,
+	homeToolbarGrid,
 }: BaseDataTableProps<TData> & NoPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -482,6 +503,8 @@ function NonPaginatedDataTable<TData>({
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			toolbarAfterTimeframe={toolbarAfterTimeframe}
+			homeToolbarGrid={homeToolbarGrid}
 			timeframes={timeframes}
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
@@ -508,10 +531,12 @@ function ServerPaginatedDataTable<TData>({
 	columnLayout = "auto",
 	toolbarLeft,
 	toolbarRight,
+	toolbarAfterTimeframe,
 	timeframes,
 	defaultTimeframe,
 	controlledTimeframe,
 	onControlledTimeframeChange,
+	homeToolbarGrid,
 	pageIndex,
 	pageSize,
 	hasNextPage,
@@ -552,6 +577,8 @@ function ServerPaginatedDataTable<TData>({
 			columnLayout={columnLayout}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			toolbarAfterTimeframe={toolbarAfterTimeframe}
+			homeToolbarGrid={homeToolbarGrid}
 			timeframes={timeframes}
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}

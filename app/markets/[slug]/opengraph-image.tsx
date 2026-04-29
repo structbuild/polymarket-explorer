@@ -1,10 +1,9 @@
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import type { PositionChartDataPoint } from "@structbuild/sdk";
 import { formatDateShort, formatNumber } from "@/lib/format";
 import { getMarketBySlug, getMarketChart } from "@/lib/struct/market-queries";
-import { loadImageAsDataUrl, ogCacheLife, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
+import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 
 export const runtime = "nodejs";
 export const size = ogImageSize;
@@ -111,9 +110,6 @@ function buildChartGeometry(points: PositionChartDataPoint[]): ChartGeometry | n
 }
 
 async function loadMarketOpenGraphData(slug: string) {
-	"use cache";
-	cacheLife(ogCacheLife);
-
 	const market = await getMarketBySlug(slug);
 
 	if (!market) {

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
 import { RewardsRefreshButton } from "@/components/rewards/rewards-refresh-button";
 import { RewardsTable } from "@/components/rewards/rewards-table";
@@ -17,6 +18,8 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 async function RewardsContent() {
+	await connection();
+
 	const markets = await getRewardsMarkets();
 	const siteUrl = getSiteUrl().origin;
 

@@ -339,7 +339,9 @@ type BaseMarketsTableProps = {
 	storageKey?: string;
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
+	toolbarAfterTimeframe?: React.ReactNode;
 	paginationMode?: "client" | "none";
+	homeToolbarGrid?: boolean;
 };
 
 type NoSortProps = BaseMarketsTableProps & {
@@ -367,7 +369,9 @@ export function MarketsTable(props: MarketsTableProps) {
 		storageKey = "markets-table",
 		toolbarLeft,
 		toolbarRight,
+		toolbarAfterTimeframe,
 		paginationMode = "client",
+		homeToolbarGrid,
 	} = props;
 
 	const sortingMode = props.sortingMode;
@@ -477,6 +481,8 @@ export function MarketsTable(props: MarketsTableProps) {
 			defaultTimeframe={DEFAULT_TIMEFRAME}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={mergedToolbarRight}
+			toolbarAfterTimeframe={toolbarAfterTimeframe}
+			homeToolbarGrid={homeToolbarGrid}
 			{...controlledTimeframeProps}
 		/>
 	);

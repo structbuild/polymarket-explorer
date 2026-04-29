@@ -19,7 +19,7 @@ const BASE_URL = "https://user-pnl-api.polymarket.com/user-pnl";
 
 async function fetchPnl(address: string, interval: string, fidelity: string): Promise<PnlDataPoint[]> {
 	const url = `${BASE_URL}?user_address=${address}&interval=${interval}&fidelity=${fidelity}`;
-	const res = await fetch(url, { next: { revalidate: 300 } });
+	const res = await fetch(url, { cache: "no-store" });
 
 	if (!res.ok) {
 		console.error(`Polymarket PnL API failed: ${res.status} ${res.statusText}`);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
@@ -37,6 +38,8 @@ export default function TradersPage({ searchParams }: Props) {
 }
 
 async function TradersPageContent({ searchParams }: Props) {
+	await connection();
+
 	const resolvedSearchParams = await searchParams;
 	const timeframe = parseTraderTimeframe(resolvedSearchParams.timeframe);
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import type { Tag } from "@structbuild/sdk";
 
@@ -24,26 +25,12 @@ import {
 } from "@/lib/struct/analytics-queries";
 import { DEFAULT_ANALYTICS_VIEW, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
 import { parseMarketStatusTab } from "@/lib/market-search-params-shared";
-import { getAllTags, getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
-
-const TAG_SLUG_PLACEHOLDER = "__placeholder__";
+import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 
 type Props = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-export async function generateStaticParams() {
-	const tagSlugs = (await getAllTags())
-		.flatMap((tag) => (typeof tag.slug === "string" && tag.slug.length > 0 ? [tag.slug] : []))
-		.slice(0, 10);
-
-	if (tagSlugs.length > 0) {
-		return tagSlugs.map((slug) => ({ slug }));
-	}
-
-	return [{ slug: TAG_SLUG_PLACEHOLDER }];
-}
 
 function TagHeader({ tag, tagDisplay }: { tag: Tag; tagDisplay: string }) {
 	return (
@@ -85,25 +72,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	});
 }
 
-export default async function TagPage({ params, searchParams }: Props) {
-	const { slug } = await params;
-
+export default function TagPage({ params, searchParams }: Props) {
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Suspense fallback={<TagPageFallback />}>
-				<TagPageContent searchParams={searchParams} slug={slug} />
+				<TagPageContent params={params} searchParams={searchParams} />
 			</Suspense>
 		</div>
 	);
 }
 
 async function TagPageContent({
+	params,
 	searchParams,
-	slug,
 }: {
+	params: Props["params"];
 	searchParams: Props["searchParams"];
-	slug: string;
 }) {
+	await connection();
+
+	const { slug } = await params;
 	const tag = await getTagBySlug(slug);
 
 	if (!tag) {

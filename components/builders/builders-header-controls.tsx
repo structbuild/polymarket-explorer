@@ -15,7 +15,11 @@ import {
 	DEFAULT_BUILDER_TIMEFRAME,
 	isBuilderSortAvailableForTimeframe,
 } from "@/lib/struct/builder-shared";
-import { resolveStackedRange } from "@/lib/struct/builders-stacked-shared";
+import {
+	getBuildersStackedMetricOptionsForTimeframe,
+	resolveStackedRange,
+	type BuildersStackedMetric,
+} from "@/lib/struct/builders-stacked-shared";
 
 const BUILDER_TIMEFRAME_DESCRIPTIONS: Record<BuilderTimeframe, string> = {
 	"1d": "Rank builders by the last 24 hours of routed activity.",
@@ -53,6 +57,15 @@ export function BuildersHeaderControls({
 					const tagSort = params.get("tagSort");
 					if (tagSort && !isBuilderSortAvailableForTimeframe(tagSort as BuilderSortBy, nextTimeframe)) {
 						params.delete("tagSort");
+					}
+					const breakdownMetric = params.get("breakdownMetric");
+					if (
+						breakdownMetric &&
+						!getBuildersStackedMetricOptionsForTimeframe(nextTimeframe).includes(
+							breakdownMetric as BuildersStackedMetric,
+						)
+					) {
+						params.delete("breakdownMetric");
 					}
 				}}
 			/>

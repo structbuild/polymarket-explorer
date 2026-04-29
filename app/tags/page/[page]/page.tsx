@@ -1,32 +1,21 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { buildPageMetadata } from "@/lib/site-metadata";
-import { parsePageParam, TAGS_PAGE_SIZE } from "@/lib/pagination";
+import { parsePageParam } from "@/lib/pagination";
 import { TagGridPage } from "@/components/tags/tag-grid-page";
 import {
-	DEFAULT_TAG_SORT,
-	DEFAULT_TAG_TIMEFRAME,
 	parseTagSort,
 	parseTagTimeframe,
 } from "@/lib/struct/tag-shared";
-import { getTagPageCount } from "@/lib/struct/market-queries";
 import { TagIndexPageFallback } from "@/components/tags/tag-index-page-fallback";
 
 type Props = {
 	params: Promise<{ page: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-export async function generateStaticParams() {
-	const totalPages = await getTagPageCount(
-		TAGS_PAGE_SIZE,
-		DEFAULT_TAG_SORT,
-		DEFAULT_TAG_TIMEFRAME,
-	);
-	return [{ page: String(totalPages > 1 ? 2 : 1) }];
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const { page: raw } = await params;
@@ -62,6 +51,8 @@ async function TagPaginatedPageContent({
 	page: number;
 	searchParams: Props["searchParams"];
 }) {
+	await connection();
+
 	const resolved = await searchParams;
 	const sort = parseTagSort(resolved.sort);
 	const timeframe = parseTagTimeframe(resolved.timeframe);

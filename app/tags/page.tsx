@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { buildPageMetadata } from "@/lib/site-metadata";
@@ -26,6 +27,8 @@ export default function TagIndexPage({ searchParams }: Props) {
 }
 
 async function TagIndexPageContent({ searchParams }: Props) {
+	await connection();
+
 	const resolved = await searchParams;
 	const sort = parseTagSort(resolved.sort);
 	const timeframe = parseTagTimeframe(resolved.timeframe);

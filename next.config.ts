@@ -40,7 +40,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   typedRoutes: true,
   serverExternalPackages: ["sharp"],
-  cacheComponents: true,
+  cacheComponents: false,
   experimental: {
     serverComponentsHmrCache: false,
   },

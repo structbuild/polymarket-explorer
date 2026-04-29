@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import type { BuilderTimeframe } from "@structbuild/sdk";
 
@@ -43,7 +44,6 @@ import {
 	parseAnalyticsParams,
 } from "@/lib/struct/analytics-shared";
 import {
-	getAllBuilderCodes,
 	getBuilderByCode,
 	getBuilderMetadata,
 	getBuilderConcentration,
@@ -54,7 +54,6 @@ import {
 	getBuilderTopTraders,
 } from "@/lib/struct/builder-queries";
 
-const BUILDER_CODE_PLACEHOLDER = "__placeholder__";
 const BUILDER_ANALYTICS_APPEND_METRICS = ["builderFees", "newUsers"] as const;
 const BUILDER_ANALYTICS_METRIC_PLACEMENTS = [
 	{ metric: "builderFees", after: "volume" },
@@ -77,14 +76,6 @@ type Props = {
 
 function rangeToBuilderTimeframe(range: AnalyticsRange): BuilderTimeframe {
 	return range === "all" ? "lifetime" : range;
-}
-
-export async function generateStaticParams() {
-	const codes = (await getAllBuilderCodes(10)).map(({ code }) => code);
-	if (codes.length > 0) {
-		return codes.map((code) => ({ code }));
-	}
-	return [{ code: BUILDER_CODE_PLACEHOLDER }];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -130,26 +121,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	});
 }
 
-export default async function BuilderPage({ params, searchParams }: Props) {
-	const { code } = await params;
-
+export default function BuilderPage({ params, searchParams }: Props) {
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Suspense fallback={<BuilderPageFallback />}>
-				<BuilderPageContent code={code} searchParams={searchParams} />
+				<BuilderPageContent params={params} searchParams={searchParams} />
 			</Suspense>
 		</div>
 	);
 }
 
 async function BuilderPageContent({
-	code,
+	params,
 	searchParams,
 }: {
-	code: string;
+	params: Props["params"];
 	searchParams: Props["searchParams"];
 }) {
-	const [{ tradesPage }, resolvedSearchParams] = await Promise.all([
+	await connection();
+
+	const [{ code }, { tradesPage }, resolvedSearchParams] = await Promise.all([
+		params,
 		loadBuilderSearchParams(searchParams),
 		searchParams,
 	]);

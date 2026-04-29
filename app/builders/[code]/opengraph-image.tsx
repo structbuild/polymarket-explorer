@@ -1,6 +1,5 @@
 import type { BuilderTagRow } from "@structbuild/sdk";
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import {
 	loadBuilderOpenGraphData,
@@ -10,7 +9,6 @@ import { getBuilderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import type { AnalyticsPoint } from "@/lib/struct/analytics-shared";
 import {
 	loadImageAsDataUrl,
-	ogCacheLife,
 	ogImageSize,
 	ogPalette,
 	OgStatItem,
@@ -309,9 +307,6 @@ function buildVolumeChartGeometry(points: AnalyticsPoint[]): VolumeChartGeometry
 }
 
 async function loadCachedBuilderOpenGraphData(code: string) {
-	"use cache";
-	cacheLife(ogCacheLife);
-
 	const [builderData, volumeTimeseries] = await Promise.all([
 		loadBuilderOpenGraphData(code),
 		getBuilderAnalyticsTimeseries(code, "all", "D"),

@@ -5,7 +5,8 @@ import type { BuilderMetadataInline, BuilderTimeframe, CompositionBucketRow } fr
 import { getBuilderComposition } from "@/lib/struct/builder-queries";
 import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import {
-	BUILDERS_STACKED_METRICS,
+	BUILDERS_STACKED_API_METRICS,
+	DEFAULT_BUILDERS_STACKED_METRIC,
 	OTHER_SLOT,
 	fieldKey,
 	type BuildersStackedData,
@@ -15,7 +16,6 @@ import {
 	type BuildersStackedSlot,
 } from "@/lib/struct/builders-stacked-shared";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
-
 
 function formatSlotLabel(code: string, metadataByCode: Record<string, BuilderMetadataInline>): string {
 	return getBuilderDisplayName(code, metadataByCode[code] ?? null);
@@ -73,17 +73,19 @@ export async function getBuildersStackedData({
 	timeframe,
 	resolution,
 	topN,
+	metric = DEFAULT_BUILDERS_STACKED_METRIC,
 }: {
 	timeframe: BuilderTimeframe;
 	resolution: AnalyticsResolution;
 	topN: number;
+	metric?: BuildersStackedMetric;
 }): Promise<BuildersStackedData> {
 	const countBack = computeCompositionCountBack(timeframe, resolution);
 	const window = getCompositionWindow(timeframe, resolution, countBack);
+	const apiMetric = BUILDERS_STACKED_API_METRICS[metric];
 
-	// Rank slots once by volume so legend and stack order stay stable across metric toggles.
 	const { buckets: entries, builderMetadata } = await getBuilderComposition(
-		"volume",
+		apiMetric,
 		resolution,
 		countBack,
 		topN,
@@ -92,14 +94,14 @@ export async function getBuildersStackedData({
 		window?.to,
 	);
 
-	const byMetric = Object.fromEntries(
-		BUILDERS_STACKED_METRICS.map((metric) => [
-			metric,
-			buildMetricData(metric, entries, topN, builderMetadata),
-		]),
-	) as Record<BuildersStackedMetric, BuildersStackedMetricData>;
+	const metricData = buildMetricData(metric, entries, topN, builderMetadata);
 
-	return { byMetric, range: timeframe === "lifetime" ? "all" : timeframe, resolution };
+	return {
+		...metricData,
+		metric,
+		range: timeframe === "lifetime" ? "all" : timeframe,
+		resolution,
+	};
 }
 
 function buildMetricData(

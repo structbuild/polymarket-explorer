@@ -157,9 +157,17 @@ type Props = {
 	trades: Trade[];
 	toolbarLeft?: React.ReactNode;
 	toolbarRight?: React.ReactNode;
+	toolbarAfterTimeframe?: React.ReactNode;
+	homeToolbarGrid?: boolean;
 };
 
-export function RecentTradesTable({ trades, toolbarLeft, toolbarRight }: Props) {
+export function RecentTradesTable({
+	trades,
+	toolbarLeft,
+	toolbarRight,
+	toolbarAfterTimeframe,
+	homeToolbarGrid,
+}: Props) {
 	return (
 		<DataTable
 			columns={columns}
@@ -170,6 +178,8 @@ export function RecentTradesTable({ trades, toolbarLeft, toolbarRight }: Props) 
 			paginationMode="none"
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			toolbarAfterTimeframe={toolbarAfterTimeframe}
+			homeToolbarGrid={homeToolbarGrid}
 		/>
 	);
 }

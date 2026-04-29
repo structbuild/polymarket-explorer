@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
@@ -46,7 +47,12 @@ import {
 	parseBuilderTimeframe,
 } from "@/lib/struct/builder-shared";
 import { getBuildersStackedData } from "@/lib/struct/builders-stacked";
-import { parseBuildersStackedResolution } from "@/lib/struct/builders-stacked-shared";
+import {
+	DEFAULT_BUILDERS_STACKED_TOP_N,
+	parseBuildersStackedMetric,
+	parseBuildersStackedResolution,
+	type BuildersStackedMetric,
+} from "@/lib/struct/builders-stacked-shared";
 import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 import { getBuilderDisplayName } from "@/lib/builder-display-name";
 
@@ -58,7 +64,6 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 const BUILDERS_PAGE_SIZE = 50;
-const BUILDERS_STACKED_TOP_N = 7;
 const BUILDERS_GLOBAL_TAGS_LIMIT = 12;
 const BUILDER_ANALYTICS_COMPONENTS = ["buy", "sell"] as const satisfies readonly VolumeComponentId[];
 const BUILDER_ANALYTICS_METRIC_PLACEMENTS = [
@@ -104,7 +109,9 @@ type Props = {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function BuildersPage({ searchParams }: Props) {
+export default async function BuildersPage({ searchParams }: Props) {
+	await connection();
+
 	return (
 		<div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
 			<Suspense fallback={<BuildersIndexFallback />}>
@@ -119,6 +126,7 @@ async function BuildersIndexContent({ searchParams }: Props) {
 	const timeframe = parseBuilderTimeframe(resolved.timeframe);
 	const sort = parseBuilderSort(resolved.sort, timeframe);
 	const resolution = parseBuildersStackedResolution(timeframe, resolved.resolution);
+	const stackedMetric = parseBuildersStackedMetric(resolved.breakdownMetric, timeframe);
 	const analytics = parseAnalyticsParams(resolved, "global", "30d");
 	const tagSort = parseBuilderGlobalTagSort(resolved.tagSort, timeframe);
 	const pageParam = typeof resolved.page === "string" ? parsePageParam(resolved.page) : null;
@@ -181,6 +189,7 @@ async function BuildersIndexContent({ searchParams }: Props) {
 					<BuildersStackedSection
 						timeframe={timeframe}
 						resolution={resolution}
+						metric={stackedMetric}
 					/>
 				</Suspense>
 
@@ -237,18 +246,23 @@ async function BuildersIndexContent({ searchParams }: Props) {
 async function BuildersStackedSection({
 	timeframe,
 	resolution,
+	metric,
 }: {
 	timeframe: BuilderTimeframe;
 	resolution: AnalyticsResolution;
+	metric: BuildersStackedMetric;
 }) {
 	const stacked = await getBuildersStackedData({
-		topN: BUILDERS_STACKED_TOP_N,
+		topN: DEFAULT_BUILDERS_STACKED_TOP_N,
 		timeframe,
 		resolution,
+		metric,
 	});
 	return (
 		<BuildersStackedChart
 			stacked={stacked}
+			timeframe={timeframe}
+			resolution={resolution}
 			timeframeLabel={BUILDER_TIMEFRAME_LABELS[timeframe]}
 		/>
 	);

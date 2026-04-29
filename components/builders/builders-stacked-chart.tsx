@@ -1,20 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import type { BuilderTimeframe } from "@structbuild/sdk";
 
+import { getBuildersStackedDataAction } from "@/app/actions";
+import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
 import { AnalyticsChart, type AnalyticsSeries } from "@/components/analytics/analytics-chart";
 import { Card, CardContent } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
-	BUILDERS_STACKED_METRICS,
+	DEFAULT_BUILDERS_STACKED_METRIC,
 	BUILDERS_STACKED_METRIC_FORMAT,
 	BUILDERS_STACKED_METRIC_LABELS,
 	OTHER_SLOT,
 	fieldKey,
+	getBuildersStackedMetricOptionsForTimeframe,
 	type BuildersStackedData,
-	type BuildersStackedMetric,
 	type BuildersStackedSlot,
 } from "@/lib/struct/builders-stacked-shared";
+import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 
 const BUILDER_PALETTE = [
 	"#10b981",
@@ -36,15 +39,35 @@ function colorFor(slot: BuildersStackedSlot, idx: number): string {
 
 type BuildersStackedChartProps = {
 	stacked: BuildersStackedData;
+	timeframe: BuilderTimeframe;
+	resolution: AnalyticsResolution;
 	timeframeLabel: string;
 };
 
 export function BuildersStackedChart({
 	stacked,
+	timeframe,
+	resolution,
 	timeframeLabel,
 }: BuildersStackedChartProps) {
-	const [metric, setMetric] = useState<BuildersStackedMetric>("volume");
-	const metricData = stacked.byMetric[metric];
+	const [isPending, startTransition] = useTransition();
+	const [stackedState, setStackedState] = useState(() => ({
+		sourceStacked: stacked,
+		sourceTimeframe: timeframe,
+		sourceResolution: resolution,
+		stacked,
+	}));
+	const hasLocalStacked =
+		stackedState.sourceStacked === stacked &&
+		stackedState.sourceTimeframe === timeframe &&
+		stackedState.sourceResolution === resolution;
+	const currentStacked = hasLocalStacked ? stackedState.stacked : stacked;
+	const metric = currentStacked.metric;
+	const metricData = currentStacked;
+	const metricOptions = useMemo(
+		() => getBuildersStackedMetricOptionsForTimeframe(timeframe),
+		[timeframe],
+	);
 
 	const series = useMemo<AnalyticsSeries[]>(() => {
 		return metricData.slots.map((slot, idx) => ({
@@ -58,27 +81,35 @@ export function BuildersStackedChart({
 	const valueFormat = BUILDERS_STACKED_METRIC_FORMAT[metric];
 	const hasData = metricData.data.length > 0 && metricData.slots.length > 1;
 	const chartMetricToggle = (
-		<ToggleGroup
-			value={[metric]}
-			onValueChange={(raw) => {
-				const next = Array.isArray(raw) ? raw[0] : raw;
-				if (next && (BUILDERS_STACKED_METRICS as readonly string[]).includes(next)) {
-					setMetric(next as BuildersStackedMetric);
-				}
+		<AnalyticsUrlToggle
+			paramKey="breakdownMetric"
+			value={metric}
+			options={metricOptions}
+			labels={BUILDERS_STACKED_METRIC_LABELS}
+			defaultValue={DEFAULT_BUILDERS_STACKED_METRIC}
+			ariaLabelPrefix="Show builder breakdown"
+			transformParams={(params, next) => {
+				params.set("breakdownMetric", next);
 			}}
-			variant="outline"
-			size="sm"
-		>
-			{BUILDERS_STACKED_METRICS.map((id) => (
-				<ToggleGroupItem
-					key={id}
-					value={id}
-					aria-label={`Show ${BUILDERS_STACKED_METRIC_LABELS[id]}`}
-				>
-					{BUILDERS_STACKED_METRIC_LABELS[id]}
-				</ToggleGroupItem>
-			))}
-		</ToggleGroup>
+			pending={isPending}
+			onNavigate={({ href, next }) => {
+				window.history.replaceState(window.history.state, "", href);
+				startTransition(async () => {
+					const result = await getBuildersStackedDataAction({
+						metric: next,
+						timeframe,
+						resolution,
+					});
+
+					setStackedState({
+						sourceStacked: stacked,
+						sourceTimeframe: timeframe,
+						sourceResolution: resolution,
+						stacked: result,
+					});
+				});
+			}}
+		/>
 	);
 	return (
 		<div>
@@ -101,7 +132,7 @@ export function BuildersStackedChart({
 							series={series}
 							valueFormat={valueFormat}
 							interactiveLegend
-							resolution={stacked.resolution}
+							resolution={currentStacked.resolution}
 							height="lg"
 						/>
 					) : (

@@ -19,16 +19,10 @@ import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
 
-const MARKET_SLUG_PLACEHOLDER = "__placeholder__";
-
 type Props = {
 	params: Promise<{ slug: string }>;
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-export async function generateStaticParams() {
-	return [{ slug: MARKET_SLUG_PLACEHOLDER }];
-}
 
 function getLeadingOutcome(market: MarketResponse) {
 	const outcomes = market.outcomes ?? [];
@@ -99,16 +93,12 @@ function truncateQuestion(question: string, maxLength: number = 60) {
 	return `${question.slice(0, maxLength)}…`;
 }
 
-export default async function MarketPage({ params, searchParams }: Props) {
-	await connection();
-
-	const { slug } = await params;
-
+export default function MarketPage({ params, searchParams }: Props) {
 	return (
 		<div className="flex w-full justify-center">
 			<div className="flex w-full max-w-7xl flex-col gap-4 px-4 pb-10 sm:gap-6 sm:px-6 sm:pb-12">
 				<Suspense fallback={<MarketPageFallback />}>
-					<MarketPageContent searchParams={searchParams} slug={slug} />
+					<MarketPageContent params={params} searchParams={searchParams} />
 				</Suspense>
 			</div>
 		</div>
@@ -116,12 +106,15 @@ export default async function MarketPage({ params, searchParams }: Props) {
 }
 
 async function MarketPageContent({
+	params,
 	searchParams,
-	slug,
 }: {
+	params: Props["params"];
 	searchParams: Props["searchParams"];
-	slug: string;
 }) {
+	await connection();
+
+	const { slug } = await params;
 	const market = await getMarketBySlug(slug);
 
 	if (!market) {

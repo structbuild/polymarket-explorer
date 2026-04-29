@@ -24,7 +24,15 @@ import {
 	getBuilderGlobalTags,
 	getBuilderTradesPage,
 } from "@/lib/struct/builder-queries";
+import { getBuildersStackedData } from "@/lib/struct/builders-stacked";
 import { maxBuilderTradesPageNumber } from "@/lib/builder-search-params-shared";
+import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
+import {
+	DEFAULT_BUILDERS_STACKED_TOP_N,
+	parseBuildersStackedMetric,
+	parseBuildersStackedResolution,
+	type BuildersStackedMetric,
+} from "@/lib/struct/builders-stacked-shared";
 import {
 	getBuilderSortOptionsForTimeframe,
 	parseBuilderTimeframe,
@@ -406,6 +414,27 @@ export async function getBuilderGlobalTagsAction({
 		sort: safeSort,
 		timeframe: safeTimeframe,
 	};
+}
+
+export async function getBuildersStackedDataAction({
+	metric,
+	timeframe,
+	resolution,
+}: {
+	metric: BuildersStackedMetric;
+	timeframe: BuilderTimeframe;
+	resolution: AnalyticsResolution;
+}) {
+	const safeTimeframe = parseBuilderTimeframe(timeframe);
+	const safeMetric = parseBuildersStackedMetric(metric, safeTimeframe);
+	const safeResolution = parseBuildersStackedResolution(safeTimeframe, resolution);
+
+	return getBuildersStackedData({
+		topN: DEFAULT_BUILDERS_STACKED_TOP_N,
+		timeframe: safeTimeframe,
+		resolution: safeResolution,
+		metric: safeMetric,
+	});
 }
 
 export async function searchTradersAction(query: string) {
