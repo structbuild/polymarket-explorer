@@ -16,7 +16,7 @@ const LEADERBOARD_URL = "https://data-api.polymarket.com/v1/leaderboard";
 
 export const getLeaderboard = cache(async (): Promise<LeaderboardEntry[]> => {
 	const url = `${LEADERBOARD_URL}?timePeriod=week&orderBy=PNL&limit=20&offset=0&category=overall`;
-	const res = await fetch(url, { next: { revalidate: 300 } });
+	const res = await fetch(url, { cache: "no-store" });
 
 	if (!res.ok) {
 		console.error(`Polymarket Leaderboard API failed: ${res.status} ${res.statusText}`);

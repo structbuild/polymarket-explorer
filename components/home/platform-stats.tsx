@@ -1,4 +1,5 @@
 import type { GlobalCountsResponse } from "@structbuild/sdk";
+import { connection } from "next/server";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
@@ -25,6 +26,8 @@ const stats: StatSpec[] = [
 const GRID_CLASS = "grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4";
 
 export async function PlatformStats() {
+	await connection();
+
 	const counts = await getPlatformCounts();
 
 	if (!counts) {

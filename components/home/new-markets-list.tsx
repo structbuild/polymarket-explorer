@@ -1,3 +1,6 @@
+import { connection } from "next/server";
+
+import { HomeRefreshButton } from "@/components/home/home-refresh-button";
 import { MarketsTable } from "@/components/market/markets-table";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getHomeTopMarkets } from "@/lib/struct/market-queries";
@@ -5,6 +8,8 @@ import { getHomeTopMarkets } from "@/lib/struct/market-queries";
 const MARKET_FETCH_COUNT = 12;
 
 export async function NewMarketsList() {
+	await connection();
+
 	const result = await getHomeTopMarkets(MARKET_FETCH_COUNT, "all", undefined, "created_time", "desc", "24h", "Hide from New");
 	const rows = result.data.map(marketResponseToRow);
 
@@ -13,6 +18,8 @@ export async function NewMarketsList() {
 			markets={rows}
 			storageKey="home-new-markets"
 			paginationMode="none"
+			homeToolbarGrid
+			toolbarAfterTimeframe={<HomeRefreshButton />}
 		/>
 	);
 }

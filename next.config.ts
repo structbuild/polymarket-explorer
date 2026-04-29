@@ -40,7 +40,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   typedRoutes: true,
   serverExternalPackages: ["sharp"],
-  cacheComponents: true,
+  cacheComponents: /^(1|true|yes|on)$/i.test(process.env.ENABLE_COMPONENT_CACHE ?? ""),
   experimental: {
     serverComponentsHmrCache: false,
   },

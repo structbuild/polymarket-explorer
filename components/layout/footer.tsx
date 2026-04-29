@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import {
@@ -64,6 +65,7 @@ export default function Footer() {
 }
 
 async function FooterColumns() {
+	await connection();
 	const { topMarkets, topTags, topTraders, rewardsMarkets } = await getFooterData();
 
 	return (

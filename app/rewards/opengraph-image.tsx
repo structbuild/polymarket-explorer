@@ -1,18 +1,15 @@
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
 import { formatNumber } from "@/lib/format";
-import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogCacheLife, ogFloatingPositions, ogImageSize, ogPalette } from "@/lib/opengraph";
+import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize, ogPalette } from "@/lib/opengraph";
 import { getRewardsMarkets } from "@/lib/struct/queries";
 
 export const runtime = "nodejs";
+export const revalidate = 300;
 export const size = ogImageSize;
 export const contentType = "image/png";
 export const alt = "Polymarket liquidity rewards overview";
 
 async function loadRewardsOpenGraphData() {
-	"use cache";
-	cacheLife(ogCacheLife);
-
 	const markets = await getRewardsMarkets();
 	const totalDailyRewards = markets.reduce((sum, m) => {
 		const rate = m.clob_rewards?.map((r) => r.total_daily_rate).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0;

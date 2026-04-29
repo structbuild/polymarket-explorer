@@ -22,10 +22,6 @@ const MARKETS_SHARD = "2";
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 
-export function generateStaticParams() {
-	return [{ id: "0.xml" }, { id: "1.xml" }, { id: "2.xml" }];
-}
-
 export async function GET(
 	_: Request,
 	{ params }: { params: Promise<{ id: string }> },

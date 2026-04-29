@@ -1,10 +1,9 @@
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import { loadTraderOpenGraphData } from "@/lib/trader-open-graph";
 import type { PnlDataPoint } from "@/lib/polymarket/pnl";
 import { formatDateShort, formatDuration, formatNumber } from "@/lib/format";
-import { loadImageAsDataUrl, ogCacheLife, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
+import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 
 export const runtime = "nodejs";
@@ -297,9 +296,6 @@ function renderInfoRow(label: string, value: string, tone?: string, isLast = fal
 }
 
 async function loadCachedTraderOpenGraphData(address: string) {
-	"use cache";
-	cacheLife(ogCacheLife);
-
 	const traderData = await loadTraderOpenGraphData(address);
 
 	if (!traderData.profile && !traderData.pnlSummary) {

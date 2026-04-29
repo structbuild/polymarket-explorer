@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
-import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogCacheLife, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
+import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
 import { getTopMarkets } from "@/lib/struct/market-queries";
 
 export const runtime = "nodejs";
@@ -9,9 +8,6 @@ export const contentType = "image/png";
 export const alt = "Polymarket prediction markets";
 
 async function loadMarketOpenGraphImages() {
-	"use cache";
-	cacheLife(ogCacheLife);
-
 	const { data: markets } = await getTopMarkets(ogFloatingPositions.length);
 	const marketsWithImages = deduplicateByImage(markets, ogFloatingPositions.length);
 

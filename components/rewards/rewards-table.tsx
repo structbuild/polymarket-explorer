@@ -11,6 +11,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { formatNumber } from "@/lib/format";
+import { REWARDS_TABLE_COLUMN_SIZES } from "./rewards-table-columns";
 
 function sumRewardField(
 	market: MarketResponse,
@@ -31,7 +32,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		id: "market",
 		header: "Market",
 		enableHiding: false,
-		size: 420,
+		size: REWARDS_TABLE_COLUMN_SIZES.market,
 		meta: { cellClassName: "whitespace-normal" },
 		cell: ({ row }) => {
 			const market = row.original;
@@ -73,14 +74,14 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		id: "probability",
 		header: "Probability",
 		enableHiding: false,
-		size: 140,
+		size: REWARDS_TABLE_COLUMN_SIZES.probability,
 		cell: ({ row }) => <p>{formatNumber((row.original.outcomes?.[0]?.price ?? 0) * 100, { percent: true })}</p>,
 	},
 	{
 		id: "volume",
 		header: "Volume (24h)",
 		enableHiding: false,
-		size: 130,
+		size: REWARDS_TABLE_COLUMN_SIZES.volume,
 		cell: ({ row }) => {
 			const val = row.original.metrics?.["24h"]?.volume ?? 0;
 			if (val == null) return <p className="text-muted-foreground">—</p>;
@@ -91,7 +92,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		id: "liquidity",
 		header: "Liquidity",
 		enableHiding: false,
-		size: 130,
+		size: REWARDS_TABLE_COLUMN_SIZES.liquidity,
 		cell: ({ row }) => {
 			const val = row.original.liquidity_usd;
 			if (val == null) return <p className="text-muted-foreground">—</p>;
@@ -110,7 +111,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 			</span>
 		),
 		enableHiding: false,
-		size: 150,
+		size: REWARDS_TABLE_COLUMN_SIZES.rewards,
 		cell: ({ row }) => {
 			const total = sumRewardField(row.original, "total_daily_rate");
 			const native = sumRewardField(row.original, "native_daily_rate");
@@ -147,7 +148,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 			</span>
 		),
 		enableHiding: false,
-		size: 100,
+		size: REWARDS_TABLE_COLUMN_SIZES.maxSpread,
 		cell: ({ row }) => {
 			const spread = sumRewardField(row.original, "rewards_max_spread");
 			if (spread == null) return <p className="text-muted-foreground">—</p>;
@@ -166,7 +167,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 			</span>
 		),
 		enableHiding: false,
-		size: 100,
+		size: REWARDS_TABLE_COLUMN_SIZES.minSize,
 		cell: ({ row }) => {
 			const size = sumRewardField(row.original, "rewards_min_size");
 			if (size == null) return <p className="text-muted-foreground">—</p>;
@@ -185,7 +186,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 			</span>
 		),
 		enableHiding: false,
-		size: 80,
+		size: REWARDS_TABLE_COLUMN_SIZES.sponsors,
 		cell: ({ row }) => {
 			const count = sumRewardField(row.original, "sponsors_count");
 			if (count == null) return <p className="text-muted-foreground">—</p>;
@@ -195,7 +196,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 	{
 		id: "link",
 		header: "",
-		size: 64,
+		size: REWARDS_TABLE_COLUMN_SIZES.link,
 		enableHiding: false,
 		cell: ({ row }) => {
 			const eventSlug = row.original.event_slug;

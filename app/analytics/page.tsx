@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
@@ -46,6 +47,8 @@ export default function AnalyticsPage({ searchParams }: Props) {
 }
 
 async function BuildersStrip() {
+	await connection();
+
 	const [row, changes] = await Promise.all([
 		getBuilderGlobal("lifetime"),
 		getBuilderGlobalChanges("24h"),
@@ -77,6 +80,8 @@ function BuildersStripFallback() {
 }
 
 async function AnalyticsPageContent({ searchParams }: Props) {
+	await connection();
+
 	const resolvedSearchParams = await searchParams;
 	const { view, range, resolution, defaultResolution } = parseAnalyticsParams(
 		resolvedSearchParams,

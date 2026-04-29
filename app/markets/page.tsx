@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
@@ -35,6 +36,8 @@ export default function MarketsPage({ searchParams }: Props) {
 }
 
 async function MarketsPageContent({ searchParams }: Props) {
+	await connection();
+
 	const { sort_by, sort_dir, timeframe, tab, cursor } = await loadMarketSearchParams(searchParams);
 	const activeCursor = cursor || undefined;
 	const { data: markets, hasMore, nextCursor } = await getTopMarkets(24, tab, activeCursor, sort_by, sort_dir, timeframe);

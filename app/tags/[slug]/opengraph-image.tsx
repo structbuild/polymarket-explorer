@@ -1,8 +1,7 @@
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 import { formatCapitalizeWords } from "@/lib/format";
-import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogCacheLife, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
+import { deduplicateByImage, loadImageAsDataUrl, OgCollectionLayout, ogFloatingPositions, ogImageSize } from "@/lib/opengraph";
 import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 
 export const runtime = "nodejs";
@@ -15,9 +14,6 @@ type Props = {
 };
 
 async function loadTagOpenGraphData(slug: string) {
-	"use cache";
-	cacheLife(ogCacheLife);
-
 	const tag = await getTagBySlug(slug);
 
 	if (!tag) {

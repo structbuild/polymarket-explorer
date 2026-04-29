@@ -5,11 +5,6 @@ import sharp from "sharp";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 
 export const ogImageSize = { width: 1200, height: 630 };
-export const ogCacheLife = {
-	stale: 43200,
-	revalidate: 86400,
-	expire: 604800,
-} as const;
 const ogImageFetchTimeoutMs = 5000;
 const ogImageMaxBytes = 1024 * 1024;
 const ogAllowedProtocols = new Set(["http:", "https:"]);
