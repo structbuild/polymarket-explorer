@@ -11,6 +11,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { BarChart3Icon, BlocksIcon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 const DEBOUNCE_MS = 300;
@@ -162,7 +163,9 @@ export function SearchDialog() {
 			timeoutRef.current = null;
 		}
 		setOpen(nextOpen);
-		if (!nextOpen) {
+		if (nextOpen) {
+			posthog.capture("search_opened");
+		} else {
 			setQuery("");
 			setResults({ traders: [], markets: [] });
 		}
@@ -174,10 +177,10 @@ export function SearchDialog() {
 	});
 
 	useEffect(() => {
-		const handler = () => setOpen(true);
+		const handler = () => handleOpenChange(true);
 		window.addEventListener(OPEN_EVENT, handler);
 		return () => window.removeEventListener(OPEN_EVENT, handler);
-	}, []);
+	}, [handleOpenChange]);
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 639px)");
@@ -244,6 +247,12 @@ export function SearchDialog() {
 					}
 
 					setResults(data);
+					posthog.capture("search_performed", {
+						query: trimmed,
+						trader_count: data.traders.length,
+						market_count: data.markets.length,
+						has_results: data.traders.length > 0 || data.markets.length > 0,
+					});
 				} catch {
 					if (requestId !== requestIdRef.current) {
 						return;
@@ -254,6 +263,14 @@ export function SearchDialog() {
 			});
 		}, DEBOUNCE_MS);
 	}, [loadResults]);
+
+	const handleResultClick = useCallback(
+		(type: "market" | "trader" | "builder", target: string) => {
+			posthog.capture("search_result_clicked", { query: query.trim(), type, target });
+			handleOpenChange(false);
+		},
+		[query, handleOpenChange],
+	);
 
 	const builderCode = normalizeBuilderCodeQuery(query);
 	const hasResults = builderCode != null || results.traders.length > 0 || results.markets.length > 0;
@@ -292,7 +309,7 @@ export function SearchDialog() {
 							<SearchRow
 								key={market.slug}
 								href={`/markets/${market.slug}` as Route}
-								onSelect={() => handleOpenChange(false)}
+								onSelect={() => handleResultClick("market", market.slug)}
 								imageUrl={market.image_url}
 								fallback={<BarChart3Icon className="size-4" />}
 								title={market.question ?? market.slug}
@@ -309,7 +326,7 @@ export function SearchDialog() {
 						</div>
 						<SearchRow
 							href={`/builders/${encodeURIComponent(builderCode)}` as Route}
-							onSelect={() => handleOpenChange(false)}
+							onSelect={() => handleResultClick("builder", builderCode)}
 							fallback={<BlocksIcon className="size-4" />}
 							title={formatBuilderCodeDisplay(builderCode)}
 							meta={<span className="truncate font-mono text-[11px]">{builderCode}</span>}
@@ -330,7 +347,7 @@ export function SearchDialog() {
 								<SearchRow
 									key={trader.address}
 									href={traderHref}
-									onSelect={() => handleOpenChange(false)}
+									onSelect={() => handleResultClick("trader", trader.address)}
 									imageUrl={trader.profile_image}
 									fallback={displayLabel.slice(0, 2).toUpperCase()}
 									title={displayLabel}
@@ -348,7 +365,7 @@ export function SearchDialog() {
 		<>
 			<button
 				type="button"
-				onClick={() => setOpen(true)}
+				onClick={() => handleOpenChange(true)}
 				className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-lg border bg-card/50 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:h-9 sm:w-auto px-3"
 				aria-label="Search"
 			>
