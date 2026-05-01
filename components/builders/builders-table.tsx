@@ -18,6 +18,10 @@ import {
 import { cn, formatBuilderCodeDisplay } from "@/lib/utils";
 import { BUILDERS_TABLE_COLUMN_SIZES } from "./builders-table-columns";
 
+export type BuilderRowWithDisplayRank = BuilderLatestRowWithMetadata & {
+	__displayRank?: number;
+};
+
 type NumericField =
 	| "volume_usd"
 	| "unique_traders"
@@ -139,7 +143,7 @@ function formatNumericCell(value: number | null | undefined, format: ColumnSpec[
 	});
 }
 
-function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderLatestRowWithMetadata, unknown> {
+function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderRowWithDisplayRank, unknown> {
 	return {
 		id: spec.id,
 		meta: { title: spec.title },
@@ -177,7 +181,7 @@ function buildColumns(
 	rankOffset: number,
 	sort: SortState,
 	timeframe: BuilderTimeframe,
-): ColumnDef<BuilderLatestRowWithMetadata, unknown>[] {
+): ColumnDef<BuilderRowWithDisplayRank, unknown>[] {
 	const numericColumns = NUMERIC_COLUMNS.filter((spec) =>
 		isBuilderSortAvailableForTimeframe(spec.sortKey, timeframe),
 	);
@@ -189,9 +193,10 @@ function buildColumns(
 			header: "#",
 			size: BUILDERS_TABLE_COLUMN_SIZES.rank,
 			enableHiding: false,
-			cell: ({ row }) => (
-				<p className="text-muted-foreground tabular-nums">{rankOffset + row.index + 1}</p>
-			),
+			cell: ({ row }) => {
+				const displayRank = row.original.__displayRank ?? rankOffset + row.index + 1;
+				return <p className="text-muted-foreground tabular-nums">{displayRank}</p>;
+			},
 		},
 		{
 			id: "code",
@@ -238,7 +243,7 @@ function buildColumns(
 }
 
 type BuildersTableProps = {
-	builders: BuilderLatestRowWithMetadata[];
+	builders: BuilderRowWithDisplayRank[];
 	sort: BuilderSortBy;
 	timeframe: BuilderTimeframe;
 	rankOffset?: number;

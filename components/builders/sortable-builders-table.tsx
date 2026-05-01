@@ -2,10 +2,14 @@
 
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useId, useMemo, useState, useTransition } from "react";
 import type { BuilderLatestRowWithMetadata, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
-import { BuildersTable } from "@/components/builders/builders-table";
+import {
+	BuildersTable,
+	type BuilderRowWithDisplayRank,
+} from "@/components/builders/builders-table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DEFAULT_BUILDER_SORT, DEFAULT_BUILDER_TIMEFRAME } from "@/lib/struct/builder-shared";
 
 type SortableBuildersTableProps = {
@@ -35,6 +39,41 @@ export function SortableBuildersTable({
 }: SortableBuildersTableProps) {
 	const router = useRouter();
 	const [, startTransition] = useTransition();
+	const [showUnnamed, setShowUnnamed] = useState(false);
+	const checkboxId = useId();
+
+	const visibleBuilders = useMemo<BuilderRowWithDisplayRank[]>(() => {
+		const baseOffset = rankOffset ?? 0;
+		const ranked: BuilderRowWithDisplayRank[] = builders.map((builder, index) => ({
+			...builder,
+			__displayRank: baseOffset + index + 1,
+		}));
+		if (showUnnamed) return ranked;
+		return ranked.filter((builder) => Boolean(builder.metadata?.name?.trim()));
+	}, [builders, rankOffset, showUnnamed]);
+
+	const unnamedToggle = (
+		<label
+			htmlFor={checkboxId}
+			className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
+		>
+			<Checkbox
+				id={checkboxId}
+				checked={showUnnamed}
+				onCheckedChange={(value) => setShowUnnamed(Boolean(value))}
+			/>
+			Show unnamed builders
+		</label>
+	);
+
+	const mergedToolbarRight = toolbarRight ? (
+		<div className="flex flex-wrap items-center gap-3">
+			{unnamedToggle}
+			{toolbarRight}
+		</div>
+	) : (
+		unnamedToggle
+	);
 
 	const navigate = useCallback(
 		(patch: { sort?: BuilderSortBy; timeframe?: BuilderTimeframe }) => {
@@ -90,7 +129,7 @@ export function SortableBuildersTable({
 
 	return (
 		<BuildersTable
-			builders={builders}
+			builders={visibleBuilders}
 			sort={sort}
 			timeframe={timeframe}
 			rankOffset={rankOffset}
@@ -98,7 +137,7 @@ export function SortableBuildersTable({
 			pageSize={pageSize}
 			hasNextPage={hasNextPage}
 			toolbarLeft={toolbarLeft}
-			toolbarRight={toolbarRight}
+			toolbarRight={mergedToolbarRight}
 			onSortChange={handleSortChange}
 			onPageIndexChange={handlePageIndexChange}
 		/>
