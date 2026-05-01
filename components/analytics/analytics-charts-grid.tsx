@@ -159,6 +159,8 @@ const CHART_SPECS: ChartSpec[] = [
 		kind: "timeSeries",
 		id: "volume",
 		title: "Volume",
+		tooltip:
+			"True USD volume (price × shares). Polymarket's headline volume counts each share traded as $1, so their figure matches 'Shares traded' below — not this number.",
 		variant: "bar",
 		series: VOLUME_SERIES,
 		valueFormat: "currency",
@@ -238,6 +240,8 @@ const CHART_SPECS: ChartSpec[] = [
 		kind: "timeSeries",
 		id: "shares",
 		title: "Shares traded",
+		tooltip:
+			"Total shares filled in the bucket. Polymarket reports each share as $1, so this count equals what they publish as headline $ volume.",
 		variant: "area",
 		series: [{ key: "sharesVolume", label: "Shares", color: COLOR_SINGLE }],
 		valueFormat: "count",
