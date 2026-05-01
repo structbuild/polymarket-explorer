@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+	BuilderMetadata,
 	Event,
 	MarketResponse,
 	StructClient,
@@ -73,19 +74,26 @@ export const searchTraders = cache(async (query: string): Promise<Trader[]> => {
 });
 
 export const searchAll = cache(
-	async (query: string): Promise<{ traders: TraderWithPnl[]; markets: MarketResponse[]; events: Event[] }> => {
+	async (
+		query: string,
+	): Promise<{
+		traders: TraderWithPnl[];
+		markets: MarketResponse[];
+		events: Event[];
+		builders: BuilderMetadata[];
+	}> => {
 		const client = getStructClient();
 		const normalizedQuery = normalizeTraderSearchQuery(query);
 
 		if (!client || normalizedQuery.length < 2) {
-			return { traders: [], markets: [], events: [] };
+			return { traders: [], markets: [], events: [], builders: [] };
 		}
 
 		try {
 			const response = await client.search.search({
 				q: normalizedQuery,
 				limit: 10,
-				type: "traders,markets,events",
+				type: "traders,markets,events,builders",
 				include_pnl: true,
 			});
 			return {
@@ -95,10 +103,11 @@ export const searchAll = cache(
 					...normalizeMarketResponseImages(event),
 					markets: event.markets.map(normalizeMarketResponseImages),
 				})),
+				builders: response.data.builders ?? [],
 			};
 		} catch (error) {
 			logStructError(`searchAll:${sanitizeLogValue(normalizedQuery)}`, error);
-			return { traders: [], markets: [], events: [] };
+			return { traders: [], markets: [], events: [], builders: [] };
 		}
 	},
 );

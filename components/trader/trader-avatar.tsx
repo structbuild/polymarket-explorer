@@ -25,11 +25,14 @@ function TraderAvatarFacehash({
 	const roundedClass = rounded === "md" ? "rounded-md" : "rounded-lg";
 
 	return (
-		<Facehash
-			className={cn("border shrink-0 overflow-hidden", roundedClass, className)}
-			colorClasses={facehashColorClasses}
-			name={displayName}
-		/>
+		<div className={cn("relative flex size-10 shrink-0 overflow-hidden border", roundedClass, className)}>
+			<Facehash
+				className={roundedClass}
+				colorClasses={facehashColorClasses}
+				name={displayName}
+				size="100%"
+			/>
+		</div>
 	);
 }
 

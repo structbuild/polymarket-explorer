@@ -15,6 +15,25 @@ type BuilderAvatarProps = {
 	useFacehash?: boolean;
 };
 
+function BuilderAvatarFacehash({
+	builderCode,
+	className,
+}: {
+	builderCode: string;
+	className?: string;
+}) {
+	return (
+		<div className={cn("relative flex size-10 shrink-0 overflow-hidden rounded-md border", className)}>
+			<Facehash
+				className="rounded-md"
+				colorClasses={facehashColorClasses}
+				name={builderCode}
+				size="100%"
+			/>
+		</div>
+	);
+}
+
 export function BuilderAvatar({
 	builderCode,
 	iconUrl,
@@ -36,11 +55,7 @@ export function BuilderAvatar({
 				<AvatarImage src={normalized} alt={alt ?? ""} className="rounded-md object-cover" />
 				<AvatarFallback className="overflow-hidden rounded-md p-0">
 					{useFacehash ? (
-						<Facehash
-							className="size-full border-0 rounded-md"
-							colorClasses={facehashColorClasses}
-							name={builderCode}
-						/>
+						<BuilderAvatarFacehash builderCode={builderCode} className="size-full border-0" />
 					) : (
 						<span className="flex size-full items-center justify-center rounded-md bg-muted text-sm font-medium text-muted-foreground">
 							?
@@ -66,10 +81,6 @@ export function BuilderAvatar({
 	}
 
 	return (
-		<Facehash
-			className={cn("shrink-0 overflow-hidden rounded-md border", className)}
-			colorClasses={facehashColorClasses}
-			name={builderCode}
-		/>
+		<BuilderAvatarFacehash builderCode={builderCode} className={className} />
 	);
 }

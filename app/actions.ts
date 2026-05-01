@@ -87,9 +87,16 @@ export type SearchResultTrader = {
 	volume_usd: number | null;
 };
 
+export type SearchResultBuilder = {
+	builder_code: string;
+	name: string | null;
+	icon_url: string | null;
+};
+
 export type SearchResult = {
 	traders: SearchResultTrader[];
 	markets: SearchResultMarket[];
+	builders: SearchResultBuilder[];
 };
 
 function clampPageNumber(pageNumber: number, maxPageNumber: number) {
@@ -448,7 +455,7 @@ export async function searchTradersAction(query: string) {
 }
 
 export async function searchAction(query: string): Promise<SearchResult> {
-	const { traders, markets, events } = await searchAll(query);
+	const { traders, markets, events, builders } = await searchAll(query);
 
 	const merged = new Map<string, SearchResultMarket>();
 
@@ -490,6 +497,11 @@ export async function searchAction(query: string): Promise<SearchResult> {
 			volume_usd: t.pnl?.total_volume_usd ?? null,
 		})),
 		markets: Array.from(merged.values()),
+		builders: builders.map((b) => ({
+			builder_code: b.builder_code,
+			name: b.name ?? null,
+			icon_url: b.icon_url ?? null,
+		})),
 	};
 }
 

@@ -1,6 +1,12 @@
 "use client";
 
-import { searchAction, type SearchResult, type SearchResultMarket, type SearchResultTrader } from "@/app/actions";
+import {
+	searchAction,
+	type SearchResult,
+	type SearchResultBuilder,
+	type SearchResultMarket,
+	type SearchResultTrader,
+} from "@/app/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -132,6 +138,14 @@ function MarketMeta({ market }: { market: SearchResultMarket }) {
 	);
 }
 
+function BuilderMeta({ builder }: { builder: SearchResultBuilder }) {
+	return (
+		<span className="truncate font-mono text-[11px]">
+			{formatBuilderCodeDisplay(builder.builder_code)}
+		</span>
+	);
+}
+
 function TraderMeta({ trader }: { trader: SearchResultTrader }) {
 	if (trader.volume_usd != null && trader.volume_usd > 0) {
 		return <span>{formatNumber(trader.volume_usd, { compact: true, currency: true })} vol</span>;
@@ -148,7 +162,7 @@ export function openSearchDialog() {
 export function SearchDialog() {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<SearchResult>({ traders: [], markets: [] });
+	const [results, setResults] = useState<SearchResult>({ traders: [], markets: [], builders: [] });
 	const [isMobile, setIsMobile] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -167,7 +181,7 @@ export function SearchDialog() {
 			posthog.capture("search_opened");
 		} else {
 			setQuery("");
-			setResults({ traders: [], markets: [] });
+			setResults({ traders: [], markets: [], builders: [] });
 		}
 	}, []);
 
@@ -230,7 +244,7 @@ export function SearchDialog() {
 		const trimmed = value.trim();
 		if (trimmed.length < 2) {
 			requestIdRef.current += 1;
-			setResults({ traders: [], markets: [] });
+			setResults({ traders: [], markets: [], builders: [] });
 			return;
 		}
 
@@ -251,14 +265,18 @@ export function SearchDialog() {
 						query: trimmed,
 						trader_count: data.traders.length,
 						market_count: data.markets.length,
-						has_results: data.traders.length > 0 || data.markets.length > 0,
+						builder_count: data.builders.length,
+						has_results:
+							data.traders.length > 0 ||
+							data.markets.length > 0 ||
+							data.builders.length > 0,
 					});
 				} catch {
 					if (requestId !== requestIdRef.current) {
 						return;
 					}
 
-					setResults({ traders: [], markets: [] });
+					setResults({ traders: [], markets: [], builders: [] });
 				}
 			});
 		}, DEBOUNCE_MS);
@@ -273,7 +291,13 @@ export function SearchDialog() {
 	);
 
 	const builderCode = normalizeBuilderCodeQuery(query);
-	const hasResults = builderCode != null || results.traders.length > 0 || results.markets.length > 0;
+	const apiBuilderCodes = new Set(results.builders.map((b) => b.builder_code.toLowerCase()));
+	const showBuilderCodeShortcut = builderCode != null && !apiBuilderCodes.has(builderCode.toLowerCase());
+	const hasResults =
+		showBuilderCodeShortcut ||
+		results.builders.length > 0 ||
+		results.traders.length > 0 ||
+		results.markets.length > 0;
 
 	const content = (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -286,7 +310,7 @@ export function SearchDialog() {
 				<Input
 					value={query}
 					onChange={handleChange}
-					placeholder="Search traders or markets..."
+					placeholder="Search markets, builders, or traders..."
 					className="h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent! shadow-none focus-visible:border-transparent focus-visible:ring-0"
 					autoFocus
 					autoComplete="off"
@@ -298,6 +322,38 @@ export function SearchDialog() {
 			<div className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain sm:max-h-[min(70svh,22rem)]">
 				{query.trim().length >= 2 && !isPending && !hasResults && (
 					<p className="py-6 text-center text-sm text-muted-foreground">No results found.</p>
+				)}
+				{(showBuilderCodeShortcut || results.builders.length > 0) && (
+					<div>
+						<div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
+							<BlocksIcon className="size-3.5 text-muted-foreground" />
+							<span className="text-xs font-medium text-muted-foreground">Builders</span>
+						</div>
+						{showBuilderCodeShortcut && builderCode && (
+							<SearchRow
+								href={`/builders/${encodeURIComponent(builderCode)}` as Route}
+								onSelect={() => handleResultClick("builder", builderCode)}
+								fallback={<BlocksIcon className="size-4" />}
+								title={formatBuilderCodeDisplay(builderCode)}
+								meta={<span className="truncate font-mono text-[11px]">{builderCode}</span>}
+							/>
+						)}
+						{results.builders.map((builder) => {
+							const title = builder.name?.trim() || formatBuilderCodeDisplay(builder.builder_code);
+							const fallback = title.slice(0, 2).toUpperCase();
+							return (
+								<SearchRow
+									key={builder.builder_code}
+									href={`/builders/${encodeURIComponent(builder.builder_code)}` as Route}
+									onSelect={() => handleResultClick("builder", builder.builder_code)}
+									imageUrl={builder.icon_url}
+									fallback={fallback}
+									title={title}
+									meta={<BuilderMeta builder={builder} />}
+								/>
+							);
+						})}
+					</div>
 				)}
 				{results.markets.length > 0 && (
 					<div>
@@ -316,21 +372,6 @@ export function SearchDialog() {
 								meta={<MarketMeta market={market} />}
 							/>
 						))}
-					</div>
-				)}
-				{builderCode && (
-					<div>
-						<div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
-							<BlocksIcon className="size-3.5 text-muted-foreground" />
-							<span className="text-xs font-medium text-muted-foreground">Builders</span>
-						</div>
-						<SearchRow
-							href={`/builders/${encodeURIComponent(builderCode)}` as Route}
-							onSelect={() => handleResultClick("builder", builderCode)}
-							fallback={<BlocksIcon className="size-4" />}
-							title={formatBuilderCodeDisplay(builderCode)}
-							meta={<span className="truncate font-mono text-[11px]">{builderCode}</span>}
-						/>
 					</div>
 				)}
 				{results.traders.length > 0 && (
