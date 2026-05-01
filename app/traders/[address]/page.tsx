@@ -293,7 +293,6 @@ async function TraderOverviewSection({
 				totalRedemptions={pnlSummary?.total_redemptions}
 				totalMerges={pnlSummary?.total_merges}
 				totalVolumeUsd={pnlSummary?.total_volume_usd}
-				totalFees={pnlSummary?.total_fees}
 			/>
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
 				<div className="min-w-0 space-y-4 lg:w-2/3">

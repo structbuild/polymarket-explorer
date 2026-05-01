@@ -31,7 +31,6 @@ type TraderHeaderProps = {
 	totalRedemptions?: number | null;
 	totalMerges?: number | null;
 	totalVolumeUsd?: number | null;
-	totalFees?: number | null;
 };
 
 export function TraderHeader({
@@ -45,7 +44,6 @@ export function TraderHeader({
 	totalRedemptions,
 	totalMerges,
 	totalVolumeUsd,
-	totalFees,
 }: TraderHeaderProps) {
 	const activeSince = formatDateShort(firstTradeAt) || "Unknown";
 	const lastActive = formatDateShort(lastTradeAt) || "Unknown";
@@ -76,7 +74,6 @@ export function TraderHeader({
 						<StatItem label="Redemptions" value={formatNumber(totalRedemptions ?? 0, { decimals: 0 })} />
 						<StatItem label="Merges" value={formatNumber(totalMerges ?? 0, { decimals: 0 })} />
 						<StatItem label="Volume" value={formatNumber(totalVolumeUsd ?? 0, { compact: true, currency: true })} />
-						<StatItem label="Fees" value={formatNumber(totalFees ?? 0, { compact: true, currency: true })} />
 					</div>
 				</div>
 			</div>
