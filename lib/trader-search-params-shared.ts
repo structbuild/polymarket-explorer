@@ -30,7 +30,7 @@ export const defaultTraderPositionSortBy = {
 	closed: "last_trade_at",
 } as const satisfies Record<"open" | "closed", TraderPositionSortBy>;
 
-export { pnlTimeframeValues, type PnlTimeframe } from "@/lib/polymarket/pnl-timeframes";
+export { pnlTimeframeValues, type PnlTimeframe } from "@/lib/struct/pnl-timeframes";
 
 export const positivePageParserDef = {
 	parse(value: string) {

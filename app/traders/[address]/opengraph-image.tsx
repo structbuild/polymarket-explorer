@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
 import { loadTraderOpenGraphData } from "@/lib/trader-open-graph";
-import type { PnlDataPoint } from "@/lib/polymarket/pnl";
+import type { PnlDataPoint } from "@/lib/struct/pnl";
 import { formatDateShort, formatDuration, formatNumber } from "@/lib/format";
 import { loadImageAsDataUrl, ogImageSize, ogPalette, OgStatItem } from "@/lib/opengraph";
 import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";

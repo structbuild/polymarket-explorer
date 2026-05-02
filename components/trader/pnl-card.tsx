@@ -8,8 +8,8 @@ import { PnlShareDialog } from "@/components/trader/pnl-share-dialog"
 import { ShareIdentityHeader } from "@/components/trader/share-identity-header"
 import { Button } from "@/components/ui/button"
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
-import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/polymarket/pnl"
-import { pnlTimeframeValues, type PnlTimeframe } from "@/lib/polymarket/pnl-timeframes"
+import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/struct/pnl"
+import { pnlTimeframeValues, type PnlTimeframe } from "@/lib/struct/pnl-timeframes"
 import { pnlTimeframeParser } from "@/lib/trader-search-params"
 import { cn } from "@/lib/utils"
 
@@ -75,6 +75,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 				data={data}
 				annotations={annotations}
 				showAnnotations={showChartAnnotations}
+				timeframe={timeframe}
 				action={
 					<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
 						{hasAnnotations && timeframe === "all" ? (

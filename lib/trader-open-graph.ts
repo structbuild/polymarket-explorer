@@ -9,7 +9,7 @@ import {
 	getTraderPnlCandles,
 	type PnlDataPoint,
 	type PnlStreaks,
-} from "@/lib/polymarket/pnl";
+} from "@/lib/struct/pnl";
 import { getSiteUrl } from "@/lib/env";
 import { formatNumber } from "@/lib/format";
 import { buildEntityPageTitle } from "@/lib/site-metadata";
@@ -126,7 +126,7 @@ const loadTraderOpenGraphDataCached = cache(async (address: string): Promise<Tra
 	const [identity, pnlSummary, pnlCandles, dailyPnl] = await Promise.all([
 		loadTraderOpenGraphIdentityCached(address),
 		getTraderPnlSummary(address),
-		getTraderPnlCandles(address, "all", "1h"),
+		getTraderPnlCandles(address, "lifetime", "1h"),
 		getTraderDailyPnl(address),
 	]);
 

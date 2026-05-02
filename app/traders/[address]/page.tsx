@@ -15,8 +15,8 @@ import {
 	type PnlChartAnnotation,
 	type PnlDataPoint,
 	type PnlStreaks,
-} from "@/lib/polymarket/pnl";
-import { PNL_TIMEFRAMES, type PnlTimeframe } from "@/lib/polymarket/pnl-timeframes";
+} from "@/lib/struct/pnl";
+import { PNL_TIMEFRAMES, type PnlTimeframe } from "@/lib/struct/pnl-timeframes";
 import {
 	getTraderOgImageAlt,
 	getTraderOgImageUrl,
@@ -94,8 +94,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function loadTraderInsights(address: string, timeframe: PnlTimeframe): Promise<TraderInsightsData> {
-	const { interval, fidelity } = PNL_TIMEFRAMES[timeframe];
-	const pnlCandlesPromise = getTraderPnlCandles(address, interval, fidelity);
+	const { timeframe: candleTimeframe, resolution } = PNL_TIMEFRAMES[timeframe];
+	const pnlCandlesPromise = getTraderPnlCandles(address, candleTimeframe, resolution);
 	const dailyPnlPromise = getTraderDailyPnl(address);
 
 	return Promise.all([pnlCandlesPromise, dailyPnlPromise]).then(([pnlCandles, dailyPnl]) => {

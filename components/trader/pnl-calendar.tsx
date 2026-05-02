@@ -1,6 +1,6 @@
 "use client"
 
-import type { DailyPnlEntry } from "@/lib/polymarket/pnl"
+import type { DailyPnlEntry } from "@/lib/struct/pnl"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 

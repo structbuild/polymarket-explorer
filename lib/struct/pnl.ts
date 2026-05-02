@@ -3,6 +3,9 @@ import "server-only";
 import { cache } from "react";
 
 import { formatDateShort } from "@/lib/format";
+import { getStructClient } from "@/lib/struct/client";
+import { logStructError, readStatus } from "@/lib/struct/http";
+import type { StructPnlCandleResolution, StructPnlCandleTimeframe } from "@/lib/struct/pnl-timeframes";
 import { normalizeWalletAddress } from "@/lib/utils";
 
 export type PnlDataPoint = {
@@ -15,41 +18,63 @@ export type DailyPnlEntry = {
 	pnl: number;
 };
 
-const BASE_URL = "https://user-pnl-api.polymarket.com/user-pnl";
+const defaultPnlTimeframe: StructPnlCandleTimeframe = "lifetime";
+const defaultPnlResolution: StructPnlCandleResolution = "1h";
 
-async function fetchPnl(address: string, interval: string, fidelity: string): Promise<PnlDataPoint[]> {
-	const url = `${BASE_URL}?user_address=${address}&interval=${interval}&fidelity=${fidelity}`;
-	const res = await fetch(url, { cache: "no-store" });
+const getTraderPnlCandlesCached = cache(
+	async (
+		address: string,
+		timeframe: StructPnlCandleTimeframe = defaultPnlTimeframe,
+		resolution: StructPnlCandleResolution = defaultPnlResolution,
+	): Promise<PnlDataPoint[]> => {
+		const client = getStructClient();
 
-	if (!res.ok) {
-		console.error(`Polymarket PnL API failed: ${res.status} ${res.statusText}`);
-		return [];
-	}
+		if (!client) {
+			return [];
+		}
 
-	return res.json();
-}
+		try {
+			const response = await client.trader.getTraderPnlV3Candles({
+				address,
+				timeframe,
+				resolution,
+			});
 
-const getTraderPnlCandlesCached = cache(async (address: string, interval = "all", fidelity = "1h"): Promise<PnlDataPoint[]> => {
-	return fetchPnl(address, interval, fidelity);
-});
+			return response.data
+				.map((candle) => ({ t: candle.t, p: candle.close }))
+				.sort((a, b) => a.t - b.t);
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return [];
+			}
 
-export async function getTraderPnlCandles(address: string, interval = "all", fidelity = "1h"): Promise<PnlDataPoint[]> {
+			logStructError(`getTraderPnlV3Candles:${address}:${timeframe}:${resolution}`, error);
+			return [];
+		}
+	},
+);
+
+export async function getTraderPnlCandles(
+	address: string,
+	timeframe: StructPnlCandleTimeframe = defaultPnlTimeframe,
+	resolution: StructPnlCandleResolution = defaultPnlResolution,
+): Promise<PnlDataPoint[]> {
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) return [];
 
-	return getTraderPnlCandlesCached(normalizedAddress, interval, fidelity);
+	return getTraderPnlCandlesCached(normalizedAddress, timeframe, resolution);
 }
 
 export async function getTraderCumulativePnlUsd(address: string): Promise<number> {
-	const points = await getTraderPnlCandles(address, "all", "1d");
+	const points = await getTraderPnlCandles(address, "lifetime", "1d");
 	if (points.length === 0) return 0;
 	const latest = points.reduce((max, point) => (point.t > max.t ? point : max), points[0]);
 	return latest.p;
 }
 
 const getTraderDailyPnlCached = cache(async (address: string): Promise<DailyPnlEntry[]> => {
-	const data = await fetchPnl(address, "all", "1d");
+	const data = await getTraderPnlCandlesCached(address, "lifetime", "1d");
 	return toDailyPnl(data);
 });
 

@@ -9,9 +9,10 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart"
-import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/polymarket/pnl"
-import { formatDateCompact, formatDateFull, pnlColorClass } from "@/lib/format"
+import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/struct/pnl"
+import { formatDateCompact, formatDateFull, formatDateTimeFull, pnlColorClass } from "@/lib/format"
 import { formatNumber } from "@/lib/format"
+import type { PnlTimeframe } from "@/lib/struct/pnl-timeframes"
 import { cn } from "@/lib/utils"
 
 const chartConfig = {
@@ -87,22 +88,25 @@ export function PnlChart({
 	data,
 	annotations,
 	showAnnotations,
+	timeframe,
 }: {
 	data: PnlDataPoint[]
 	annotations?: PnlChartAnnotation[]
 	showAnnotations?: boolean
+	timeframe?: PnlTimeframe
 }) {
-	return <PnlChartContent data={data} annotations={annotations} showAnnotations={showAnnotations} />
+	return <PnlChartContent data={data} annotations={annotations} showAnnotations={showAnnotations} timeframe={timeframe} />
 }
 
 type PnlChartProps = {
 	data: PnlDataPoint[]
 	annotations?: PnlChartAnnotation[]
 	showAnnotations?: boolean
+	timeframe?: PnlTimeframe
 	action?: ReactNode
 }
 
-export function PnlChartContent({ data, annotations = [], showAnnotations = false, action }: PnlChartProps) {
+export function PnlChartContent({ data, annotations = [], showAnnotations = false, timeframe, action }: PnlChartProps) {
 	if (data.length === 0) {
 		return (
 			<div className="overflow-hidden">
@@ -127,6 +131,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 	const lastPnl = data[data.length - 1].p
 	const hasAnnotations = annotations.length > 0
 	const visibleAnnotations = showAnnotations ? annotations : []
+	const shouldShowTooltipTime = timeframe !== undefined && timeframe !== "all"
 
 	return (
 		<div className="overflow-hidden">
@@ -241,7 +246,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 									labelFormatter={(_, payload) => {
 										const entry = payload[0]?.payload as PnlDataPoint | undefined
 										if (!entry) return ""
-										return formatDateFull(entry.t)
+										return shouldShowTooltipTime ? formatDateTimeFull(entry.t) : formatDateFull(entry.t)
 									}}
 									formatter={(value) => formatNumber(value as number, { currency: true })}
 								/>

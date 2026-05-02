@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { InfoRow } from "@/components/trader/info-row";
 import { Separator } from "@/components/ui/separator";
-import type { PnlStreaks } from "@/lib/polymarket/pnl";
+import type { PnlStreaks } from "@/lib/struct/pnl";
 import { formatDuration, formatNumber } from "@/lib/format";
 import type { MarketResponse, TraderPnlSummary } from "@structbuild/sdk";
 
