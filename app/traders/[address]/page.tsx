@@ -11,12 +11,15 @@ import {
 	getTraderCumulativePnlUsd,
 	getTraderDailyPnl,
 	getTraderPnlCandles,
+	getTraderPnlPeriods,
+	getTraderPnlRisk,
 	type DailyPnlEntry,
 	type PnlChartAnnotation,
 	type PnlDataPoint,
+	type PnlPeriods,
 	type PnlStreaks,
 } from "@/lib/struct/pnl";
-import { PNL_TIMEFRAMES, type PnlTimeframe } from "@/lib/struct/pnl-timeframes";
+import { PNL_RISK_TIMEFRAMES, PNL_TIMEFRAMES, type PnlTimeframe } from "@/lib/struct/pnl-timeframes";
 import {
 	getTraderOgImageAlt,
 	getTraderOgImageUrl,
@@ -34,7 +37,7 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type { MarketResponse, TraderPnlSummary, UserProfile } from "@structbuild/sdk";
+import type { MarketResponse, PnlV3RiskResponse, TraderPnlSummary, UserProfile } from "@structbuild/sdk";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -49,6 +52,7 @@ type TraderInsightsData = {
 	pnlCandles: PnlDataPoint[];
 	dailyPnl: DailyPnlEntry[];
 	streaks: PnlStreaks;
+	periods: PnlPeriods;
 	chartAnnotations: PnlChartAnnotation[];
 };
 
@@ -97,15 +101,17 @@ function loadTraderInsights(address: string, timeframe: PnlTimeframe): Promise<T
 	const { timeframe: candleTimeframe, resolution } = PNL_TIMEFRAMES[timeframe];
 	const pnlCandlesPromise = getTraderPnlCandles(address, candleTimeframe, resolution);
 	const dailyPnlPromise = getTraderDailyPnl(address);
+	const periodsPromise = getTraderPnlPeriods(address);
 
-	return Promise.all([pnlCandlesPromise, dailyPnlPromise]).then(([pnlCandles, dailyPnl]) => {
+	return Promise.all([pnlCandlesPromise, dailyPnlPromise, periodsPromise]).then(([pnlCandles, dailyPnl, periods]) => {
 		const streaks = computeStreaks(dailyPnl);
-		const chartAnnotations = timeframe === "all" ? getPnlChartAnnotations(pnlCandles, streaks) : [];
+		const chartAnnotations = timeframe === "all" ? getPnlChartAnnotations(pnlCandles, periods) : [];
 
 		return {
 			pnlCandles,
 			dailyPnl,
 			streaks,
+			periods,
 			chartAnnotations,
 		};
 	});
@@ -137,13 +143,13 @@ async function TraderInsightsSection({
 	timeframe: PnlTimeframe;
 	insightsPromise: Promise<TraderInsightsData>;
 }) {
-	const { pnlCandles, dailyPnl, chartAnnotations } = await insightsPromise;
+	const { pnlCandles, dailyPnl, periods, chartAnnotations } = await insightsPromise;
 
 	return (
 		<>
 			<PnlCard address={address} data={pnlCandles} displayName={displayName} profileImage={profileImage} annotations={chartAnnotations} timeframe={timeframe} />
 			<div className="rounded-lg bg-card p-4 sm:p-6">
-				<PnlCalendar data={dailyPnl} />
+				<PnlCalendar data={dailyPnl} periods={periods} />
 			</div>
 		</>
 	);
@@ -205,14 +211,16 @@ async function TraderPerformanceSummarySection({
 	pnlSummary,
 	insightsPromise,
 	bestTradeMarketPromise,
+	pnlRiskPromise,
 }: {
 	pnlSummary: TraderPnlSummary | null;
 	insightsPromise: Promise<TraderInsightsData>;
 	bestTradeMarketPromise: Promise<MarketResponse | null>;
+	pnlRiskPromise: Promise<PnlV3RiskResponse | null>;
 }) {
-	const [{ streaks }, bestTradeMarket] = await Promise.all([insightsPromise, bestTradeMarketPromise]);
+	const [{ streaks, periods }, bestTradeMarket, pnlRisk] = await Promise.all([insightsPromise, bestTradeMarketPromise, pnlRiskPromise]);
 
-	return <PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} streaks={streaks} />;
+	return <PerformanceSummary pnlSummary={pnlSummary} bestTradeMarket={bestTradeMarket} pnlRisk={pnlRisk} streaks={streaks} periods={periods} />;
 }
 
 function TraderPerformanceSummaryFallback() {
@@ -220,7 +228,7 @@ function TraderPerformanceSummaryFallback() {
 		<div className="rounded-lg bg-card p-4 sm:p-6">
 			<div className="mb-4 h-5 w-40 animate-pulse rounded bg-muted" />
 			<div className="space-y-3">
-				{Array.from({ length: 7 }, (_, index) => (
+				{Array.from({ length: 10 }, (_, index) => (
 					<div key={index} className="flex items-center justify-between gap-4">
 						<div className="h-4 w-28 animate-pulse rounded bg-muted" />
 						<div className="h-4 w-20 animate-pulse rounded bg-muted" />
@@ -249,6 +257,7 @@ async function TraderOverviewSection({
 	cumulativePnlUsdPromise: Promise<number>;
 }) {
 	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
+	const pnlRiskPromise = getTraderPnlRisk(address, PNL_RISK_TIMEFRAMES[timeframe]);
 
 	const displayName = getTraderDisplayName({
 		address,
@@ -314,6 +323,7 @@ async function TraderOverviewSection({
 							pnlSummary={pnlSummary}
 							insightsPromise={insightsPromise}
 							bestTradeMarketPromise={bestTradeMarketPromise}
+							pnlRiskPromise={pnlRiskPromise}
 						/>
 					</Suspense>
 					<Suspense fallback={<TraderDnaFallback />}>

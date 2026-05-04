@@ -321,7 +321,7 @@ export default async function OpenGraphImage({ params }: Props) {
 		notFound();
 	}
 
-	const { avatarDataUrl, displayName, pnlCandles, pnlSummary, streaks } = data;
+	const { avatarDataUrl, displayName, pnlCandles, pnlSummary, streaks, periods } = data;
 	const chart = buildChartGeometry(pnlCandles);
 	const headlinePnl = chart?.lastPoint.value ?? 0;
 
@@ -338,8 +338,10 @@ export default async function OpenGraphImage({ params }: Props) {
 	const marketsWon = formatNumber(pnlSummary?.markets_won ?? 0, { decimals: 0 });
 	const marketsLost = formatNumber(pnlSummary?.markets_lost ?? 0, { decimals: 0 });
 	const avgHold = pnlSummary?.avg_hold_time_seconds ? formatDuration(pnlSummary.avg_hold_time_seconds) : "—";
-	const bestDay = streaks.bestDay.pnl === 0 ? "—" : formatNumber(streaks.bestDay.pnl, { compact: true, currency: true });
-	const worstDay = streaks.worstDay.pnl === 0 ? "—" : formatNumber(streaks.worstDay.pnl, { compact: true, currency: true });
+	const bestDayPeriod = periods.totalPnl.day.best;
+	const worstDayPeriod = periods.totalPnl.day.worst;
+	const bestDay = !bestDayPeriod || bestDayPeriod.change <= 0 ? "—" : formatNumber(bestDayPeriod.change, { compact: true, currency: true });
+	const worstDay = !worstDayPeriod || worstDayPeriod.change >= 0 ? "—" : formatNumber(worstDayPeriod.change, { compact: true, currency: true });
 	const longestWin = `${streaks.longestWin}d`;
 	const longestLoss = `${streaks.longestLoss}d`;
 	const currentStreak = streaks.current === 0 ? "Flat" : `${Math.abs(streaks.current)}d ${streaks.current > 0 ? "W" : "L"}`;
@@ -592,8 +594,8 @@ export default async function OpenGraphImage({ params }: Props) {
 						{renderInfoRow("Markets Won", marketsWon, ogPalette.positive)}
 						{renderInfoRow("Markets Lost", marketsLost, ogPalette.negative)}
 						{renderInfoRow("Avg. Hold Time", avgHold)}
-						{renderInfoRow("Best Day", bestDay, streaks.bestDay.pnl > 0 ? ogPalette.positive : undefined)}
-						{renderInfoRow("Worst Day", worstDay, streaks.worstDay.pnl < 0 ? ogPalette.negative : undefined)}
+						{renderInfoRow("Best Day", bestDay, (bestDayPeriod?.change ?? 0) > 0 ? ogPalette.positive : undefined)}
+						{renderInfoRow("Worst Day", worstDay, (worstDayPeriod?.change ?? 0) < 0 ? ogPalette.negative : undefined)}
 						{renderInfoRow("Win Streak", longestWin)}
 						{renderInfoRow("Loss Streak", longestLoss)}
 						{renderInfoRow("Current Streak", currentStreak, undefined, true)}

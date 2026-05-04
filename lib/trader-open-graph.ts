@@ -7,7 +7,9 @@ import {
 	computeStreaks,
 	getTraderDailyPnl,
 	getTraderPnlCandles,
+	getTraderPnlPeriods,
 	type PnlDataPoint,
+	type PnlPeriods,
 	type PnlStreaks,
 } from "@/lib/struct/pnl";
 import { getSiteUrl } from "@/lib/env";
@@ -28,6 +30,7 @@ export type TraderOpenGraphData = {
 	pnlSummary: TraderPnlSummary | null;
 	pnlCandles: PnlDataPoint[];
 	streaks: PnlStreaks;
+	periods: PnlPeriods;
 };
 
 export type TraderOpenGraphIdentity = {
@@ -123,11 +126,12 @@ export async function loadTraderOpenGraphIdentity(address: string): Promise<Trad
 }
 
 const loadTraderOpenGraphDataCached = cache(async (address: string): Promise<TraderOpenGraphData> => {
-	const [identity, pnlSummary, pnlCandles, dailyPnl] = await Promise.all([
+	const [identity, pnlSummary, pnlCandles, dailyPnl, periods] = await Promise.all([
 		loadTraderOpenGraphIdentityCached(address),
 		getTraderPnlSummary(address),
 		getTraderPnlCandles(address, "lifetime", "1h"),
 		getTraderDailyPnl(address),
+		getTraderPnlPeriods(address),
 	]);
 
 	return {
@@ -137,6 +141,7 @@ const loadTraderOpenGraphDataCached = cache(async (address: string): Promise<Tra
 		pnlSummary,
 		pnlCandles,
 		streaks: computeStreaks(dailyPnl),
+		periods,
 	};
 });
 
@@ -152,6 +157,18 @@ export async function loadTraderOpenGraphData(address: string): Promise<TraderOp
 			pnlSummary: null,
 			pnlCandles: [],
 			streaks: computeStreaks([]),
+			periods: {
+				totalPnl: {
+					day: { best: null, worst: null },
+					week: { best: null, worst: null },
+					month: { best: null, worst: null },
+				},
+				portfolio: {
+					day: { best: null, worst: null },
+					week: { best: null, worst: null },
+					month: { best: null, worst: null },
+				},
+			},
 		};
 	}
 

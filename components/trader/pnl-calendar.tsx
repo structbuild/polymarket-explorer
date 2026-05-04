@@ -1,6 +1,6 @@
 "use client"
 
-import type { DailyPnlEntry } from "@/lib/struct/pnl"
+import type { DailyPnlEntry, PnlPeriodRecord, PnlPeriods } from "@/lib/struct/pnl"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
@@ -12,14 +12,21 @@ import { cn } from "@/lib/utils"
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
+function periodDateKey(period: PnlPeriodRecord | null): string | null {
+	if (!period) return null
+
+	const date = new Date(period.from * 1000)
+	return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+export function PnlCalendar({ data, periods }: { data: DailyPnlEntry[]; periods: PnlPeriods }) {
 	const pnlByDate = useMemo(() => {
-		const map = new Map<string, { pnl: number; label: string }>()
+		const map = new Map<string, DailyPnlEntry & { label: string }>()
 		for (const entry of data) {
 			const date = new Date(entry.t * 1000)
 			const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
 			map.set(key, {
-				pnl: (map.get(key)?.pnl ?? 0) + entry.pnl,
+				...entry,
 				label: formatDateShort(entry.t),
 			})
 		}
@@ -35,21 +42,19 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 	const cells = useMemo(() => getMonthGrid(viewYear, viewMonth), [viewYear, viewMonth])
 
 	const { maxAbs, bestKey, worstKey } = useMemo(() => {
-		let bestK: string | null = null
-		let worstK: string | null = null
-		let bestPnl = -Infinity
-		let worstPnl = Infinity
-		for (const [key, entry] of pnlByDate) {
-			if (entry.pnl > bestPnl) { bestPnl = entry.pnl; bestK = key }
-			if (entry.pnl < worstPnl) { worstPnl = entry.pnl; worstK = key }
-		}
+		const bestK = periodDateKey(periods.totalPnl.day.best)
+		const worstK = periodDateKey(periods.totalPnl.day.worst)
 		let max = 0
 		for (const [key, entry] of pnlByDate) {
 			if (key === bestK || key === worstK) continue
 			if (Math.abs(entry.pnl) > max) max = Math.abs(entry.pnl)
 		}
-		return { maxAbs: max, bestKey: bestPnl > 0 ? bestK : null, worstKey: worstPnl < 0 ? worstK : null }
-	}, [pnlByDate])
+		return {
+			maxAbs: max,
+			bestKey: (periods.totalPnl.day.best?.change ?? 0) > 0 ? bestK : null,
+			worstKey: (periods.totalPnl.day.worst?.change ?? 0) < 0 ? worstK : null,
+		}
+	}, [pnlByDate, periods])
 
 	const monthKeys = useMemo(() => {
 		return [...pnlByDate.keys()]
@@ -94,6 +99,37 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 	const monthLabel = new Date(viewYear, viewMonth).toLocaleDateString("en-US", { month: "long", year: "numeric" })
 	const activeSelectedKey = selectedKey && monthKeys.includes(selectedKey) ? selectedKey : monthKeys.at(-1) ?? null
 	const selectedEntry = activeSelectedKey ? pnlByDate.get(activeSelectedKey) : null
+
+	function CalendarTooltip({ entry }: { entry: DailyPnlEntry & { label: string } }) {
+		return (
+			<div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-48 -translate-x-1/2 rounded-lg border border-border/70 bg-popover p-2 text-xs text-popover-foreground opacity-0 shadow-lg transition-opacity sm:group-hover:opacity-100">
+				<div className="mb-2 flex items-start justify-between gap-3 border-b border-border/60 pb-2">
+					<div>
+						<p className="font-medium leading-none">{entry.label}</p>
+						<p className="mt-1 text-[11px] text-muted-foreground">Daily PnL</p>
+					</div>
+					<span className={cn("font-mono font-semibold tabular-nums", pnlColorClass(entry.pnl))}>
+						{formatNumber(entry.pnl, { currency: true, compact: true })}
+					</span>
+				</div>
+				<div className="grid gap-1">
+					<CalendarTooltipRow label="Open" value={entry.open} />
+					<CalendarTooltipRow label="High" value={entry.high} />
+					<CalendarTooltipRow label="Low" value={entry.low} />
+					<CalendarTooltipRow label="Close" value={entry.close} />
+				</div>
+			</div>
+		)
+	}
+
+	function CalendarTooltipRow({ label, value }: { label: string; value: number }) {
+		return (
+			<div className="flex items-center justify-between gap-3">
+				<span className="text-muted-foreground">{label}</span>
+				<span className="font-mono font-medium tabular-nums">{formatNumber(value, { currency: true, compact: true })}</span>
+			</div>
+		)
+	}
 
 	return (
 		<div>
@@ -144,12 +180,7 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 									<span className={cn("leading-tight sm:text-sm", key === bestKey || key === worstKey ? "text-white" : "text-foreground/85")}>
 										{formatNumber(pnl, { currency: true, compact: true })}
 									</span>
-									<div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground opacity-0 transition-opacity sm:group-hover:opacity-100">
-										<span className={pnlColorClass(pnl)}>
-											{formatNumber(pnl, { currency: true, compact: true })}
-										</span>
-										<span className="ml-1 text-muted-foreground">{entry?.label}</span>
-									</div>
+									{entry ? <CalendarTooltip entry={entry} /> : null}
 								</>
 							)}
 						</>
@@ -179,13 +210,35 @@ export function PnlCalendar({ data }: { data: DailyPnlEntry[] }) {
 			</div>
 
 			{isTouchDevice && selectedEntry && (
-				<div className="mt-4 flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-					<span className="text-muted-foreground">{selectedEntry.label}</span>
-					<span className={cn("font-medium", pnlColorClass(selectedEntry.pnl))}>
-						{formatNumber(selectedEntry.pnl, { currency: true, compact: true })}
-					</span>
+				<div className="mt-4 rounded-lg bg-muted/50 p-4 text-sm">
+					<div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
+						<div>
+							<p className="font-medium leading-none">{selectedEntry.label}</p>
+							<p className="mt-1.5 text-xs text-muted-foreground">Daily PnL</p>
+						</div>
+						<span className={cn("font-mono text-base font-medium tabular-nums", pnlColorClass(selectedEntry.pnl))}>
+							{formatNumber(selectedEntry.pnl, { currency: true, compact: true })}
+						</span>
+					</div>
+					<div className="mt-3 grid grid-cols-2 gap-2">
+						<CalendarSelectedMetric label="Open" value={selectedEntry.open} />
+						<CalendarSelectedMetric label="High" value={selectedEntry.high} />
+						<CalendarSelectedMetric label="Low" value={selectedEntry.low} />
+						<CalendarSelectedMetric label="Close" value={selectedEntry.close} />
+					</div>
 				</div>
 			)}
+		</div>
+	)
+}
+
+function CalendarSelectedMetric({ label, value }: { label: string; value: number }) {
+	return (
+		<div className="rounded-md bg-muted px-3 py-2">
+			<p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+			<p className="mt-1 font-mono text-sm font-medium tabular-nums">
+				{formatNumber(value, { currency: true, compact: true })}
+			</p>
 		</div>
 	)
 }

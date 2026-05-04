@@ -256,7 +256,7 @@ function PnlCandlestickChart({ data }: { data: PnlDataPoint[] }) {
 		}
 	}, [data])
 
-	return <div ref={containerRef} className="h-[220px] min-h-[220px] w-full sm:h-[280px] sm:min-h-[250px]" />
+	return <div ref={containerRef} className="h-[260px] min-h-[260px] w-full sm:h-[340px] sm:min-h-[310px]" />
 }
 
 export function PnlChart({
@@ -297,7 +297,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 						</div>
 					) : null}
 				</div>
-				<div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground sm:h-[280px]">
+				<div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground sm:h-[340px]">
 					No PnL data available
 				</div>
 			</div>
@@ -392,7 +392,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 				{chartMode === "candles" ? (
 					<PnlCandlestickChart data={data} />
 				) : (
-					<ChartContainer config={chartConfig} className="h-[220px] min-h-[220px] w-full sm:h-[280px] sm:min-h-[250px]">
+					<ChartContainer config={chartConfig} className="h-[260px] min-h-[260px] w-full sm:h-[340px] sm:min-h-[310px]">
 						<AreaChart accessibilityLayer data={chartData} margin={{ left: 0, right: 60, top: 0, bottom: 0 }}>
 						<defs>
 							<linearGradient id="pnlRangeGradient" x1="0" y1="0" x2="0" y2="1">
