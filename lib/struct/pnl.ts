@@ -10,6 +10,10 @@ import { normalizeWalletAddress } from "@/lib/utils";
 
 export type PnlDataPoint = {
 	t: number;
+	open: number;
+	high: number;
+	low: number;
+	close: number;
 	p: number;
 };
 
@@ -41,7 +45,14 @@ const getTraderPnlCandlesCached = cache(
 			});
 
 			return response.data
-				.map((candle) => ({ t: candle.t, p: candle.close }))
+				.map((candle) => ({
+					t: candle.t,
+					open: candle.open,
+					high: candle.high,
+					low: candle.low,
+					close: candle.close,
+					p: candle.close,
+				}))
 				.sort((a, b) => a.t - b.t);
 		} catch (error) {
 			if (readStatus(error) === 404) {

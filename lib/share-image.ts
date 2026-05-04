@@ -149,6 +149,52 @@ async function prepareImagesForCapture(clone: HTMLElement) {
 	await nextFrame()
 }
 
+function copyCanvasForCapture(source: HTMLCanvasElement, clone: HTMLCanvasElement) {
+	const bounds = source.getBoundingClientRect()
+	const image = document.createElement("img")
+
+	try {
+		image.src = source.toDataURL("image/png")
+	} catch {
+		return
+	}
+
+	image.alt = ""
+	image.setAttribute("aria-hidden", "true")
+	image.style.display = "block"
+	image.style.height = bounds.height ? `${bounds.height}px` : `${source.height}px`
+	image.style.maxWidth = "100%"
+	image.style.width = bounds.width ? `${bounds.width}px` : `${source.width}px`
+
+	const canvasStyle = window.getComputedStyle(source)
+	image.style.opacity = canvasStyle.opacity
+	image.style.position = canvasStyle.position
+	image.style.inset = canvasStyle.inset
+	image.style.top = canvasStyle.top
+	image.style.right = canvasStyle.right
+	image.style.bottom = canvasStyle.bottom
+	image.style.left = canvasStyle.left
+	image.style.transform = canvasStyle.transform
+	image.style.zIndex = canvasStyle.zIndex
+
+	clone.replaceWith(image)
+}
+
+async function prepareCanvasesForCapture(source: HTMLElement, clone: HTMLElement) {
+	const sourceCanvases = Array.from(source.querySelectorAll("canvas"))
+	const cloneCanvases = Array.from(clone.querySelectorAll("canvas"))
+
+	for (let index = 0; index < sourceCanvases.length; index += 1) {
+		const sourceCanvas = sourceCanvases[index]
+		const cloneCanvas = cloneCanvases[index]
+
+		if (!cloneCanvas) continue
+		copyCanvasForCapture(sourceCanvas, cloneCanvas)
+	}
+
+	await nextFrame()
+}
+
 async function createCaptureClone(node: HTMLElement, width: number) {
 	const mount = document.createElement("div")
 	const clone = node.cloneNode(true) as HTMLElement
@@ -178,6 +224,7 @@ async function createCaptureClone(node: HTMLElement, width: number) {
 	document.body.appendChild(mount)
 
 	await nextFrame()
+	await prepareCanvasesForCapture(node, clone)
 	await prepareImagesForCapture(clone)
 
 	return {

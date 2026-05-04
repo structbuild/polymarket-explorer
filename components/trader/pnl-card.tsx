@@ -1,9 +1,9 @@
 "use client"
 
-import { startTransition, useRef, useTransition } from "react"
+import { startTransition, useRef, useState, useTransition } from "react"
 import { useQueryState } from "nuqs"
 
-import { PnlChartContent } from "@/components/trader/pnl-chart"
+import { ChartModeToggle, PnlChartContent, type PnlChartMode } from "@/components/trader/pnl-chart"
 import { PnlShareDialog } from "@/components/trader/pnl-share-dialog"
 import { ShareIdentityHeader } from "@/components/trader/share-identity-header"
 import { Button } from "@/components/ui/button"
@@ -56,6 +56,7 @@ function TimeframeSelector({
 
 export function PnlCard({ data, displayName, address, profileImage, annotations = [], timeframe }: PnlCardProps) {
 	const cardRef = useRef<HTMLDivElement>(null)
+	const [chartMode, setChartMode] = useState<PnlChartMode>("area")
 	const [showAnnotations, setShowAnnotations] = useLocalStorage(SHOW_HIGHLIGHTS_STORAGE_KEY, false)
 	const hasAnnotations = annotations.length > 0
 
@@ -76,6 +77,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 				annotations={annotations}
 				showAnnotations={showChartAnnotations}
 				timeframe={timeframe}
+				chartMode={chartMode}
 				action={
 					<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
 						{hasAnnotations && timeframe === "all" ? (
@@ -89,6 +91,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 							</Button>
 						) : null}
 						<TimeframeSelector value={timeframe} onChange={(tf) => setTimeframe(tf)} isPending={isPending} />
+						<ChartModeToggle value={chartMode} onChange={setChartMode} />
 						<PnlShareDialog address={address} displayName={displayName} targetRef={cardRef} />
 					</div>
 				}
