@@ -45,12 +45,15 @@ export function PnlCalendar({ data, periods }: { data: DailyPnlEntry[]; periods:
 		const bestK = periodDateKey(periods.totalPnl.day.best)
 		const worstK = periodDateKey(periods.totalPnl.day.worst)
 		let max = 0
+		let fallbackMax = 0
 		for (const [key, entry] of pnlByDate) {
+			const absPnl = Math.abs(entry.pnl)
+			if (absPnl > fallbackMax) fallbackMax = absPnl
 			if (key === bestK || key === worstK) continue
-			if (Math.abs(entry.pnl) > max) max = Math.abs(entry.pnl)
+			if (absPnl > max) max = absPnl
 		}
 		return {
-			maxAbs: max,
+			maxAbs: max || fallbackMax,
 			bestKey: (periods.totalPnl.day.best?.change ?? 0) > 0 ? bestK : null,
 			worstKey: (periods.totalPnl.day.worst?.change ?? 0) < 0 ? worstK : null,
 		}
