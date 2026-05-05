@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 const NOTIFICATION = {
-	version: "2",
-	message: "API & Explorer Update: Builder Analytics & Dashboards",
-	cta: "Check it out",
-	href: "/builders",
+	version: "3",
+	message: "Struct v0.6 is live - The Most Accurate PnL for Polymarket",
+	cta: "Learn more",
+	href: "/",
 } as const;
 
 

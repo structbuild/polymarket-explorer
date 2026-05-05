@@ -3,7 +3,7 @@
 import { startTransition, useRef, useState, useTransition } from "react"
 import { useQueryState } from "nuqs"
 
-import { ChartMetricSelect, ChartModeToggle, PnlChartContent, type PnlChartMetric, type PnlChartMode } from "@/components/trader/pnl-chart"
+import { ChartSettingsButton, PnlChartContent, type PnlChartMetric, type PnlChartMode } from "@/components/trader/pnl-chart"
 import { PnlShareDialog } from "@/components/trader/pnl-share-dialog"
 import { ShareIdentityHeader } from "@/components/trader/share-identity-header"
 import { Button } from "@/components/ui/button"
@@ -93,8 +93,12 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 							</Button>
 						) : null}
 						<TimeframeSelector value={timeframe} onChange={(tf) => setTimeframe(tf)} isPending={isPending} />
-						<ChartModeToggle value={chartMode} onChange={setChartMode} />
-						{chartMode === "area" ? <ChartMetricSelect value={chartMetric} onChange={setChartMetric} /> : null}
+						<ChartSettingsButton
+							chartMode={chartMode}
+							onChartModeChange={setChartMode}
+							chartMetric={chartMetric}
+							onChartMetricChange={setChartMetric}
+						/>
 						<PnlShareDialog address={address} displayName={displayName} targetRef={cardRef} />
 					</div>
 				}

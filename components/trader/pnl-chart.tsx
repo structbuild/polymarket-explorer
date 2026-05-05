@@ -220,12 +220,16 @@ export function ChartModeToggle({ value, onChange }: { value: PnlChartMode; onCh
 	)
 }
 
-export function ChartMetricSelect({
-	value,
-	onChange,
+export function ChartSettingsButton({
+	chartMode,
+	onChartModeChange,
+	chartMetric,
+	onChartMetricChange,
 }: {
-	value: PnlChartMetric
-	onChange: (value: PnlChartMetric) => void
+	chartMode: PnlChartMode
+	onChartModeChange: (value: PnlChartMode) => void
+	chartMetric: PnlChartMetric
+	onChartMetricChange: (value: PnlChartMetric) => void
 }) {
 	return (
 		<Popover>
@@ -236,21 +240,29 @@ export function ChartMetricSelect({
 					</Button>
 				}
 			/>
-			<PopoverContent align="end" className="w-44 p-1.5">
-				<div className="grid gap-1">
-					{chartMetricOptions.map((option) => (
-						<button
-							key={option.value}
-							type="button"
-							onClick={() => onChange(option.value)}
-							className={cn(
-								"rounded-sm px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-muted",
-								value === option.value ? "bg-muted text-foreground" : "text-muted-foreground"
-							)}
-						>
-							{option.label}
-						</button>
-					))}
+			<PopoverContent align="end" className="w-52 p-2">
+				<div className="grid gap-3">
+					<div className="grid gap-1.5">
+						<div className="px-1 text-xs text-muted-foreground">Chart type</div>
+						<ChartModeToggle value={chartMode} onChange={onChartModeChange} />
+					</div>
+					<div className="grid gap-1">
+						<div className="px-1 text-xs text-muted-foreground">Metric</div>
+						{chartMetricOptions.map((option) => (
+							<button
+								key={option.value}
+								type="button"
+								onClick={() => onChartMetricChange(option.value)}
+								disabled={chartMode !== "area"}
+								className={cn(
+									"rounded-sm px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50",
+									chartMetric === option.value ? "bg-muted text-foreground" : "text-muted-foreground"
+								)}
+							>
+								{option.label}
+							</button>
+						))}
+					</div>
 				</div>
 			</PopoverContent>
 		</Popover>
