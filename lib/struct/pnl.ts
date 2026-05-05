@@ -62,16 +62,23 @@ const getTraderPnlCandlesCached = cache(
 			});
 
 			return response.data
-				.map((candle) => ({
-					t: candle.t,
-					open: candle.open,
-					high: candle.high,
-					low: candle.low,
-					close: candle.close,
-					p: candle.close,
-					numOpenPositions: candle.num_open_positions,
-					usdBalance: candle.usdc_balance + candle.pusd_balance,
-				}))
+				.map((candle) => {
+					const close = candle.c ?? candle.rp + candle.up;
+					const open = candle.o ?? close;
+					const high = candle.h ?? Math.max(open, close);
+					const low = candle.l ?? Math.min(open, close);
+
+					return {
+						t: candle.t,
+						open,
+						high,
+						low,
+						close,
+						p: close,
+						numOpenPositions: candle.nop,
+						usdBalance: candle.ub + candle.pb,
+					};
+				})
 				.sort((a, b) => a.t - b.t);
 		} catch (error) {
 			if (readStatus(error) === 404) {
