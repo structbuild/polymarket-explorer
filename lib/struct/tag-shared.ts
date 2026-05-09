@@ -32,7 +32,6 @@ export const TAG_TIMEFRAME_LABELS: Record<TagSortTimeframe, string> = {
 	"7d": "7d",
 	"30d": "30d",
 	"1mo": "1mo",
-	"1y": "1y",
 };
 
 export const DEFAULT_TAG_TIMEFRAME: TagSortTimeframe = "lifetime";

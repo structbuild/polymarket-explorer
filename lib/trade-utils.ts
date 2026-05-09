@@ -18,6 +18,9 @@ export function isBuyTrade(trade: OrderFilledTradeEvent): boolean {
 const activityLabels: Record<Trade["trade_type"], string> = {
 	OrderFilled: "Order Filled",
 	OrdersMatched: "Orders Matched",
+	MakerRebate: "Maker Rebate",
+	Reward: "Reward",
+	Yield: "Yield",
 	Redemption: "Redeemed",
 	Merge: "Merged",
 	Split: "Split",
@@ -37,7 +40,6 @@ const activityLabels: Record<Trade["trade_type"], string> = {
 	ManualResolution: "Manual Resolution",
 	NegRiskOutcomeReported: "NegRisk Outcome Reported",
 	RegisterToken: "Token Registered",
-	Approval: "Approval",
 }
 
 export function getActivityLabel(trade: Trade): string {

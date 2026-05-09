@@ -55,9 +55,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const canonicalSlug = tag.slug ?? slug;
 	const tagTitle = formatCapitalizeWords(tag.label);
 
-	const volume = tag.volume_usd > 0 ? formatNumber(tag.volume_usd, { compact: true, currency: true }) : null;
-	const traders = tag.unique_traders > 0 ? formatNumber(tag.unique_traders, { decimals: 0 }) : null;
-	const isEmpty = tag.volume_usd === 0 && tag.txn_count === 0 && tag.unique_traders === 0;
+	const volumeUsd = tag.volume_usd ?? 0;
+	const uniqueTraders = tag.unique_traders ?? 0;
+	const txnCount = tag.txn_count ?? 0;
+	const volume = volumeUsd > 0 ? formatNumber(volumeUsd, { compact: true, currency: true }) : null;
+	const traders = uniqueTraders > 0 ? formatNumber(uniqueTraders, { decimals: 0 }) : null;
+	const isEmpty = volumeUsd === 0 && txnCount === 0 && uniqueTraders === 0;
 
 	const stats: string[] = [];
 	if (volume) stats.push(`${volume} volume`);

@@ -478,7 +478,7 @@ export async function searchAction(query: string): Promise<SearchResult> {
 	}
 
 	for (const event of events) {
-		for (const m of event.markets) {
+		for (const m of event.markets ?? []) {
 			if (!m.market_slug || merged.has(m.market_slug)) continue;
 			merged.set(m.market_slug, {
 				slug: m.market_slug,

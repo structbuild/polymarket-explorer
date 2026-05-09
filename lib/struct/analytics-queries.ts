@@ -7,6 +7,7 @@ import type {
 	GlobalChangeTimeframe,
 	GlobalPctChange,
 	MetricPctChange,
+	TagChangeTimeframe,
 	TimeBucketRow,
 	TraderTimeBucketRow,
 } from "@structbuild/sdk";
@@ -65,6 +66,13 @@ const CHANGES_TIMEFRAME: Record<AnalyticsRange, ChangeTimeframe> = {
 	"7d": "7d",
 	"30d": "30d",
 	all: "1y",
+};
+
+const TAG_CHANGES_TIMEFRAME: Record<AnalyticsRange, TagChangeTimeframe> = {
+	"1d": "24h",
+	"7d": "7d",
+	"30d": "30d",
+	all: "1mo",
 };
 
 const MAX_PAGINATION_REQUESTS = 5;
@@ -403,7 +411,7 @@ export async function getTagAnalyticsChanges(
 	try {
 		const response = await client.analytics.getTagChanges({
 			tag,
-			timeframe: CHANGES_TIMEFRAME[range],
+			timeframe: TAG_CHANGES_TIMEFRAME[range],
 		});
 		return response.data;
 	} catch (error) {

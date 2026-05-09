@@ -101,7 +101,7 @@ export const searchAll = cache(
 				markets: (response.data.markets ?? []).map(normalizeMarketResponseImages),
 				events: ((response.data.events ?? []) as Event[]).map((event) => ({
 					...normalizeMarketResponseImages(event),
-					markets: event.markets.map(normalizeMarketResponseImages),
+					markets: (event.markets ?? []).map(normalizeMarketResponseImages),
 				})),
 				builders: response.data.builders ?? [],
 			};
