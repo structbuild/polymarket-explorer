@@ -166,14 +166,7 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 	};
 
 	const sorted = useMemo(() => {
-		const all = markets.filter((m) => m.market_slug);
-		let arr = all;
-		if (sortKey === "probability") {
-			const open = all.filter((m) => !isMarketResolved(m));
-			if (open.length > 0) arr = open;
-		}
-
-		const copy = [...arr];
+		const copy = markets.filter((m) => m.market_slug);
 		switch (sortKey) {
 			case "volume":
 				copy.sort((a, b) => compareNullable(a.volume_24hr ?? null, b.volume_24hr ?? null, sortDirection));
@@ -184,9 +177,12 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 				);
 				break;
 			case "probability":
-				copy.sort((a, b) =>
-					compareNullable(getYesOutcome(a)?.price ?? null, getYesOutcome(b)?.price ?? null, sortDirection),
-				);
+				copy.sort((a, b) => {
+					const aResolved = isMarketResolved(a);
+					const bResolved = isMarketResolved(b);
+					if (aResolved !== bResolved) return aResolved ? 1 : -1;
+					return compareNullable(getYesOutcome(a)?.price ?? null, getYesOutcome(b)?.price ?? null, sortDirection);
+				});
 				break;
 		}
 		return copy;

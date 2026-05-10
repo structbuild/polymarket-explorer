@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { getTagEventsStatusPageAction } from "@/app/actions";
 import { EventStatusTabs } from "@/components/event/event-status-tabs";
@@ -37,7 +37,7 @@ function buildStatusHref(tab: EventStatusTab) {
 }
 
 function replaceStatusUrl(tab: EventStatusTab) {
-	window.history.pushState(window.history.state, "", buildStatusHref(tab));
+	window.history.replaceState(window.history.state, "", buildStatusHref(tab));
 }
 
 function emptyMessage(tab: EventStatusTab) {
@@ -74,24 +74,69 @@ export function TagEventsStatusListing({
 		cursor: initialCursor,
 	}));
 
+	const lastSyncedProps = useRef({
+		events: initialEvents,
+		tab: initialTab,
+		hasMore: initialHasMore,
+		nextCursor: initialNextCursor,
+		cursor: initialCursor,
+	});
+	const latestRequestId = useRef(0);
+
+	useEffect(() => {
+		const prev = lastSyncedProps.current;
+		if (
+			prev.events === initialEvents &&
+			prev.tab === initialTab &&
+			prev.hasMore === initialHasMore &&
+			prev.nextCursor === initialNextCursor &&
+			prev.cursor === initialCursor
+		) {
+			return;
+		}
+		lastSyncedProps.current = {
+			events: initialEvents,
+			tab: initialTab,
+			hasMore: initialHasMore,
+			nextCursor: initialNextCursor,
+			cursor: initialCursor,
+		};
+		setState({
+			events: initialEvents,
+			tab: initialTab,
+			hasMore: initialHasMore,
+			nextCursor: initialNextCursor,
+			cursor: initialCursor,
+		});
+	}, [initialEvents, initialTab, initialHasMore, initialNextCursor, initialCursor]);
+
 	const handleTabChange = useCallback(
 		(nextTab: EventStatusTab) => {
 			if (nextTab === state.tab) return;
 
+			const previousTab = state.tab;
+			const requestId = ++latestRequestId.current;
 			replaceStatusUrl(nextTab);
 			startTransition(async () => {
-				const result = await getTagEventsStatusPageAction({
-					tagSlug,
-					tab: nextTab,
-				});
+				try {
+					const result = await getTagEventsStatusPageAction({
+						tagSlug,
+						tab: nextTab,
+					});
+					if (requestId !== latestRequestId.current) return;
 
-				setState({
-					events: result.events,
-					tab: result.tab,
-					hasMore: result.hasMore,
-					nextCursor: result.nextCursor,
-					cursor: null,
-				});
+					setState({
+						events: result.events,
+						tab: result.tab,
+						hasMore: result.hasMore,
+						nextCursor: result.nextCursor,
+						cursor: null,
+					});
+				} catch (error) {
+					if (requestId !== latestRequestId.current) return;
+					console.error("Failed to load tag events for tab", nextTab, error);
+					replaceStatusUrl(previousTab);
+				}
 			});
 		},
 		[state.tab, tagSlug],

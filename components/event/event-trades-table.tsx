@@ -6,11 +6,12 @@ import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Trade } from "@structbuild/sdk";
 import { Facehash } from "facehash";
-import { HashIcon, InfoIcon } from "lucide-react";
+import { HashIcon } from "lucide-react";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { facehashColorClasses } from "@/lib/facehash";
@@ -210,11 +211,21 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polygonscan">
-						<a href={`https://polygonscan.com/tx/${trade.hash}`} target="_blank" rel="noopener noreferrer">
-							<Button variant="ghost" size="icon" aria-label="View on Polygonscan">
-								<HashIcon className="size-4" />
-							</Button>
-						</a>
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label="View on Polygonscan"
+							nativeButton={false}
+							render={
+								<a
+									href={`https://polygonscan.com/tx/${trade.hash}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								/>
+							}
+						>
+							<HashIcon className="size-4" />
+						</Button>
 					</TooltipWrapper>
 				</div>
 			);
@@ -234,12 +245,7 @@ export function EventTradesTable({ trades }: { trades: TradeRow[] }) {
 			toolbarLeft={
 				<div className="flex items-center gap-1.5">
 					<h2 className="text-lg font-medium tracking-tight">Recent trades</h2>
-					<TooltipWrapper content="Showing trades from the event's 10 highest-volume markets. Trades from less active markets aren't included here — open a market page to see its full trade history.">
-						<InfoIcon
-							className="size-4 text-muted-foreground transition-colors hover:text-foreground"
-							aria-label="About recent trades"
-						/>
-					</TooltipWrapper>
+					<InfoTooltip content="Showing trades from the event's 10 highest-volume markets. Trades from less active markets aren't included here — open a market page to see its full trade history." />
 				</div>
 			}
 		/>
