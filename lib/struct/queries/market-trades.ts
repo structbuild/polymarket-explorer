@@ -55,6 +55,37 @@ export async function getMarketTradesPage(
 	}
 }
 
+export const defaultEventTradesLimit = 50;
+
+export async function getEventTrades(
+	conditionIds: string[],
+	limit: number = defaultEventTradesLimit,
+): Promise<Trade[]> {
+	const client = getStructClient();
+	const filtered = conditionIds.filter((id): id is string => Boolean(id));
+
+	if (!client || filtered.length === 0) {
+		return [];
+	}
+
+	try {
+		const response = await client.markets.getTrades({
+			condition_ids: filtered.join(","),
+			limit,
+			sort_desc: true,
+			trade_types: "OrderFilled,OrdersMatched",
+		});
+		return response.data;
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return [];
+		}
+
+		logStructError(`getEventTrades:${filtered.length}`, error);
+		return [];
+	}
+}
+
 export async function getRecentTrades(limit: number = 10): Promise<Trade[]> {
 	const client = getStructClient();
 

@@ -7,6 +7,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
+	{ href: "/events" as Route, label: "Events" },
 	{ href: "/markets" as Route, label: "Markets" },
 	{ href: "/traders" as Route, label: "Traders" },
 	{ href: "/builders" as Route, label: "Builders" },

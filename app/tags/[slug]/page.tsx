@@ -6,10 +6,14 @@ import type { Tag } from "@structbuild/sdk";
 
 import { AnalyticsSection } from "@/components/analytics/analytics-section";
 import { TagBuildersSection } from "@/components/builders/tag-builders-section";
+import { TagEventsStatusListing } from "@/components/event/tag-events-status-listing";
 import { TagMarketsStatusListing } from "@/components/market/market-status-listing";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TagStatsRow } from "@/components/tags/tag-stats-row";
+import { TagViewTabs } from "@/components/tags/tag-view-tabs";
+import { DEFAULT_TAG_VIEW, parseTagView } from "@/lib/tag-view-shared";
+import { eventResponseToRow } from "@/lib/event-table-map";
 import { marketResponseToRow } from "@/lib/market-table-map";
 import { getSiteUrl } from "@/lib/env";
 import { formatCapitalizeWords, formatNumber } from "@/lib/format";
@@ -24,7 +28,9 @@ import {
 	getTagAnalyticsTimeseries,
 } from "@/lib/struct/analytics-queries";
 import { DEFAULT_ANALYTICS_VIEW, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { parseEventStatusTab } from "@/lib/event-search-params-shared";
 import { parseMarketStatusTab } from "@/lib/market-search-params-shared";
+import { getEventsByTag } from "@/lib/struct/queries/events";
 import { getTagBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 
 type Props = {
@@ -35,9 +41,9 @@ type Props = {
 function TagHeader({ tag, tagDisplay }: { tag: Tag; tagDisplay: string }) {
 	return (
 		<div>
-			<h1 className="text-xl font-medium tracking-tight">{tagDisplay} Markets</h1>
+			<h1 className="text-xl font-medium tracking-tight">{tagDisplay}</h1>
 			<p className="mt-1 text-sm text-muted-foreground">
-				Explore prediction markets related to tag: {tagDisplay}.
+				Explore prediction-market events and markets tagged {tagDisplay}.
 			</p>
 			<TagStatsRow tag={tag} className="mt-2" />
 		</div>
@@ -103,15 +109,33 @@ async function TagPageContent({
 
 	const resolvedSearchParams = await searchParams;
 	const cursor = typeof resolvedSearchParams.cursor === "string" ? resolvedSearchParams.cursor : undefined;
-	const { view, range, resolution, defaultResolution, defaultRange } = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
+	const {
+		view: analyticsView,
+		range,
+		resolution,
+		defaultResolution,
+		defaultRange,
+	} = parseAnalyticsParams(resolvedSearchParams, "scoped", "30d");
+	const tagView = parseTagView(resolvedSearchParams.content);
 	const marketTab = parseMarketStatusTab(resolvedSearchParams.tab);
+	const eventTab = parseEventStatusTab(resolvedSearchParams.tab);
 	const canonicalSlug = tag.slug ?? slug;
 	const tagKey = tag.slug ?? tag.label;
-	const { data: markets, hasMore, nextCursor } = await getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab);
+	const [marketsResult, eventsResult] = await Promise.all([
+		tagView === "markets"
+			? getMarketsByTag(tag.label, 24, cursor, "volume", "desc", marketTab)
+			: Promise.resolve({ data: [], hasMore: false, nextCursor: null }),
+		tagView === "events"
+			? getEventsByTag(canonicalSlug, 24, eventTab, cursor, "volume", "desc", "24h")
+			: Promise.resolve({ data: [], hasMore: false, nextCursor: null }),
+	]);
+	const { data: markets, hasMore: marketsHasMore, nextCursor: marketsNextCursor } = marketsResult;
+	const { data: events, hasMore: eventsHasMore, nextCursor: eventsNextCursor } = eventsResult;
 	const paginationBaseParams: Record<string, string> = {
-		...(view !== DEFAULT_ANALYTICS_VIEW ? { view } : {}),
+		...(analyticsView !== DEFAULT_ANALYTICS_VIEW ? { view: analyticsView } : {}),
 		...(range !== defaultRange ? { range } : {}),
 		...(resolution !== defaultResolution ? { resolution } : {}),
+		...(tagView !== DEFAULT_TAG_VIEW ? { content: tagView } : {}),
 	};
 	const siteUrl = getSiteUrl();
 	const tagDisplay = formatCapitalizeWords(tag.label);
@@ -122,18 +146,32 @@ async function TagPageContent({
 		name: `${tagDisplay} — ${SITE_NAME}`,
 		description: `Prediction markets tagged ${tagDisplay} on ${SITE_NAME}.`,
 		url: new URL(`/tags/${canonicalSlug}`, siteUrl).toString(),
-		mainEntity: {
-			"@type": "ItemList",
-			numberOfItems: markets.length,
-			itemListElement: markets.map((market, index) => ({
-				"@type": "ListItem",
-				position: index + 1,
-				name: market.question ?? "Untitled Market",
-				url: market.market_slug
-					? new URL(`/markets/${market.market_slug}`, siteUrl).toString()
-					: undefined,
-			})),
-		},
+		mainEntity:
+			tagView === "events"
+				? {
+					"@type": "ItemList",
+					numberOfItems: events.length,
+					itemListElement: events.map((event, index) => ({
+						"@type": "ListItem",
+						position: index + 1,
+						name: event.title ?? "Untitled Event",
+						url: event.event_slug
+							? new URL(`/events/${event.event_slug}`, siteUrl).toString()
+							: undefined,
+					})),
+				}
+				: {
+					"@type": "ItemList",
+					numberOfItems: markets.length,
+					itemListElement: markets.map((market, index) => ({
+						"@type": "ListItem",
+						position: index + 1,
+						name: market.question ?? "Untitled Market",
+						url: market.market_slug
+							? new URL(`/markets/${market.market_slug}`, siteUrl).toString()
+							: undefined,
+					})),
+				},
 	};
 
 	return (
@@ -149,23 +187,37 @@ async function TagPageContent({
 
 			<div className="mt-6 space-y-4">
 				<TagHeader tag={tag} tagDisplay={tagDisplay} />
-				<TagMarketsStatusListing
-					basePath={`/tags/${canonicalSlug}`}
-					baseParams={paginationBaseParams}
-					tagLabel={tag.label}
-					initialMarkets={markets.map(marketResponseToRow)}
-					initialTab={marketTab}
-					initialCursor={cursor ?? null}
-					initialHasMore={hasMore}
-					initialNextCursor={nextCursor}
-				/>
+				<TagViewTabs value={tagView} />
+				{tagView === "events" ? (
+					<TagEventsStatusListing
+						basePath={`/tags/${canonicalSlug}`}
+						baseParams={paginationBaseParams}
+						tagSlug={canonicalSlug}
+						initialEvents={events.map(eventResponseToRow)}
+						initialTab={eventTab}
+						initialCursor={cursor ?? null}
+						initialHasMore={eventsHasMore}
+						initialNextCursor={eventsNextCursor}
+					/>
+				) : (
+					<TagMarketsStatusListing
+						basePath={`/tags/${canonicalSlug}`}
+						baseParams={paginationBaseParams}
+						tagLabel={tag.label}
+						initialMarkets={markets.map(marketResponseToRow)}
+						initialTab={marketTab}
+						initialCursor={cursor ?? null}
+						initialHasMore={marketsHasMore}
+						initialNextCursor={marketsNextCursor}
+					/>
+				)}
 			</div>
 
 			<div className="mt-8">
 				<AnalyticsSection
 					title="Analytics"
 					range={range}
-					view={view}
+					view={analyticsView}
 					resolution={resolution}
 					defaultResolution={defaultResolution}
 					defaultRange={defaultRange}

@@ -19,6 +19,9 @@ import {
 	getTopMarkets,
 	getMarketTradesPage,
 } from "@/lib/struct/market-queries";
+import { getEventsByTag } from "@/lib/struct/queries/events";
+import { eventResponseToRow } from "@/lib/event-table-map";
+import { parseEventStatusTab, type EventStatusTab } from "@/lib/event-search-params-shared";
 import {
 	defaultBuilderTradesPageSize,
 	getBuilderGlobalTags,
@@ -95,8 +98,20 @@ export type SearchResultBuilder = {
 	icon_url: string | null;
 };
 
+export type SearchResultEvent = {
+	slug: string;
+	title: string | null;
+	image_url: string | null;
+	market_count: number;
+	status: string | null;
+	volume_lifetime_usd: number | null;
+	volume_24hr_usd: number | null;
+	end_time: number | null;
+};
+
 export type SearchResult = {
 	traders: SearchResultTrader[];
+	events: SearchResultEvent[];
 	markets: SearchResultMarket[];
 	builders: SearchResultBuilder[];
 };
@@ -210,6 +225,24 @@ export async function getTagMarketsStatusPageAction({
 	return {
 		tab: safeTab,
 		markets: result.data.map(marketResponseToRow),
+		hasMore: result.hasMore,
+		nextCursor: result.nextCursor,
+	};
+}
+
+export async function getTagEventsStatusPageAction({
+	tagSlug,
+	tab,
+}: {
+	tagSlug: string;
+	tab: EventStatusTab;
+}) {
+	const safeTab = parseEventStatusTab(tab);
+	const result = await getEventsByTag(tagSlug, 24, safeTab, undefined, "volume", "desc", "24h");
+
+	return {
+		tab: safeTab,
+		events: result.data.map(eventResponseToRow),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};
@@ -459,12 +492,11 @@ export async function searchTradersAction(query: string) {
 export async function searchAction(query: string): Promise<SearchResult> {
 	const { traders, markets, events, builders } = await searchAll(query);
 
-	const merged = new Map<string, SearchResultMarket>();
-
+	const marketResults: SearchResultMarket[] = [];
 	for (const m of markets) {
 		if (!m.market_slug) continue;
 		const extra = m as { volume_24hr?: number | null };
-		merged.set(m.market_slug, {
+		marketResults.push({
 			slug: m.market_slug,
 			question: m.question ?? m.title ?? null,
 			image_url: m.image_url ?? null,
@@ -477,21 +509,19 @@ export async function searchAction(query: string): Promise<SearchResult> {
 		});
 	}
 
+	const eventResults: SearchResultEvent[] = [];
 	for (const event of events) {
-		for (const m of event.markets ?? []) {
-			if (!m.market_slug || merged.has(m.market_slug)) continue;
-			merged.set(m.market_slug, {
-				slug: m.market_slug,
-				question: m.question ?? m.title ?? null,
-				image_url: m.image_url ?? event.image_url ?? null,
-				volume_lifetime_usd: m.volume ?? null,
-				volume_lifetime_shares: null,
-				volume_24hr_usd: m.volume_24hr ?? null,
-				volume_24hr_shares: null,
-				status: m.status ?? null,
-				outcomes: (m.outcomes ?? []).map((o) => ({ name: o.name, price: o.price ?? null })),
-			});
-		}
+		if (!event.event_slug) continue;
+		eventResults.push({
+			slug: event.event_slug,
+			title: event.title ?? null,
+			image_url: event.image_url ?? null,
+			market_count: event.market_count ?? (event.markets?.length ?? 0),
+			status: event.status ?? null,
+			volume_lifetime_usd: event.metrics?.lifetime?.volume ?? null,
+			volume_24hr_usd: event.metrics?.["24h"]?.volume ?? null,
+			end_time: event.end_time ?? null,
+		});
 	}
 
 	return {
@@ -502,7 +532,8 @@ export async function searchAction(query: string): Promise<SearchResult> {
 			profile_image: t.profile_image ?? null,
 			volume_usd: t.pnl?.total_volume_usd ?? null,
 		})),
-		markets: Array.from(merged.values()),
+		events: eventResults,
+		markets: marketResults,
 		builders: builders.map((b) => ({
 			builder_code: b.builder_code,
 			name: b.name ?? null,
