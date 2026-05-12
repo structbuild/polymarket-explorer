@@ -1,6 +1,6 @@
 import { getSiteUrl } from "@/lib/env";
 
-const SHARD_IDS = [0, 1, 2];
+const SHARD_IDS = [0, 1, 2, 3];
 
 export function GET() {
 	const siteUrl = getSiteUrl().origin;

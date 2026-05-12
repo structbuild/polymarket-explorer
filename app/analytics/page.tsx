@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -56,11 +57,20 @@ async function BuildersStrip() {
 	if (!row) return null;
 	return (
 		<section className="space-y-3">
-			<div className="space-y-1">
-				<h2 className="text-base font-medium text-foreground/90">Builders</h2>
-				<p className="text-sm text-muted-foreground">
-					Cumulative routing across every builder code.
-				</p>
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+				<div className="space-y-1">
+					<h2 className="text-base font-medium text-foreground/90">Builders</h2>
+					<p className="text-sm text-muted-foreground">
+						Cumulative routing across every builder code.
+					</p>
+				</div>
+				<Link
+					href="/builders"
+					prefetch={false}
+					className="shrink-0 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+				>
+					View builders
+				</Link>
 			</div>
 			<BuildersGlobalStats row={row} changes={changes} />
 		</section>
@@ -70,9 +80,12 @@ async function BuildersStrip() {
 function BuildersStripFallback() {
 	return (
 		<section className="space-y-3">
-			<div className="space-y-1">
-				<div className="h-5 w-24 animate-pulse rounded bg-muted" />
-				<div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
+			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+				<div className="space-y-1">
+					<div className="h-5 w-24 animate-pulse rounded bg-muted" />
+					<div className="h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
+				</div>
+				<div className="h-5 w-28 shrink-0 animate-pulse rounded bg-muted" />
 			</div>
 			<BuildersGlobalStatsFallback />
 		</section>

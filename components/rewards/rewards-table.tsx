@@ -10,6 +10,7 @@ import { ExternalLinkIcon, InfoIcon } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 import { REWARDS_TABLE_COLUMN_SIZES } from "./rewards-table-columns";
 
@@ -83,9 +84,10 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.volume,
 		cell: ({ row }) => {
-			const val = row.original.metrics?.["24h"]?.volume ?? 0;
-			if (val == null) return <p className="text-muted-foreground">—</p>;
-			return <p>{formatNumber(val, { currency: true, compact: true })}</p>;
+			const usd = row.original.metrics?.["24h"]?.volume ?? null;
+			const shares = row.original.metrics?.["24h"]?.shares_volume ?? null;
+			if (usd == null && shares == null) return <p className="text-muted-foreground">—</p>;
+			return <Volume usd={usd} shares={shares} />;
 		},
 	},
 	{

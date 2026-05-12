@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { MarketResponse } from "@structbuild/sdk";
 
-import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
+import { Volume } from "@/components/ui/volume";
+import { formatCapitalizeWords, slugify } from "@/lib/format";
 
 type RelatedMarketsProps = {
 	markets: MarketResponse[];
@@ -44,13 +45,9 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 						null,
 					);
 					const probability = leading?.price != null ? `${(leading.price * 100).toFixed(0)}%` : null;
-					const volume = formatNumber(m.metrics?.lifetime?.volume ?? m.volume_usd ?? 0, {
-						compact: true,
-						currency: true,
-					});
-					const summary = [probability && leading?.name && `${leading.name} ${probability}`, `${volume} volume`]
-						.filter(Boolean)
-						.join(" · ");
+					const usd = m.metrics?.lifetime?.volume ?? m.volume_usd ?? 0;
+					const shares = m.metrics?.lifetime?.shares_volume ?? null;
+					const lead = probability && leading?.name ? `${leading.name} ${probability}` : null;
 
 					return (
 						<li key={m.condition_id}>
@@ -74,7 +71,16 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 									<p className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground">
 										{question}
 									</p>
-									<p className="mt-1 text-xs text-muted-foreground">{summary}</p>
+									<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+										{lead ? (
+											<>
+												<span>{lead}</span>
+												<span aria-hidden="true">·</span>
+											</>
+										) : null}
+										<Volume usd={usd} shares={shares} compact />
+										<span>volume</span>
+									</p>
 								</div>
 							</Link>
 						</li>

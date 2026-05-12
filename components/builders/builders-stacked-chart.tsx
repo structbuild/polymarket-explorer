@@ -7,6 +7,8 @@ import { getBuildersStackedDataAction } from "@/app/actions";
 import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
 import { AnalyticsChart, type AnalyticsSeries } from "@/components/analytics/analytics-chart";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatVolumeValue } from "@/components/ui/volume";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 import {
 	DEFAULT_BUILDERS_STACKED_METRIC,
 	BUILDERS_STACKED_METRIC_FORMAT,
@@ -14,6 +16,7 @@ import {
 	OTHER_SLOT,
 	fieldKey,
 	getBuildersStackedMetricOptionsForTimeframe,
+	sharesFieldKey,
 	type BuildersStackedData,
 	type BuildersStackedSlot,
 } from "@/lib/struct/builders-stacked-shared";
@@ -50,6 +53,7 @@ export function BuildersStackedChart({
 	resolution,
 	timeframeLabel,
 }: BuildersStackedChartProps) {
+	const { mode } = useVolumeMode();
 	const [isPending, startTransition] = useTransition();
 	const [stackedState, setStackedState] = useState(() => ({
 		sourceStacked: stacked,
@@ -68,17 +72,21 @@ export function BuildersStackedChart({
 		() => getBuildersStackedMetricOptionsForTimeframe(timeframe),
 		[timeframe],
 	);
+	const useNotional = metric === "volume" && mode === "notional";
 
 	const series = useMemo<AnalyticsSeries[]>(() => {
 		return metricData.slots.map((slot, idx) => ({
-			key: fieldKey(slot.id, metric),
+			key: useNotional ? sharesFieldKey(slot.id) : fieldKey(slot.id, metric),
 			label: slot.label,
 			color: colorFor(slot, idx),
 			stackId: "builders",
 		}));
-	}, [metricData.slots, metric]);
+	}, [metricData.slots, metric, useNotional]);
 
 	const valueFormat = BUILDERS_STACKED_METRIC_FORMAT[metric];
+	const formatValue = useNotional
+		? (value: number) => formatVolumeValue("notional", value, value, { compact: true })
+		: undefined;
 	const hasData = metricData.data.length > 0 && metricData.slots.length > 1;
 	const chartMetricToggle = (
 		<AnalyticsUrlToggle
@@ -145,6 +153,7 @@ export function BuildersStackedChart({
 							variant="bar"
 							series={series}
 							valueFormat={valueFormat}
+							formatValue={formatValue}
 							interactiveLegend
 							resolution={currentStacked.resolution}
 							height="lg"

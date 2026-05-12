@@ -16,6 +16,7 @@ export type MarketTableRow = {
 	imageUrl: string | null;
 	outcomes: { label: string; probability: number | null }[];
 	volumeUsd: number | null;
+	sharesVolume: number | null;
 	liquidityUsd: number | null;
 	status: string;
 	endTime: number | null;
@@ -40,6 +41,7 @@ export function marketResponseToRow(market: MarketResponse): MarketTableRow {
 				probability: o.price,
 			})) ?? [],
 		volumeUsd: market.volume_usd ?? null,
+		sharesVolume: market.metrics?.lifetime?.shares_volume ?? null,
 		liquidityUsd: market.liquidity_usd ?? null,
 		status: market.status,
 		endTime: market.end_time ?? null,

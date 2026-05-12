@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { SearchDialog } from "@/components/search/search-dialog";
 import { MobileNav } from "./mobile-nav";
 import { NAV_ITEMS } from "./nav-items";
+import { SettingsMenu } from "./settings-menu";
 import { StructLogoMark } from "../ui/svgs/struct-logo";
 
 export function Header() {
@@ -31,6 +32,7 @@ export function Header() {
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
 					<SearchDialog />
+					<SettingsMenu />
 					<Suspense fallback={<MobileNavFallback />}>
 						<MobileNav />
 					</Suspense>

@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import { BuilderAvatar } from "@/components/builders/builder-avatar";
 import { DataTable } from "@/components/ui/data-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { Volume } from "@/components/ui/volume";
 import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import { formatNumber } from "@/lib/format";
 import {
@@ -162,17 +163,22 @@ function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderRowW
 		cell: ({ row }) => {
 			const value = row.original[spec.field] as number | null | undefined;
 			const isActive = sort.sortBy === spec.sortKey;
-			const display = formatNumericCell(value, spec.format);
-			return (
-				<p
-					className={cn(
-						"tabular-nums",
-						isActive ? "text-foreground font-medium" : "text-foreground/80",
-					)}
-				>
-					{display}
-				</p>
+			const className = cn(
+				"tabular-nums",
+				isActive ? "text-foreground font-medium" : "text-foreground/80",
 			);
+
+			if (spec.field === "volume_usd") {
+				const usd = row.original.volume_usd ?? null;
+				const shares = row.original.shares_volume ?? null;
+				if ((usd ?? 0) < 0) {
+					return <p className={className}>—</p>;
+				}
+				return <Volume usd={usd} shares={shares} className={className} />;
+			}
+
+			const display = formatNumericCell(value, spec.format);
+			return <p className={className}>{display}</p>;
 		},
 	};
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getTagBuilders } from "@/lib/struct/builder-queries";
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 import { cn, formatBuilderCodeDisplay } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 	if (rows.length === 0) return null;
 
 	const totalVolume = rows.reduce((sum, row) => sum + (row.volume_usd ?? 0), 0);
+	const totalSharesVolume = rows.reduce((sum, row) => sum + (row.shares_volume ?? 0), 0);
 	const topVolume = rows[0]?.volume_usd ?? 0;
 
 	return (
@@ -28,12 +30,14 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 						<h2 className="text-sm font-medium text-muted-foreground">Top builders</h2>
 						<InfoTooltip content="Apps and integrators routing the most volume into this tag. Bars are scaled against the top builder in this list." />
 					</div>
-					<p className="text-sm tabular-nums text-muted-foreground">
+					<div className="text-sm tabular-nums text-muted-foreground">
 						{rows.length} builders routed{" "}
-						<span className="font-medium text-foreground">
-							{formatNumber(totalVolume, { compact: true, currency: true })}
-						</span>
-					</p>
+						<Volume
+							usd={totalVolume}
+							shares={totalSharesVolume}
+							className="font-medium text-foreground"
+						/>
+					</div>
 				</div>
 
 				<div className="space-y-1.5">
@@ -47,6 +51,7 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 					</div>
 					{rows.map((row, index) => {
 						const volume = row.volume_usd ?? 0;
+						const sharesVolume = row.shares_volume ?? 0;
 						const share = totalVolume > 0 ? volume / totalVolume : 0;
 						const relativeVolume = topVolume > 0 ? volume / topVolume : 0;
 						const isLeader = index === 0;
@@ -78,9 +83,11 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 											{formatBuilderCodeDisplay(row.builder_code)}
 										</Link>
 										<div className="flex shrink-0 items-baseline gap-2 sm:hidden">
-											<span className="text-sm font-medium tabular-nums text-foreground">
-												{formatNumber(volume, { compact: true, currency: true })}
-											</span>
+											<Volume
+												usd={volume}
+												shares={sharesVolume}
+												className="text-sm font-medium tabular-nums text-foreground"
+											/>
 											<span className="text-xs tabular-nums text-muted-foreground">
 												{formatNumber(share * 100, { decimals: 1, percent: true })}
 											</span>
@@ -101,7 +108,7 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 									</div>
 
 									<span className="hidden text-right text-sm tabular-nums text-foreground sm:block">
-										{formatNumber(volume, { compact: true, currency: true })}
+										<Volume usd={volume} shares={sharesVolume} />
 										<span className="ml-1.5 text-xs text-muted-foreground">
 											{formatNumber(share * 100, { decimals: 1, percent: true })}
 										</span>

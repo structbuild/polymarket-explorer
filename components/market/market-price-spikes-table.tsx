@@ -5,6 +5,7 @@ import type { PriceJump } from "@structbuild/sdk";
 import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react";
 
 import { DataTable } from "@/components/ui/data-table";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { cn } from "@/lib/utils";
@@ -81,7 +82,7 @@ const columns: ColumnDef<SpikeRow, unknown>[] = [
 		header: "Volume",
 		size: 120,
 		cell: ({ row }) => (
-			<p className="tabular-nums">{formatNumber(row.original.volume, { currency: true, compact: true })}</p>
+			<Volume usd={row.original.volume} shares={null} compact className="text-sm" />
 		),
 	},
 ];

@@ -7,6 +7,7 @@ import type {
 	GlobalChangeTimeframe,
 	GlobalPctChange,
 	MetricPctChange,
+	TagChangeTimeframe,
 	TimeBucketRow,
 	TraderTimeBucketRow,
 } from "@structbuild/sdk";
@@ -65,6 +66,13 @@ const CHANGES_TIMEFRAME: Record<AnalyticsRange, ChangeTimeframe> = {
 	"7d": "7d",
 	"30d": "30d",
 	all: "1y",
+};
+
+const TAG_CHANGES_TIMEFRAME: Record<AnalyticsRange, TagChangeTimeframe> = {
+	"1d": "24h",
+	"7d": "7d",
+	"30d": "30d",
+	all: "1mo",
 };
 
 const MAX_PAGINATION_REQUESTS = 5;
@@ -403,7 +411,7 @@ export async function getTagAnalyticsChanges(
 	try {
 		const response = await client.analytics.getTagChanges({
 			tag,
-			timeframe: CHANGES_TIMEFRAME[range],
+			timeframe: TAG_CHANGES_TIMEFRAME[range],
 		});
 		return response.data;
 	} catch (error) {
@@ -696,32 +704,39 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 	if (points.length === 0) {
 		return {
 			totalVolumeUsd: 0,
+			totalSharesVolume: 0,
 			totalFeesUsd: 0,
 			totalTxnCount: 0,
 			uniqueTradersTotal: 0,
 			avgTradeSizeUsd: 0,
+			avgTradeSizeShares: 0,
 		};
 	}
 
 	let totalVolumeUsd = 0;
+	let totalSharesVolume = 0;
 	let totalFeesUsd = 0;
 	let totalTxnCount = 0;
 	let uniqueTradersTotal = 0;
 
 	for (const p of points) {
 		totalVolumeUsd += p.volumeUsd;
+		totalSharesVolume += p.sharesVolume;
 		totalFeesUsd += p.feesUsd;
 		totalTxnCount += p.txnCount;
 		uniqueTradersTotal += p.uniqueTraders;
 	}
 
 	const avgTradeSizeUsd = totalTxnCount > 0 ? totalVolumeUsd / totalTxnCount : 0;
+	const avgTradeSizeShares = totalTxnCount > 0 ? totalSharesVolume / totalTxnCount : 0;
 
 	return {
 		totalVolumeUsd,
+		totalSharesVolume,
 		totalFeesUsd,
 		totalTxnCount,
 		uniqueTradersTotal,
 		avgTradeSizeUsd,
+		avgTradeSizeShares,
 	};
 }

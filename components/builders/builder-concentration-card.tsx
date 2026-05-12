@@ -12,6 +12,7 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 
 type BarSlice = {
@@ -81,16 +82,18 @@ export function BuilderConcentrationCard({ data }: BuilderConcentrationCardProps
 						<h3 className="text-sm font-medium text-muted-foreground">Trader concentration</h3>
 						<InfoTooltip content="Share of volume from each trader-rank tier; slices are disjoint and sum to 100%." />
 					</div>
-					<p className="text-sm text-muted-foreground">
+					<div className="text-sm text-muted-foreground">
 						<span className="text-foreground tabular-nums">
 							{formatNumber(data.total_traders, { compact: true })}
 						</span>{" "}
 						traders ·{" "}
-						<span className="text-foreground tabular-nums">
-							{formatNumber(data.total_volume_usd, { compact: true, currency: true })}
-						</span>{" "}
+						<Volume
+							usd={data.total_volume_usd ?? null}
+							shares={null}
+							className="text-foreground tabular-nums"
+						/>{" "}
 						volume
-					</p>
+					</div>
 				</div>
 
 				<ChartContainer
@@ -146,9 +149,12 @@ export function BuilderConcentrationCard({ data }: BuilderConcentrationCardProps
 													</div>
 													<div className="flex items-center justify-between gap-4">
 														<span className="text-muted-foreground">Routed volume</span>
-														<span className="font-mono font-medium tabular-nums text-foreground">
-															{formatNumber(payload.volumeUsd, { compact: true, currency: true })}
-														</span>
+														<Volume
+															usd={payload.volumeUsd ?? null}
+															shares={null}
+															className="font-mono font-medium tabular-nums text-foreground"
+															noTooltip
+														/>
 													</div>
 													<span className="text-muted-foreground">
 														Slices are disjoint, so tiers add up to 100%.

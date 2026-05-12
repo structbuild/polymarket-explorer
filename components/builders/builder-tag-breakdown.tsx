@@ -14,13 +14,16 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart";
+import { formatVolumeValue } from "@/components/ui/volume";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 
 type TagDatum = {
 	tag: string;
 	label: string;
 	slug: string;
 	volumeUsd: number;
+	sharesVolume: number;
 	sharePct: number;
 };
 
@@ -70,6 +73,8 @@ type BuilderTagBreakdownProps = {
 
 export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 	const router = useRouter();
+	const { mode } = useVolumeMode();
+	const metricKey: "volumeUsd" | "sharesVolume" = mode === "usd" ? "volumeUsd" : "sharesVolume";
 
 	const data = useMemo<TagDatum[]>(() => {
 		const total = rows.reduce((sum, row) => sum + (row.volume_usd ?? 0), 0);
@@ -78,6 +83,7 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 			label: formatCapitalizeWords(row.tag),
 			slug: slugify(row.tag),
 			volumeUsd: row.volume_usd,
+			sharesVolume: row.shares_volume ?? 0,
 			sharePct: total > 0 ? (row.volume_usd / total) * 100 : 0,
 		}));
 	}, [rows]);
@@ -125,7 +131,7 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 							axisLine={false}
 							hide
 						/>
-						<XAxis dataKey="volumeUsd" type="number" hide />
+						<XAxis dataKey={metricKey} type="number" hide />
 						<ChartTooltip
 							cursor={false}
 							content={
@@ -138,7 +144,9 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 											<span className="flex w-full items-center justify-between gap-4">
 												<span className="text-muted-foreground">{payload.label}</span>
 												<span className="font-mono font-medium tabular-nums">
-													{formatNumber(payload.volumeUsd, { compact: true, currency: true })}
+													{formatVolumeValue(mode, payload.volumeUsd, payload.sharesVolume, {
+														compact: true,
+													})}
 													<span className="ml-2 text-muted-foreground">
 														{formatNumber(payload.sharePct, { decimals: 1, percent: true })}
 													</span>
@@ -150,7 +158,7 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 							}
 						/>
 						<Bar
-							dataKey="volumeUsd"
+							dataKey={metricKey}
 							fill="var(--color-volumeUsd)"
 							radius={4}
 							onClick={(payload) => {
@@ -170,13 +178,15 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 								)}
 							/>
 							<LabelList
-								dataKey="volumeUsd"
+								dataKey={metricKey}
 								position="right"
 								offset={8}
 								className="fill-foreground tabular-nums"
 								fontSize={12}
 								formatter={(value) =>
-									formatNumber(Number(value), { compact: true, currency: true })
+									formatVolumeValue(mode, mode === "usd" ? Number(value) : null, mode === "usd" ? null : Number(value), {
+										compact: true,
+									})
 								}
 							/>
 						</Bar>

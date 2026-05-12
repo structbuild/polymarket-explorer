@@ -140,3 +140,9 @@ export function parseBuildersStackedMetric(
 export function fieldKey(slotId: string, metric: BuildersStackedMetric): string {
 	return `${slotId}__${metric}`;
 }
+
+export const BUILDERS_STACKED_SHARES_SUFFIX = "__sharesVolume";
+
+export function sharesFieldKey(slotId: string): string {
+	return `${slotId}${BUILDERS_STACKED_SHARES_SUFFIX}`;
+}

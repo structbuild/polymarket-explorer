@@ -4,8 +4,6 @@ export const TAG_SORT_OPTIONS = [
 	"volume",
 	"txns",
 	"unique_traders",
-	"unique_makers",
-	"unique_takers",
 	"fees",
 ] as const satisfies readonly TagSortBy[];
 
@@ -15,8 +13,6 @@ export const TAG_SORT_LABELS: Record<TagSortOption, string> = {
 	volume: "Volume",
 	txns: "Trades",
 	unique_traders: "Traders",
-	unique_makers: "Makers",
-	unique_takers: "Takers",
 	fees: "Fees",
 };
 
@@ -36,7 +32,6 @@ export const TAG_TIMEFRAME_LABELS: Record<TagSortTimeframe, string> = {
 	"7d": "7d",
 	"30d": "30d",
 	"1mo": "1mo",
-	"1y": "1y",
 };
 
 export const DEFAULT_TAG_TIMEFRAME: TagSortTimeframe = "lifetime";

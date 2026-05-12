@@ -11,6 +11,7 @@ const SHARE_CARD_HEIGHT = 675
 
 type ShareableChartCardProps = {
 	title: string
+	titleNode?: ReactNode
 	tooltip?: string
 	filename: string
 	children: ReactNode
@@ -30,6 +31,7 @@ function waitForChartLayout(): Promise<void> {
 
 export function ShareableChartCard({
 	title,
+	titleNode,
 	tooltip,
 	filename,
 	children,
@@ -51,7 +53,7 @@ export function ShareableChartCard({
 	return (
 		<>
 			<ChartCard
-				title={title}
+				title={titleNode ?? title}
 				tooltip={tooltip}
 				action={
 					<div className="flex items-center gap-1">

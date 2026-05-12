@@ -71,6 +71,7 @@ type AnalyticsChartProps = {
 	variant: "area" | "bar";
 	series: AnalyticsSeries[];
 	valueFormat: AnalyticsValueFormat;
+	formatValue?: (value: number) => string;
 	interactiveLegend?: boolean;
 	showIncomplete?: boolean;
 	resolution?: AnalyticsResolution;
@@ -125,6 +126,7 @@ export function AnalyticsChart({
 	variant,
 	series,
 	valueFormat,
+	formatValue,
 	interactiveLegend = false,
 	showIncomplete = true,
 	resolution,
@@ -132,6 +134,7 @@ export function AnalyticsChart({
 	height = "default",
 	className,
 }: AnalyticsChartProps) {
+	const formatTick = formatValue ?? ((value: number) => valueFormatter(value, valueFormat));
 	const heightClass = `${HEIGHT_CLASSES[height]} ${HEIGHT_BASE_CLASS}`;
 	const chartConfig = useMemo<ChartConfig>(() => {
 		const config: ChartConfig = {};
@@ -256,7 +259,7 @@ export function AnalyticsChart({
 						const entry = payload?.[0]?.payload as { t?: number } | undefined;
 						return typeof entry?.t === "number" ? formatTooltipLabel(entry.t) : "";
 					}}
-					valueFormatter={(value) => valueFormatter(value as number, valueFormat)}
+					valueFormatter={(value) => formatTick(value as number)}
 				/>
 			}
 		/>
@@ -279,7 +282,7 @@ export function AnalyticsChart({
 				axisLine={false}
 				orientation="right"
 				tickMargin={6}
-				tickFormatter={(v: string | number) => valueFormatter(Number(v), valueFormat)}
+				tickFormatter={(v: string | number) => formatTick(Number(v))}
 				tick={{ fontSize: 12 }}
 				width={56}
 			/>

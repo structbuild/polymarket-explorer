@@ -24,10 +24,21 @@ type KpiSpec = {
 	currency?: boolean;
 	compact?: boolean;
 	pctKey?: keyof MetricPctChange;
+	notionalKey?: keyof AnalyticsSummary;
+	notionalPctKey?: keyof MetricPctChange;
 };
 
 const KPIS: KpiSpec[] = [
-	{ id: "volume", key: "totalVolumeUsd", label: "Volume", currency: true, compact: true, pctKey: "volume_usd" },
+	{
+		id: "volume",
+		key: "totalVolumeUsd",
+		label: "Volume",
+		currency: true,
+		compact: true,
+		pctKey: "volume_usd",
+		notionalKey: "totalSharesVolume",
+		notionalPctKey: "shares_volume",
+	},
 	{ id: "fees", key: "totalFeesUsd", label: "Fees", tooltip: "Shows only fees from orders matched/filled.", currency: true, compact: true, pctKey: "fees_usd" },
 	{ id: "trades", key: "totalTxnCount", label: "Trades", compact: true, pctKey: "txn_count" },
 	{ id: "uniqueTraders", key: "uniqueTradersTotal", label: "Unique traders", compact: true, pctKey: "unique_traders" },
@@ -98,6 +109,10 @@ export function AnalyticsKpiStrip({
 							componentPcts={volumeComponentPcts}
 							allowedComponents={allowedComponents}
 							currency
+							notionalDefaultTotal={
+								kpi.notionalKey ? summary[kpi.notionalKey] : undefined
+							}
+							notionalAggregatePct={changes?.shares_volume ?? null}
 						/>
 					);
 				}
@@ -120,6 +135,7 @@ export function AnalyticsKpiStrip({
 						<AvgTradeSizeKpiCard
 							key={kpi.key}
 							label={kpi.label}
+							summary={summary}
 							volumeTotals={volumeComponentTotals}
 							tradeCountTotals={tradeCountComponentTotals}
 							changes={changes}

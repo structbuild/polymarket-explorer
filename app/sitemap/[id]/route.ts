@@ -7,6 +7,7 @@ import {
 	getAllTags,
 	getGlobalLeaderboard,
 } from "@/lib/struct/market-queries";
+import { getAllEventSlugs } from "@/lib/struct/queries/events";
 import { getAllBuilderCodes } from "@/lib/struct/builder-queries";
 import { normalizeWalletAddress } from "@/lib/utils";
 
@@ -14,11 +15,13 @@ export const maxDuration = 60;
 
 // Per-shard caps keep each sitemap file well under the 50k URL limit; bump or shard further when datasets grow.
 const MARKET_CAP = 5000;
+const EVENT_CAP = 5000;
 const TRADER_CAP = 500;
 
 const STATIC_SHARD = "0";
 const TRADERS_SHARD = "1";
 const MARKETS_SHARD = "2";
+const EVENTS_SHARD = "3";
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 
@@ -45,6 +48,9 @@ export async function GET(
 		case MARKETS_SHARD:
 			entries = await buildMarketsShard(siteUrl);
 			break;
+		case EVENTS_SHARD:
+			entries = await buildEventsShard(siteUrl);
+			break;
 		default:
 			return new Response("Not Found", { status: 404 });
 	}
@@ -66,6 +72,7 @@ async function buildStaticAndTagsShard(
 
 	const staticEntries: SitemapEntry[] = [
 		{ url: siteUrl, changeFrequency: "hourly", priority: 1 },
+		{ url: `${siteUrl}/events`, changeFrequency: "hourly", priority: 0.9 },
 		{ url: `${siteUrl}/markets`, changeFrequency: "hourly", priority: 0.9 },
 		{ url: `${siteUrl}/traders`, changeFrequency: "hourly", priority: 0.9 },
 		{ url: `${siteUrl}/builders`, changeFrequency: "daily", priority: 0.7 },
@@ -118,6 +125,16 @@ async function buildMarketsShard(siteUrl: string): Promise<SitemapEntry[]> {
 
 	return marketSlugs.map((entry) => ({
 		url: `${siteUrl}/markets/${entry.slug}`,
+		changeFrequency: "daily",
+		priority: 0.8,
+	}));
+}
+
+async function buildEventsShard(siteUrl: string): Promise<SitemapEntry[]> {
+	const eventSlugs = await getAllEventSlugs(EVENT_CAP);
+
+	return eventSlugs.map((entry) => ({
+		url: `${siteUrl}/events/${entry.slug}`,
 		changeFrequency: "daily",
 		priority: 0.8,
 	}));

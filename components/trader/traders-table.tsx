@@ -11,6 +11,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { dateCol, durationCol, numericCol } from "@/components/ui/table-columns";
 import { TooltipWrapper } from "@/components/ui/tooltip";
+import { Volume } from "@/components/ui/volume";
 import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, pnlColorClass } from "@/lib/format";
 import { cn, getTraderDisplayName, normalizeWalletAddress, truncateAddress } from "@/lib/utils";
@@ -59,6 +60,27 @@ function leaderboardNumeric(options: LeaderboardNumericOptions): ColumnDef<Leade
 		colorizePnl: options.colorizePnl,
 		accessor: (row) => row[options.field] as number | null | undefined,
 	});
+}
+
+function volumeColumn(
+	id: string,
+	title: string,
+	field: NumericField,
+	size: number,
+): ColumnDef<LeaderboardEntry, unknown> {
+	return {
+		id,
+		meta: { title },
+		header: title,
+		size,
+		cell: ({ row }) => (
+			<Volume
+				usd={(row.original[field] as number | null | undefined) ?? null}
+				shares={null}
+				className="text-foreground/90 tabular-nums"
+			/>
+		),
+	};
 }
 
 function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[] {
@@ -136,7 +158,7 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 				);
 			},
 		},
-		leaderboardNumeric({ id: "volume", title: "Volume", field: "total_volume_usd", size: TRADER_TABLE_COLUMN_SIZES.volume, format: { compact: true, currency: true } }),
+		volumeColumn("volume", "Volume", "total_volume_usd", TRADER_TABLE_COLUMN_SIZES.volume),
 		leaderboardNumeric({ id: "markets", title: "Markets", field: "markets_traded", size: TRADER_TABLE_COLUMN_SIZES.markets, format: { decimals: 0 } }),
 		leaderboardNumeric({ id: "winRate", title: "Win Rate", field: "market_win_rate_pct", size: TRADER_TABLE_COLUMN_SIZES.winRate, format: { percent: true } }),
 		leaderboardNumeric({ id: "events", title: "Events", field: "events_traded", size: 96, format: { decimals: 0 } }),
@@ -147,10 +169,10 @@ function buildColumns(rankOffset: number): ColumnDef<LeaderboardEntry, unknown>[
 		leaderboardNumeric({ id: "sells", title: "Sells", field: "total_sells", size: 96, format: { decimals: 0, compact: true } }),
 		leaderboardNumeric({ id: "redemptions", title: "Redemptions", field: "total_redemptions", size: 128, format: { decimals: 0, compact: true } }),
 		leaderboardNumeric({ id: "merges", title: "Merges", field: "total_merges", size: 104, format: { decimals: 0, compact: true } }),
-		leaderboardNumeric({ id: "buyVolume", title: "Buy Vol", field: "buy_volume_usd", size: 120, format: { compact: true, currency: true } }),
-		leaderboardNumeric({ id: "sellVolume", title: "Sell Vol", field: "sell_volume_usd", size: 120, format: { compact: true, currency: true } }),
-		leaderboardNumeric({ id: "redemptionVolume", title: "Redemption Vol", field: "redemption_volume_usd", size: 144, format: { compact: true, currency: true } }),
-		leaderboardNumeric({ id: "mergeVolume", title: "Merge Vol", field: "merge_volume_usd", size: 128, format: { compact: true, currency: true } }),
+		volumeColumn("buyVolume", "Buy Vol", "buy_volume_usd", 120),
+		volumeColumn("sellVolume", "Sell Vol", "sell_volume_usd", 120),
+		volumeColumn("redemptionVolume", "Redemption Vol", "redemption_volume_usd", 144),
+		volumeColumn("mergeVolume", "Merge Vol", "merge_volume_usd", 128),
 		leaderboardNumeric({ id: "fees", title: "Fees", field: "total_fees", size: 112, format: { compact: true, currency: true } }),
 		leaderboardNumeric({ id: "bestTradePnl", title: "Best Trade", field: "best_trade_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.bestTradePnl, format: { compact: true, currency: true }, colorizePnl: true }),
 		durationCol<LeaderboardEntry>({

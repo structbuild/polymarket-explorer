@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 import { truncateAddress } from "@/lib/utils";
 
@@ -57,7 +58,7 @@ export function BuilderTopTraders({ rows }: BuilderTopTradersProps) {
 										</Link>
 									</td>
 									<td className="px-2 py-1 text-foreground">
-										{formatNumber(row.volume_usd, { compact: true, currency: true })}
+										<Volume usd={row.volume_usd ?? null} shares={null} />
 									</td>
 									<td className="px-2 py-1 text-foreground">
 										{formatNumber(row.txn_count, { compact: true })}

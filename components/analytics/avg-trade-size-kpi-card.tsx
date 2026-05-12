@@ -5,29 +5,36 @@ import type { MetricPctChange } from "@structbuild/sdk";
 import { formatPctChange, pctToneClass } from "@/components/analytics/pct-display";
 import { VolumeComponentsToggle } from "@/components/analytics/volume-components-toggle";
 import { Card, CardContent } from "@/components/ui/card";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 import { useAvgTradeSizeComponents } from "@/lib/hooks/use-avg-trade-size-components";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 import {
 	VOLUME_COMPONENT_IDS,
 	computeAvgTradeSizePctChange,
+	isDefaultVolumeComponents,
 	sumSelectedComponentTotals,
+	type AnalyticsSummary,
 	type ComponentTotals,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 export function AvgTradeSizeKpiCard({
 	label,
+	summary,
 	volumeTotals,
 	tradeCountTotals,
 	changes,
 	allowedComponents,
 }: {
 	label: string;
+	summary: AnalyticsSummary;
 	volumeTotals: ComponentTotals;
 	tradeCountTotals: ComponentTotals;
 	changes: MetricPctChange | null;
 	allowedComponents?: readonly VolumeComponentId[];
 }) {
+	const { mode } = useVolumeMode();
 	const [storedComponents, setComponents] = useAvgTradeSizeComponents();
 	const allowed = allowedComponents ?? VOLUME_COMPONENT_IDS;
 	const selectedComponents = storedComponents.filter((component) =>
@@ -37,10 +44,22 @@ export function AvgTradeSizeKpiCard({
 
 	const volumeSum = sumSelectedComponentTotals(volumeTotals, components);
 	const countSum = sumSelectedComponentTotals(tradeCountTotals, components);
-	const total = countSum > 0 ? volumeSum / countSum : 0;
+	const usdTotal = countSum > 0 ? volumeSum / countSum : 0;
 
-	const pct = computeAvgTradeSizePctChange(changes?.volume_usd, changes?.txn_count);
+	const isDefault =
+		allowed.length === VOLUME_COMPONENT_IDS.length
+			? isDefaultVolumeComponents(components)
+			: components.length === allowed.length;
+
+	const showNotional = mode === "notional" && isDefault;
+	const sharesTotal = summary.avgTradeSizeShares;
+
+	const usdPct = computeAvgTradeSizePctChange(changes?.volume_usd, changes?.txn_count);
+	const sharesPct = computeAvgTradeSizePctChange(changes?.shares_volume, changes?.txn_count);
+	const pct = showNotional ? sharesPct : usdPct;
 	const pctLabel = formatPctChange(pct);
+
+	const showBreakdownNote = mode === "notional" && !isDefault;
 
 	return (
 		<Card size="sm" className="rounded-lg px-2 ring-0">
@@ -54,9 +73,15 @@ export function AvgTradeSizeKpiCard({
 						label="Use for avg trade size"
 					/>
 				</div>
-				<p className="text-xl font-medium tabular-nums">
-					{formatNumber(total, { compact: true, currency: true })}
-				</p>
+				{showNotional ? (
+					<p className="text-xl font-medium tabular-nums">
+						<Volume usd={usdTotal} shares={sharesTotal} compact noTooltip />
+					</p>
+				) : (
+					<p className="text-xl font-medium tabular-nums">
+						{formatNumber(usdTotal, { compact: true, currency: true })}
+					</p>
+				)}
 				{pctLabel ? (
 					<p className={`text-xs font-medium tabular-nums ${pctToneClass(pct)}`}>
 						{pctLabel}
@@ -64,6 +89,9 @@ export function AvgTradeSizeKpiCard({
 				) : (
 					<p className="select-none text-xs text-transparent">—</p>
 				)}
+				{showBreakdownNote ? (
+					<p className="text-[10px] text-muted-foreground/70">USD shown for component breakdown</p>
+				) : null}
 			</CardContent>
 		</Card>
 	);

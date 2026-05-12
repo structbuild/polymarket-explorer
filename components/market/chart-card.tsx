@@ -4,7 +4,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { cn } from "@/lib/utils";
 
 type ChartCardProps = {
-	title?: string;
+	title?: ReactNode;
 	tooltip?: string;
 	action?: ReactNode;
 	children: ReactNode;

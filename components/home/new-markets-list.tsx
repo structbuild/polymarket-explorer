@@ -10,7 +10,7 @@ const MARKET_FETCH_COUNT = 12;
 export async function NewMarketsList() {
 	await connection();
 
-	const result = await getHomeTopMarkets(MARKET_FETCH_COUNT, "all", undefined, "created_time", "desc", "24h", "Hide from New");
+	const result = await getHomeTopMarkets(MARKET_FETCH_COUNT, "open", undefined, "created_time", "desc", "24h", "Hide from New");
 	const rows = result.data.map(marketResponseToRow);
 
 	return (

@@ -131,6 +131,16 @@ function DataTableView<TData>({
 				onValueChange={onTimeframeChange}
 			/>
 		) : null
+	const homeTimeframePlaceholder =
+		homeToolbarGrid && !timeframeToggle && (toolbarRight || toolbarAfterTimeframe || hideableColumns.length > 0) ? (
+			<div aria-hidden="true" className="pointer-events-none invisible hidden sm:block">
+				<TimeframeToggle
+					timeframes={METRICS_TIMEFRAMES}
+					value={METRICS_TIMEFRAMES[0]}
+					onValueChange={() => {}}
+				/>
+			</div>
+		) : null
 
 	function commitPageInput(value: string) {
 		if (pagination.pageNumber == null || !pagination.onPageNumberChange) {
@@ -198,6 +208,7 @@ function DataTableView<TData>({
 						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end">
 							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
 							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
+							{homeTimeframePlaceholder && <Fragment key="timeframe-placeholder">{homeTimeframePlaceholder}</Fragment>}
 							{toolbarAfterTimeframe && <Fragment key="toolbar-after-tf">{toolbarAfterTimeframe}</Fragment>}
 							{toolbar && <Fragment key="toolbar">{toolbar}</Fragment>}
 						</div>

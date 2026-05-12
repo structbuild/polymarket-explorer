@@ -1,3 +1,5 @@
+"use client";
+
 import { ChartCard } from "@/components/market/chart-card";
 import { AnalyticsAttribution } from "@/components/analytics/analytics-attribution";
 import { ShareableChartCard } from "@/components/analytics/shareable-chart-card";
@@ -12,6 +14,9 @@ import {
 	BuyDistributionPie,
 	BuyDistributionPieFallback,
 } from "@/components/analytics/buy-distribution-pie";
+import { VolumeAnalyticsChart } from "@/components/analytics/volume-analytics-chart";
+import { VolumeModeLabel } from "@/components/analytics/volume-mode-label";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 import {
 	VOLUME_COMPONENT_IDS,
 	type AnalyticsMetricId,
@@ -160,7 +165,7 @@ const CHART_SPECS: ChartSpec[] = [
 		id: "volume",
 		title: "Volume",
 		tooltip:
-			"True USD volume (price × shares). Polymarket's headline volume counts each share traded as $1, so their figure matches 'Shares traded' below — not this number.",
+			"USD volume = price × shares actually exchanged. Switch the volume display in settings to view notional ($1-payout shares traded) — the figure Polymarket publishes as headline volume.",
 		variant: "bar",
 		series: VOLUME_SERIES,
 		valueFormat: "currency",
@@ -241,7 +246,7 @@ const CHART_SPECS: ChartSpec[] = [
 		id: "shares",
 		title: "Shares traded",
 		tooltip:
-			"Total shares filled in the bucket. Polymarket reports each share as $1, so this count equals what they publish as headline $ volume.",
+			"Total $1-payout shares filled in the bucket — Polymarket's headline volume metric. Switch the global volume display to Notional to make this the primary view.",
 		variant: "area",
 		series: [{ key: "sharesVolume", label: "Shares", color: COLOR_SINGLE }],
 		valueFormat: "count",
@@ -408,6 +413,18 @@ function withViewVariant(spec: ChartSpec, view: AnalyticsView): ChartSpec {
 	};
 }
 
+function withSecondaryVolumeMode(spec: ChartSpec, mode: "usd" | "notional"): ChartSpec {
+	if (spec.kind !== "timeSeries" || spec.id !== "shares" || mode !== "notional") return spec;
+	return {
+		...spec,
+		title: "USD volume",
+		tooltip:
+			"USD volume = price × shares actually exchanged. Shown here as the secondary view since the primary Volume chart is currently in notional mode.",
+		series: [{ ...spec.series[0], key: "volumeUsd", label: "USD" }],
+		valueFormat: "currency",
+	};
+}
+
 const SERIES_COMPONENTS: Partial<Record<string, VolumeComponentId>> = {
 	buyVolumeUsd: "buy",
 	sellVolumeUsd: "sell",
@@ -469,56 +486,80 @@ export function AnalyticsChartsGrid({
 	pathname,
 	refreshedAt,
 }: AnalyticsChartsGridProps) {
+	const { mode } = useVolumeMode();
 	const data = toChartData(points);
 	const specs = balanceLayout(
 		applyMetricPlacements(
 			reorderAppended(visibleCharts(excludeMetrics), appendMetrics),
 			metricPlacements,
-		).map((spec) => withViewVariant(withAllowedComponents(spec, allowedComponents), view)),
+		).map((spec) =>
+			withSecondaryVolumeMode(
+				withViewVariant(withAllowedComponents(spec, allowedComponents), view),
+				mode,
+			),
+		),
 	);
 
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-			{specs.map((spec) => (
-				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
-					<ShareableChartCard
-						title={spec.title}
-						tooltip={spec.tooltip}
-						filename={buildChartFilename(pathname, spec.title)}
-						headerAction={
-							spec.kind === "avgTradeSize" ? (
-								<AvgTradeSizeComponentsToggle allowedComponents={allowedComponents} />
-							) : undefined
-						}
-						footer={
-							<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
-						}
-					>
-						{spec.kind === "buyDistribution" ? (
-							<BuyDistributionPie points={points} />
-						) : spec.kind === "avgTradeSize" ? (
-							<AvgTradeSizeChart
-								points={points}
-								view={view}
-								resolution={resolution}
-								showIncomplete={view === "deltas"}
-								allowedComponents={allowedComponents}
-							/>
-						) : (
-							<AnalyticsChart
-								data={data}
-								variant={spec.variant}
-								series={spec.series}
-								valueFormat={spec.valueFormat}
-								interactiveLegend={spec.interactiveLegend}
-								resolution={resolution}
-								labelMode={view === "deltas" ? "bucket" : "point"}
-								showIncomplete={view === "deltas"}
-							/>
-						)}
-					</ShareableChartCard>
-				</div>
-			))}
+			{specs.map((spec) => {
+				const isVolumeChart = spec.kind === "timeSeries" && spec.id === "volume";
+				return (
+					<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
+						<ShareableChartCard
+							title={spec.title}
+							titleNode={
+								isVolumeChart ? (
+									<VolumeModeLabel usd="Volume (USD)" notional="Volume (notional)" />
+								) : undefined
+							}
+							tooltip={spec.tooltip}
+							filename={buildChartFilename(pathname, spec.title)}
+							headerAction={
+								spec.kind === "avgTradeSize" ? (
+									<AvgTradeSizeComponentsToggle allowedComponents={allowedComponents} />
+								) : undefined
+							}
+							footer={
+								<AnalyticsAttribution pathname={pathname} refreshedAt={refreshedAt} />
+							}
+						>
+							{spec.kind === "buyDistribution" ? (
+								<BuyDistributionPie points={points} />
+							) : spec.kind === "avgTradeSize" ? (
+								<AvgTradeSizeChart
+									points={points}
+									view={view}
+									resolution={resolution}
+									showIncomplete={view === "deltas"}
+									allowedComponents={allowedComponents}
+								/>
+							) : isVolumeChart ? (
+								<VolumeAnalyticsChart
+									data={data}
+									usdSeries={spec.series}
+									variant={spec.variant}
+									interactiveLegend={spec.interactiveLegend}
+									resolution={resolution}
+									view={view}
+									showIncomplete={view === "deltas"}
+								/>
+							) : (
+								<AnalyticsChart
+									data={data}
+									variant={spec.variant}
+									series={spec.series}
+									valueFormat={spec.valueFormat}
+									interactiveLegend={spec.interactiveLegend}
+									resolution={resolution}
+									labelMode={view === "deltas" ? "bucket" : "point"}
+									showIncomplete={view === "deltas"}
+								/>
+							)}
+						</ShareableChartCard>
+					</div>
+				);
+			})}
 		</div>
 	);
 }

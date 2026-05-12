@@ -1,11 +1,14 @@
 import Image from "next/image";
 import { ExternalLinkIcon } from "lucide-react";
 
+import type { ReactNode } from "react";
+
 import { MarketDescription } from "@/components/market/market-description";
 import { MarketTags } from "@/components/market/market-tags";
 import { CopyLink } from "@/components/trader/copy-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Volume } from "@/components/ui/volume";
 import { formatDateShort, formatNumber } from "@/lib/format";
 import type { MarketResponse } from "@structbuild/sdk";
 
@@ -21,7 +24,7 @@ function StatusBadge({ status }: { status: string }) {
 	);
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value }: { label: string; value: ReactNode }) {
 	return (
 		<div className="min-w-[140px] flex-1 rounded-lg bg-secondary px-4 py-3 sm:min-w-[160px] sm:flex-none">
 			<p className="text-xs text-muted-foreground">{label}</p>
@@ -71,7 +74,17 @@ export function MarketHeader({ market, slug }: MarketHeaderProps) {
 			</div>
 
 			<div className="flex flex-wrap gap-2 sm:gap-3">
-				<StatCard label="Volume" value={formatNumber(market.metrics?.["lifetime"]?.volume ?? 0, { currency: true, decimals: 0 })} />
+				<StatCard
+					label="Volume"
+					value={
+						<Volume
+							usd={market.metrics?.["lifetime"]?.volume ?? market.volume_usd ?? 0}
+							shares={market.metrics?.["lifetime"]?.shares_volume ?? null}
+							compact
+							decimals={0}
+						/>
+					}
+				/>
 				<StatCard label="Txns" value={formatNumber(market.metrics?.["lifetime"]?.txns ?? 0, { decimals: 0 })} />
 				<StatCard label="Traders" value={formatNumber(market.metrics?.["lifetime"]?.unique_traders ?? 0, { decimals: 0 })} />
 				<StatCard label="Fees" value={formatNumber(market.metrics?.["lifetime"]?.fees ?? 0, { currency: true, decimals: 0 })} />

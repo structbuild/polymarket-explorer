@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import {
 	AnalyticsChart,
 	type AnalyticsSeries,
 } from "@/components/analytics/analytics-chart";
+import { formatVolumeValue } from "@/components/ui/volume";
 import { useAvgTradeSizeComponents } from "@/lib/hooks/use-avg-trade-size-components";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 import {
 	VOLUME_COMPONENT_LABELS,
 	type AnalyticsPoint,
@@ -14,6 +16,7 @@ import {
 	type AnalyticsView,
 	type VolumeComponentId,
 	VOLUME_COMPONENT_IDS,
+	isDefaultVolumeComponents,
 } from "@/lib/struct/analytics-shared";
 
 const COMPONENT_VOLUME_KEYS: Record<VolumeComponentId, keyof AnalyticsPoint> = {
@@ -52,6 +55,7 @@ export function AvgTradeSizeChart({
 	showIncomplete,
 	allowedComponents = VOLUME_COMPONENT_IDS,
 }: Props) {
+	const { mode } = useVolumeMode();
 	const [storedComponents] = useAvgTradeSizeComponents();
 	const components = useMemo(() => {
 		const selected = storedComponents.filter((component) =>
@@ -60,7 +64,34 @@ export function AvgTradeSizeChart({
 		return selected.length > 0 ? selected : allowedComponents;
 	}, [storedComponents, allowedComponents]);
 
+	const isDefaultSelection =
+		allowedComponents.length === VOLUME_COMPONENT_IDS.length
+			? isDefaultVolumeComponents(components)
+			: components.length === allowedComponents.length;
+	const useNotional = mode === "notional" && isDefaultSelection;
+
 	const data = useMemo(() => {
+		if (useNotional) {
+			if (view !== "cumulative") {
+				return points.map((p) => ({
+					t: p.t,
+					avgTradeSize: p.txnCount > 0 ? p.sharesVolume / p.txnCount : 0,
+				}));
+			}
+			let cumShares = 0;
+			let cumCnt = 0;
+			const cumulativeData: Array<{ t: number; avgTradeSize: number }> = [];
+			for (const p of points) {
+				cumShares += p.sharesVolume;
+				cumCnt += p.txnCount;
+				cumulativeData.push({
+					t: p.t,
+					avgTradeSize: cumCnt > 0 ? cumShares / cumCnt : 0,
+				});
+			}
+			return cumulativeData;
+		}
+
 		if (view !== "cumulative") {
 			return points.map((p) => {
 				let vol = 0;
@@ -88,17 +119,22 @@ export function AvgTradeSizeChart({
 			cumulativeData.push({ t: p.t, avgTradeSize: cumCnt > 0 ? cumVol / cumCnt : 0 });
 		}
 		return cumulativeData;
-	}, [points, components, view]);
+	}, [points, components, view, useNotional]);
 
 	const series = useMemo<AnalyticsSeries[]>(
 		() => [
 			{
 				key: "avgTradeSize",
-				label: buildSeriesLabel(components),
+				label: useNotional ? "Avg trade size (notional)" : buildSeriesLabel(components),
 				color: "var(--chart-2)",
 			},
 		],
-		[components],
+		[components, useNotional],
+	);
+
+	const formatValue = useCallback(
+		(value: number) => formatVolumeValue(useNotional ? "notional" : "usd", value, value, { compact: true }),
+		[useNotional],
 	);
 
 	return (
@@ -107,6 +143,7 @@ export function AvgTradeSizeChart({
 			variant="area"
 			series={series}
 			valueFormat="currency"
+			formatValue={formatValue}
 			resolution={resolution}
 			labelMode={view === "deltas" ? "bucket" : "point"}
 			showIncomplete={showIncomplete}

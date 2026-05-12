@@ -4,6 +4,7 @@ import {
 	searchAction,
 	type SearchResult,
 	type SearchResultBuilder,
+	type SearchResultEvent,
 	type SearchResultMarket,
 	type SearchResultTrader,
 } from "@/app/actions";
@@ -11,10 +12,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { formatNumber } from "@/lib/format";
+import { Volume } from "@/components/ui/volume";
 import { cn, formatBuilderCodeDisplay, getTraderDisplayName, isBytes32Hex, normalizeWalletAddress } from "@/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { BarChart3Icon, BlocksIcon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
+import { BarChart3Icon, BlocksIcon, CalendarIcon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import posthog from "posthog-js";
@@ -92,14 +93,14 @@ function MarketMeta({ market }: { market: SearchResultMarket }) {
 		market.outcomes.find((o) => o.name.toLowerCase() === "yes") ?? market.outcomes[0] ?? null;
 	const showProbability = !isResolved && primaryOutcome?.price != null;
 
-	const lifetimeVolume =
+	const lifetimeUsd =
 		market.volume_lifetime_usd != null && market.volume_lifetime_usd > 0 ? market.volume_lifetime_usd : null;
-	const dailyVolume =
+	const dailyUsd =
 		market.volume_24hr_usd != null && market.volume_24hr_usd > 0 ? market.volume_24hr_usd : null;
-	const volumeDisplay = lifetimeVolume
-		? { value: lifetimeVolume, suffix: "vol" }
-		: dailyVolume
-			? { value: dailyVolume, suffix: "vol" }
+	const volumeDisplay = lifetimeUsd
+		? { usd: lifetimeUsd, shares: market.volume_lifetime_shares, suffix: "vol" }
+		: dailyUsd
+			? { usd: dailyUsd, shares: market.volume_24hr_shares, suffix: "vol" }
 			: null;
 
 	const parts: ReactNode[] = [];
@@ -120,8 +121,58 @@ function MarketMeta({ market }: { market: SearchResultMarket }) {
 	}
 	if (volumeDisplay) {
 		parts.push(
-			<span key="vol">
-				{formatNumber(volumeDisplay.value, { compact: true, currency: true })} {volumeDisplay.suffix}
+			<span key="vol" className="inline-flex items-center gap-1">
+				<Volume usd={volumeDisplay.usd} shares={volumeDisplay.shares} />
+				{volumeDisplay.suffix}
+			</span>,
+		);
+	}
+
+	return (
+		<>
+			{parts.map((part, i) => (
+				<span key={i} className="inline-flex items-center gap-1.5">
+					{i > 0 && <span className="text-muted-foreground/40">·</span>}
+					{part}
+				</span>
+			))}
+		</>
+	);
+}
+
+function EventMeta({ event }: { event: SearchResultEvent }) {
+	const status = event.status?.toLowerCase() ?? null;
+	const lifetimeUsd =
+		event.volume_lifetime_usd != null && event.volume_lifetime_usd > 0 ? event.volume_lifetime_usd : null;
+	const dailyUsd =
+		event.volume_24hr_usd != null && event.volume_24hr_usd > 0 ? event.volume_24hr_usd : null;
+	const volumeDisplay = lifetimeUsd
+		? { usd: lifetimeUsd, suffix: "vol" }
+		: dailyUsd
+			? { usd: dailyUsd, suffix: "vol" }
+			: null;
+
+	const parts: ReactNode[] = [];
+	if (event.status) {
+		parts.push(
+			<span key="status" className="inline-flex items-center gap-1">
+				<span className={cn("size-1.5 rounded-full", statusDotClass(status))} aria-hidden />
+				{capitalize(event.status)}
+			</span>,
+		);
+	}
+	if (event.market_count > 0) {
+		parts.push(
+			<span key="count" className="font-medium text-foreground/80">
+				{event.market_count} {event.market_count === 1 ? "market" : "markets"}
+			</span>,
+		);
+	}
+	if (volumeDisplay) {
+		parts.push(
+			<span key="vol" className="inline-flex items-center gap-1">
+				<Volume usd={volumeDisplay.usd} shares={null} />
+				{volumeDisplay.suffix}
 			</span>,
 		);
 	}
@@ -148,7 +199,11 @@ function BuilderMeta({ builder }: { builder: SearchResultBuilder }) {
 
 function TraderMeta({ trader }: { trader: SearchResultTrader }) {
 	if (trader.volume_usd != null && trader.volume_usd > 0) {
-		return <span>{formatNumber(trader.volume_usd, { compact: true, currency: true })} vol</span>;
+		return (
+			<span className="inline-flex items-center gap-1">
+				<Volume usd={trader.volume_usd} shares={null} /> vol
+			</span>
+		);
 	}
 	return <span className="truncate font-mono text-[11px]">{trader.address}</span>;
 }
@@ -162,7 +217,7 @@ export function openSearchDialog() {
 export function SearchDialog() {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<SearchResult>({ traders: [], markets: [], builders: [] });
+	const [results, setResults] = useState<SearchResult>({ traders: [], events: [], markets: [], builders: [] });
 	const [isMobile, setIsMobile] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -181,7 +236,7 @@ export function SearchDialog() {
 			posthog.capture("search_opened");
 		} else {
 			setQuery("");
-			setResults({ traders: [], markets: [], builders: [] });
+			setResults({ traders: [], events: [], markets: [], builders: [] });
 		}
 	}, []);
 
@@ -244,7 +299,7 @@ export function SearchDialog() {
 		const trimmed = value.trim();
 		if (trimmed.length < 2) {
 			requestIdRef.current += 1;
-			setResults({ traders: [], markets: [], builders: [] });
+			setResults({ traders: [], events: [], markets: [], builders: [] });
 			return;
 		}
 
@@ -264,10 +319,12 @@ export function SearchDialog() {
 					posthog.capture("search_performed", {
 						query: trimmed,
 						trader_count: data.traders.length,
+						event_count: data.events.length,
 						market_count: data.markets.length,
 						builder_count: data.builders.length,
 						has_results:
 							data.traders.length > 0 ||
+							data.events.length > 0 ||
 							data.markets.length > 0 ||
 							data.builders.length > 0,
 					});
@@ -276,14 +333,14 @@ export function SearchDialog() {
 						return;
 					}
 
-					setResults({ traders: [], markets: [], builders: [] });
+					setResults({ traders: [], events: [], markets: [], builders: [] });
 				}
 			});
 		}, DEBOUNCE_MS);
 	}, [loadResults]);
 
 	const handleResultClick = useCallback(
-		(type: "market" | "trader" | "builder", target: string) => {
+		(type: "event" | "market" | "trader" | "builder", target: string) => {
 			posthog.capture("search_result_clicked", { query: query.trim(), type, target });
 			handleOpenChange(false);
 		},
@@ -297,6 +354,7 @@ export function SearchDialog() {
 		showBuilderCodeShortcut ||
 		results.builders.length > 0 ||
 		results.traders.length > 0 ||
+		results.events.length > 0 ||
 		results.markets.length > 0;
 
 	const content = (
@@ -310,7 +368,7 @@ export function SearchDialog() {
 				<Input
 					value={query}
 					onChange={handleChange}
-					placeholder="Search markets, builders, or traders..."
+					placeholder="Search events, markets, builders, or traders..."
 					className="h-11 min-w-0 flex-1 rounded-none border-0 bg-transparent! shadow-none focus-visible:border-transparent focus-visible:ring-0"
 					autoFocus
 					autoComplete="off"
@@ -353,6 +411,25 @@ export function SearchDialog() {
 								/>
 							);
 						})}
+					</div>
+				)}
+				{results.events.length > 0 && (
+					<div>
+						<div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
+							<CalendarIcon className="size-3.5 text-muted-foreground" />
+							<span className="text-xs font-medium text-muted-foreground">Events</span>
+						</div>
+						{results.events.map((event) => (
+							<SearchRow
+								key={event.slug}
+								href={`/events/${event.slug}` as Route}
+								onSelect={() => handleResultClick("event", event.slug)}
+								imageUrl={event.image_url}
+								fallback={<CalendarIcon className="size-4" />}
+								title={event.title ?? event.slug}
+								meta={<EventMeta event={event} />}
+							/>
+						))}
 					</div>
 				)}
 				{results.markets.length > 0 && (

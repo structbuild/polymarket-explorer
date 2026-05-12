@@ -2,6 +2,7 @@ import { CopyAddress } from "@/components/trader/copy-address";
 import { CopyLink } from "@/components/trader/copy-link";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
 import { Button } from "@/components/ui/button";
+import { Volume } from "@/components/ui/volume";
 import { formatDateShort } from "@/lib/format";
 import { formatNumber } from "@/lib/format";
 import { ExternalLinkIcon } from "lucide-react";
@@ -73,7 +74,16 @@ export function TraderHeader({
 						<StatItem label="Sells" value={formatNumber(totalSells ?? 0, { decimals: 0 })} />
 						<StatItem label="Redemptions" value={formatNumber(totalRedemptions ?? 0, { decimals: 0 })} />
 						<StatItem label="Merges" value={formatNumber(totalMerges ?? 0, { decimals: 0 })} />
-						<StatItem label="Volume" value={formatNumber(totalVolumeUsd ?? 0, { compact: true, currency: true })} />
+						<StatItem
+							label="Volume"
+							value={
+								<Volume
+									usd={totalVolumeUsd ?? null}
+									shares={null}
+									className="text-foreground/90 tabular-nums"
+								/>
+							}
+						/>
 					</div>
 				</div>
 			</div>

@@ -266,10 +266,12 @@ export function restrictAnalyticsComponents(
 
 export type AnalyticsSummary = {
 	totalVolumeUsd: number;
+	totalSharesVolume: number;
 	totalFeesUsd: number;
 	totalTxnCount: number;
 	uniqueTradersTotal: number;
 	avgTradeSizeUsd: number;
+	avgTradeSizeShares: number;
 };
 
 export type VolumeComponentId = "buy" | "sell" | "redeem" | "merge" | "split";

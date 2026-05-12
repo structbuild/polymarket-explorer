@@ -35,9 +35,7 @@ export function TagStatsRow({ tag, className }: { tag: Tag; className?: string }
 			{stats.map((stat, index) => (
 				<span key={stat.label} className="inline-flex items-baseline gap-1">
 					{index > 0 && <span className="text-muted-foreground/50">·</span>}
-					<span className="text-foreground font-medium tabular-nums">
-						{formatStatValue(stat.value, stat.currency)}
-					</span>
+					<span className="text-foreground font-medium tabular-nums">{formatStatValue(stat.value, stat.currency)}</span>
 					<span>{stat.label}</span>
 				</span>
 			))}

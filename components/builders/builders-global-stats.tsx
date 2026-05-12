@@ -1,9 +1,14 @@
+"use client";
+
 import type { BuilderGlobalLatestRow, GlobalPctChange } from "@structbuild/sdk";
+import type { ReactNode } from "react";
 
 import { formatPctChange, pctToneClass } from "@/components/analytics/pct-display";
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 import { BUILDER_SORT_DESCRIPTIONS } from "@/lib/struct/builder-shared";
 
 type StatSpec = {
@@ -13,10 +18,11 @@ type StatSpec = {
 	currency?: boolean;
 	compact?: boolean;
 	description?: string;
+	isVolume?: boolean;
 };
 
 const STATS: readonly StatSpec[] = [
-	{ key: "volume_usd", pctKey: "volume_usd", label: "Volume", currency: true, compact: true },
+	{ key: "volume_usd", pctKey: "volume_usd", label: "Volume", currency: true, compact: true, isVolume: true },
 	{ key: "builder_fees", pctKey: "builder_fees", label: "Builder fees", currency: true, compact: true },
 	{ key: "unique_traders", pctKey: "unique_traders", label: "Traders", compact: true },
 	{ key: "txn_count", pctKey: "txn_count", label: "Trades", compact: true },
@@ -54,14 +60,42 @@ type BuildersGlobalStatsProps = {
 };
 
 export function BuildersGlobalStats({ row, changes }: BuildersGlobalStatsProps) {
+	const { mode } = useVolumeMode();
+
 	if (!row) return null;
 
 	return (
 		<div className={GRID_CLASS}>
-			{STATS.map(({ key, pctKey, label, currency, compact, description }) => {
+			{STATS.map(({ key, pctKey, label, currency, compact, description, isVolume }) => {
 				const value = Number(row[key] ?? 0);
-				const pct = pctKey && changes ? changes[pctKey] : null;
+				const pct =
+					pctKey && changes
+						? isVolume
+							? mode === "usd"
+								? changes.volume_usd
+								: changes.shares_volume
+							: changes[pctKey]
+						: null;
 				const pctLabel = formatPctChange(pct);
+
+				let display: ReactNode;
+				if (isVolume) {
+					display = (
+						<Volume
+							usd={row.volume_usd ?? null}
+							shares={row.shares_volume ?? null}
+							compact={compact}
+							className="text-2xl font-medium tabular-nums"
+						/>
+					);
+				} else {
+					display = (
+						<p className="text-2xl font-medium tabular-nums">
+							{formatNumber(value, { compact, currency })}
+						</p>
+					);
+				}
+
 				return (
 					<Card key={String(key)} size="sm" className="px-2 rounded-lg ring-0">
 						<CardContent className="flex flex-col gap-0.5">
@@ -70,9 +104,7 @@ export function BuildersGlobalStats({ row, changes }: BuildersGlobalStatsProps) 
 								{description ? <InfoTooltip content={description} /> : null}
 							</p>
 							<div className="flex items-baseline gap-2">
-								<p className="text-2xl font-medium tabular-nums">
-									{formatNumber(value, { compact, currency })}
-								</p>
+								{display}
 								{pctLabel ? (
 									<span className={`text-xs font-medium tabular-nums ${pctToneClass(pct)}`}>
 										{pctLabel}

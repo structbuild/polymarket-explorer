@@ -3,32 +3,37 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, type ReactNode } from "react";
 
-type HomeActivityTab = "markets" | "trades";
+type HomeActivityTab = "trades" | "trending" | "markets";
 
 export function HomeTabsBar() {
 	return (
 		<TabsList
 			variant="text"
-			className="flex min-w-0 justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+			className="flex w-full max-w-full min-w-0 justify-start gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 		>
-			<TabsTrigger className="text-lg! sm:text-xl!" value="markets">
-				New Markets
-			</TabsTrigger>
 			<TabsTrigger className="text-lg! sm:text-xl!" value="trades">
 				Recent Trades
+			</TabsTrigger>
+			<TabsTrigger className="text-lg! sm:text-xl!" value="trending">
+				Trending Markets
+			</TabsTrigger>
+			<TabsTrigger className="text-lg! sm:text-xl!" value="markets">
+				New Markets
 			</TabsTrigger>
 		</TabsList>
 	);
 }
 
 export function HomeActivityTabs({
-	markets,
 	trades,
+	trending,
+	markets,
 }: {
-	markets: ReactNode;
 	trades: ReactNode;
+	trending: ReactNode;
+	markets: ReactNode;
 }) {
-	const [tab, setTab] = useState<HomeActivityTab>("markets");
+	const [tab, setTab] = useState<HomeActivityTab>("trades");
 
 	return (
 		<Tabs value={tab} onValueChange={(value) => setTab(value as HomeActivityTab)} className="gap-3">
@@ -38,6 +43,9 @@ export function HomeActivityTabs({
 				</div>
 				<TabsContent value="markets" keepMounted className="contents min-w-0 text-sm outline-none">
 					{markets}
+				</TabsContent>
+				<TabsContent value="trending" keepMounted className="contents min-w-0 text-sm outline-none">
+					{trending}
 				</TabsContent>
 				<TabsContent value="trades" keepMounted className="contents min-w-0 text-sm outline-none">
 					{trades}

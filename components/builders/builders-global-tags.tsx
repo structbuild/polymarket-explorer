@@ -17,11 +17,14 @@ import {
 } from "@/components/ui/chart";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatVolumeValue } from "@/components/ui/volume";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
+import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
 import { getBuilderSortOptionsForTimeframe } from "@/lib/struct/builder-shared";
 
 type TagMetric =
 	| "volumeUsd"
+	| "sharesVolume"
 	| "builderFeesUsd"
 	| "uniqueTraders"
 	| "txnCount"
@@ -35,6 +38,7 @@ type TagDatum = {
 	label: string;
 	slug: string;
 	volumeUsd: number;
+	sharesVolume: number;
 	builderFeesUsd: number;
 	feesUsd: number;
 	uniqueTraders: number;
@@ -100,8 +104,11 @@ const CURRENCY_METRICS = new Set<TagMetric>([
 	"avgVolumePerUserUsd",
 ]);
 
+const VOLUME_METRICS = new Set<TagMetric>(["volumeUsd", "sharesVolume"]);
+
 const CHART_CONFIG = {
 	volumeUsd: { label: "Volume", color: "var(--chart-1)" },
+	sharesVolume: { label: "Volume", color: "var(--chart-1)" },
 	builderFeesUsd: { label: "Builder fees", color: "var(--chart-1)" },
 	uniqueTraders: { label: "Traders", color: "var(--chart-1)" },
 	txnCount: { label: "Trades", color: "var(--chart-1)" },
@@ -128,6 +135,7 @@ function parseTagSort(sort: BuilderSortBy): TagSortOption {
 }
 
 export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTagsProps) {
+	const { mode } = useVolumeMode();
 	const [isPending, startTransition] = useTransition();
 	const [tagState, setTagState] = useState(() => ({
 		sourceRows: rows,
@@ -143,7 +151,9 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 	const currentRows = hasLocalTags ? tagState.rows : rows;
 	const currentSort = hasLocalTags ? tagState.sort : sort;
 	const activeSort = parseTagSort(currentSort);
-	const metric = SORT_TO_METRIC[activeSort];
+	const baseMetric = SORT_TO_METRIC[activeSort];
+	const metric: TagMetric =
+		baseMetric === "volumeUsd" && mode === "notional" ? "sharesVolume" : baseMetric;
 	const sortOptions = useMemo(
 		() =>
 			TAG_SORT_OPTIONS.filter((option) =>
@@ -158,6 +168,7 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 			label: formatCapitalizeWords(row.tag),
 			slug: slugify(row.tag),
 			volumeUsd: row.volume_usd ?? 0,
+			sharesVolume: row.shares_volume ?? 0,
 			builderFeesUsd: row.builder_fees ?? 0,
 			feesUsd: row.fees_usd ?? 0,
 			uniqueTraders: row.unique_traders ?? 0,
@@ -185,6 +196,16 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 		MAX_CHART_HEIGHT_PX,
 	);
 	const isCurrencyMetric = CURRENCY_METRICS.has(metric);
+	const isVolumeMetric = VOLUME_METRICS.has(metric);
+
+	const formatMetric = (value: number) => {
+		if (isVolumeMetric) {
+			return formatVolumeValue(mode, mode === "usd" ? value : null, mode === "usd" ? null : value, {
+				compact: true,
+			});
+		}
+		return formatNumber(value, { compact: true, currency: isCurrencyMetric });
+	};
 
 	return (
 		<section className="space-y-3">
@@ -260,12 +281,7 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 								type="number"
 								tickLine={false}
 								axisLine={false}
-								tickFormatter={(value) =>
-									formatNumber(Number(value), {
-										compact: true,
-										currency: isCurrencyMetric,
-									})
-								}
+								tickFormatter={(value) => formatMetric(Number(value))}
 							/>
 							<ChartTooltip
 								cursor={false}
@@ -287,9 +303,8 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 													<div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
 														<span className="text-muted-foreground">Volume</span>
 														<span className="text-right font-mono tabular-nums">
-															{formatNumber(payload.volumeUsd, {
+															{formatVolumeValue(mode, payload.volumeUsd, payload.sharesVolume, {
 																compact: true,
-																currency: true,
 															})}
 														</span>
 														<span className="text-muted-foreground">Builder fees</span>
@@ -336,12 +351,7 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 									offset={8}
 									className="fill-foreground tabular-nums"
 									fontSize={12}
-									formatter={(value) =>
-										formatNumber(Number(value), {
-											compact: true,
-											currency: isCurrencyMetric,
-										})
-									}
+									formatter={(value) => formatMetric(Number(value))}
 								/>
 							</Bar>
 						</BarChart>

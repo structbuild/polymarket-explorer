@@ -16,6 +16,7 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { ShowUnknownMarketsToggle } from "@/components/ui/show-unknown-markets-toggle";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber, formatDateShort } from "@/lib/format";
 import { METRICS_TIMEFRAMES, type MetricsTimeframeChoice } from "@/lib/timeframes";
 import { MARKET_TABLE_COLUMN_SIZES } from "./markets-table-columns";
@@ -55,6 +56,18 @@ type MetricCellProps = {
 
 function readMetric(metrics: TimeframeMetrics, timeframe: MetricsTimeframeChoice, field: MetricField) {
 	return metrics[timeframe]?.[field] ?? null;
+}
+
+function VolumeCell({ metrics }: { metrics: TimeframeMetrics }) {
+	const timeframe = useDataTableTimeframe() ?? DEFAULT_TIMEFRAME;
+	const bucket = metrics[timeframe];
+	return (
+		<Volume
+			usd={bucket?.volume ?? null}
+			shares={bucket?.shares_volume ?? null}
+			className="text-foreground/90"
+		/>
+	);
 }
 
 function MetricCell({ metrics, field, format }: MetricCellProps) {
@@ -185,9 +198,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 				meta: { title: "Volume" },
 				header: headerOrSortable("volume", "Volume"),
 				size: MARKET_TABLE_COLUMN_SIZES.volume,
-				cell: ({ row }) => (
-					<MetricCell metrics={row.original.metrics} field="volume" format="currency" />
-				),
+				cell: ({ row }) => <VolumeCell metrics={row.original.metrics} />,
 			},
 			{
 				id: "trades",

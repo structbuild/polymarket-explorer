@@ -20,8 +20,6 @@ import { TAGS_TABLE_COLUMN_SIZES } from "./tags-table-columns";
 type NumericField =
 	| "volume_usd"
 	| "unique_traders"
-	| "unique_makers"
-	| "unique_takers"
 	| "txn_count"
 	| "fees_usd";
 
@@ -40,20 +38,6 @@ const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 		title: "Traders",
 		field: "unique_traders",
 		sortKey: "unique_traders",
-		currency: false,
-	},
-	{
-		id: "makers",
-		title: "Makers",
-		field: "unique_makers",
-		sortKey: "unique_makers",
-		currency: false,
-	},
-	{
-		id: "takers",
-		title: "Takers",
-		field: "unique_takers",
-		sortKey: "unique_takers",
 		currency: false,
 	},
 	{ id: "trades", title: "Trades", field: "txn_count", sortKey: "txns", currency: false },
@@ -83,13 +67,12 @@ function numericColumn(
 		cell: ({ row }) => {
 			const value = row.original[spec.field] as number | null | undefined;
 			const isActive = sort.sortBy === spec.sortKey;
+			const className = cn(
+				"tabular-nums",
+				isActive ? "text-foreground font-medium" : "text-foreground/80",
+			);
 			return (
-				<p
-					className={cn(
-						"tabular-nums",
-						isActive ? "text-foreground font-medium" : "text-foreground/80",
-					)}
-				>
+				<p className={className}>
 					{value != null && value > 0
 						? formatNumber(value, { compact: true, currency: spec.currency })
 						: "—"}

@@ -2,6 +2,7 @@ import type { GlobalCountsResponse } from "@structbuild/sdk";
 import { connection } from "next/server";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
 import { getPlatformCounts } from "@/lib/struct/market-queries";
 
@@ -10,10 +11,11 @@ type StatSpec = {
 	label: string;
 	currency?: boolean;
 	compact?: boolean;
+	volume?: boolean;
 };
 
 const stats: StatSpec[] = [
-	{ key: "volume_usd", label: "Volume", currency: true, compact: true },
+	{ key: "volume_usd", label: "Volume", currency: true, compact: true, volume: true },
 	{ key: "txn_count", label: "Trades", compact: true },
 	{ key: "markets", label: "Markets" },
 	{ key: "events", label: "Events" },
@@ -36,12 +38,19 @@ export async function PlatformStats() {
 
 	return (
 		<div className={GRID_CLASS}>
-			{stats.map(({ key, label, currency, compact }) => (
+			{stats.map(({ key, label, currency, compact, volume }) => (
 				<Card key={key} size="sm" className="px-2 rounded-lg ring-0 ">
 					<CardContent className="flex flex-col gap-0.5">
 							<p className="text-sm text-muted-foreground">{label}</p>
 							<p className="text-xl font-medium tabular-nums">
-								{formatNumber(Number(counts[key] ?? 0), { compact, currency })}
+								{volume ? (
+									<Volume
+										usd={Number(counts.volume_usd ?? 0)}
+										shares={Number(counts.shares_volume ?? 0)}
+									/>
+								) : (
+									formatNumber(Number(counts[key] ?? 0), { compact, currency })
+								)}
 							</p>
 					</CardContent>
 				</Card>

@@ -30,7 +30,11 @@ export async function MarketVolumeChart({ conditionId }: { conditionId: string }
 	}
 
 	return (
-		<ChartCard title="Volume">
+		<ChartCard
+			title="Volume"
+			tooltip="Chart shows USD volume regardless of your global volume display setting — Polymarket does not expose per-bucket notional shares for this series."
+			action={<span className="text-[11px] text-muted-foreground">Chart shows USD volume</span>}
+		>
 			<MarketVolumeChartClient outcomes={volumeOutcomes} />
 		</ChartCard>
 	);
@@ -38,7 +42,10 @@ export async function MarketVolumeChart({ conditionId }: { conditionId: string }
 
 export function MarketVolumeChartFallback() {
 	return (
-		<ChartCard title="Volume">
+		<ChartCard
+			title="Volume"
+			action={<span className="text-[11px] text-muted-foreground">Chart shows USD volume</span>}
+		>
 			<div className="h-[220px] animate-pulse rounded-md bg-muted/60" />
 		</ChartCard>
 	);

@@ -1,15 +1,18 @@
 import type { BuilderFeeRate, BuilderLatestRow } from "@structbuild/sdk";
+import type { ReactNode } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { Volume } from "@/components/ui/volume";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import { BUILDER_SORT_DESCRIPTIONS } from "@/lib/struct/builder-shared";
 
 type Stat = {
 	label: string;
-	display: string;
+	display: ReactNode;
 	description?: string;
+	raw?: boolean;
 };
 
 const GRID_CLASS = "grid grid-cols-2 gap-3 sm:grid-cols-4";
@@ -23,7 +26,14 @@ function buildStats(row: BuilderLatestRow, fees: BuilderFeeRate | null): Stat[] 
 	const baseStats: Stat[] = [
 		{
 			label: "Volume",
-			display: formatNumber(row.volume_usd, { compact: true, currency: true }),
+			raw: true,
+			display: (
+				<Volume
+					usd={row.volume_usd ?? null}
+					shares={row.shares_volume ?? null}
+					className="text-2xl font-medium tabular-nums"
+				/>
+			),
 		},
 		{
 			label: "Builder fees",
@@ -85,7 +95,11 @@ export function BuilderStatsRow({ row, fees, className }: BuilderStatsRowProps) 
 							<span>{stat.label}</span>
 							{stat.description ? <InfoTooltip content={stat.description} /> : null}
 						</p>
-						<p className="text-2xl font-medium tabular-nums">{stat.display}</p>
+						{stat.raw ? (
+							stat.display
+						) : (
+							<p className="text-2xl font-medium tabular-nums">{stat.display}</p>
+						)}
 					</CardContent>
 				</Card>
 			))}

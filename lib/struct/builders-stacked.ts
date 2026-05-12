@@ -6,6 +6,7 @@ import { getBuilderComposition } from "@/lib/struct/builder-queries";
 import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import {
 	BUILDERS_STACKED_API_METRICS,
+	BUILDERS_STACKED_SHARES_SUFFIX,
 	DEFAULT_BUILDERS_STACKED_METRIC,
 	OTHER_SLOT,
 	fieldKey,
@@ -127,6 +128,10 @@ function buildMetricData(
 		const row = rowsByTimestamp.get(entry.t) ?? { t: entry.t };
 		const key = fieldKey(slotId, metric);
 		row[key] = (row[key] ?? 0) + readMetricValue(entry, metric);
+		if (metric === "volume") {
+			const sharesKey = `${slotId}${BUILDERS_STACKED_SHARES_SUFFIX}`;
+			row[sharesKey] = (row[sharesKey] ?? 0) + entry.sh;
+		}
 		rowsByTimestamp.set(entry.t, row);
 	}
 
