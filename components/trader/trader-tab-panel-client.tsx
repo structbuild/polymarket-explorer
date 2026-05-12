@@ -89,6 +89,24 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 		})
 	}, [currentData.address, currentTab, props])
 
+	const handleRefresh = useCallback(async () => {
+		const requestId = requestIdRef.current + 1
+		requestIdRef.current = requestId
+
+		const data = await getTraderTabPageAction({
+			address: currentData.address,
+			tab: currentTab,
+			search: window.location.search,
+		})
+
+		if (requestIdRef.current === requestId) {
+			setPanelState({
+				sourceProps: props,
+				data,
+			})
+		}
+	}, [currentData.address, currentTab, props])
+
 	const tabs = (
 		<TraderTabs
 			value={currentTab}
@@ -104,6 +122,7 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				page={currentData.page}
 				pageNumber={currentData.pageNumber}
 				tabs={tabs}
+				onRefresh={handleRefresh}
 			/>
 		)
 	}
@@ -117,6 +136,7 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 			sortBy={currentData.sortBy}
 			sortDirection={currentData.sortDirection}
 			tabs={tabs}
+			onRefresh={handleRefresh}
 		/>
 	)
 }

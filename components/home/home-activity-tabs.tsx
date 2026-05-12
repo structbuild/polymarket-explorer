@@ -46,16 +46,16 @@ export function HomeActivityTabs({
 				<div className="min-w-0">
 					<HomeTabsBar />
 				</div>
-				<TabsContent value="markets" keepMounted className="contents min-w-0 text-sm outline-none">
+				<TabsContent value="markets" keepMounted className="contents [&[hidden]]:hidden">
 					{markets}
 				</TabsContent>
-				<TabsContent value="bestTrades" keepMounted className="contents min-w-0 text-sm outline-none">
+				<TabsContent value="bestTrades" keepMounted className="contents [&[hidden]]:hidden">
 					{bestTrades}
 				</TabsContent>
-				<TabsContent value="trending" keepMounted className="contents min-w-0 text-sm outline-none">
+				<TabsContent value="trending" keepMounted className="contents [&[hidden]]:hidden">
 					{trending}
 				</TabsContent>
-				<TabsContent value="trades" keepMounted className="contents min-w-0 text-sm outline-none">
+				<TabsContent value="trades" keepMounted className="contents [&[hidden]]:hidden">
 					{trades}
 				</TabsContent>
 			</div>

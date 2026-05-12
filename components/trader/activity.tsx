@@ -5,10 +5,9 @@ import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
 
-import { getTraderActivityPageAction, refreshTraderTabAction } from "@/app/actions";
+import { getTraderActivityPageAction } from "@/app/actions";
 import type { PaginatedResource } from "@/lib/struct/types";
 import { traderSearchParamParsers } from "@/lib/trader-search-params";
 import { maxTraderPageNumber } from "@/lib/trader-search-params-shared";
@@ -194,11 +193,10 @@ type Props = {
 	page: PaginatedResource<TradeRow, number>;
 	pageNumber: number;
 	tabs?: ReactNode;
+	onRefresh?: () => Promise<void>;
 };
 
-export default function TraderActivity({ address, page, pageNumber, tabs }: Props) {
-	const pathname = usePathname();
-	const router = useRouter();
+export default function TraderActivity({ address, page, pageNumber, tabs, onRefresh }: Props) {
 	const [isPending, startTransition] = useTransition();
 	const [pageState, setPageState] = useState(() => ({
 		sourcePage: page,
@@ -242,12 +240,12 @@ export default function TraderActivity({ address, page, pageNumber, tabs }: Prop
 						variant="outline"
 						size="sm"
 						onClick={() => {
+							if (!onRefresh) return;
 							startTransition(async () => {
-								await refreshTraderTabAction(pathname);
-								router.refresh();
+								await onRefresh();
 							});
 						}}
-						disabled={isPending}
+						disabled={isPending || !onRefresh}
 					>
 						<RefreshCwIcon data-icon="inline-start" />
 						Refresh

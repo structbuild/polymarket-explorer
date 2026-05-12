@@ -7,10 +7,9 @@ import type { Route } from "next"
 import Link from "next/link"
 import { ExternalLinkIcon, InfoIcon, RefreshCwIcon } from "lucide-react"
 import { type ReactNode, useCallback, useMemo, useState, useTransition } from "react"
-import { usePathname, useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
 
-import { getTraderPositionsPageAction, refreshTraderTabAction } from "@/app/actions"
+import { getTraderPositionsPageAction } from "@/app/actions"
 import type {
 	TraderPositionSortBy,
 	TraderSortDirection,
@@ -49,7 +48,6 @@ function formatSharesLine(row: TraderOutcomePnlEntry) {
 }
 
 const defaultColumnVisibility: VisibilityState = {
-	realized_pnl: false,
 	current_value: false,
 	total_shares_bought: false,
 	total_shares_sold: false,
@@ -183,38 +181,8 @@ function buildColumns(
 			},
 		},
 		{
-			id: "pnl",
-			meta: { title: "PnL" },
-			header: () => (
-				<span className="flex items-center gap-1.5">
-					PnL
-					<TooltipWrapper content="Realized PnL for this position, sourced from the v3 PnL endpoint.">
-						<InfoIcon className="size-4 text-muted-foreground" />
-					</TooltipWrapper>
-				</span>
-			),
-			size: 150,
-			cell: ({ row }) => {
-				const entry = row.original
-				const value = entry.realized_pnl_usd ?? 0
-				const percent = entry.realized_pnl_pct ?? null
-
-				return (
-					<p className={cn(pnlColorClass(value))}>
-						{formatNumber(value, { currency: true, compact: true })}
-						{percent != null ? (
-							<span className="text-muted-foreground">
-								{" "}
-								({formatNumber(percent, { percent: true })})
-							</span>
-						) : null}
-					</p>
-				)
-			},
-		},
-		{
 			id: "realized_pnl",
-			meta: { title: "Realized PnL" },
+			meta: { title: "PnL" },
 			header: () => (
 				<SortableHeader
 					sortBy="realized_pnl_usd"
@@ -223,14 +191,11 @@ function buildColumns(
 					onSortChange={onSortChange}
 				>
 					<span className="flex items-center gap-1.5">
-						Realized PnL
-						<TooltipWrapper content="Realized PnL is calculated based on shares bought, sold, and redeemed. If you haven't sold or redeemed any shares, your realized PnL will be negative.">
-							<InfoIcon className="size-4 text-muted-foreground" />
-						</TooltipWrapper>
+						PnL
 					</span>
 				</SortableHeader>
 			),
-			size: 180,
+			size: 150,
 			cell: ({ row }) => {
 				const entry = row.original
 				const pnl = entry.realized_pnl_usd ?? 0
@@ -471,6 +436,7 @@ type Props = {
 	sortBy: TraderPositionSortBy
 	sortDirection: TraderSortDirection
 	tabs?: ReactNode
+	onRefresh?: () => Promise<void>
 }
 
 export default function TraderPositions({
@@ -481,9 +447,8 @@ export default function TraderPositions({
 	sortBy,
 	sortDirection,
 	tabs,
+	onRefresh,
 }: Props) {
-	const pathname = usePathname()
-	const router = useRouter()
 	const [isPending, startTransition] = useTransition()
 	const [tableState, setTableState] = useState(() => ({
 		sourcePage: page,
@@ -581,12 +546,12 @@ export default function TraderPositions({
 				variant="outline"
 				size="sm"
 				onClick={() => {
+					if (!onRefresh) return
 					startTransition(async () => {
-						await refreshTraderTabAction(pathname)
-						router.refresh()
+						await onRefresh()
 					})
 				}}
-				disabled={isPending}
+				disabled={isPending || !onRefresh}
 			>
 				<RefreshCwIcon data-icon="inline-start" />
 				Refresh
