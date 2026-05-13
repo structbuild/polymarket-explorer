@@ -18,6 +18,7 @@ import { parsePolymarketCategory } from "@/lib/tag-category";
 import {
 	DEFAULT_TRADER_LEADERBOARD_SORT,
 	DEFAULT_TRADER_LEADERBOARD_SORT_DIRECTION,
+	getLeaderboardSortLabel,
 	parseTraderLeaderboardSort,
 	parseTraderLeaderboardSortDirection,
 	resolveLeaderboardSortField,
@@ -65,11 +66,14 @@ async function TradersPageContent({ searchParams }: Props) {
 		: await getGlobalLeaderboard(timeframe, pageSize, cursor, sortOptions);
 	const siteUrl = getSiteUrl();
 
+	const sortLabel = getLeaderboardSortLabel(sort);
+	const orderLabel = direction === "asc" ? "lowest" : "highest";
+
 	const jsonLd: Record<string, unknown> = {
 		"@context": "https://schema.org",
 		"@type": "ItemList",
 		name: `Traders — ${SITE_NAME}`,
-		description: `Top Polymarket traders ranked by realized profit on ${SITE_NAME}.`,
+		description: `Top Polymarket traders ranked by ${sortLabel} on ${SITE_NAME}.`,
 		url: new URL("/traders", siteUrl).toString(),
 		numberOfItems: traders.length,
 		itemListElement: traders.map((entry, index) => ({
@@ -98,8 +102,8 @@ async function TradersPageContent({ searchParams }: Props) {
 					<h1 className="text-xl font-medium tracking-tight">Traders</h1>
 					<p className="mt-1 text-sm text-muted-foreground">
 						{category
-							? `Top ${category} traders ranked by realized profit.`
-							: "Top Polymarket traders ranked by realized profit."}
+							? `${category} traders with the ${orderLabel} ${sortLabel}.`
+							: `Polymarket traders with the ${orderLabel} ${sortLabel}.`}
 					</p>
 				</div>
 				<TradersTable

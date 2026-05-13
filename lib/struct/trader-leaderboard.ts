@@ -7,6 +7,8 @@ export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 	Partial<CategoryLeaderboardFields> & {
 		trader: TraderInfo;
 		realized_pnl_usd: number;
+		open_positions_value?: number;
+		open_position_count?: number;
 		total_buys: number;
 		total_sells: number;
 		total_redemptions: number;
@@ -24,6 +26,8 @@ export type TraderLeaderboardApiEntry = (GlobalEntry | CategoryEntry) & {
 	total_sells?: number | null;
 	total_redemptions?: number | null;
 	total_merges?: number | null;
+	open_positions_value?: number | null;
+	open_position_count?: number | null;
 };
 
 function numberOrZero(value: number | null | undefined): number {
@@ -85,6 +89,8 @@ export function normalizeTraderLeaderboardEntry(
 		redeem_count: entry.redeem_count ?? undefined,
 		merge_count: entry.merge_count ?? undefined,
 		realized_pnl_usd: numberOrZero(entry.realized_pnl_usd),
+		open_positions_value: entry.open_positions_value ?? undefined,
+		open_position_count: entry.open_position_count ?? undefined,
 		total_buys: totalBuys,
 		total_sells: totalSells,
 		total_redemptions: totalRedemptions,

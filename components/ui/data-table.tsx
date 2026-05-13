@@ -4,6 +4,7 @@ import { createContext, Fragment, useContext, useEffect, useState } from "react"
 import {
 	type ColumnDef,
 	type PaginationState,
+	type Row,
 	type Table as ReactTableInstance,
 	type VisibilityState,
 	flexRender,
@@ -59,6 +60,7 @@ type BaseDataTableProps<TData> = {
 	defaultTimeframe?: MetricsTimeframeChoice
 	controlledTimeframe?: MetricsTimeframeChoice
 	onControlledTimeframeChange?: (value: MetricsTimeframeChoice) => void
+	renderRow?: (row: Row<TData>, columnCount: number) => React.ReactNode | undefined
 }
 
 type ClientPaginationProps = {
@@ -120,6 +122,7 @@ function DataTableView<TData>({
 	timeframe,
 	onTimeframeChange,
 	homeToolbarGrid = false,
+	renderRow,
 }: DataTableViewProps<TData>) {
 	const hasRows = data.length > 0
 	const hideableColumns = table.getAllColumns().filter((col) => col.getCanHide())
@@ -250,22 +253,29 @@ function DataTableView<TData>({
 							))}
 						</TableHeader>
 						<TableBody>
-							{table.getRowModel().rows.map((row) => (
-								<TableRow key={row.id} className="bg-card text-foreground/90 hover:bg-card">
-									{row.getVisibleCells().map((cell) => (
-										<TableCell
-											key={cell.id}
-											className={cn(
-												"px-4 py-2",
-												(cell.column.columnDef.meta as { cellClassName?: string } | undefined)
-													?.cellClassName,
-											)}
-										>
-											{flexRender(cell.column.columnDef.cell, cell.getContext())}
-										</TableCell>
-									))}
-								</TableRow>
-							))}
+							{table.getRowModel().rows.map((row) => {
+								const visibleCells = row.getVisibleCells()
+								const custom = renderRow?.(row, visibleCells.length)
+								if (custom !== undefined) {
+									return <Fragment key={row.id}>{custom}</Fragment>
+								}
+								return (
+									<TableRow key={row.id} className="bg-card text-foreground/90 hover:bg-card">
+										{visibleCells.map((cell) => (
+											<TableCell
+												key={cell.id}
+												className={cn(
+													"px-4 py-2",
+													(cell.column.columnDef.meta as { cellClassName?: string } | undefined)
+														?.cellClassName,
+												)}
+											>
+												{flexRender(cell.column.columnDef.cell, cell.getContext())}
+											</TableCell>
+										))}
+									</TableRow>
+								)
+							})}
 						</TableBody>
 					</Table>
 				</div>
@@ -380,6 +390,7 @@ function ClientPaginatedDataTable<TData>({
 	controlledTimeframe,
 	onControlledTimeframeChange,
 	homeToolbarGrid,
+	renderRow,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -447,6 +458,7 @@ function ClientPaginatedDataTable<TData>({
 			timeframes={timeframes}
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
+			renderRow={renderRow}
 			table={table}
 			pagination={{
 				show: totalRows > PAGE_SIZES[0],
@@ -483,6 +495,7 @@ function NonPaginatedDataTable<TData>({
 	controlledTimeframe,
 	onControlledTimeframeChange,
 	homeToolbarGrid,
+	renderRow,
 }: BaseDataTableProps<TData> & NoPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -519,6 +532,7 @@ function NonPaginatedDataTable<TData>({
 			timeframes={timeframes}
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
+			renderRow={renderRow}
 			table={table}
 			pagination={{
 				show: false,
@@ -553,6 +567,7 @@ function ServerPaginatedDataTable<TData>({
 	hasNextPage,
 	isLoading,
 	onPageIndexChange,
+	renderRow,
 }: BaseDataTableProps<TData> & ServerPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -593,6 +608,7 @@ function ServerPaginatedDataTable<TData>({
 			timeframes={timeframes}
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
+			renderRow={renderRow}
 			table={table}
 			pagination={{
 				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],

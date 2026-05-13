@@ -5,6 +5,7 @@ export const TRADER_TABLE_COLUMN_SIZES = {
 	rank: 64,
 	trader: 176,
 	pnl: 128,
+	openPositions: 160,
 	volume: 120,
 	markets: 96,
 	winRate: 112,
@@ -40,6 +41,12 @@ export const TRADER_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
 		size: TRADER_TABLE_COLUMN_SIZES.pnl,
 		headerClassName: "w-20",
 		cell: <Skeleton className="h-4 w-14" />,
+	},
+	{
+		id: "openPositions",
+		size: TRADER_TABLE_COLUMN_SIZES.openPositions,
+		headerClassName: "w-20",
+		cell: <Skeleton className="h-4 w-20" />,
 	},
 	{
 		id: "volume",

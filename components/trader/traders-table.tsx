@@ -30,6 +30,8 @@ import { TRADER_TABLE_COLUMN_SIZES } from "./traders-table-columns";
 type NumericField = Extract<
 	keyof TraderLeaderboardEntry,
 	| "realized_pnl_usd"
+	| "open_positions_value"
+	| "open_position_count"
 	| "events_traded"
 	| "markets_traded"
 	| "markets_won"
@@ -295,6 +297,39 @@ function buildColumns(
 				);
 			},
 		},
+		{
+			id: "openPositions",
+			meta: { title: "Open Positions" },
+			header: () => renderSortableHeader("Open Positions", "unrealized_pnl", sortCtx),
+			size: TRADER_TABLE_COLUMN_SIZES.openPositions,
+			cell: ({ row }) => {
+				const value = row.original.open_positions_value;
+				const count = row.original.open_position_count;
+				if (value == null && count == null) {
+					return <p className="tabular-nums text-muted-foreground">—</p>;
+				}
+				const isDust = value != null && value !== 0 && Math.abs(value) < 0.01;
+				const isMuted = value == null || value === 0 || isDust;
+				const valueLabel = value == null || value === 0
+					? "$0.00"
+					: isDust
+						? "<$0.01"
+						: formatNumber(value, numericFormat.currency);
+				const countLabel = count != null
+					? formatNumber(count, { decimals: 0, compact: true })
+					: null;
+				return (
+					<p className="tabular-nums">
+						<span className={isMuted ? "text-muted-foreground" : "text-foreground/90"}>
+							{valueLabel}
+						</span>
+						{countLabel ? (
+							<span className="text-muted-foreground"> · {countLabel}</span>
+						) : null}
+					</p>
+				);
+			},
+		},
 		volumeColumn({ id: "volume", title: "Volume", field: "total_volume_usd", sortKey: "total_volume_usd", size: TRADER_TABLE_COLUMN_SIZES.volume }, sortCtx),
 		numericColumn({ id: "markets", title: "Markets", field: "markets_traded", sortKey: "markets_traded", size: TRADER_TABLE_COLUMN_SIZES.markets, format: numericFormat.integer }, sortCtx),
 		numericColumn({ id: "events", title: "Events", field: "events_traded", sortKey: "events_traded", size: 96, format: numericFormat.integer }, sortCtx),
@@ -334,6 +369,7 @@ const DEFAULT_VISIBLE_COLUMN_IDS = [
 	"rank",
 	"trader",
 	"pnl",
+	"openPositions",
 	"volume",
 	"winRate",
 	"markets",
