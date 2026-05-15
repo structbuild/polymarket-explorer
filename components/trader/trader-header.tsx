@@ -14,9 +14,9 @@ type StatItemProps = {
 
 function StatItem({ label, value }: StatItemProps) {
 	return (
-		<div className="min-w-0 space-y-1">
+		<div className="min-w-0 space-y-1 sm:shrink-0">
 			<p className="text-xs leading-4 text-muted-foreground sm:text-sm">{label}</p>
-			<p className="text-base font-medium break-words sm:text-lg">{value}</p>
+			<p className="text-base font-medium break-words sm:text-lg sm:break-normal sm:whitespace-nowrap">{value}</p>
 		</div>
 	);
 }
@@ -32,6 +32,8 @@ type TraderHeaderProps = {
 	totalRedemptions?: number | null;
 	totalMerges?: number | null;
 	totalVolumeUsd?: number | null;
+	totalFeesUsd?: number | null;
+	openPositionsValueUsd?: number | null;
 };
 
 export function TraderHeader({
@@ -45,6 +47,8 @@ export function TraderHeader({
 	totalRedemptions,
 	totalMerges,
 	totalVolumeUsd,
+	totalFeesUsd,
+	openPositionsValueUsd,
 }: TraderHeaderProps) {
 	const activeSince = formatDateShort(firstTradeAt) || "Unknown";
 	const lastActive = formatDateShort(lastTradeAt) || "Unknown";
@@ -67,9 +71,13 @@ export function TraderHeader({
 						</h1>
 						<CopyAddress address={address} />
 					</div>
-					<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-4">
+					<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-nowrap sm:items-center sm:gap-x-8 sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
 						<StatItem label="Active Since" value={activeSince} />
 						<StatItem label="Last Active" value={lastActive} />
+						<StatItem
+							label="Positions Value"
+							value={formatNumber(openPositionsValueUsd ?? 0, { currency: true, compact: true })}
+						/>
 						<StatItem label="Buys" value={formatNumber(totalBuys ?? 0, { decimals: 0 })} />
 						<StatItem label="Sells" value={formatNumber(totalSells ?? 0, { decimals: 0 })} />
 						<StatItem label="Redemptions" value={formatNumber(totalRedemptions ?? 0, { decimals: 0 })} />
@@ -83,6 +91,10 @@ export function TraderHeader({
 									className="text-foreground/90 tabular-nums"
 								/>
 							}
+						/>
+						<StatItem
+							label="Fees Paid"
+							value={formatNumber(totalFeesUsd ?? 0, { currency: true, compact: true })}
 						/>
 					</div>
 				</div>

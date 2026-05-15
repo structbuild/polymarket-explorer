@@ -523,7 +523,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 
 	return (
 		<div className="overflow-hidden">
-			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
+			<div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
 				<div className="grid w-full grid-cols-3 gap-3 sm:w-auto sm:gap-5">
 					<PnlSummaryMetric
 						label="Cumulative PnL"
@@ -630,6 +630,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 							fill="url(#pnlGradient)"
 							stroke="none"
 							activeDot={false}
+							isAnimationActive={false}
 						/>
 						{showMetricRange ? (
 							<Area
@@ -638,6 +639,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 								fill="url(#pnlRangeGradient)"
 								stroke="none"
 								activeDot={false}
+								isAnimationActive={false}
 							/>
 						) : null}
 						{visibleAnnotations
@@ -664,6 +666,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 							dot={false}
 							stroke="var(--color-pnl)"
 							strokeWidth={2}
+							isAnimationActive={false}
 						/>
 						{visibleAnnotations
 							.filter((annotation) => annotation.window === "day")

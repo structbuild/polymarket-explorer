@@ -302,7 +302,7 @@ async function TraderOverviewSection({
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-6">
 			<JsonLd data={profileJsonLd} />
 			<TraderHeader
 				address={address}
@@ -315,9 +315,11 @@ async function TraderOverviewSection({
 				totalRedemptions={pnlSummary?.total_redemptions}
 				totalMerges={pnlSummary?.total_merges}
 				totalVolumeUsd={pnlSummary?.total_volume_usd}
+				totalFeesUsd={pnlSummary?.total_fees}
+				openPositionsValueUsd={(pnlSummary as (GlobalEntry & { open_positions_value?: number | null }) | null)?.open_positions_value}
 			/>
-			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-				<div className="min-w-0 space-y-4 lg:w-2/3">
+			<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
+				<div className="min-w-0 space-y-6 lg:w-2/3">
 					<Suspense fallback={<TraderInsightsFallback />}>
 						<TraderInsightsSection
 							address={address}
@@ -331,7 +333,7 @@ async function TraderOverviewSection({
 					{/* <TraderInfo address={address} profile={profile} /> */}
 				</div>
 
-				<div className="min-w-0 space-y-4 lg:w-1/3">
+				<div className="min-w-0 space-y-6 lg:w-1/3">
 					<Suspense fallback={<TraderPerformanceSummaryFallback />}>
 						<TraderPerformanceSummarySection
 							pnlSummary={pnlSummary}
@@ -387,7 +389,7 @@ function TraderDnaFallback() {
 				<div className="h-4 w-24 animate-pulse rounded bg-muted" />
 				<div className="h-5 w-20 animate-pulse rounded-full bg-muted" />
 			</div>
-			<div className="aspect-square w-full animate-pulse rounded-md bg-muted" />
+			<div className="aspect-12/10 w-full animate-pulse rounded-md bg-muted" />
 		</div>
 	);
 }

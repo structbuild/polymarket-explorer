@@ -138,8 +138,8 @@ export function PnlCalendar({ data, periods }: { data: DailyPnlEntry[]; periods:
 
 	return (
 		<div>
-			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<p className="text-sm text-foreground">PnL Calendar</p>
+			<div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<p className="text-base font-medium text-foreground">PnL Calendar</p>
 				<div className="flex items-center justify-between gap-1 sm:justify-start">
 					<Button variant="ghost" size="icon" className="size-7" onClick={() => navigate(-1)}>
 						<ChevronLeftIcon className="size-4" />

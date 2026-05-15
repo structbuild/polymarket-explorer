@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import type { Route } from "next";
 import { InfoRow } from "@/components/trader/info-row";
 import { PeriodRows } from "@/components/trader/period-rows";
 import { Separator } from "@/components/ui/separator";
@@ -117,6 +119,28 @@ function TradeHighlightRow({
 	const hasTrade = tone === "positive" ? (pnl ?? 0) > 0 : (pnl ?? 0) < 0;
 	const valueColor = tone === "positive" ? "text-emerald-500" : "text-red-500";
 	const imageUrl = normalizePolymarketS3ImageUrl(metadata?.image_url);
+	const href = hasTrade && metadata?.market_slug ? (`/markets/${metadata.market_slug}` as Route) : null;
+
+	const tradeDetails = hasTrade ? (
+		<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
+			{imageUrl && (
+				<Image
+					src={imageUrl}
+					alt={metadata?.question ?? metadata?.title ?? ""}
+					width={16}
+					height={16}
+					className="size-4 rounded-sm object-cover"
+				/>
+			)}
+			<p className={cn("text-sm font-medium sm:text-base", valueColor)}>
+				{formatNumber(pnl ?? 0, { currency: true, compact: true })}
+			</p>
+		</div>
+	) : null;
+
+	const questionText = hasTrade && (metadata?.question || metadata?.title)
+		? (metadata?.question ?? metadata?.title)
+		: null;
 
 	return (
 		<div>
@@ -124,27 +148,175 @@ function TradeHighlightRow({
 				<p className="text-sm text-foreground/90 sm:text-base">{label}</p>
 				{!hasTrade ? (
 					<span className="text-sm font-medium text-muted-foreground sm:text-base">—</span>
+				) : href ? (
+					<Link href={href} className="min-w-0 hover:opacity-80 sm:justify-end">
+						{tradeDetails}
+					</Link>
 				) : (
-					<div className="flex min-w-0 items-center gap-1.5 sm:justify-end">
-						{imageUrl && (
-							<Image
-								src={imageUrl}
-								alt={metadata?.question ?? metadata?.title ?? ""}
-								width={16}
-								height={16}
-								className="size-4 rounded-sm object-cover"
-							/>
-						)}
-						<p className={cn("text-sm font-medium sm:text-base", valueColor)}>
-							{formatNumber(pnl ?? 0, { currency: true, compact: true })}
-						</p>
-					</div>
+					tradeDetails
 				)}
 			</div>
-			{hasTrade && (metadata?.question || metadata?.title) && (
-				<p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{metadata?.question ?? metadata?.title}</p>
+			{questionText && (
+				href ? (
+					<Link
+						href={href}
+						className="mt-1 block text-sm text-muted-foreground break-words hover:text-foreground hover:underline sm:truncate"
+					>
+						{questionText}
+					</Link>
+				) : (
+					<p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{questionText}</p>
+				)
 			)}
 			<Separator className="my-2" />
+		</div>
+	);
+}
+
+function PnlStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+	const winRate = pnlSummary?.market_win_rate_pct ?? null;
+	const profitFactor = pnlSummary?.profit_factor ?? null;
+	const avgWin = pnlSummary?.avg_win_usd ?? null;
+	const avgLoss = pnlSummary?.avg_loss_usd ?? null;
+	const totalWins = pnlSummary?.total_wins_usd ?? null;
+	const totalLosses = pnlSummary?.total_losses_usd ?? null;
+
+	const stats: { label: string; node: React.ReactNode }[] = [
+		{
+			label: "Win Rate",
+			node: winRate == null
+				? <span className="text-muted-foreground">—</span>
+				: <span className="tabular-nums">{formatNumber(winRate, { percent: true })}</span>,
+		},
+		{
+			label: "Profit Factor",
+			node: profitFactor == null || !Number.isFinite(profitFactor)
+				? <span className="text-muted-foreground">—</span>
+				: <span className="tabular-nums">{formatNumber(profitFactor, { decimals: 2 })}x</span>,
+		},
+		{
+			label: "Avg Win",
+			node: avgWin == null
+				? <span className="text-muted-foreground">—</span>
+				: <span className="text-emerald-500 tabular-nums">{formatNumber(avgWin, { currency: true, compact: true })}</span>,
+		},
+		{
+			label: "Avg Loss",
+			node: avgLoss == null
+				? <span className="text-muted-foreground">—</span>
+				: <span className="text-red-500 tabular-nums">{formatNumber(-Math.abs(avgLoss), { currency: true, compact: true })}</span>,
+		},
+		{
+			label: "Total Wins",
+			node: totalWins == null
+				? <span className="text-muted-foreground">—</span>
+				: <span className="text-emerald-500 tabular-nums">{formatNumber(totalWins, { currency: true, compact: true })}</span>,
+		},
+		{
+			label: "Total Losses",
+			node: totalLosses == null
+				? <span className="text-muted-foreground">—</span>
+				: <span className="text-red-500 tabular-nums">{formatNumber(-Math.abs(totalLosses), { currency: true, compact: true })}</span>,
+		},
+	];
+
+	return (
+		<div>
+			<div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:gap-y-3">
+				{stats.map((stat) => (
+					<div key={stat.label} className="flex min-w-0 items-baseline justify-between gap-2">
+						<p className="text-sm text-foreground/90 sm:text-base">{stat.label}</p>
+						<p className="min-w-0 truncate text-sm font-medium sm:text-base">{stat.node}</p>
+					</div>
+				))}
+			</div>
+			<Separator className="my-2 sm:my-3" />
+		</div>
+	);
+}
+
+function MetricCell({ label, children }: { label: string; children: React.ReactNode }) {
+	return (
+		<div className="min-w-0">
+			<p className="truncate text-xs text-muted-foreground sm:text-sm">{label}</p>
+			<div className="mt-0.5 min-w-0 truncate text-sm font-medium tabular-nums sm:text-base">{children}</div>
+		</div>
+	);
+}
+
+function StreakRow({ streaks }: { streaks: PnlStreaks }) {
+	const current = streaks.current;
+	const currentColor = current > 0 ? "text-emerald-500" : current < 0 ? "text-red-500" : "text-muted-foreground";
+	const currentSuffix = current > 0 ? "W" : current < 0 ? "L" : "";
+
+	return (
+		<>
+			<div className="grid grid-cols-2 gap-2">
+				<MetricCell label="Longest Streak">
+					<span className="text-emerald-500">{streaks.longestWin}d W</span>
+					<span className="text-muted-foreground"> / </span>
+					<span className="text-red-500">{streaks.longestLoss}d L</span>
+				</MetricCell>
+				<MetricCell label="Current Streak">
+					<span className={currentColor}>
+						{Math.abs(current)}d{currentSuffix && ` ${currentSuffix}`}
+					</span>
+				</MetricCell>
+			</div>
+			<Separator className="my-2 sm:my-3" />
+		</>
+	);
+}
+
+function RiskGrid({ totalPnlRisk }: { totalPnlRisk: PnlV3RiskResponse["total_pnl"] | null }) {
+	return (
+		<>
+			<div className="grid grid-cols-3 gap-2">
+				<MetricCell label="Max Drawdown">
+					<RiskValue value={totalPnlRisk?.max_drawdown} pct={totalPnlRisk?.max_drawdown_pct} tone="negative" invert />
+				</MetricCell>
+				<MetricCell label="Current DD">
+					<RiskValue value={totalPnlRisk?.current_drawdown} pct={totalPnlRisk?.current_drawdown_pct} tone="negative" invert />
+				</MetricCell>
+				<MetricCell label="Max Runup">
+					<RiskValue value={totalPnlRisk?.max_runup} pct={totalPnlRisk?.max_runup_pct} tone="positive" />
+				</MetricCell>
+			</div>
+			<Separator className="my-2 sm:my-3" />
+		</>
+	);
+}
+
+function EarningsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+	const entries = [
+		{ label: "Rebates", usd: pnlSummary?.maker_rebate_usd, count: pnlSummary?.maker_rebate_count },
+		{ label: "Rewards", usd: pnlSummary?.reward_usd, count: pnlSummary?.reward_count },
+		{ label: "Yield", usd: pnlSummary?.yield_usd, count: pnlSummary?.yield_count },
+	];
+
+	return (
+		<div className="grid grid-cols-3 gap-2">
+			{entries.map((entry) => {
+				const hasValue = entry.usd != null || (entry.count != null && entry.count > 0);
+				const tone = (entry.usd ?? 0) > 0 ? "text-emerald-500" : "text-foreground";
+
+				return (
+					<MetricCell key={entry.label} label={entry.label}>
+						{!hasValue ? (
+							<span className="text-muted-foreground">—</span>
+						) : (
+							<>
+								<span className={tone}>{formatNumber(entry.usd ?? 0, { currency: true, compact: true })}</span>
+								{entry.count != null && entry.count > 0 && (
+									<span className="ml-1 text-xs font-normal text-muted-foreground sm:text-sm">
+										({formatNumber(entry.count, { decimals: 0 })})
+									</span>
+								)}
+							</>
+						)}
+					</MetricCell>
+				);
+			})}
 		</div>
 	);
 }
@@ -164,6 +336,7 @@ export function PerformanceSummary({ pnlSummary, pnlRisk, pnlChanges, streaks, p
 				<Separator className="my-2 sm:my-3" />
 			</div>
 			<TradingStatsGrid pnlSummary={pnlSummary} />
+			<PnlStatsGrid pnlSummary={pnlSummary} />
 			<InfoRow label="Avg. Hold Time" value={formatDuration(pnlSummary?.avg_hold_time_seconds ?? 0)} />
 			<TradeHighlightRow
 				label="Best Win"
@@ -179,45 +352,9 @@ export function PerformanceSummary({ pnlSummary, pnlRisk, pnlChanges, streaks, p
 			/>
 			<PeriodRows periods={periods} />
 			<Separator className="my-2 sm:my-3" />
-			<InfoRow label="Longest Win Streak" value={`${streaks.longestWin}d`} />
-			<InfoRow label="Longest Loss Streak" value={`${streaks.longestLoss}d`} />
-			<InfoRow
-				label="Max Drawdown"
-				value={
-					<RiskValue
-						value={totalPnlRisk?.max_drawdown}
-						pct={totalPnlRisk?.max_drawdown_pct}
-						tone="negative"
-						invert
-					/>
-				}
-			/>
-			<InfoRow
-				label="Current Drawdown"
-				value={
-					<RiskValue
-						value={totalPnlRisk?.current_drawdown}
-						pct={totalPnlRisk?.current_drawdown_pct}
-						tone="negative"
-						invert
-					/>
-				}
-			/>
-			<InfoRow
-				label="Max Runup"
-				value={
-					<RiskValue
-						value={totalPnlRisk?.max_runup}
-						pct={totalPnlRisk?.max_runup_pct}
-						tone="positive"
-					/>
-				}
-			/>
-			<InfoRow
-				label="Current Streak"
-				value={`${Math.abs(streaks.current)}d ${streaks.current > 0 ? "W" : streaks.current < 0 ? "L" : ""}`}
-				separator={false}
-			/>
+			<StreakRow streaks={streaks} />
+			<RiskGrid totalPnlRisk={totalPnlRisk} />
+			<EarningsGrid pnlSummary={pnlSummary} />
 		</div>
 	);
 }

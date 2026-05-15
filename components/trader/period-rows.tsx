@@ -73,7 +73,7 @@ export function PeriodRows({ periods }: { periods: PnlPeriods }) {
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center justify-between gap-3">
-				<p className="text-sm text-foreground/90 sm:text-base">Period</p>
+				<p className="text-sm text-muted-foreground sm:text-base">Period</p>
 				<ToggleGroup
 					aria-label="Period timeframe"
 					value={[window]}
