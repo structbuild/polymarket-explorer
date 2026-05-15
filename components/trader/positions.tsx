@@ -80,15 +80,15 @@ function buildColumns(
 			size: 520,
 			cell: ({ row }) => {
 				const entry = row.original
-				const isUnknownMarket = !entry.title
-				const title = entry.title || "Unknown Market"
+				const isUnknownMarket = !entry.question
+				const question = entry.question || "Unknown Market"
 				const href = entry.market_slug ? (`/markets/${entry.market_slug}` as Route) : null
 				return (
 					<div className="flex items-center gap-3">
 						{entry.image_url ? (
 							<img
 								className="size-10 rounded-md object-cover"
-								alt={title}
+								alt={question}
 								src={normalizePolymarketS3ImageUrl(entry.image_url) ?? ""}
 							/>
 						) : (
@@ -96,10 +96,10 @@ function buildColumns(
 						)}
 						<div className="min-w-0 flex-1 space-y-0.5">
 							{isUnknownMarket ? (
-								<p className="truncate text-base font-medium" title={title}>
+								<p className="truncate text-base font-medium" title={question}>
 									<TooltipWrapper content="Polymarket Gamma has no data on this market/position">
 										<span className="cursor-help border-b border-dotted border-muted-foreground/50">
-											{title}
+											{question}
 										</span>
 									</TooltipWrapper>
 								</p>
@@ -108,13 +108,13 @@ function buildColumns(
 									href={href}
 									prefetch={false}
 									className="block truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
-									title={title}
+									title={question}
 								>
-									{title}
+									{question}
 								</Link>
 							) : (
-								<p className="truncate text-base font-medium" title={title}>
-									{title}
+								<p className="truncate text-base font-medium" title={question}>
+									{question}
 								</p>
 							)}
 							<div className="flex flex-wrap items-center gap-1.5">
@@ -443,7 +443,7 @@ export default function TraderPositions({
 	const currentSortBy = hasLocalTableState ? tableState.sortBy : sortBy
 	const currentSortDirection = hasLocalTableState ? tableState.sortDirection : sortDirection
 
-	const hasUnknownMarkets = currentPage.data.some((entry) => !entry.title)
+	const hasUnknownMarkets = currentPage.data.some((entry) => !entry.question)
 
 	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection) => {
 		startTransition(async () => {
@@ -512,7 +512,7 @@ export default function TraderPositions({
 		if (showUnknown) {
 			return currentPage.data
 		}
-		return currentPage.data.filter((entry) => entry.title)
+		return currentPage.data.filter((entry) => entry.question)
 	}, [currentPage.data, showUnknown])
 
 	const toolbarRight = (
