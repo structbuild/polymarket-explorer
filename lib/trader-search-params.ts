@@ -1,4 +1,4 @@
-import { createParser, parseAsStringLiteral, type inferParserType } from "nuqs";
+import { createParser, parseAsBoolean, parseAsStringLiteral, type inferParserType } from "nuqs";
 
 import {
 	defaultTraderPositionSortBy,
@@ -18,6 +18,7 @@ export const pnlTimeframeParser = parseAsStringLiteral(pnlTimeframeValues).withD
 export const pnlAnchorParser = parseAsStringLiteral(pnlAnchorValues);
 export const pnlFromParser = parseAsUnixSeconds;
 export const pnlToParser = parseAsUnixSeconds;
+export const pnlFillGapsParser = parseAsBoolean.withDefault(true);
 
 export const traderSearchParamParsers = {
 	tab: parseAsStringLiteral(traderTabValues).withDefault("active"),
@@ -32,6 +33,7 @@ export const traderSearchParamParsers = {
 	pnlAnchor: pnlAnchorParser,
 	pnlFrom: pnlFromParser,
 	pnlTo: pnlToParser,
+	pnlFillGaps: pnlFillGapsParser,
 };
 
 export type TraderSearchParams = inferParserType<typeof traderSearchParamParsers>;

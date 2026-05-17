@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useQueryState } from "nuqs"
 
 import { ChartSettingsButton, PnlChartContent, type PnlChartMetric, type PnlChartMode } from "@/components/trader/pnl-chart"
 import { PnlRangeDialog } from "@/components/trader/pnl-range-dialog"
@@ -12,9 +13,11 @@ import { usePnlPeriodWindow } from "@/lib/hooks/use-pnl-period-window"
 import { useTimezone } from "@/lib/hooks/use-timezone"
 import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/struct/pnl"
 import type { ResolvedPnlRange } from "@/lib/struct/pnl-range"
+import { pnlFillGapsParser } from "@/lib/trader-search-params"
 import { cn } from "@/lib/utils"
 
 const SHOW_HIGHLIGHTS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-highlights"
+const FILL_GAPS_STORAGE_KEY = "polymarket-explorer:pnl-card:fill-gaps"
 
 type PnlCardProps = {
 	data: PnlDataPoint[]
@@ -23,10 +26,11 @@ type PnlCardProps = {
 	profileImage?: string | null
 	annotations?: PnlChartAnnotation[]
 	pnlRange: ResolvedPnlRange
+	pnlFillGaps: boolean
 	firstTradeAt?: number
 }
 
-export function PnlCard({ data, displayName, address, profileImage, annotations = [], pnlRange, firstTradeAt }: PnlCardProps) {
+export function PnlCard({ data, displayName, address, profileImage, annotations = [], pnlRange, pnlFillGaps, firstTradeAt }: PnlCardProps) {
 	const cardRef = useRef<HTMLDivElement>(null)
 	const [chartMode, setChartMode] = useState<PnlChartMode>("area")
 	const [chartMetric, setChartMetric] = useState<PnlChartMetric>("pnl")
@@ -34,6 +38,22 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 	const [periodWindow] = usePnlPeriodWindow()
 	const { timezone: clientTimezone } = useTimezone()
 	const timezone = clientTimezone ?? pnlRange.timezone
+
+	const [, startFillGapsTransition] = useTransition()
+	const [, setFillGaps] = useQueryState("pnlFillGaps", {
+		...pnlFillGapsParser,
+		history: "push",
+		shallow: false,
+		scroll: false,
+		startTransition: startFillGapsTransition,
+	})
+	const [storedFillGaps, setStoredFillGaps] = useLocalStorage<boolean>(FILL_GAPS_STORAGE_KEY, true)
+
+	useEffect(() => {
+		if (storedFillGaps !== pnlFillGaps) {
+			setFillGaps(storedFillGaps ? null : false)
+		}
+	}, [storedFillGaps, pnlFillGaps, setFillGaps])
 
 	const windowAnnotations = useMemo(
 		() => annotations.filter((annotation) => annotation.window === periodWindow),
@@ -43,7 +63,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 
 	const annotationsEligible = pnlRange.mode === "preset" && pnlRange.timeframe === "all"
 	const showChartAnnotations = annotationsEligible && showAnnotations
-	const showTooltipTime = pnlRange.resolution !== "1d"
+	const showTooltipTime = data.length > 1 ? data[1].t - data[0].t < 86_400 : pnlRange.resolution !== "1d"
 	const highlightsAvailable = hasAnnotations && annotationsEligible
 
 	const handleHighlightsChange = useCallback(
@@ -51,6 +71,14 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 			setShowAnnotations(next)
 		},
 		[setShowAnnotations],
+	)
+
+	const handleFillGapsChange = useCallback(
+		(next: boolean) => {
+			setStoredFillGaps(next)
+			setFillGaps(next ? null : false)
+		},
+		[setFillGaps, setStoredFillGaps],
 	)
 
 	return (
@@ -85,6 +113,8 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 							highlightsAvailable={highlightsAvailable}
 							highlightsActive={showAnnotations}
 							onHighlightsChange={handleHighlightsChange}
+							fillGapsActive={storedFillGaps}
+							onFillGapsChange={handleFillGapsChange}
 						/>
 						<PnlShareDialog address={address} displayName={displayName} targetRef={cardRef} />
 					</div>

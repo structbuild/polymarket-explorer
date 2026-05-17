@@ -1,4 +1,4 @@
-import { createLoader, createParser, parseAsStringLiteral } from "nuqs/server";
+import { createLoader, createParser, parseAsBoolean, parseAsStringLiteral } from "nuqs/server";
 
 import {
 	defaultTraderPositionSortBy,
@@ -27,6 +27,7 @@ const traderSearchParamParsers = {
 	pnlAnchor: parseAsStringLiteral(pnlAnchorValues),
 	pnlFrom: parseAsUnixSeconds,
 	pnlTo: parseAsUnixSeconds,
+	pnlFillGaps: parseAsBoolean.withDefault(true),
 };
 
 export const loadTraderSearchParams = createLoader(traderSearchParamParsers);

@@ -40,6 +40,7 @@ const defaultColumnVisibility: VisibilityState = {
 	current_value: false,
 	total_fees: false,
 	redemption_usd: false,
+	convert: false,
 }
 
 const sortOptions: { value: TraderPositionSortBy; label: string }[] = [
@@ -298,6 +299,28 @@ function buildColumns(
 			cell: ({ row }) => {
 				const val = row.original.merge_usd ?? 0
 				return <p>{formatNumber(val, { currency: true, compact: true })}</p>
+			},
+		},
+		{
+			id: "convert",
+			meta: { title: "Convert" },
+			header: () => <span>Convert</span>,
+			size: 140,
+			cell: ({ row }) => {
+				const count = row.original.converted_count ?? 0
+				const gained = row.original.converted_shares_gained ?? 0
+				const lost = row.original.converted_shares_lost ?? 0
+				const net = gained - lost
+				return (
+					<p className="tabular-nums">
+						<span>{formatNumber(count, { decimals: 0 })}</span>
+						{count > 0 ? (
+							<span className="text-muted-foreground">
+								{" "}· {net >= 0 ? "+" : ""}{formatNumber(net, { decimals: 2 })} sh
+							</span>
+						) : null}
+					</p>
+				)
 			},
 		},
 		{

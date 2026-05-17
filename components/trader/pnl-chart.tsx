@@ -296,6 +296,8 @@ export function ChartSettingsButton({
 	highlightsAvailable = false,
 	highlightsActive = false,
 	onHighlightsChange,
+	fillGapsActive = true,
+	onFillGapsChange,
 }: {
 	chartMode: PnlChartMode
 	onChartModeChange: (value: PnlChartMode) => void
@@ -304,6 +306,8 @@ export function ChartSettingsButton({
 	highlightsAvailable?: boolean
 	highlightsActive?: boolean
 	onHighlightsChange?: (next: boolean) => void
+	fillGapsActive?: boolean
+	onFillGapsChange?: (next: boolean) => void
 }) {
 	function handleChartModeChange(nextMode: PnlChartMode) {
 		onChartModeChange(nextMode)
@@ -348,28 +352,55 @@ export function ChartSettingsButton({
 							)
 						})}
 					</div>
-					{highlightsAvailable && onHighlightsChange ? (
+					{(highlightsAvailable && onHighlightsChange) || onFillGapsChange ? (
 						<div className="grid gap-1.5 border-t pt-2">
 							<div className="px-1 text-xs text-muted-foreground">Overlays</div>
-							<button
-								type="button"
-								onClick={() => onHighlightsChange(!highlightsActive)}
-								aria-pressed={highlightsActive}
-								className={cn(
-									"flex items-center justify-between rounded-sm px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted",
-									highlightsActive ? "bg-muted text-foreground" : "text-muted-foreground",
-								)}
-							>
-								<span>Best / worst period</span>
-								<span className={cn("text-[10px] font-medium", highlightsActive ? "text-emerald-500" : "text-muted-foreground")}>
-									{highlightsActive ? "ON" : "OFF"}
-								</span>
-							</button>
+							{highlightsAvailable && onHighlightsChange ? (
+								<ToggleRow
+									label="Best / worst period"
+									active={highlightsActive}
+									onChange={onHighlightsChange}
+								/>
+							) : null}
+							{onFillGapsChange ? (
+								<ToggleRow
+									label="Fill gaps"
+									active={fillGapsActive}
+									onChange={onFillGapsChange}
+								/>
+							) : null}
 						</div>
 					) : null}
 				</div>
 			</PopoverContent>
 		</Popover>
+	)
+}
+
+function ToggleRow({
+	label,
+	active,
+	onChange,
+}: {
+	label: string
+	active: boolean
+	onChange: (next: boolean) => void
+}) {
+	return (
+		<button
+			type="button"
+			onClick={() => onChange(!active)}
+			aria-pressed={active}
+			className={cn(
+				"flex items-center justify-between rounded-sm px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted",
+				active ? "bg-muted text-foreground" : "text-muted-foreground",
+			)}
+		>
+			<span>{label}</span>
+			<span className={cn("text-[10px] font-medium", active ? "text-emerald-500" : "text-muted-foreground")}>
+				{active ? "ON" : "OFF"}
+			</span>
+		</button>
 	)
 }
 
@@ -523,8 +554,8 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 
 	return (
 		<div className="overflow-hidden">
-			<div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
-				<div className="grid w-full grid-cols-3 gap-3 sm:w-auto sm:gap-5">
+			<div className="mb-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
+				<div className="grid w-full grid-cols-3 gap-3 sm:w-auto sm:shrink-0 sm:gap-5">
 					<PnlSummaryMetric
 						label="Cumulative PnL"
 						value={formatNumber(lastPnl, { currency: true, compact: true })}
@@ -540,7 +571,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 						value={formatNumber(latestOpenPositions, { decimals: 0 })}
 					/>
 				</div>
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+				<div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
 					{hasAnnotations ? (
 						<div
 							aria-hidden={!showAnnotations}
@@ -705,7 +736,7 @@ function PnlSummaryMetric({
 }) {
 	return (
 		<div>
-			<p className="mb-1 text-xs text-muted-foreground sm:text-sm">{label}</p>
+			<p className="mb-1 whitespace-nowrap text-xs text-muted-foreground sm:text-sm">{label}</p>
 			<p className={cn("text-lg font-medium tabular-nums sm:text-2xl", valueClassName)}>
 				{value}
 			</p>

@@ -99,10 +99,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	});
 }
 
-function loadTraderInsights(address: string, range: ResolvedPnlRange): Promise<TraderInsightsData> {
+function loadTraderInsights(address: string, range: ResolvedPnlRange, fillGaps: boolean): Promise<TraderInsightsData> {
 	const pnlCandlesPromise = getTraderPnlCandles(address, range.apiTimeframe, range.resolution, {
 		from: range.from,
 		to: range.to,
+		fillGaps,
 	});
 	const dailyPnlPromise = getTraderDailyPnl(address);
 	const periodsPromise = getTraderPnlPeriods(address);
@@ -127,6 +128,7 @@ async function TraderInsightsSection({
 	displayName,
 	profileImage,
 	pnlRange,
+	pnlFillGaps,
 	firstTradeAt,
 	insightsPromise,
 }: {
@@ -134,6 +136,7 @@ async function TraderInsightsSection({
 	displayName: string;
 	profileImage?: string | null;
 	pnlRange: ResolvedPnlRange;
+	pnlFillGaps: boolean;
 	firstTradeAt?: number;
 	insightsPromise: Promise<TraderInsightsData>;
 }) {
@@ -148,6 +151,7 @@ async function TraderInsightsSection({
 				profileImage={profileImage}
 				annotations={chartAnnotations}
 				pnlRange={pnlRange}
+				pnlFillGaps={pnlFillGaps}
 				firstTradeAt={firstTradeAt}
 			/>
 			<div className="rounded-lg bg-card p-4 sm:p-6">
@@ -256,6 +260,7 @@ function TraderPerformanceSummaryFallback() {
 async function TraderOverviewSection({
 	address,
 	pnlRange,
+	pnlFillGaps,
 	profilePromise,
 	pnlSummaryPromise,
 	insightsPromise,
@@ -263,6 +268,7 @@ async function TraderOverviewSection({
 }: {
 	address: string;
 	pnlRange: ResolvedPnlRange;
+	pnlFillGaps: boolean;
 	profilePromise: Promise<UserProfile | null>;
 	pnlSummaryPromise: Promise<GlobalEntry | null>;
 	insightsPromise: Promise<TraderInsightsData>;
@@ -318,6 +324,7 @@ async function TraderOverviewSection({
 							displayName={displayName}
 							profileImage={profile?.profile_image}
 							pnlRange={pnlRange}
+							pnlFillGaps={pnlFillGaps}
 							firstTradeAt={pnlSummary?.first_trade_at ?? undefined}
 							insightsPromise={insightsPromise}
 						/>
@@ -453,6 +460,7 @@ async function TraderPageContent({
 			pnlAnchor,
 			pnlFrom,
 			pnlTo,
+			pnlFillGaps,
 			openSortBy,
 			openSortDirection,
 			closedSortBy,
@@ -473,7 +481,7 @@ async function TraderPageContent({
 
 	const profilePromise = Promise.resolve(profile);
 	const pnlSummaryPromise = Promise.resolve(pnlSummary);
-	const insightsPromise = loadTraderInsights(address, pnlRange);
+	const insightsPromise = loadTraderInsights(address, pnlRange, pnlFillGaps);
 	const cumulativePnlUsdPromise = getTraderCumulativePnlUsd(address);
 	const tabDataPromise = loadTraderTabPanelData({
 		address,

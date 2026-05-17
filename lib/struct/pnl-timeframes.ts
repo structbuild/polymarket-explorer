@@ -6,15 +6,15 @@ export const pnlAnchorValues = ["day", "week", "month", "year"] as const;
 
 export type PnlAnchor = (typeof pnlAnchorValues)[number];
 
-export type StructPnlCandleResolution = "1m" | "1h" | "1d";
+export type StructPnlCandleResolution = "1m" | "1h" | "4h" | "1d" | "auto";
 export type StructPnlCandleTimeframe = "1d" | "7d" | "30d" | "lifetime";
 export type StructPnlPeriodTimeframe = "1d" | "24h" | "7d" | "30d" | "lifetime";
 
 export const PNL_TIMEFRAMES: Record<PnlTimeframe, { timeframe: StructPnlCandleTimeframe; resolution: StructPnlCandleResolution }> = {
-	"1d": { timeframe: "1d", resolution: "1m" },
-	"1w": { timeframe: "7d", resolution: "1h" },
-	"1m": { timeframe: "30d", resolution: "1h" },
-	all: { timeframe: "lifetime", resolution: "1h" },
+	"1d": { timeframe: "1d", resolution: "auto" },
+	"1w": { timeframe: "7d", resolution: "auto" },
+	"1m": { timeframe: "30d", resolution: "auto" },
+	all: { timeframe: "lifetime", resolution: "auto" },
 };
 
 export const PNL_RISK_TIMEFRAMES: Record<PnlTimeframe, StructPnlPeriodTimeframe> = {

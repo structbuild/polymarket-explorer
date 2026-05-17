@@ -10,7 +10,15 @@ import {
 	pnlToParser,
 } from "@/lib/trader-search-params"
 import { pnlTimeframeValues, type PnlTimeframe } from "@/lib/struct/pnl-timeframes"
+import { TooltipWrapper } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+
+const TIMEFRAME_LABELS: Record<PnlTimeframe, string> = {
+	"1d": "Last 24 hours",
+	"1w": "Last 7 days",
+	"1m": "Last 30 days",
+	all: "All time",
+}
 
 const RANGE_PARAMS = {
 	pnlTimeframe: pnlTimeframeParser,
@@ -51,21 +59,24 @@ export function PnlTimeframeSelector({ active }: PnlTimeframeSelectorProps) {
 		>
 			{pnlTimeframeValues.map((value) => {
 				const isActive = value === active
+				const label = TIMEFRAME_LABELS[value]
 				return (
-					<button
-						key={value}
-						type="button"
-						aria-pressed={isActive}
-						onClick={() => applyTimeframe(value)}
-						className={cn(
-							"rounded-sm px-2 text-xs font-medium leading-6 transition-colors",
-							isActive
-								? "bg-background text-foreground shadow-sm ring-1 ring-border/60"
-								: "text-muted-foreground hover:text-foreground",
-						)}
-					>
-						{value.toUpperCase()}
-					</button>
+					<TooltipWrapper key={value} content={label}>
+						<button
+							type="button"
+							aria-pressed={isActive}
+							aria-label={label}
+							onClick={() => applyTimeframe(value)}
+							className={cn(
+								"rounded-sm px-2 text-xs font-medium leading-6 transition-colors",
+								isActive
+									? "bg-background text-foreground shadow-sm ring-1 ring-border/60"
+									: "text-muted-foreground hover:text-foreground",
+							)}
+						>
+							{value.toUpperCase()}
+						</button>
+					</TooltipWrapper>
 				)
 			})}
 		</div>
