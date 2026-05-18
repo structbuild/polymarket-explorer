@@ -43,7 +43,7 @@ const defaultColumnVisibility: VisibilityState = {
 	convert: false,
 }
 
-const sortOptions: { value: TraderPositionSortBy; label: string }[] = [
+const baseSortOptions: { value: TraderPositionSortBy; label: string }[] = [
 	{ value: "realized_pnl_usd", label: "PnL ($)" },
 	{ value: "realized_pnl_pct", label: "PnL (%)" },
 	{ value: "current_value", label: "Current Value" },
@@ -54,7 +54,12 @@ const sortOptions: { value: TraderPositionSortBy; label: string }[] = [
 	{ value: "first_trade_at", label: "First Trade" },
 ]
 
-const sortOptionValues = new Set<TraderPositionSortBy>(sortOptions.map((o) => o.value))
+function getSortOptions(status: "open" | "closed") {
+	if (status === "open") {
+		return baseSortOptions.filter((option) => option.value !== "redeemable")
+	}
+	return baseSortOptions
+}
 
 function buildColumns(
 	status: "open" | "closed",
@@ -341,25 +346,29 @@ function buildColumns(
 				<p>{formatNumber(row.original.total_fees ?? 0, { currency: true })}</p>
 			),
 		},
-		{
-			id: "redemption_usd",
-			meta: { title: "Redemption" },
-			header: () => (
-				<SortableHeader
-					sortBy="redemption_usd"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Redemption
-				</SortableHeader>
-			),
-			size: 130,
-			cell: ({ row }) => {
-				const val = row.original.redemption_usd ?? 0
-				return <p>{formatNumber(val, { currency: true, compact: true })}</p>
-			},
-		},
+		...(status === "closed"
+			? [
+					{
+						id: "redemption_usd",
+						meta: { title: "Redemption" },
+						header: () => (
+							<SortableHeader
+								sortBy="redemption_usd"
+								currentSortBy={currentSortBy}
+								currentSortDirection={currentSortDirection}
+								onSortChange={onSortChange}
+							>
+								Redemption
+							</SortableHeader>
+						),
+						size: 130,
+						cell: ({ row }) => {
+							const val = row.original.redemption_usd ?? 0
+							return <p>{formatNumber(val, { currency: true, compact: true })}</p>
+						},
+					} satisfies ColumnDef<PositionEntry, unknown>,
+				]
+			: []),
 		{
 			id: "last_trade_at",
 			meta: { title: "Last Active" },
@@ -522,6 +531,12 @@ export default function TraderPositions({
 		loadPage(1, currentSortBy, nextDirection)
 	}, [currentSortBy, currentSortDirection, loadPage])
 
+	const sortOptions = useMemo(() => getSortOptions(status), [status])
+	const sortOptionValues = useMemo(
+		() => new Set<TraderPositionSortBy>(sortOptions.map((o) => o.value)),
+		[sortOptions],
+	)
+
 	const selectSortValue: TraderPositionSortBy | null = sortOptionValues.has(currentSortBy)
 		? currentSortBy
 		: null
@@ -540,6 +555,9 @@ export default function TraderPositions({
 
 	const toolbarRight = (
 		<div className="flex items-center gap-3">
+			{hasUnknownMarkets ? (
+				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
+			) : null}
 			<div className="flex items-center gap-1">
 				<Select
 					value={selectSortValue}
@@ -577,9 +595,6 @@ export default function TraderPositions({
 					</Button>
 				</TooltipWrapper>
 			</div>
-			{hasUnknownMarkets ? (
-				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
-			) : null}
 			<Button
 				variant="outline"
 				size="sm"
