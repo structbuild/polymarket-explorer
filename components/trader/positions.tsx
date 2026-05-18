@@ -47,18 +47,29 @@ const baseSortOptions: { value: TraderPositionSortBy; label: string }[] = [
 	{ value: "realized_pnl_usd", label: "PnL ($)" },
 	{ value: "realized_pnl_pct", label: "PnL (%)" },
 	{ value: "current_value", label: "Current Value" },
+	{ value: "current_price", label: "Current Price" },
 	{ value: "current_shares_balance", label: "Shares Held" },
 	{ value: "end_date", label: "Market End Date" },
 	{ value: "redeemable", label: "Redeemable" },
+	{ value: "mergeable", label: "Mergeable" },
+	{ value: "merge_count", label: "Merges" },
+	{ value: "split_count", label: "Splits" },
 	{ value: "last_trade_at", label: "Last Active" },
 	{ value: "first_trade_at", label: "First Trade" },
 ]
 
+const openOnlySortKeys: ReadonlySet<TraderPositionSortBy> = new Set([
+	"current_price",
+	"mergeable",
+])
+
+const closedOnlySortKeys: ReadonlySet<TraderPositionSortBy> = new Set([
+	"redeemable",
+])
+
 function getSortOptions(status: "open" | "closed") {
-	if (status === "open") {
-		return baseSortOptions.filter((option) => option.value !== "redeemable")
-	}
-	return baseSortOptions
+	const excluded = status === "open" ? closedOnlySortKeys : openOnlySortKeys
+	return baseSortOptions.filter((option) => !excluded.has(option.value))
 }
 
 function buildColumns(

@@ -5,11 +5,15 @@ export const TAGS_TABLE_COLUMN_SIZES = {
 	rank: 64,
 	tag: 240,
 	volume: 128,
+	builderVolume: 128,
 	traders: 128,
+	builderTraders: 128,
 	makers: 128,
 	takers: 128,
 	trades: 128,
+	builderTrades: 128,
 	fees: 128,
+	builderFees: 128,
 } as const;
 
 export const TAGS_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
@@ -32,9 +36,21 @@ export const TAGS_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
 		cell: <Skeleton className="h-4 w-14" />,
 	},
 	{
+		id: "builderVolume",
+		size: TAGS_TABLE_COLUMN_SIZES.builderVolume,
+		headerClassName: "w-20",
+		cell: <Skeleton className="h-4 w-14" />,
+	},
+	{
 		id: "traders",
 		size: TAGS_TABLE_COLUMN_SIZES.traders,
 		headerClassName: "w-14",
+		cell: <Skeleton className="h-4 w-12" />,
+	},
+	{
+		id: "builderTraders",
+		size: TAGS_TABLE_COLUMN_SIZES.builderTraders,
+		headerClassName: "w-24",
 		cell: <Skeleton className="h-4 w-12" />,
 	},
 	{
@@ -56,9 +72,21 @@ export const TAGS_SKELETON_COLUMNS: readonly DataTableSkeletonColumn[] = [
 		cell: <Skeleton className="h-4 w-12" />,
 	},
 	{
+		id: "builderTrades",
+		size: TAGS_TABLE_COLUMN_SIZES.builderTrades,
+		headerClassName: "w-20",
+		cell: <Skeleton className="h-4 w-12" />,
+	},
+	{
 		id: "fees",
 		size: TAGS_TABLE_COLUMN_SIZES.fees,
 		headerClassName: "w-10",
+		cell: <Skeleton className="h-4 w-12" />,
+	},
+	{
+		id: "builderFees",
+		size: TAGS_TABLE_COLUMN_SIZES.builderFees,
+		headerClassName: "w-20",
 		cell: <Skeleton className="h-4 w-12" />,
 	},
 ];

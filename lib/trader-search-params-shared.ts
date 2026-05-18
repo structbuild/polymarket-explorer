@@ -8,6 +8,7 @@ export const traderPositionSortByValues = [
 	"avg_exit_price",
 	"realized_pnl_usd",
 	"current_value",
+	"current_price",
 	"total_shares_bought",
 	"total_shares_sold",
 	"total_buy_usd",
@@ -22,6 +23,10 @@ export const traderPositionSortByValues = [
 	"current_shares_balance",
 	"end_date",
 	"redeemable",
+	"mergeable",
+	"merge_count",
+	"split_count",
+	"is_neg_risk",
 ] as const;
 export type TraderPositionSortBy = (typeof traderPositionSortByValues)[number];
 
