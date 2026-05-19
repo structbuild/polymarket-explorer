@@ -193,13 +193,11 @@ function PnlTooltipContent({
 	active,
 	payload,
 	showTime,
-	metric,
 	timezone,
 }: {
 	active?: boolean
 	payload?: Array<{ payload?: PnlChartPoint }>
 	showTime: boolean
-	metric: PnlChartMetric
 	timezone?: string
 }) {
 	const entry = payload?.[0]?.payload
@@ -208,8 +206,7 @@ function PnlTooltipContent({
 		return null
 	}
 
-	const ohlc = isOhlcMetric(metric) ? getChartMetricOhlc(entry, metric) : null
-	const change = ohlc ? ohlc.close - ohlc.open : 0
+	const change = entry.close - entry.open
 
 	return (
 		<div className="grid min-w-40 items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
@@ -217,22 +214,12 @@ function PnlTooltipContent({
 				{showTime ? formatDateTimeFull(entry.t, timezone) : formatDateFull(entry.t, timezone)}
 			</div>
 			<div className="grid gap-1.5">
-				{ohlc ? (
-					<>
-						<TooltipValue label="Open" value={ohlc.open} />
-						<TooltipValue label="High" value={ohlc.high} />
-						<TooltipValue label="Low" value={ohlc.low} />
-						<TooltipValue label="Close" value={ohlc.close} />
-						<TooltipValue label="Change" value={change} valueClassName={pnlColorClass(change)} />
-					</>
-				) : (
-					<TooltipValue
-						label={metric === "openPositions" ? "Open positions" : "USD balance"}
-						value={getChartMetricValue(entry, metric)}
-						currency={metric !== "openPositions"}
-					/>
-				)}
-				{metric === "portfolio" ? <TooltipValue label="PnL close" value={entry.close} /> : null}
+				<TooltipValue label="Open" value={entry.open} />
+				<TooltipValue label="High" value={entry.high} />
+				<TooltipValue label="Low" value={entry.low} />
+				<TooltipValue label="Close" value={entry.close} />
+				<TooltipValue label="Change" value={change} valueClassName={pnlColorClass(change)} />
+				<TooltipValue label="Portfolio value" value={entry.portfolioClose} />
 				<TooltipValue label="USD balance" value={entry.usdBalance} />
 				<TooltipValue label="Open positions" value={entry.numOpenPositions} currency={false} />
 			</div>
@@ -652,7 +639,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 						/>
 						<ChartTooltip
 							content={
-								<PnlTooltipContent showTime={shouldShowTooltipTime} metric={chartMetric} timezone={timezone} />
+								<PnlTooltipContent showTime={shouldShowTooltipTime} timezone={timezone} />
 							}
 						/>
 						<Area

@@ -35,7 +35,7 @@ function ScrollHintButton({ direction, onClick }: ScrollHintButtonProps) {
       aria-label={ariaLabel}
       onClick={onClick}
       className={cn(
-        "absolute top-1/2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full border bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+        "pointer-events-auto absolute flex size-7 items-center justify-center rounded-full border bg-background/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         direction === "left" ? "left-2" : "right-2",
       )}
     >
@@ -45,16 +45,68 @@ function ScrollHintButton({ direction, onClick }: ScrollHintButtonProps) {
 }
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const wrapperRef = React.useRef<HTMLDivElement | null>(null)
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const { canScrollLeft, canScrollRight } = useHorizontalScrollState(containerRef)
   const maskImage = buildScrollMask(canScrollLeft, canScrollRight)
+  const showHints = canScrollLeft || canScrollRight
+  const [hintTop, setHintTop] = React.useState<number | null>(null)
+
+  React.useEffect(() => {
+    if (!showHints) {
+      return
+    }
+
+    const wrapper = wrapperRef.current
+    if (!wrapper) {
+      return
+    }
+
+    let frame = 0
+
+    const measure = () => {
+      frame = 0
+      const rect = wrapper.getBoundingClientRect()
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+      const visibleTop = Math.max(0, rect.top)
+      const visibleBottom = Math.min(viewportHeight, rect.bottom)
+
+      if (visibleBottom <= visibleTop) {
+        return
+      }
+
+      const visibleCenter = (visibleTop + visibleBottom) / 2
+      setHintTop(visibleCenter - rect.top)
+    }
+
+    const schedule = () => {
+      if (frame !== 0) return
+      frame = window.requestAnimationFrame(measure)
+    }
+
+    measure()
+
+    window.addEventListener("scroll", schedule, { passive: true })
+    window.addEventListener("resize", schedule)
+    const resizeObserver = new ResizeObserver(schedule)
+    resizeObserver.observe(wrapper)
+
+    return () => {
+      if (frame !== 0) {
+        window.cancelAnimationFrame(frame)
+      }
+      window.removeEventListener("scroll", schedule)
+      window.removeEventListener("resize", schedule)
+      resizeObserver.disconnect()
+    }
+  }, [showHints])
 
   const scrollBy = (delta: number) => {
     containerRef.current?.scrollBy({ left: delta, behavior: "smooth" })
   }
 
   return (
-    <div data-slot="table-wrapper" className="relative w-full">
+    <div ref={wrapperRef} data-slot="table-wrapper" className="relative w-full">
       <div
         ref={containerRef}
         data-slot="table-container"
@@ -67,11 +119,19 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
           {...props}
         />
       </div>
-      {canScrollLeft ? (
-        <ScrollHintButton direction="left" onClick={() => scrollBy(-SCROLL_STEP_PX)} />
-      ) : null}
-      {canScrollRight ? (
-        <ScrollHintButton direction="right" onClick={() => scrollBy(SCROLL_STEP_PX)} />
+      {showHints && hintTop !== null ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 z-10 -translate-y-1/2"
+          style={{ top: hintTop }}
+        >
+          {canScrollLeft ? (
+            <ScrollHintButton direction="left" onClick={() => scrollBy(-SCROLL_STEP_PX)} />
+          ) : null}
+          {canScrollRight ? (
+            <ScrollHintButton direction="right" onClick={() => scrollBy(SCROLL_STEP_PX)} />
+          ) : null}
+        </div>
       ) : null}
     </div>
   )
