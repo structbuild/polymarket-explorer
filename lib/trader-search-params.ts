@@ -14,7 +14,7 @@ import {
 const parseAsPositivePage = createParser<number>(positivePageParserDef).withDefault(1);
 const parseAsUnixSeconds = createParser<number>(unixSecondsParserDef);
 
-export const pnlTimeframeParser = parseAsStringLiteral(pnlTimeframeValues).withDefault("1w");
+export const pnlTimeframeParser = parseAsStringLiteral(pnlTimeframeValues).withDefault("all");
 export const pnlAnchorParser = parseAsStringLiteral(pnlAnchorValues);
 export const pnlFromParser = parseAsUnixSeconds;
 export const pnlToParser = parseAsUnixSeconds;
