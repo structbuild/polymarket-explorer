@@ -1,10 +1,11 @@
 "use client"
 
-import type { PositionEntry } from "@structbuild/sdk"
+import type { PnlV3ExitMarker, PositionEntry } from "@structbuild/sdk"
 import { useCallback, useRef, useState, useTransition } from "react"
 
 import { getTraderTabPageAction } from "@/app/actions"
 import type {
+	TraderExitMode,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
@@ -12,6 +13,7 @@ import type {
 import type { PaginatedResource } from "@/lib/struct/types"
 import type { TradeRow } from "./types"
 import TraderActivity from "./activity"
+import TraderExits from "./trader-exits"
 import TraderPositions from "./positions"
 import { TraderTabs } from "./trader-tabs"
 
@@ -31,9 +33,17 @@ type TraderTabPanelClientProps =
 			pageNumber: number
 			page: PaginatedResource<TradeRow, number>
 	  }
+	| {
+			kind: "exits"
+			address: string
+			mode: TraderExitMode
+			pageNumber: number
+			page: PaginatedResource<PnlV3ExitMarker, number>
+	  }
 
 function tabForPanelData(props: TraderTabPanelClientProps): TraderTab {
 	if (props.kind === "activity") return "activity"
+	if (props.kind === "exits") return props.mode
 
 	return props.status === "closed" ? "closed" : "active"
 }
@@ -119,6 +129,19 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 		return (
 			<TraderActivity
 				address={currentData.address}
+				page={currentData.page}
+				pageNumber={currentData.pageNumber}
+				tabs={tabs}
+				onRefresh={handleRefresh}
+			/>
+		)
+	}
+
+	if (currentData.kind === "exits") {
+		return (
+			<TraderExits
+				address={currentData.address}
+				mode={currentData.mode}
 				page={currentData.page}
 				pageNumber={currentData.pageNumber}
 				tabs={tabs}

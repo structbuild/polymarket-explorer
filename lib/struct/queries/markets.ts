@@ -1,7 +1,7 @@
 import "server-only";
 
 import type {
-	GlobalCountsResponse,
+	AnalyticsV3GlobalCountsResponse,
 	MarketResponse,
 	MarketSortBy,
 	MarketStatus,
@@ -156,7 +156,7 @@ export async function getAllMarketSlugs(
 	}
 }
 
-export async function getPlatformCounts(): Promise<GlobalCountsResponse | null> {
+export async function getPlatformCounts(): Promise<AnalyticsV3GlobalCountsResponse | null> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -164,7 +164,7 @@ export async function getPlatformCounts(): Promise<GlobalCountsResponse | null> 
 	}
 
 	try {
-		const response = await client.analytics.getCounts();
+		const response = await client.analytics.getCountsV3();
 		return response.data;
 	} catch (error) {
 		logStructError("getPlatformCounts", error);

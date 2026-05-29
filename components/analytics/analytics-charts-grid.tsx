@@ -87,12 +87,16 @@ const COLOR_VOLUME_SELL = "#ef4444";
 const COLOR_VOLUME_REDEEM = "#8b5cf6";
 const COLOR_MERGE = "#f59e0b";
 const COLOR_SPLIT = "#06b6d4";
+const COLOR_CONVERT = "#ec4899";
 const COLOR_YES = "var(--chart-1)";
 const COLOR_NO = "var(--chart-4)";
 const COLOR_SINGLE = "var(--chart-2)";
 const COLOR_TOTAL = "#64748b";
 const COLOR_MAKERS = "var(--chart-1)";
 const COLOR_TAKERS = "var(--chart-4)";
+const COLOR_REWARDS = "#8b5cf6";
+const COLOR_MAKER_REBATE = "#f59e0b";
+const COLOR_YIELD = "#14b8a6";
 
 const VOLUME_TOTAL_SERIES: AnalyticsSeries = {
 	key: "volumeUsd",
@@ -119,6 +123,7 @@ const VOLUME_SERIES: AnalyticsSeries[] = [
 	},
 	{ key: "mergeVolumeUsd", label: "Merges", color: COLOR_MERGE, stackId: "v" },
 	{ key: "splitVolumeUsd", label: "Splits", color: COLOR_SPLIT, stackId: "v" },
+	{ key: "convertedCollateralUsd", label: "Conversions", color: COLOR_CONVERT, stackId: "v" },
 	VOLUME_TOTAL_SERIES,
 ];
 
@@ -128,6 +133,7 @@ const VOLUME_CUMULATIVE_SERIES: AnalyticsSeries[] = [
 	{ key: "redemptionVolumeUsd", label: "Redemptions", color: COLOR_VOLUME_REDEEM },
 	{ key: "mergeVolumeUsd", label: "Merges", color: COLOR_MERGE },
 	{ key: "splitVolumeUsd", label: "Splits", color: COLOR_SPLIT },
+	{ key: "convertedCollateralUsd", label: "Conversions", color: COLOR_CONVERT },
 	VOLUME_TOTAL_SERIES,
 ];
 
@@ -137,6 +143,7 @@ const TRADE_COUNT_SERIES: AnalyticsSeries[] = [
 	{ key: "redemptionCount", label: "Redemptions", color: COLOR_VOLUME_REDEEM, stackId: "tc" },
 	{ key: "mergeCount", label: "Merges", color: COLOR_MERGE, stackId: "tc" },
 	{ key: "splitCount", label: "Splits", color: COLOR_SPLIT, stackId: "tc" },
+	{ key: "convertedCount", label: "Conversions", color: COLOR_CONVERT, stackId: "tc" },
 	TRADE_COUNT_TOTAL_SERIES,
 ];
 
@@ -146,6 +153,7 @@ const TRADE_COUNT_CUMULATIVE_SERIES: AnalyticsSeries[] = [
 	{ key: "redemptionCount", label: "Redemptions", color: COLOR_VOLUME_REDEEM },
 	{ key: "mergeCount", label: "Merges", color: COLOR_MERGE },
 	{ key: "splitCount", label: "Splits", color: COLOR_SPLIT },
+	{ key: "convertedCount", label: "Conversions", color: COLOR_CONVERT },
 	TRADE_COUNT_TOTAL_SERIES,
 ];
 
@@ -157,6 +165,28 @@ const YES_NO_COUNT_SERIES: AnalyticsSeries[] = [
 const YES_NO_COUNT_CUMULATIVE_SERIES: AnalyticsSeries[] = [
 	{ key: "yesCount", label: "Yes", color: COLOR_YES },
 	{ key: "noCount", label: "No", color: COLOR_NO },
+];
+
+const INCENTIVES_SERIES: AnalyticsSeries[] = [
+	{ key: "rewardVolumeUsd", label: "Rewards", color: COLOR_REWARDS, stackId: "inc" },
+	{ key: "makerRebateVolumeUsd", label: "Maker rebates", color: COLOR_MAKER_REBATE, stackId: "inc" },
+	{ key: "yieldVolumeUsd", label: "Yield", color: COLOR_YIELD, stackId: "inc" },
+];
+
+const INCENTIVES_CUMULATIVE_SERIES: AnalyticsSeries[] = [
+	{ key: "rewardVolumeUsd", label: "Rewards", color: COLOR_REWARDS },
+	{ key: "makerRebateVolumeUsd", label: "Maker rebates", color: COLOR_MAKER_REBATE },
+	{ key: "yieldVolumeUsd", label: "Yield", color: COLOR_YIELD },
+];
+
+const YES_NO_SHARES_SERIES: AnalyticsSeries[] = [
+	{ key: "yesSharesVolume", label: "Yes", color: COLOR_YES, stackId: "yns" },
+	{ key: "noSharesVolume", label: "No", color: COLOR_NO, stackId: "yns" },
+];
+
+const YES_NO_SHARES_CUMULATIVE_SERIES: AnalyticsSeries[] = [
+	{ key: "yesSharesVolume", label: "Yes", color: COLOR_YES },
+	{ key: "noSharesVolume", label: "No", color: COLOR_NO },
 ];
 
 const CHART_SPECS: ChartSpec[] = [
@@ -312,6 +342,31 @@ const EXTRA_CHART_SPECS: ChartSpec[] = [
 		valueFormat: "currency",
 		keepNarrow: true,
 	},
+	{
+		kind: "timeSeries",
+		id: "incentives",
+		title: "Rewards & incentives",
+		tooltip:
+			"Liquidity rewards, maker rebates, and collateral yield distributed to traders — separate from trading PnL.",
+		variant: "bar",
+		series: INCENTIVES_SERIES,
+		valueFormat: "currency",
+		cumulative: {
+			series: INCENTIVES_CUMULATIVE_SERIES,
+		},
+	},
+	{
+		kind: "timeSeries",
+		id: "yesNoShares",
+		title: "Yes vs No shares",
+		tooltip: "Notional shares (each settles $0–$1) traded for outcome index 0 (Yes) and 1 (No).",
+		variant: "bar",
+		series: YES_NO_SHARES_SERIES,
+		valueFormat: "count",
+		cumulative: {
+			series: YES_NO_SHARES_CUMULATIVE_SERIES,
+		},
+	},
 ];
 
 function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<string, number>> {
@@ -342,6 +397,13 @@ function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<str
 		avgRevenuePerUserUsd: p.avgRevenuePerUserUsd,
 		avgVolumePerUserUsd: p.avgVolumePerUserUsd,
 		sharesVolume: p.sharesVolume,
+		convertedCollateralUsd: p.convertedCollateralUsd,
+		convertedCount: p.convertedCount,
+		makerRebateVolumeUsd: p.makerRebateVolumeUsd,
+		rewardVolumeUsd: p.rewardVolumeUsd,
+		yieldVolumeUsd: p.yieldVolumeUsd,
+		yesSharesVolume: p.yesSharesVolume,
+		noSharesVolume: p.noSharesVolume,
 	}));
 }
 
@@ -431,11 +493,13 @@ const SERIES_COMPONENTS: Partial<Record<string, VolumeComponentId>> = {
 	redemptionVolumeUsd: "redeem",
 	mergeVolumeUsd: "merge",
 	splitVolumeUsd: "split",
+	convertedCollateralUsd: "convert",
 	buyCount: "buy",
 	sellCount: "sell",
 	redemptionCount: "redeem",
 	mergeCount: "merge",
 	splitCount: "split",
+	convertedCount: "convert",
 };
 
 function withAllowedComponents(

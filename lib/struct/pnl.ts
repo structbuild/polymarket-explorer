@@ -6,8 +6,10 @@ import { formatDateShort } from "@/lib/format";
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
 import type { StructPnlCandleResolution, StructPnlCandleTimeframe, StructPnlPeriodTimeframe } from "@/lib/struct/pnl-timeframes";
+import type { PaginatedResource } from "@/lib/struct/types";
+import type { TraderExitMode } from "@/lib/trader-search-params-shared";
 import { normalizeWalletAddress } from "@/lib/utils";
-import type { PnlV3RiskResponse } from "@structbuild/sdk";
+import type { PnlV3ExitMarker, PnlV3RiskResponse } from "@structbuild/sdk";
 
 export type PnlDataPoint = {
 	t: number;
@@ -156,6 +158,68 @@ export async function getTraderPnlRisk(address: string, timeframe: StructPnlPeri
 	if (!normalizedAddress) return null;
 
 	return getTraderPnlRiskCached(normalizedAddress, timeframe);
+}
+
+export const defaultTraderExitsPageSize = 25;
+
+function emptyExitsPage(limit: number): PaginatedResource<PnlV3ExitMarker, number> {
+	return { data: [], hasMore: false, nextCursor: null, pageSize: limit };
+}
+
+const getTraderExitsPageCached = cache(
+	async (
+		address: string,
+		mode: TraderExitMode,
+		offset: number,
+		limit: number,
+	): Promise<PaginatedResource<PnlV3ExitMarker, number>> => {
+		const client = getStructClient();
+
+		if (!client) {
+			return emptyExitsPage(limit);
+		}
+
+		try {
+			const response = await client.trader.getTraderPnlV3Exits({
+				address,
+				sort_by: "pnl_usd",
+				sort_direction: mode === "wins" ? "desc" : "asc",
+				...(mode === "wins" ? { min_pnl_usd: 0 } : { max_pnl_usd: 0 }),
+				offset,
+				limit: limit + 1,
+			});
+			const all = response.data ?? [];
+			const data = all.slice(0, limit);
+			const hasMore = all.length > limit;
+
+			return {
+				data,
+				hasMore,
+				nextCursor: hasMore ? offset + data.length : null,
+				pageSize: limit,
+			};
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return emptyExitsPage(limit);
+			}
+
+			logStructError(`getTraderPnlV3Exits:${address}:${mode}:${offset}`, error);
+			return emptyExitsPage(limit);
+		}
+	},
+);
+
+export async function getTraderExitsPage(
+	address: string,
+	mode: TraderExitMode,
+	options: { offset?: number; limit?: number } = {},
+): Promise<PaginatedResource<PnlV3ExitMarker, number>> {
+	const limit = options.limit ?? defaultTraderExitsPageSize;
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) return emptyExitsPage(limit);
+
+	return getTraderExitsPageCached(normalizedAddress, mode, options.offset ?? 0, limit);
 }
 
 const getTraderDailyPnlCached = cache(async (address: string): Promise<DailyPnlEntry[]> => {

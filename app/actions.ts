@@ -32,6 +32,7 @@ import {
 	getBuilderTradesPage,
 } from "@/lib/struct/builder-queries";
 import { getBuildersStackedData } from "@/lib/struct/builders-stacked";
+import { defaultTraderExitsPageSize, getTraderExitsPage } from "@/lib/struct/pnl";
 import { maxBuilderTradesPageNumber } from "@/lib/builder-search-params-shared";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 import {
@@ -68,6 +69,8 @@ import { marketResponseToRow } from "@/lib/market-table-map";
 import {
 	maxTraderPageNumber,
 	defaultTraderPositionSortBy,
+	exitModeForTab,
+	type TraderExitMode,
 	type TraderPositionSortBy,
 	type TraderSortDirection,
 	type TraderTab,
@@ -288,6 +291,23 @@ export async function getTraderTabPageAction({
 	const params = new URLSearchParams(search);
 	const safeTab = parseTraderTab(tab);
 
+	const exitMode = exitModeForTab(safeTab);
+	if (exitMode) {
+		const pageNumber = parseTraderPageSearchParam(params, exitMode === "wins" ? "winsPage" : "lossesPage");
+		const page = await getTraderExitsPage(address, exitMode, {
+			limit: defaultTraderExitsPageSize,
+			offset: (pageNumber - 1) * defaultTraderExitsPageSize,
+		});
+
+		return {
+			kind: "exits" as const,
+			address,
+			mode: exitMode,
+			pageNumber,
+			page,
+		};
+	}
+
 	if (safeTab === "activity") {
 		const pageNumber = parseTraderPageSearchParam(params, "activityPage");
 		const page = await getTraderTradesPage(address, {
@@ -341,6 +361,24 @@ export async function getTraderActivityPageAction({
 		limit: defaultTraderTablePageSize,
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
 		sort_desc: true,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getTraderExitsPageAction({
+	address,
+	mode,
+	pageNumber,
+}: {
+	address: string;
+	mode: TraderExitMode;
+	pageNumber: number;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const page = await getTraderExitsPage(address, mode, {
+		limit: defaultTraderExitsPageSize,
+		offset: (safePageNumber - 1) * defaultTraderExitsPageSize,
 	});
 
 	return { page, pageNumber: safePageNumber };
@@ -483,8 +521,6 @@ export async function getBestTradesAction({
 	const safeTimeframe = BEST_TRADES_TIMEFRAME_SET.has(timeframe) ? timeframe : "1d";
 	const { data } = await getTopTradesMarketsV3({
 		timeframe: safeTimeframe,
-		sort_by: "realized_pnl_usd",
-		sort_direction: "desc",
 		limit,
 	});
 	return { timeframe: safeTimeframe, rows: data };

@@ -14,8 +14,6 @@ export async function BestTradesList() {
 
 	const { data: rows } = await getTopTradesMarketsV3({
 		timeframe: DEFAULT_TIMEFRAME,
-		sort_by: "realized_pnl_usd",
-		sort_direction: "desc",
 		limit: ROW_COUNT,
 	});
 

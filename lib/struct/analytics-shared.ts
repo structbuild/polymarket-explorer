@@ -15,7 +15,9 @@ export type AnalyticsMetricId =
 	| "yesNo"
 	| "yesNoCount"
 	| "shares"
-	| "buyDistribution";
+	| "buyDistribution"
+	| "incentives"
+	| "yesNoShares";
 
 export const ANALYTICS_RANGES: AnalyticsRange[] = ["1d", "7d", "30d", "all"];
 
@@ -183,6 +185,13 @@ export type AnalyticsPoint = {
 	buyDist1kTo10k: number;
 	buyDist10kTo50k: number;
 	buyDistOver50k: number;
+	convertedCollateralUsd: number;
+	convertedCount: number;
+	makerRebateVolumeUsd: number;
+	rewardVolumeUsd: number;
+	yieldVolumeUsd: number;
+	yesSharesVolume: number;
+	noSharesVolume: number;
 };
 
 export const BUY_DIST_KEYS = [
@@ -230,11 +239,13 @@ export function restrictAnalyticsComponents(
 		const redemptionVolumeUsd = allowed.has("redeem") ? p.redemptionVolumeUsd : 0;
 		const mergeVolumeUsd = allowed.has("merge") ? p.mergeVolumeUsd : 0;
 		const splitVolumeUsd = allowed.has("split") ? p.splitVolumeUsd : 0;
+		const convertedCollateralUsd = allowed.has("convert") ? p.convertedCollateralUsd : 0;
 		const buyCount = allowed.has("buy") ? p.buyCount : 0;
 		const sellCount = allowed.has("sell") ? p.sellCount : 0;
 		const redemptionCount = allowed.has("redeem") ? p.redemptionCount : 0;
 		const mergeCount = allowed.has("merge") ? p.mergeCount : 0;
 		const splitCount = allowed.has("split") ? p.splitCount : 0;
+		const convertedCount = allowed.has("convert") ? p.convertedCount : 0;
 
 		return {
 			...p,
@@ -243,23 +254,27 @@ export function restrictAnalyticsComponents(
 				sellVolumeUsd +
 				redemptionVolumeUsd +
 				mergeVolumeUsd +
-				splitVolumeUsd,
+				splitVolumeUsd +
+				convertedCollateralUsd,
 			buyVolumeUsd,
 			sellVolumeUsd,
 			redemptionVolumeUsd,
 			mergeVolumeUsd,
 			splitVolumeUsd,
+			convertedCollateralUsd,
 			txnCount:
 				buyCount +
 				sellCount +
 				redemptionCount +
 				mergeCount +
-				splitCount,
+				splitCount +
+				convertedCount,
 			buyCount,
 			sellCount,
 			redemptionCount,
 			mergeCount,
 			splitCount,
+			convertedCount,
 		};
 	});
 }
@@ -274,9 +289,18 @@ export type AnalyticsSummary = {
 	avgTradeSizeShares: number;
 };
 
-export type VolumeComponentId = "buy" | "sell" | "redeem" | "merge" | "split";
+export type VolumeComponentId = "buy" | "sell" | "redeem" | "merge" | "split" | "convert";
 
 export const VOLUME_COMPONENT_IDS: readonly VolumeComponentId[] = [
+	"buy",
+	"sell",
+	"redeem",
+	"merge",
+	"split",
+	"convert",
+];
+
+export const SCOPED_VOLUME_COMPONENTS: readonly VolumeComponentId[] = [
 	"buy",
 	"sell",
 	"redeem",
@@ -290,6 +314,7 @@ export const VOLUME_COMPONENT_LABELS: Record<VolumeComponentId, string> = {
 	redeem: "Redemptions",
 	merge: "Merges",
 	split: "Splits",
+	convert: "Conversions",
 };
 
 export const DEFAULT_VOLUME_COMPONENTS: readonly VolumeComponentId[] = VOLUME_COMPONENT_IDS;
@@ -312,25 +337,27 @@ export function isDefaultVolumeComponents(
 }
 
 export function computeVolumeComponentTotals(points: AnalyticsPoint[]): ComponentTotals {
-	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0 };
+	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0, convert: 0 };
 	for (const p of points) {
 		totals.buy += p.buyVolumeUsd;
 		totals.sell += p.sellVolumeUsd;
 		totals.redeem += p.redemptionVolumeUsd;
 		totals.merge += p.mergeVolumeUsd;
 		totals.split += p.splitVolumeUsd;
+		totals.convert += p.convertedCollateralUsd;
 	}
 	return totals;
 }
 
 export function computeTradeCountComponentTotals(points: AnalyticsPoint[]): ComponentTotals {
-	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0 };
+	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0, convert: 0 };
 	for (const p of points) {
 		totals.buy += p.buyCount;
 		totals.sell += p.sellCount;
 		totals.redeem += p.redemptionCount;
 		totals.merge += p.mergeCount;
 		totals.split += p.splitCount;
+		totals.convert += p.convertedCount;
 	}
 	return totals;
 }

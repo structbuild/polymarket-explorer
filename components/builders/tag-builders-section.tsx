@@ -2,9 +2,11 @@ import type { Route } from "next";
 import Link from "next/link";
 
 import { getTagBuilders } from "@/lib/struct/builder-queries";
+import { BuilderAvatar } from "@/components/builders/builder-avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Volume } from "@/components/ui/volume";
+import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import { formatNumber } from "@/lib/format";
 import { cn, formatBuilderCodeDisplay } from "@/lib/utils";
 
@@ -55,6 +57,10 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 						const share = totalVolume > 0 ? volume / totalVolume : 0;
 						const relativeVolume = topVolume > 0 ? volume / topVolume : 0;
 						const isLeader = index === 0;
+						const meta = row.metadata ?? null;
+						const displayName = getBuilderDisplayName(row.builder_code, meta);
+						const codeLabel = formatBuilderCodeDisplay(row.builder_code);
+						const hasCustomName = Boolean(meta?.name?.trim());
 
 						return (
 							<div
@@ -74,14 +80,30 @@ export async function TagBuildersSection({ tagLabel, limit = 8 }: TagBuildersSec
 										>
 											{index + 1}
 										</span>
-										<Link
-											href={`/builders/${encodeURIComponent(row.builder_code)}` as Route}
-											prefetch={false}
-											title={row.builder_code}
-											className="min-w-0 truncate font-mono text-sm font-medium text-foreground underline-offset-4 hover:underline sm:font-normal"
-										>
-											{formatBuilderCodeDisplay(row.builder_code)}
-										</Link>
+										<div className="flex min-w-0 items-center gap-2">
+											<BuilderAvatar
+												builderCode={row.builder_code}
+												iconUrl={meta?.icon_url}
+												alt={displayName}
+												className="size-7"
+												useFacehash={false}
+											/>
+											<div className="min-w-0">
+												<Link
+													href={`/builders/${encodeURIComponent(row.builder_code)}` as Route}
+													prefetch={false}
+													title={row.builder_code}
+													className="block truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
+												>
+													{displayName}
+												</Link>
+												{hasCustomName ? (
+													<p className="truncate font-mono text-xs tabular-nums text-muted-foreground">
+														{codeLabel}
+													</p>
+												) : null}
+											</div>
+										</div>
 										<div className="flex shrink-0 items-baseline gap-2 sm:hidden">
 											<Volume
 												usd={volume}

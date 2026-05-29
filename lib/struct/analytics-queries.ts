@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+	AnalyticsV3TimeBucketRow,
 	BuilderPctChange,
 	BuilderTimeBucketRow,
 	ChangeTimeframe,
@@ -81,7 +82,11 @@ function toNumber(value: number | undefined | null): number {
 	return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-type AnyTimeBucketRow = TimeBucketRow | TraderTimeBucketRow | BuilderTimeBucketRow;
+type AnyTimeBucketRow =
+	| TimeBucketRow
+	| AnalyticsV3TimeBucketRow
+	| TraderTimeBucketRow
+	| BuilderTimeBucketRow;
 
 function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 	return {
@@ -117,6 +122,13 @@ function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 		buyDist1kTo10k: toNumber(row.bd_10k),
 		buyDist10kTo50k: toNumber(row.bd_50k),
 		buyDistOver50k: toNumber(row.bd_50p),
+		convertedCollateralUsd: toNumber("ccu" in row ? row.ccu : 0),
+		convertedCount: toNumber("cc" in row ? row.cc : 0),
+		makerRebateVolumeUsd: toNumber("mrv" in row ? row.mrv : 0),
+		rewardVolumeUsd: toNumber("rwv" in row ? row.rwv : 0),
+		yieldVolumeUsd: toNumber("ydv" in row ? row.ydv : 0),
+		yesSharesVolume: toNumber("ysh" in row ? row.ysh : 0),
+		noSharesVolume: toNumber("nsh" in row ? row.nsh : 0),
 	};
 }
 
@@ -154,6 +166,13 @@ function emptyPoint(t: number): AnalyticsPoint {
 		buyDist1kTo10k: 0,
 		buyDist10kTo50k: 0,
 		buyDistOver50k: 0,
+		convertedCollateralUsd: 0,
+		convertedCount: 0,
+		makerRebateVolumeUsd: 0,
+		rewardVolumeUsd: 0,
+		yieldVolumeUsd: 0,
+		yesSharesVolume: 0,
+		noSharesVolume: 0,
 	};
 }
 
@@ -312,7 +331,7 @@ export async function getAnalyticsDeltas(
 	if (!client) return [];
 	try {
 		return await fetchTimeBucketsWithPagination(
-			(params) => client.analytics.getDeltas(params),
+			(params) => client.analytics.getDeltasV3(params),
 			{},
 			buildRangeConfig(range, resolution),
 			`getAnalyticsDeltas:${range}:${resolution}`,
@@ -329,7 +348,7 @@ export async function getAnalyticsChanges(range: AnalyticsRange): Promise<Metric
 	const client = getStructClient();
 	if (!client) return null;
 	try {
-		const response = await client.analytics.getChanges({
+		const response = await client.analytics.getChangesV3({
 			timeframe: CHANGES_TIMEFRAME[range],
 		});
 		return response.data;
@@ -469,7 +488,7 @@ export async function getAnalyticsTimeseries(
 	if (!client) return [];
 	try {
 		return await fetchTimeBucketsWithPagination(
-			(params) => client.analytics.getTimeseries(params),
+			(params) => client.analytics.getTimeseriesV3(params),
 			{},
 			buildRangeConfig(range, resolution),
 			`getAnalyticsTimeseries:${range}:${resolution}`,

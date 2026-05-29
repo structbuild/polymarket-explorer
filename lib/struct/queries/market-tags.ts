@@ -190,7 +190,7 @@ export async function getTagCount(): Promise<number> {
 	}
 
 	try {
-		const response = await client.analytics.getCounts();
+		const response = await client.analytics.getCountsV3();
 		return response.data.tags;
 	} catch (error) {
 		logStructError("getTagCount", error);

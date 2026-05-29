@@ -1,13 +1,16 @@
 import type {
+	TraderExitMode,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
 } from "@/lib/trader-search-params-shared"
+import { exitModeForTab } from "@/lib/trader-search-params-shared"
 import {
 	defaultTraderTablePageSize,
 	getTraderPositionsPage,
 	getTraderTradesPage,
 } from "@/lib/struct/queries"
+import { defaultTraderExitsPageSize, getTraderExitsPage } from "@/lib/struct/pnl"
 
 import { TraderTabPanelClient } from "./trader-tab-panel-client"
 import { TraderTabs } from "./trader-tabs"
@@ -28,6 +31,13 @@ type TraderTabPanelData =
 			pageNumber: number
 			page: Awaited<ReturnType<typeof getTraderTradesPage>>
 	  }
+	| {
+			kind: "exits"
+			address: string
+			mode: TraderExitMode
+			pageNumber: number
+			page: Awaited<ReturnType<typeof getTraderExitsPage>>
+	  }
 
 type LoadTraderTabPanelDataProps = {
 	address: string
@@ -35,6 +45,8 @@ type LoadTraderTabPanelDataProps = {
 	openPage: number
 	closedPage: number
 	activityPage: number
+	winsPage: number
+	lossesPage: number
 	openSortBy: TraderPositionSortBy
 	openSortDirection: TraderSortDirection
 	closedSortBy: TraderPositionSortBy
@@ -47,12 +59,29 @@ export function loadTraderTabPanelData({
 	openPage,
 	closedPage,
 	activityPage,
+	winsPage,
+	lossesPage,
 	openSortBy,
 	openSortDirection,
 	closedSortBy,
 	closedSortDirection,
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
 	const pageSize = defaultTraderTablePageSize
+
+	const exitMode = exitModeForTab(currentTab)
+	if (exitMode) {
+		const exitPageNumber = exitMode === "wins" ? winsPage : lossesPage
+		return getTraderExitsPage(address, exitMode, {
+			limit: defaultTraderExitsPageSize,
+			offset: (exitPageNumber - 1) * defaultTraderExitsPageSize,
+		}).then((page) => ({
+			kind: "exits" as const,
+			address,
+			mode: exitMode,
+			pageNumber: exitPageNumber,
+			page,
+		}))
+	}
 
 	switch (currentTab) {
 		case "closed":
@@ -117,9 +146,13 @@ export function TraderTabPanelFallback({
 	const label =
 		currentTab === "activity"
 			? "Loading activity"
-			: currentTab === "closed"
-				? "Loading closed positions"
-				: "Loading open positions"
+			: currentTab === "wins"
+				? "Loading best wins"
+				: currentTab === "losses"
+					? "Loading worst losses"
+					: currentTab === "closed"
+						? "Loading closed positions"
+						: "Loading open positions"
 
 	return (
 		<div className="space-y-3">

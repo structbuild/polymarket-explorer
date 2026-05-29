@@ -25,6 +25,7 @@ const COMPONENT_VOLUME_KEYS: Record<VolumeComponentId, keyof AnalyticsPoint> = {
 	redeem: "redemptionVolumeUsd",
 	merge: "mergeVolumeUsd",
 	split: "splitVolumeUsd",
+	convert: "convertedCollateralUsd",
 };
 
 const COMPONENT_COUNT_KEYS: Record<VolumeComponentId, keyof AnalyticsPoint> = {
@@ -33,6 +34,7 @@ const COMPONENT_COUNT_KEYS: Record<VolumeComponentId, keyof AnalyticsPoint> = {
 	redeem: "redemptionCount",
 	merge: "mergeCount",
 	split: "splitCount",
+	convert: "convertedCount",
 };
 
 function buildSeriesLabel(components: readonly VolumeComponentId[]): string {

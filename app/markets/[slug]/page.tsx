@@ -14,7 +14,7 @@ import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { getMarketAnalyticsChanges, getMarketAnalyticsDeltas, getMarketAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
-import { parseAnalyticsCap, parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { parseAnalyticsCap, parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } from "@/lib/struct/analytics-shared";
 import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
@@ -178,6 +178,7 @@ async function MarketPageContent({
 							endTime={endTime}
 							cap={cap}
 							defaultCap={defaultCap}
+							allowedComponents={SCOPED_VOLUME_COMPONENTS}
 							pathname={`/markets/${slug}`}
 							fetchers={{
 								deltas: () => getMarketAnalyticsDeltas(conditionId, range, resolution),

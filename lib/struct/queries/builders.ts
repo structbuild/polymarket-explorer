@@ -19,7 +19,7 @@ import type {
 	GlobalBuilderTagRow,
 	GlobalChangeTimeframe,
 	GlobalPctChange,
-	TagBuilderRow,
+	TagBuilderRowWithMetadata,
 	TopTraderRow,
 	TopTradersSortBy,
 	StructClient,
@@ -446,7 +446,7 @@ export async function getTagBuilders(
 	sort: BuilderSortBy = "volume",
 	timeframe: BuilderTimeframe = "lifetime",
 	limit: number = 50,
-): Promise<TagBuilderRow[]> {
+): Promise<TagBuilderRowWithMetadata[]> {
 	const client = getStructClient();
 	if (!client) return [];
 

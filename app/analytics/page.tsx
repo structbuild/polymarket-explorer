@@ -118,6 +118,7 @@ async function AnalyticsPageContent({ searchParams }: Props) {
 			defaultResolution={defaultResolution}
 			headingLevel="h1"
 			pathname="/analytics"
+			appendMetrics={["incentives", "yesNoShares"]}
 			fetchers={{
 				deltas: () => getAnalyticsDeltas(range, resolution),
 				timeseries: () => getAnalyticsTimeseries(range, resolution),

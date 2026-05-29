@@ -33,7 +33,7 @@ import {
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { getServerTimezone } from "@/lib/timezone.server";
 import { getTraderAnalyticsChanges, getTraderAnalyticsDeltas, getTraderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
-import { parseAnalyticsParams } from "@/lib/struct/analytics-shared";
+import { parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } from "@/lib/struct/analytics-shared";
 import { getTraderPnlSummary, getTraderPnlV3Changes, getTraderProfile } from "@/lib/struct/queries";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -456,6 +456,8 @@ async function TraderPageContent({
 			openPage,
 			closedPage,
 			activityPage,
+			winsPage,
+			lossesPage,
 			pnlTimeframe,
 			pnlAnchor,
 			pnlFrom,
@@ -489,6 +491,8 @@ async function TraderPageContent({
 		openPage,
 		closedPage,
 		activityPage,
+		winsPage,
+		lossesPage,
 		openSortBy,
 		openSortDirection,
 		closedSortBy,
@@ -538,6 +542,7 @@ async function TraderPageContent({
 					defaultRange={defaultRange}
 					excludeMetrics={["uniqueTraders", "makersTakers"]}
 					appendMetrics={["fees", "tradeTypes"]}
+					allowedComponents={SCOPED_VOLUME_COMPONENTS}
 					pathname={`/traders/${address}`}
 					fetchers={{
 						deltas: () => getTraderAnalyticsDeltas(address, range, resolution),
