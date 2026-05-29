@@ -1,6 +1,7 @@
 "use client"
+/* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useRef, type ReactNode } from "react"
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import {
 	CandlestickSeries,
 	ColorType,
@@ -10,19 +11,21 @@ import {
 	type UTCTimestamp,
 } from "lightweight-charts"
 import { ChartArea, ChartCandlestick, Settings2Icon } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, Line, ReferenceArea, ReferenceDot, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, Line, ReferenceArea, ReferenceDot, useXAxisScale, useYAxisScale, XAxis, YAxis } from "recharts"
 
 import {
 	ChartContainer,
 	ChartTooltip,
 	type ChartConfig,
 } from "@/components/ui/chart"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/struct/pnl"
+import type { PnlChartAnnotation, PnlChartExit, PnlDataPoint } from "@/lib/struct/pnl"
 import { formatDateCompact, formatDateFull, formatDateTimeFull, pnlColorClass } from "@/lib/format"
 import { formatNumber } from "@/lib/format"
+import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
 import type { PnlTimeframe } from "@/lib/struct/pnl-timeframes"
 import { cn } from "@/lib/utils"
 
@@ -142,6 +145,196 @@ function AnnotationDotShape({
 
 	return (
 		<circle cx={cx} cy={cy} r={r} fill={fill ?? tone.color} stroke={stroke} strokeWidth={strokeWidth} />
+	)
+}
+
+const EXIT_BUBBLE_SIZE = 30
+
+function exitCloseLabel(reason: PnlChartExit["reason"]): string {
+	return reason === "resolved_win" || reason === "resolved_loss" ? "Resolved" : "Sold"
+}
+
+type ExitDot = {
+	exit: PnlChartExit
+	x: number
+	y: number
+}
+
+function snapExitsToChart(exits: PnlChartExit[], chartData: PnlChartPoint[]): ExitDot[] {
+	if (chartData.length === 0) return []
+
+	const first = chartData[0].t
+	const last = chartData[chartData.length - 1].t
+
+	return exits
+		.filter((exit) => exit.t >= first && exit.t <= last)
+		.map((exit) => {
+			let nearest = chartData[0]
+			let nearestDiff = Math.abs(chartData[0].t - exit.t)
+
+			for (const point of chartData) {
+				const diff = Math.abs(point.t - exit.t)
+				if (diff < nearestDiff) {
+					nearestDiff = diff
+					nearest = point
+				}
+			}
+
+			return { exit, x: nearest.t, y: nearest.metric }
+		})
+}
+
+function ExitBubblePopoverContent({ exit, timezone }: { exit: PnlChartExit; timezone?: string }) {
+	const isWin = exit.pnlUsd >= 0
+	const href = exit.marketSlug ? `https://polymarket.com/market/${exit.marketSlug}` : null
+	const image = exit.imageUrl ? normalizePolymarketS3ImageUrl(exit.imageUrl) : null
+
+	return (
+		<div className="grid gap-2.5">
+			<div className="flex items-start gap-2.5">
+				{image ? (
+					<img className="size-10 shrink-0 rounded-md object-cover" alt="" src={image} />
+				) : (
+					<div className="size-10 shrink-0 rounded-md bg-muted" />
+				)}
+				<p className="min-w-0 flex-1 text-sm font-medium leading-snug">{exit.question}</p>
+			</div>
+			<div className="flex flex-wrap items-center gap-1.5">
+				{exit.outcome ? (
+					<Badge
+						variant={
+							exit.outcomeIndex === 0 ? "positive" : exit.outcomeIndex === 1 ? "negative" : "secondary"
+						}
+					>
+						{exit.outcome}
+					</Badge>
+				) : null}
+				<Badge variant="outline">{exitCloseLabel(exit.reason)}</Badge>
+			</div>
+			<div className="grid gap-1.5 border-t pt-2 text-xs">
+				<ExitPopoverRow label="Realized PnL" valueClassName={pnlColorClass(exit.pnlUsd)}>
+					{formatNumber(exit.pnlUsd, { currency: true, compact: true })}
+					{exit.pnlPct != null ? (
+						<span className="text-muted-foreground"> ({formatNumber(exit.pnlPct, { percent: true })})</span>
+					) : null}
+				</ExitPopoverRow>
+				<ExitPopoverRow label="Invested">
+					{formatNumber(exit.costBasisUsd, { currency: true, compact: true })}
+				</ExitPopoverRow>
+				<ExitPopoverRow label="Closed">{formatDateFull(exit.t, timezone)}</ExitPopoverRow>
+			</div>
+			{href ? (
+				<a
+					href={href}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={cn(
+						"text-xs font-medium underline-offset-4 hover:underline",
+						isWin ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
+					)}
+				>
+					View on Polymarket
+				</a>
+			) : null}
+		</div>
+	)
+}
+
+function ExitPopoverRow({
+	label,
+	valueClassName,
+	children,
+}: {
+	label: string
+	valueClassName?: string
+	children: ReactNode
+}) {
+	return (
+		<div className="flex items-center justify-between gap-4">
+			<span className="text-muted-foreground">{label}</span>
+			<span className={cn("font-medium tabular-nums text-foreground", valueClassName)}>{children}</span>
+		</div>
+	)
+}
+
+const EXIT_BUBBLE_HIT_SIZE = 48
+
+type ExitPosition = {
+	exit: PnlChartExit
+	cx: number
+	cy: number
+}
+
+function ExitScaleProbe({
+	exitDots,
+	onResolve,
+}: {
+	exitDots: ExitDot[]
+	onResolve: (positions: ExitPosition[]) => void
+}) {
+	const xScale = useXAxisScale()
+	const yScale = useYAxisScale()
+
+	const positions: ExitPosition[] = []
+	if (xScale && yScale) {
+		for (const dot of exitDots) {
+			const cx = xScale(dot.x, { position: "middle" })
+			const cy = yScale(dot.y)
+			if (typeof cx === "number" && typeof cy === "number" && Number.isFinite(cx) && Number.isFinite(cy)) {
+				positions.push({ exit: dot.exit, cx, cy })
+			}
+		}
+	}
+
+	const signature = positions.map((p) => `${p.exit.t}:${Math.round(p.cx)}:${Math.round(p.cy)}`).join("|")
+
+	useEffect(() => {
+		onResolve(positions)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [signature])
+
+	return null
+}
+
+function ExitBubble({ exit, timezone, style }: { exit: PnlChartExit; timezone?: string; style?: CSSProperties }) {
+	const isWin = exit.pnlUsd >= 0
+	const image = exit.imageUrl ? normalizePolymarketS3ImageUrl(exit.imageUrl) : null
+
+	return (
+		<div className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={style}>
+			<Popover>
+				<PopoverTrigger
+					openOnHover
+					delay={250}
+					closeDelay={120}
+					render={
+						<button
+							type="button"
+							aria-label={`${isWin ? "Winning" : "Losing"} exit: ${exit.question}`}
+							className="group pointer-events-auto flex items-center justify-center outline-none"
+							style={{ width: EXIT_BUBBLE_HIT_SIZE, height: EXIT_BUBBLE_HIT_SIZE }}
+						>
+							<span
+								className={cn(
+									"block overflow-hidden rounded-full border-2 bg-card shadow-md transition-transform group-hover:scale-110 group-focus-visible:scale-110",
+									isWin ? "border-emerald-500" : "border-red-500",
+								)}
+								style={{ width: EXIT_BUBBLE_SIZE, height: EXIT_BUBBLE_SIZE }}
+							>
+								{image ? (
+									<img src={image} alt="" className="size-full object-cover" />
+								) : (
+									<span className={cn("block size-full", isWin ? "bg-emerald-500/20" : "bg-red-500/20")} />
+								)}
+							</span>
+						</button>
+					}
+				/>
+				<PopoverContent align="center" side="top" className="w-64">
+					<ExitBubblePopoverContent exit={exit} timezone={timezone} />
+				</PopoverContent>
+			</Popover>
+		</div>
 	)
 }
 
@@ -283,6 +476,12 @@ export function ChartSettingsButton({
 	highlightsAvailable = false,
 	highlightsActive = false,
 	onHighlightsChange,
+	winExitsAvailable = false,
+	winExitsActive = false,
+	onWinExitsChange,
+	lossExitsAvailable = false,
+	lossExitsActive = false,
+	onLossExitsChange,
 	fillGapsActive = true,
 	onFillGapsChange,
 }: {
@@ -293,9 +492,16 @@ export function ChartSettingsButton({
 	highlightsAvailable?: boolean
 	highlightsActive?: boolean
 	onHighlightsChange?: (next: boolean) => void
+	winExitsAvailable?: boolean
+	winExitsActive?: boolean
+	onWinExitsChange?: (next: boolean) => void
+	lossExitsAvailable?: boolean
+	lossExitsActive?: boolean
+	onLossExitsChange?: (next: boolean) => void
 	fillGapsActive?: boolean
 	onFillGapsChange?: (next: boolean) => void
 }) {
+	const exitsDisabled = chartMode !== "area" || chartMetric !== "pnl"
 	function handleChartModeChange(nextMode: PnlChartMode) {
 		onChartModeChange(nextMode)
 		if (nextMode === "candles" && !isOhlcMetric(chartMetric)) {
@@ -339,7 +545,10 @@ export function ChartSettingsButton({
 							)
 						})}
 					</div>
-					{(highlightsAvailable && onHighlightsChange) || onFillGapsChange ? (
+					{(highlightsAvailable && onHighlightsChange) ||
+					(winExitsAvailable && onWinExitsChange) ||
+					(lossExitsAvailable && onLossExitsChange) ||
+					onFillGapsChange ? (
 						<div className="grid gap-1.5 border-t pt-2">
 							<div className="px-1 text-xs text-muted-foreground">Overlays</div>
 							{highlightsAvailable && onHighlightsChange ? (
@@ -347,6 +556,24 @@ export function ChartSettingsButton({
 									label="Best / worst period"
 									active={highlightsActive}
 									onChange={onHighlightsChange}
+								/>
+							) : null}
+							{winExitsAvailable && onWinExitsChange ? (
+								<ToggleRow
+									label="Best wins"
+									active={winExitsActive}
+									onChange={onWinExitsChange}
+									disabled={exitsDisabled}
+									dotClassName="bg-emerald-500"
+								/>
+							) : null}
+							{lossExitsAvailable && onLossExitsChange ? (
+								<ToggleRow
+									label="Worst losses"
+									active={lossExitsActive}
+									onChange={onLossExitsChange}
+									disabled={exitsDisabled}
+									dotClassName="bg-red-500"
 								/>
 							) : null}
 							{onFillGapsChange ? (
@@ -368,22 +595,30 @@ function ToggleRow({
 	label,
 	active,
 	onChange,
+	disabled = false,
+	dotClassName,
 }: {
 	label: string
 	active: boolean
 	onChange: (next: boolean) => void
+	disabled?: boolean
+	dotClassName?: string
 }) {
 	return (
 		<button
 			type="button"
 			onClick={() => onChange(!active)}
 			aria-pressed={active}
+			disabled={disabled}
 			className={cn(
-				"flex items-center justify-between rounded-sm px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted",
+				"flex items-center justify-between rounded-sm px-2 py-1.5 text-xs font-medium transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50",
 				active ? "bg-muted text-foreground" : "text-muted-foreground",
 			)}
 		>
-			<span>{label}</span>
+			<span className="flex items-center gap-1.5">
+				{dotClassName ? <span className={cn("size-2 rounded-full", dotClassName)} /> : null}
+				{label}
+			</span>
 			<span className={cn("text-[10px] font-medium", active ? "text-emerald-500" : "text-muted-foreground")}>
 				{active ? "ON" : "OFF"}
 			</span>
@@ -498,6 +733,9 @@ type PnlChartProps = {
 	data: PnlDataPoint[]
 	annotations?: PnlChartAnnotation[]
 	showAnnotations?: boolean
+	exits?: PnlChartExit[]
+	showWinExits?: boolean
+	showLossExits?: boolean
 	timeframe?: PnlTimeframe
 	timezone?: string
 	showTooltipTime?: boolean
@@ -506,7 +744,9 @@ type PnlChartProps = {
 	chartMetric?: PnlChartMetric
 }
 
-export function PnlChartContent({ data, annotations = [], showAnnotations = false, timeframe, timezone, showTooltipTime, action, chartMode = "area", chartMetric = "pnl" }: PnlChartProps) {
+export function PnlChartContent({ data, annotations = [], showAnnotations = false, exits = [], showWinExits = false, showLossExits = false, timeframe, timezone, showTooltipTime, action, chartMode = "area", chartMetric = "pnl" }: PnlChartProps) {
+	const [exitPositions, setExitPositions] = useState<ExitPosition[]>([])
+
 	if (data.length === 0) {
 		return (
 			<div className="overflow-hidden">
@@ -535,6 +775,11 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 	const chartData = data.map((point) => toChartPoint(point, chartMetric))
 	const hasAnnotations = annotations.length > 0
 	const visibleAnnotations = chartMode === "area" && chartMetric === "pnl" && showAnnotations ? annotations : []
+	const exitsEligible = chartMode === "area" && chartMetric === "pnl"
+	const visibleExits = exitsEligible
+		? exits.filter((exit) => (exit.pnlUsd >= 0 ? showWinExits : showLossExits))
+		: []
+	const exitDots = snapExitsToChart(visibleExits, chartData)
 	const shouldShowTooltipTime = showTooltipTime ?? timeframe !== undefined
 	const showMetricRange = isOhlcMetric(chartMetric)
 	const candlestickMetric = isOhlcMetric(chartMetric) ? chartMetric : "pnl"
@@ -605,6 +850,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 				{chartMode === "candles" ? (
 					<PnlCandlestickChart data={data} metric={candlestickMetric} timezone={timezone} />
 				) : (
+					<>
 					<ChartContainer config={chartConfig} className="h-[320px] min-h-[320px] w-full sm:h-[420px] sm:min-h-[390px]">
 						<AreaChart accessibilityLayer data={chartData} margin={{ left: 0, right: 60, top: 0, bottom: 0 }}>
 						<defs>
@@ -638,6 +884,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 							domain={["dataMin", "dataMax"]}
 						/>
 						<ChartTooltip
+							wrapperStyle={{ zIndex: 30 }}
 							content={
 								<PnlTooltipContent showTime={shouldShowTooltipTime} timezone={timezone} />
 							}
@@ -704,8 +951,22 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 									/>
 								)
 							})}
+						<ExitScaleProbe exitDots={exitDots} onResolve={setExitPositions} />
 						</AreaChart>
 					</ChartContainer>
+					{exitPositions.length > 0 ? (
+						<div className="pointer-events-none absolute inset-0">
+							{exitPositions.map((pos) => (
+								<ExitBubble
+									key={`exit-${pos.exit.t}-${pos.exit.marketSlug ?? pos.exit.question}`}
+									exit={pos.exit}
+									timezone={timezone}
+									style={{ left: pos.cx, top: pos.cy }}
+								/>
+							))}
+						</div>
+					) : null}
+					</>
 				)}
 			</div>
 		</div>

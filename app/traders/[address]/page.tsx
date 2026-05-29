@@ -8,6 +8,7 @@ import { TraderHeader } from "@/components/trader/trader-header";
 import {
 	computeStreaks,
 	getPnlChartAnnotations,
+	getTraderChartExits,
 	getTraderCumulativePnlUsd,
 	getTraderDailyPnl,
 	getTraderPnlCandles,
@@ -15,6 +16,7 @@ import {
 	getTraderPnlRisk,
 	type DailyPnlEntry,
 	type PnlChartAnnotation,
+	type PnlChartExit,
 	type PnlDataPoint,
 	type PnlPeriods,
 	type PnlStreaks,
@@ -56,6 +58,7 @@ type TraderInsightsData = {
 	streaks: PnlStreaks;
 	periods: PnlPeriods;
 	chartAnnotations: PnlChartAnnotation[];
+	chartExits: PnlChartExit[];
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -107,20 +110,24 @@ function loadTraderInsights(address: string, range: ResolvedPnlRange, fillGaps: 
 	});
 	const dailyPnlPromise = getTraderDailyPnl(address);
 	const periodsPromise = getTraderPnlPeriods(address);
+	const chartExitsPromise = getTraderChartExits(address);
 
-	return Promise.all([pnlCandlesPromise, dailyPnlPromise, periodsPromise]).then(([pnlCandles, dailyPnl, periods]) => {
-		const streaks = computeStreaks(dailyPnl);
-		const showAnnotations = range.mode === "preset" && range.timeframe === "all";
-		const chartAnnotations = showAnnotations ? getPnlChartAnnotations(pnlCandles, periods) : [];
+	return Promise.all([pnlCandlesPromise, dailyPnlPromise, periodsPromise, chartExitsPromise]).then(
+		([pnlCandles, dailyPnl, periods, chartExits]) => {
+			const streaks = computeStreaks(dailyPnl);
+			const showAnnotations = range.mode === "preset" && range.timeframe === "all";
+			const chartAnnotations = showAnnotations ? getPnlChartAnnotations(pnlCandles, periods) : [];
 
-		return {
-			pnlCandles,
-			dailyPnl,
-			streaks,
-			periods,
-			chartAnnotations,
-		};
-	});
+			return {
+				pnlCandles,
+				dailyPnl,
+				streaks,
+				periods,
+				chartAnnotations,
+				chartExits,
+			};
+		},
+	);
 }
 
 async function TraderInsightsSection({
@@ -140,7 +147,7 @@ async function TraderInsightsSection({
 	firstTradeAt?: number;
 	insightsPromise: Promise<TraderInsightsData>;
 }) {
-	const { pnlCandles, dailyPnl, periods, chartAnnotations } = await insightsPromise;
+	const { pnlCandles, dailyPnl, periods, chartAnnotations, chartExits } = await insightsPromise;
 
 	return (
 		<>
@@ -150,6 +157,7 @@ async function TraderInsightsSection({
 				displayName={displayName}
 				profileImage={profileImage}
 				annotations={chartAnnotations}
+				exits={chartExits}
 				pnlRange={pnlRange}
 				pnlFillGaps={pnlFillGaps}
 				firstTradeAt={firstTradeAt}

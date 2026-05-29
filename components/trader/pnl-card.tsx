@@ -11,12 +11,14 @@ import { ShareIdentityHeader } from "@/components/trader/share-identity-header"
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
 import { usePnlPeriodWindow } from "@/lib/hooks/use-pnl-period-window"
 import { useTimezone } from "@/lib/hooks/use-timezone"
-import type { PnlChartAnnotation, PnlDataPoint } from "@/lib/struct/pnl"
+import type { PnlChartAnnotation, PnlChartExit, PnlDataPoint } from "@/lib/struct/pnl"
 import type { ResolvedPnlRange } from "@/lib/struct/pnl-range"
 import { pnlFillGapsParser } from "@/lib/trader-search-params"
 import { cn } from "@/lib/utils"
 
 const SHOW_HIGHLIGHTS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-highlights"
+const SHOW_WIN_EXITS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-win-exits"
+const SHOW_LOSS_EXITS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-loss-exits"
 const FILL_GAPS_STORAGE_KEY = "polymarket-explorer:pnl-card:fill-gaps"
 
 type PnlCardProps = {
@@ -25,16 +27,19 @@ type PnlCardProps = {
 	address: string
 	profileImage?: string | null
 	annotations?: PnlChartAnnotation[]
+	exits?: PnlChartExit[]
 	pnlRange: ResolvedPnlRange
 	pnlFillGaps: boolean
 	firstTradeAt?: number
 }
 
-export function PnlCard({ data, displayName, address, profileImage, annotations = [], pnlRange, pnlFillGaps, firstTradeAt }: PnlCardProps) {
+export function PnlCard({ data, displayName, address, profileImage, annotations = [], exits = [], pnlRange, pnlFillGaps, firstTradeAt }: PnlCardProps) {
 	const cardRef = useRef<HTMLDivElement>(null)
 	const [chartMode, setChartMode] = useState<PnlChartMode>("area")
 	const [chartMetric, setChartMetric] = useState<PnlChartMetric>("pnl")
 	const [showAnnotations, setShowAnnotations] = useLocalStorage(SHOW_HIGHLIGHTS_STORAGE_KEY, false)
+	const [showWinExits, setShowWinExits] = useLocalStorage(SHOW_WIN_EXITS_STORAGE_KEY, false)
+	const [showLossExits, setShowLossExits] = useLocalStorage(SHOW_LOSS_EXITS_STORAGE_KEY, false)
 	const [periodWindow] = usePnlPeriodWindow()
 	const { timezone: clientTimezone } = useTimezone()
 	const timezone = clientTimezone ?? pnlRange.timezone
@@ -60,6 +65,8 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 		[annotations, periodWindow],
 	)
 	const hasAnnotations = annotations.length > 0
+	const hasWinExits = useMemo(() => exits.some((exit) => exit.pnlUsd >= 0), [exits])
+	const hasLossExits = useMemo(() => exits.some((exit) => exit.pnlUsd < 0), [exits])
 
 	const annotationsEligible = pnlRange.mode === "preset" && pnlRange.timeframe === "all"
 	const showChartAnnotations = annotationsEligible && showAnnotations
@@ -71,6 +78,20 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 			setShowAnnotations(next)
 		},
 		[setShowAnnotations],
+	)
+
+	const handleWinExitsChange = useCallback(
+		(next: boolean) => {
+			setShowWinExits(next)
+		},
+		[setShowWinExits],
+	)
+
+	const handleLossExitsChange = useCallback(
+		(next: boolean) => {
+			setShowLossExits(next)
+		},
+		[setShowLossExits],
 	)
 
 	const handleFillGapsChange = useCallback(
@@ -88,6 +109,9 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 				data={data}
 				annotations={windowAnnotations}
 				showAnnotations={showChartAnnotations}
+				exits={exits}
+				showWinExits={showWinExits}
+				showLossExits={showLossExits}
 				timeframe={pnlRange.timeframe}
 				timezone={timezone}
 				showTooltipTime={showTooltipTime}
@@ -113,6 +137,12 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 							highlightsAvailable={highlightsAvailable}
 							highlightsActive={showAnnotations}
 							onHighlightsChange={handleHighlightsChange}
+							winExitsAvailable={hasWinExits}
+							winExitsActive={showWinExits}
+							onWinExitsChange={handleWinExitsChange}
+							lossExitsAvailable={hasLossExits}
+							lossExitsActive={showLossExits}
+							onLossExitsChange={handleLossExitsChange}
 							fillGapsActive={storedFillGaps}
 							onFillGapsChange={handleFillGapsChange}
 						/>

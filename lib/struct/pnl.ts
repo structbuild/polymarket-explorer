@@ -9,7 +9,7 @@ import type { StructPnlCandleResolution, StructPnlCandleTimeframe, StructPnlPeri
 import type { PaginatedResource } from "@/lib/struct/types";
 import type { TraderExitMode } from "@/lib/trader-search-params-shared";
 import { normalizeWalletAddress } from "@/lib/utils";
-import type { PnlV3ExitMarker, PnlV3RiskResponse } from "@structbuild/sdk";
+import type { PnlV3ExitMarker, PnlV3ExitReason, PnlV3RiskResponse } from "@structbuild/sdk";
 
 export type PnlDataPoint = {
 	t: number;
@@ -220,6 +220,47 @@ export async function getTraderExitsPage(
 	if (!normalizedAddress) return emptyExitsPage(limit);
 
 	return getTraderExitsPageCached(normalizedAddress, mode, options.offset ?? 0, limit);
+}
+
+export type PnlChartExit = {
+	t: number;
+	pnlUsd: number;
+	pnlPct: number | null;
+	costBasisUsd: number;
+	question: string;
+	outcome: string | null;
+	outcomeIndex: number | null;
+	imageUrl: string | null;
+	marketSlug: string | null;
+	reason: PnlV3ExitReason;
+};
+
+function toChartExit(exit: PnlV3ExitMarker): PnlChartExit {
+	return {
+		t: exit.t,
+		pnlUsd: exit.pnl_usd ?? 0,
+		pnlPct: exit.pnl_pct ?? null,
+		costBasisUsd: exit.cost_basis_usd ?? 0,
+		question: exit.question || exit.title || "Unknown market",
+		outcome: exit.outcome ?? null,
+		outcomeIndex: exit.outcome_index ?? null,
+		imageUrl: exit.image_url ?? null,
+		marketSlug: exit.market_slug ?? null,
+		reason: exit.reason,
+	};
+}
+
+export async function getTraderChartExits(address: string, perSide = 8): Promise<PnlChartExit[]> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) return [];
+
+	const [wins, losses] = await Promise.all([
+		getTraderExitsPage(normalizedAddress, "wins", { limit: perSide }),
+		getTraderExitsPage(normalizedAddress, "losses", { limit: perSide }),
+	]);
+
+	return [...wins.data, ...losses.data].map(toChartExit);
 }
 
 const getTraderDailyPnlCached = cache(async (address: string): Promise<DailyPnlEntry[]> => {
