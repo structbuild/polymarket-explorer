@@ -38,8 +38,8 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 	const [chartMode, setChartMode] = useState<PnlChartMode>("area")
 	const [chartMetric, setChartMetric] = useState<PnlChartMetric>("pnl")
 	const [showAnnotations, setShowAnnotations] = useLocalStorage(SHOW_HIGHLIGHTS_STORAGE_KEY, false)
-	const [showWinExits, setShowWinExits] = useLocalStorage(SHOW_WIN_EXITS_STORAGE_KEY, false)
-	const [showLossExits, setShowLossExits] = useLocalStorage(SHOW_LOSS_EXITS_STORAGE_KEY, false)
+	const [showWinExits, setShowWinExits] = useLocalStorage(SHOW_WIN_EXITS_STORAGE_KEY, true)
+	const [showLossExits, setShowLossExits] = useLocalStorage(SHOW_LOSS_EXITS_STORAGE_KEY, true)
 	const [periodWindow] = usePnlPeriodWindow()
 	const { timezone: clientTimezone } = useTimezone()
 	const timezone = clientTimezone ?? pnlRange.timezone
