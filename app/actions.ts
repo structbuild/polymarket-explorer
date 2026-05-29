@@ -32,7 +32,6 @@ import {
 	getBuilderTradesPage,
 } from "@/lib/struct/builder-queries";
 import { getBuildersStackedData } from "@/lib/struct/builders-stacked";
-import { defaultTraderExitsPageSize, getTraderExitsPage } from "@/lib/struct/pnl";
 import { maxBuilderTradesPageNumber } from "@/lib/builder-search-params-shared";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 import {
@@ -70,6 +69,8 @@ import {
 	maxTraderPageNumber,
 	defaultTraderPositionSortBy,
 	exitModeForTab,
+	rankedPositionSortBy,
+	rankedPositionSortDirection,
 	type TraderExitMode,
 	type TraderPositionSortBy,
 	type TraderSortDirection,
@@ -291,18 +292,20 @@ export async function getTraderTabPageAction({
 	const params = new URLSearchParams(search);
 	const safeTab = parseTraderTab(tab);
 
-	const exitMode = exitModeForTab(safeTab);
-	if (exitMode) {
-		const pageNumber = parseTraderPageSearchParam(params, exitMode === "wins" ? "winsPage" : "lossesPage");
-		const page = await getTraderExitsPage(address, exitMode, {
-			limit: defaultTraderExitsPageSize,
-			offset: (pageNumber - 1) * defaultTraderExitsPageSize,
+	const rankedMode = exitModeForTab(safeTab);
+	if (rankedMode) {
+		const pageNumber = parseTraderPageSearchParam(params, rankedMode === "wins" ? "winsPage" : "lossesPage");
+		const page = await getTraderPositionsPage(address, "closed", {
+			limit: defaultTraderTablePageSize,
+			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+			sort_by: rankedPositionSortBy,
+			sort_direction: rankedPositionSortDirection[rankedMode],
 		});
 
 		return {
-			kind: "exits" as const,
+			kind: "ranked-positions" as const,
 			address,
-			mode: exitMode,
+			mode: rankedMode,
 			pageNumber,
 			page,
 		};
@@ -366,7 +369,7 @@ export async function getTraderActivityPageAction({
 	return { page, pageNumber: safePageNumber };
 }
 
-export async function getTraderExitsPageAction({
+export async function getTraderRankedPositionsPageAction({
 	address,
 	mode,
 	pageNumber,
@@ -376,9 +379,11 @@ export async function getTraderExitsPageAction({
 	pageNumber: number;
 }) {
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
-	const page = await getTraderExitsPage(address, mode, {
-		limit: defaultTraderExitsPageSize,
-		offset: (safePageNumber - 1) * defaultTraderExitsPageSize,
+	const page = await getTraderPositionsPage(address, "closed", {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_by: rankedPositionSortBy,
+		sort_direction: rankedPositionSortDirection[mode],
 	});
 
 	return { page, pageNumber: safePageNumber };

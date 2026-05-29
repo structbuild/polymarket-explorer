@@ -4,13 +4,16 @@ import type {
 	TraderSortDirection,
 	TraderTab,
 } from "@/lib/trader-search-params-shared"
-import { exitModeForTab } from "@/lib/trader-search-params-shared"
+import {
+	exitModeForTab,
+	rankedPositionSortBy,
+	rankedPositionSortDirection,
+} from "@/lib/trader-search-params-shared"
 import {
 	defaultTraderTablePageSize,
 	getTraderPositionsPage,
 	getTraderTradesPage,
 } from "@/lib/struct/queries"
-import { defaultTraderExitsPageSize, getTraderExitsPage } from "@/lib/struct/pnl"
 
 import { TraderTabPanelClient } from "./trader-tab-panel-client"
 import { TraderTabs } from "./trader-tabs"
@@ -32,11 +35,11 @@ type TraderTabPanelData =
 			page: Awaited<ReturnType<typeof getTraderTradesPage>>
 	  }
 	| {
-			kind: "exits"
+			kind: "ranked-positions"
 			address: string
 			mode: TraderExitMode
 			pageNumber: number
-			page: Awaited<ReturnType<typeof getTraderExitsPage>>
+			page: Awaited<ReturnType<typeof getTraderPositionsPage>>
 	  }
 
 type LoadTraderTabPanelDataProps = {
@@ -68,17 +71,19 @@ export function loadTraderTabPanelData({
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
 	const pageSize = defaultTraderTablePageSize
 
-	const exitMode = exitModeForTab(currentTab)
-	if (exitMode) {
-		const exitPageNumber = exitMode === "wins" ? winsPage : lossesPage
-		return getTraderExitsPage(address, exitMode, {
-			limit: defaultTraderExitsPageSize,
-			offset: (exitPageNumber - 1) * defaultTraderExitsPageSize,
+	const rankedMode = exitModeForTab(currentTab)
+	if (rankedMode) {
+		const rankedPageNumber = rankedMode === "wins" ? winsPage : lossesPage
+		return getTraderPositionsPage(address, "closed", {
+			limit: pageSize,
+			offset: (rankedPageNumber - 1) * pageSize,
+			sort_by: rankedPositionSortBy,
+			sort_direction: rankedPositionSortDirection[rankedMode],
 		}).then((page) => ({
-			kind: "exits" as const,
+			kind: "ranked-positions" as const,
 			address,
-			mode: exitMode,
-			pageNumber: exitPageNumber,
+			mode: rankedMode,
+			pageNumber: rankedPageNumber,
 			page,
 		}))
 	}

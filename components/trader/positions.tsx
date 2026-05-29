@@ -9,8 +9,9 @@ import { ArrowDownIcon, ArrowUpIcon, ExternalLinkIcon, RefreshCwIcon } from "luc
 import { type ReactNode, useCallback, useMemo, useState, useTransition } from "react"
 import { useQueryStates } from "nuqs"
 
-import { getTraderPositionsPageAction } from "@/app/actions"
+import { getTraderPositionsPageAction, getTraderRankedPositionsPageAction } from "@/app/actions"
 import type {
+	TraderExitMode,
 	TraderPositionSortBy,
 	TraderSortDirection,
 } from "@/lib/trader-search-params-shared"
@@ -77,23 +78,29 @@ function buildColumns(
 	currentSortBy: TraderPositionSortBy,
 	currentSortDirection: TraderSortDirection,
 	onSortChange: (sortBy: TraderPositionSortBy) => void,
+	sortable: boolean,
 ): ColumnDef<PositionEntry, unknown>[] {
 	const entryCurrentSortBy = status === "closed" ? "avg_exit_price" : "avg_entry_price"
+
+	const columnHeader = (sortBy: TraderPositionSortBy, label: string) =>
+		sortable
+			? () => (
+					<SortableHeader
+						sortBy={sortBy}
+						currentSortBy={currentSortBy}
+						currentSortDirection={currentSortDirection}
+						onSortChange={onSortChange}
+					>
+						{label}
+					</SortableHeader>
+				)
+			: () => <span>{label}</span>
 
 	return [
 		{
 			id: "market",
 			meta: { title: "Market" },
-			header: () => (
-				<SortableHeader
-					sortBy="title"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Market
-				</SortableHeader>
-			),
+			header: columnHeader("title", "Market"),
 			size: 520,
 			cell: ({ row }) => {
 				const entry = row.original
@@ -168,16 +175,7 @@ function buildColumns(
 		{
 			id: "entry_current",
 			meta: { title: "Entry / Current" },
-			header: () => (
-				<SortableHeader
-					sortBy={entryCurrentSortBy}
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Entry / Current
-				</SortableHeader>
-			),
+			header: columnHeader(entryCurrentSortBy, "Entry / Current"),
 			size: 140,
 			cell: ({ row }) => {
 				const entry = row.original
@@ -201,16 +199,7 @@ function buildColumns(
 		{
 			id: "realized_pnl",
 			meta: { title: "PnL" },
-			header: () => (
-				<SortableHeader
-					sortBy="realized_pnl_usd"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					PnL
-				</SortableHeader>
-			),
+			header: columnHeader("realized_pnl_usd", "PnL"),
 			size: 150,
 			cell: ({ row }) => {
 				const entry = row.original
@@ -233,16 +222,7 @@ function buildColumns(
 					{
 						id: "current_value",
 						meta: { title: "Current Value" },
-						header: () => (
-							<SortableHeader
-								sortBy="current_value"
-								currentSortBy={currentSortBy}
-								currentSortDirection={currentSortDirection}
-								onSortChange={onSortChange}
-							>
-								Current Value
-							</SortableHeader>
-						),
+						header: columnHeader("current_value", "Current Value"),
 						size: 160,
 						cell: ({ row }) => {
 							const entry = row.original
@@ -261,16 +241,7 @@ function buildColumns(
 		{
 			id: "buys",
 			meta: { title: "Buys" },
-			header: () => (
-				<SortableHeader
-					sortBy="total_buy_usd"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Buys
-				</SortableHeader>
-			),
+			header: columnHeader("total_buy_usd", "Buys"),
 			size: 160,
 			cell: ({ row }) => {
 				const usd = row.original.total_buy_usd ?? 0
@@ -288,16 +259,7 @@ function buildColumns(
 		{
 			id: "sells",
 			meta: { title: "Sells" },
-			header: () => (
-				<SortableHeader
-					sortBy="total_sell_usd"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Sells
-				</SortableHeader>
-			),
+			header: columnHeader("total_sell_usd", "Sells"),
 			size: 160,
 			cell: ({ row }) => {
 				const usd = row.original.total_sell_usd ?? 0
@@ -347,16 +309,7 @@ function buildColumns(
 		{
 			id: "total_fees",
 			meta: { title: "Fees" },
-			header: () => (
-				<SortableHeader
-					sortBy="total_fees"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Fees
-				</SortableHeader>
-			),
+			header: columnHeader("total_fees", "Fees"),
 			size: 110,
 			cell: ({ row }) => (
 				<p>{formatNumber(row.original.total_fees ?? 0, { currency: true })}</p>
@@ -367,16 +320,7 @@ function buildColumns(
 					{
 						id: "redemption_usd",
 						meta: { title: "Redemption" },
-						header: () => (
-							<SortableHeader
-								sortBy="redemption_usd"
-								currentSortBy={currentSortBy}
-								currentSortDirection={currentSortDirection}
-								onSortChange={onSortChange}
-							>
-								Redemption
-							</SortableHeader>
-						),
+						header: columnHeader("redemption_usd", "Redemption"),
 						size: 130,
 						cell: ({ row }) => {
 							const val = row.original.redemption_usd ?? 0
@@ -388,16 +332,7 @@ function buildColumns(
 		{
 			id: "last_trade_at",
 			meta: { title: "Last Active" },
-			header: () => (
-				<SortableHeader
-					sortBy="last_trade_at"
-					currentSortBy={currentSortBy}
-					currentSortDirection={currentSortDirection}
-					onSortChange={onSortChange}
-				>
-					Last Active
-				</SortableHeader>
-			),
+			header: columnHeader("last_trade_at", "Last Active"),
 			size: 150,
 			cell: ({ row }) => {
 				const lastTradeAtMs = row.original.last_trade_at
@@ -447,6 +382,7 @@ type Props = {
 	status: "open" | "closed"
 	sortBy: TraderPositionSortBy
 	sortDirection: TraderSortDirection
+	ranked?: TraderExitMode
 	tabs?: ReactNode
 	onRefresh?: () => Promise<void>
 }
@@ -458,6 +394,7 @@ export default function TraderPositions({
 	status,
 	sortBy,
 	sortDirection,
+	ranked,
 	tabs,
 	onRefresh,
 }: Props) {
@@ -495,6 +432,30 @@ export default function TraderPositions({
 
 	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection) => {
 		startTransition(async () => {
+			if (ranked) {
+				void setSearchParams(
+					ranked === "wins" ? { winsPage: nextPageNumber } : { lossesPage: nextPageNumber },
+				)
+
+				const result = await getTraderRankedPositionsPageAction({
+					address,
+					mode: ranked,
+					pageNumber: nextPageNumber,
+				})
+
+				setTableState({
+					sourcePage: page,
+					sourcePageNumber: pageNumber,
+					sourceSortBy: sortBy,
+					sourceSortDirection: sortDirection,
+					page: result.page,
+					pageNumber: result.pageNumber,
+					sortBy,
+					sortDirection,
+				})
+				return
+			}
+
 			if (status === "open") {
 				void setSearchParams({
 					openSortBy: nextSortBy,
@@ -528,7 +489,7 @@ export default function TraderPositions({
 				sortDirection: nextSortDirection,
 			})
 		})
-	}, [address, page, pageNumber, setSearchParams, sortBy, sortDirection, startTransition, status])
+	}, [address, page, pageNumber, ranked, setSearchParams, sortBy, sortDirection, startTransition, status])
 
 	const handleSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		const nextSortDirection: TraderSortDirection =
@@ -558,8 +519,8 @@ export default function TraderPositions({
 		: null
 
 	const columns = useMemo(
-		() => buildColumns(status, currentSortBy, currentSortDirection, handleSortChange),
-		[handleSortChange, currentSortBy, currentSortDirection, status],
+		() => buildColumns(status, currentSortBy, currentSortDirection, handleSortChange, !ranked),
+		[handleSortChange, currentSortBy, currentSortDirection, status, ranked],
 	)
 
 	const data = useMemo(() => {
@@ -574,43 +535,45 @@ export default function TraderPositions({
 			{hasUnknownMarkets ? (
 				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
 			) : null}
-			<div className="flex items-center gap-1">
-				<Select
-					value={selectSortValue}
-					onValueChange={(value) => {
-						if (value) handleSelectSortChange(value as TraderPositionSortBy)
-					}}
-				>
-					<SelectTrigger size="sm" aria-label="Sort by">
-						<span className="text-muted-foreground">Sort:</span>
-						<SelectValue placeholder="Custom">
-							{(value) => sortOptions.find((option) => option.value === value)?.label ?? "Custom"}
-						</SelectValue>
-					</SelectTrigger>
-					<SelectContent>
-						{sortOptions.map((option) => (
-							<SelectItem key={option.value} value={option.value}>
-								{option.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<TooltipWrapper content={currentSortDirection === "desc" ? "Sorted descending" : "Sorted ascending"}>
-					<Button
-						variant="outline"
-						size="icon"
-						className="size-7"
-						onClick={handleDirectionToggle}
-						aria-label={`Toggle sort direction (currently ${currentSortDirection})`}
+			{!ranked ? (
+				<div className="flex items-center gap-1">
+					<Select
+						value={selectSortValue}
+						onValueChange={(value) => {
+							if (value) handleSelectSortChange(value as TraderPositionSortBy)
+						}}
 					>
-						{currentSortDirection === "desc" ? (
-							<ArrowDownIcon className="size-4" />
-						) : (
-							<ArrowUpIcon className="size-4" />
-						)}
-					</Button>
-				</TooltipWrapper>
-			</div>
+						<SelectTrigger size="sm" aria-label="Sort by">
+							<span className="text-muted-foreground">Sort:</span>
+							<SelectValue placeholder="Custom">
+								{(value) => sortOptions.find((option) => option.value === value)?.label ?? "Custom"}
+							</SelectValue>
+						</SelectTrigger>
+						<SelectContent>
+							{sortOptions.map((option) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<TooltipWrapper content={currentSortDirection === "desc" ? "Sorted descending" : "Sorted ascending"}>
+						<Button
+							variant="outline"
+							size="icon"
+							className="size-7"
+							onClick={handleDirectionToggle}
+							aria-label={`Toggle sort direction (currently ${currentSortDirection})`}
+						>
+							{currentSortDirection === "desc" ? (
+								<ArrowDownIcon className="size-4" />
+							) : (
+								<ArrowUpIcon className="size-4" />
+							)}
+						</Button>
+					</TooltipWrapper>
+				</div>
+			) : null}
 			<Button
 				variant="outline"
 				size="sm"
@@ -636,7 +599,13 @@ export default function TraderPositions({
 			data={data}
 			storageKey="positions-table"
 			defaultColumnVisibility={defaultColumnVisibility}
-			emptyMessage="No positions to show."
+			emptyMessage={
+				ranked === "wins"
+					? "No winning positions to show."
+					: ranked === "losses"
+						? "No losing positions to show."
+						: "No positions to show."
+			}
 			emptyClassName="py-24"
 			columnLayout="fixed"
 			paginationMode="server"

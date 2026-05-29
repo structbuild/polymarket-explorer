@@ -46,6 +46,13 @@ export const defaultTraderPositionSortBy = {
 	closed: "last_trade_at",
 } as const satisfies Record<"open" | "closed", TraderPositionSortBy>;
 
+export const rankedPositionSortBy: TraderPositionSortBy = "realized_pnl_usd";
+
+export const rankedPositionSortDirection = {
+	wins: "desc",
+	losses: "asc",
+} as const satisfies Record<TraderExitMode, TraderSortDirection>;
+
 export { pnlTimeframeValues, pnlAnchorValues, type PnlTimeframe, type PnlAnchor } from "@/lib/struct/pnl-timeframes";
 
 export const positivePageParserDef = {

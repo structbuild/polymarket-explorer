@@ -18,7 +18,11 @@ type PerformanceSummaryProps = {
 	periods: PnlPeriods;
 };
 
-const PNL_CHANGE_WINDOWS = ["1d", "7d", "30d"] as const;
+const PNL_CHANGE_WINDOWS = [
+	{ key: "24h", label: "1D" },
+	{ key: "7d", label: "7D" },
+	{ key: "30d", label: "30D" },
+] as const;
 
 function PnlChangeBadges({ changes }: { changes: PnlV3ChangesResponse["changes"] | undefined }) {
 	const byTimeframe = new Map(changes?.map((window) => [window.timeframe, window]) ?? []);
@@ -26,7 +30,7 @@ function PnlChangeBadges({ changes }: { changes: PnlV3ChangesResponse["changes"]
 	return (
 		<div className="grid grid-cols-3 gap-2 text-sm font-medium">
 			{PNL_CHANGE_WINDOWS.map((window) => {
-				const entry = byTimeframe.get(window);
+				const entry = byTimeframe.get(window.key);
 				const change = entry?.total_pnl_change ?? null;
 				const colorClass = change == null
 					? "text-muted-foreground"
@@ -37,8 +41,8 @@ function PnlChangeBadges({ changes }: { changes: PnlV3ChangesResponse["changes"]
 							: "text-muted-foreground";
 
 				return (
-					<span key={window} className="min-w-0 whitespace-nowrap">
-						<span className="text-muted-foreground">{window.toUpperCase()} </span>
+					<span key={window.key} className="min-w-0 whitespace-nowrap">
+						<span className="text-muted-foreground">{window.label} </span>
 						{change == null ? (
 							<span className="text-muted-foreground">—</span>
 						) : (
@@ -80,7 +84,6 @@ function RiskValue({
 
 function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
 	const stats = [
-		{ label: "Events", value: pnlSummary?.events_traded ?? 0 },
 		{ label: "Markets", value: pnlSummary?.markets_traded ?? 0 },
 		{ label: "Won", value: pnlSummary?.markets_won ?? 0, className: "text-emerald-500" },
 		{ label: "Lost", value: pnlSummary?.markets_lost ?? 0, className: "text-red-500" },
@@ -88,7 +91,7 @@ function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
 
 	return (
 		<div>
-			<div className="grid grid-cols-4 gap-2">
+			<div className="grid grid-cols-3 gap-2">
 				{stats.map((stat) => (
 					<div key={stat.label} className="min-w-0">
 						<p className="truncate text-xs text-muted-foreground sm:text-sm">{stat.label}</p>
