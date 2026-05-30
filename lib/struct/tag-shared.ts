@@ -2,18 +2,30 @@ import type { TagSortBy, TagSortTimeframe } from "@structbuild/sdk";
 
 export const TAG_SORT_OPTIONS = [
 	"volume",
-	"txns",
+	"builder_volume",
 	"unique_traders",
+	"unique_builder_traders",
+	"unique_makers",
+	"unique_takers",
+	"txns",
+	"builder_txns",
 	"fees",
+	"builder_fees",
 ] as const satisfies readonly TagSortBy[];
 
 type TagSortOption = (typeof TAG_SORT_OPTIONS)[number];
 
 export const TAG_SORT_LABELS: Record<TagSortOption, string> = {
 	volume: "Volume",
-	txns: "Trades",
+	builder_volume: "Builder vol",
 	unique_traders: "Traders",
+	unique_builder_traders: "Builder traders",
+	unique_makers: "Makers",
+	unique_takers: "Takers",
+	txns: "Trades",
+	builder_txns: "Builder trades",
 	fees: "Fees",
+	builder_fees: "Builder fees",
 };
 
 export const DEFAULT_TAG_SORT: TagSortBy = "volume";

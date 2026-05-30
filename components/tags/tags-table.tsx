@@ -40,7 +40,13 @@ type ColumnSpec = {
 
 const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 	{ id: "volume", title: "Volume", field: "volume_usd", sortKey: "volume", currency: true },
-	{ id: "builderVolume", title: "Builder vol", field: "builder_usd_volume", currency: true },
+	{
+		id: "builderVolume",
+		title: "Builder vol",
+		field: "builder_usd_volume",
+		sortKey: "builder_volume",
+		currency: true,
+	},
 	{
 		id: "traders",
 		title: "Traders",
@@ -52,6 +58,7 @@ const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 		id: "builderTraders",
 		title: "Builder traders",
 		field: "unique_builder_traders",
+		sortKey: "unique_builder_traders",
 		currency: false,
 	},
 	{
@@ -73,6 +80,7 @@ const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 		id: "builderTrades",
 		title: "Builder trades",
 		field: "builder_txn_count",
+		sortKey: "builder_txns",
 		currency: false,
 	},
 	{ id: "fees", title: "Fees", field: "fees_usd", sortKey: "fees", currency: true },
@@ -80,6 +88,7 @@ const NUMERIC_COLUMNS: readonly ColumnSpec[] = [
 		id: "builderFees",
 		title: "Builder fees",
 		field: "builder_fees_usd",
+		sortKey: "builder_fees",
 		currency: true,
 	},
 ];
