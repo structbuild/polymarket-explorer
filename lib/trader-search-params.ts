@@ -26,6 +26,8 @@ export const traderSearchParamParsers = {
 	openPage: parseAsPositivePage,
 	closedPage: parseAsPositivePage,
 	activityPage: parseAsPositivePage,
+	categoriesPage: parseAsPositivePage,
+	marketsPage: parseAsPositivePage,
 	winsPage: parseAsPositivePage,
 	lossesPage: parseAsPositivePage,
 	openSortBy: parseAsStringLiteral(traderPositionSortByValues).withDefault(defaultTraderPositionSortBy.open),

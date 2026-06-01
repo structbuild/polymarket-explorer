@@ -8,6 +8,8 @@ import {
 	getMarketTopTradersV3,
 	getPositionTopTradersV3,
 	getTopTradesMarketsV3,
+	getTraderCategoriesPage,
+	getTraderMarketsPage,
 	getTraderPositionsPage,
 	getTraderTradesPage,
 	searchAll,
@@ -331,6 +333,36 @@ export async function getTraderTabPageAction({
 		};
 	}
 
+	if (safeTab === "categories") {
+		const pageNumber = parseTraderPageSearchParam(params, "categoriesPage");
+		const page = await getTraderCategoriesPage(address, {
+			limit: defaultTraderTablePageSize,
+			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+		});
+
+		return {
+			kind: "categories" as const,
+			address,
+			pageNumber,
+			page,
+		};
+	}
+
+	if (safeTab === "markets") {
+		const pageNumber = parseTraderPageSearchParam(params, "marketsPage");
+		const page = await getTraderMarketsPage(address, {
+			limit: defaultTraderTablePageSize,
+			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+		});
+
+		return {
+			kind: "markets" as const,
+			address,
+			pageNumber,
+			page,
+		};
+	}
+
 	const status: "open" | "closed" = safeTab === "closed" ? "closed" : "open";
 	const pageKey = status === "closed" ? "closedPage" : "openPage";
 	const sortByKey = status === "closed" ? "closedSortBy" : "openSortBy";
@@ -371,6 +403,38 @@ export async function getTraderActivityPageAction({
 		limit: defaultTraderTablePageSize,
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
 		sort_desc: true,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getTraderCategoriesPageAction({
+	address,
+	pageNumber,
+}: {
+	address: string;
+	pageNumber: number;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const page = await getTraderCategoriesPage(address, {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getTraderMarketsPageAction({
+	address,
+	pageNumber,
+}: {
+	address: string;
+	pageNumber: number;
+}) {
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const page = await getTraderMarketsPage(address, {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
 	});
 
 	return { page, pageNumber: safePageNumber };

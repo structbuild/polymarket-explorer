@@ -13,6 +13,8 @@ import {
 } from "@/lib/trader-search-params-shared"
 import {
 	defaultTraderTablePageSize,
+	getTraderCategoriesPage,
+	getTraderMarketsPage,
 	getTraderPositionsPage,
 	getTraderTradesPage,
 } from "@/lib/struct/queries"
@@ -38,6 +40,18 @@ type TraderTabPanelData =
 			page: Awaited<ReturnType<typeof getTraderTradesPage>>
 	  }
 	| {
+			kind: "categories"
+			address: string
+			pageNumber: number
+			page: Awaited<ReturnType<typeof getTraderCategoriesPage>>
+	  }
+	| {
+			kind: "markets"
+			address: string
+			pageNumber: number
+			page: Awaited<ReturnType<typeof getTraderMarketsPage>>
+	  }
+	| {
 			kind: "ranked-positions"
 			address: string
 			mode: TraderExitMode
@@ -51,6 +65,8 @@ type LoadTraderTabPanelDataProps = {
 	openPage: number
 	closedPage: number
 	activityPage: number
+	categoriesPage: number
+	marketsPage: number
 	winsPage: number
 	lossesPage: number
 	openSortBy: TraderPositionSortBy
@@ -66,6 +82,8 @@ export function loadTraderTabPanelData({
 	openPage,
 	closedPage,
 	activityPage,
+	categoriesPage,
+	marketsPage,
 	winsPage,
 	lossesPage,
 	openSortBy,
@@ -123,6 +141,26 @@ export function loadTraderTabPanelData({
 				pageNumber: activityPage,
 				page,
 			}))
+		case "categories":
+			return getTraderCategoriesPage(address, {
+				limit: pageSize,
+				offset: (categoriesPage - 1) * pageSize,
+			}).then((page) => ({
+				kind: "categories" as const,
+				address,
+				pageNumber: categoriesPage,
+				page,
+			}))
+		case "markets":
+			return getTraderMarketsPage(address, {
+				limit: pageSize,
+				offset: (marketsPage - 1) * pageSize,
+			}).then((page) => ({
+				kind: "markets" as const,
+				address,
+				pageNumber: marketsPage,
+				page,
+			}))
 		case "active":
 		default:
 			return getTraderPositionsPage(address, "open", {
@@ -161,7 +199,11 @@ export function TraderTabPanelFallback({
 	const label =
 		currentTab === "activity"
 			? "Loading activity"
-			: currentTab === "wins"
+			: currentTab === "categories"
+				? "Loading categories"
+				: currentTab === "markets"
+					? "Loading markets"
+					: currentTab === "wins"
 				? "Loading best wins"
 				: currentTab === "losses"
 					? "Loading worst losses"

@@ -196,6 +196,8 @@ const getTraderExitsPageCached = cache(
 		mode: TraderExitMode,
 		offset: number,
 		limit: number,
+		from: number | undefined,
+		to: number | undefined,
 	): Promise<PaginatedResource<PnlV3ExitMarker, number>> => {
 		const client = getStructClient();
 
@@ -209,6 +211,8 @@ const getTraderExitsPageCached = cache(
 				sort_by: "pnl_usd",
 				sort_direction: mode === "wins" ? "desc" : "asc",
 				...(mode === "wins" ? { min_pnl_usd: 0 } : { max_pnl_usd: 0 }),
+				...(from === undefined ? {} : { from }),
+				...(to === undefined ? {} : { to }),
 				offset,
 				limit: limit + 1,
 			});
@@ -227,7 +231,7 @@ const getTraderExitsPageCached = cache(
 				return emptyExitsPage(limit);
 			}
 
-			logStructError(`getTraderPnlV3Exits:${address}:${mode}:${offset}`, error);
+			logStructError(`getTraderPnlV3Exits:${address}:${mode}:${offset}:${from ?? ""}:${to ?? ""}`, error);
 			return emptyExitsPage(limit);
 		}
 	},
@@ -236,14 +240,14 @@ const getTraderExitsPageCached = cache(
 export async function getTraderExitsPage(
 	address: string,
 	mode: TraderExitMode,
-	options: { offset?: number; limit?: number } = {},
+	options: { offset?: number; limit?: number; from?: number; to?: number } = {},
 ): Promise<PaginatedResource<PnlV3ExitMarker, number>> {
 	const limit = options.limit ?? defaultTraderExitsPageSize;
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) return emptyExitsPage(limit);
 
-	return getTraderExitsPageCached(normalizedAddress, mode, options.offset ?? 0, limit);
+	return getTraderExitsPageCached(normalizedAddress, mode, options.offset ?? 0, limit, options.from, options.to);
 }
 
 export type PnlChartExit = {
@@ -274,17 +278,50 @@ function toChartExit(exit: PnlV3ExitMarker): PnlChartExit {
 	};
 }
 
-export async function getTraderChartExits(address: string, perSide = 8): Promise<PnlChartExit[]> {
+export const defaultChartExitsPerSide = 24;
+const chartExitsCandidatePoolSize = 250;
+
+function pickDistinctMarkets(exits: PnlV3ExitMarker[], limit: number): PnlV3ExitMarker[] {
+	const seen = new Set<string>();
+	const picked: PnlV3ExitMarker[] = [];
+
+	for (const exit of exits) {
+		if (picked.length >= limit) break;
+		const key = exit.condition || exit.market_slug || exit.position;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		picked.push(exit);
+	}
+
+	return picked;
+}
+
+export async function getTraderChartExits(
+	address: string,
+	options: { perSide?: number; from?: number; to?: number } = {},
+): Promise<PnlChartExit[]> {
+	const perSide = options.perSide ?? defaultChartExitsPerSide;
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) return [];
 
 	const [wins, losses] = await Promise.all([
-		getTraderExitsPage(normalizedAddress, "wins", { limit: perSide }),
-		getTraderExitsPage(normalizedAddress, "losses", { limit: perSide }),
+		getTraderExitsPage(normalizedAddress, "wins", {
+			limit: chartExitsCandidatePoolSize,
+			from: options.from,
+			to: options.to,
+		}),
+		getTraderExitsPage(normalizedAddress, "losses", {
+			limit: chartExitsCandidatePoolSize,
+			from: options.from,
+			to: options.to,
+		}),
 	]);
 
-	return [...wins.data, ...losses.data].map(toChartExit);
+	const winExits = pickDistinctMarkets(wins.data, perSide);
+	const lossExits = pickDistinctMarkets(losses.data, perSide);
+
+	return [...winExits, ...lossExits].map(toChartExit);
 }
 
 const getTraderDailyPnlCached = cache(async (address: string): Promise<DailyPnlEntry[]> => {

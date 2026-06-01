@@ -32,6 +32,8 @@ import { normalizeWalletAddress } from "@/lib/utils";
 export const defaultTraderTablePageSize = 25;
 const defaultPositionsLimit = defaultTraderTablePageSize;
 const defaultTradesLimit = defaultTraderTablePageSize;
+const defaultCategoriesLimit = defaultTraderTablePageSize;
+const defaultMarketsLimit = defaultTraderTablePageSize;
 const maxTraderSearchQueryLength = 100;
 
 export type GetTraderPositionPnlV3Request = Parameters<StructClient["trader"]["getTraderPositionPnlV3"]>[0];
@@ -601,6 +603,134 @@ export async function getTraderCategoryPnlV3(
 		logStructError(`getTraderCategoryPnlV3:${normalizedAddress}`, error);
 		return emptyCursorPage<CategoryEntry>();
 	}
+}
+
+export type TraderCategoriesPageOptions = Omit<GetTraderCategoryPnlV3Options, "address">;
+
+async function fetchTraderCategoriesPage(
+	address: string,
+	options?: TraderCategoriesPageOptions,
+): Promise<PaginatedResource<CategoryEntry, number>> {
+	const client = getStructClient();
+	const limit = options?.limit ?? defaultCategoriesLimit;
+
+	if (!client) {
+		return emptyPage<CategoryEntry>(limit);
+	}
+
+	const offset = options?.offset ?? 0;
+	const restOptions = { ...(options ?? {}) };
+	const sort_by = restOptions.sort_by;
+	const sort_direction = restOptions.sort_direction;
+	delete restOptions.limit;
+	delete restOptions.sort_by;
+	delete restOptions.sort_direction;
+
+	try {
+		const requestLimit = limit + 1;
+		const response = await client.trader.getTraderCategoryPnlV3({
+			address,
+			...restOptions,
+			limit: requestLimit,
+			sort_by: sort_by ?? "total_volume_usd",
+			sort_direction: sort_direction ?? "desc",
+		});
+		const rows = response.data ?? [];
+		const data = rows.slice(0, limit);
+		const hasMore = rows.length > limit;
+		const nextCursor = hasMore ? offset + data.length : null;
+		return {
+			data,
+			hasMore,
+			nextCursor,
+			pageSize: limit,
+		};
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return emptyPage<CategoryEntry>(limit);
+		}
+
+		logStructError(`getTraderCategoriesPage:${address}`, error);
+		return emptyPage<CategoryEntry>(limit);
+	}
+}
+
+export async function getTraderCategoriesPage(
+	address: string,
+	options?: TraderCategoriesPageOptions,
+): Promise<PaginatedResource<CategoryEntry, number>> {
+	const normalizedAddress = normalizeWalletAddress(address);
+	const limit = options?.limit ?? defaultCategoriesLimit;
+
+	if (!normalizedAddress) {
+		return emptyPage<CategoryEntry>(limit);
+	}
+
+	return fetchTraderCategoriesPage(normalizedAddress, options);
+}
+
+export type TraderMarketsPageOptions = Omit<GetTraderMarketPnlV3Options, "address">;
+
+async function fetchTraderMarketsPage(
+	address: string,
+	options?: TraderMarketsPageOptions,
+): Promise<PaginatedResource<MarketEntry, number>> {
+	const client = getStructClient();
+	const limit = options?.limit ?? defaultMarketsLimit;
+
+	if (!client) {
+		return emptyPage<MarketEntry>(limit);
+	}
+
+	const offset = options?.offset ?? 0;
+	const restOptions = { ...(options ?? {}) };
+	const sort_by = restOptions.sort_by;
+	const sort_direction = restOptions.sort_direction;
+	delete restOptions.limit;
+	delete restOptions.sort_by;
+	delete restOptions.sort_direction;
+
+	try {
+		const requestLimit = limit + 1;
+		const response = await client.trader.getTraderMarketPnlV3({
+			address,
+			...restOptions,
+			limit: requestLimit,
+			sort_by: sort_by ?? "total_volume_usd",
+			sort_direction: sort_direction ?? "desc",
+		});
+		const rows = response.data ?? [];
+		const data = rows.slice(0, limit);
+		const hasMore = rows.length > limit;
+		const nextCursor = hasMore ? offset + data.length : null;
+		return {
+			data,
+			hasMore,
+			nextCursor,
+			pageSize: limit,
+		};
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return emptyPage<MarketEntry>(limit);
+		}
+
+		logStructError(`getTraderMarketsPage:${address}`, error);
+		return emptyPage<MarketEntry>(limit);
+	}
+}
+
+export async function getTraderMarketsPage(
+	address: string,
+	options?: TraderMarketsPageOptions,
+): Promise<PaginatedResource<MarketEntry, number>> {
+	const normalizedAddress = normalizeWalletAddress(address);
+	const limit = options?.limit ?? defaultMarketsLimit;
+
+	if (!normalizedAddress) {
+		return emptyPage<MarketEntry>(limit);
+	}
+
+	return fetchTraderMarketsPage(normalizedAddress, options);
 }
 
 export async function getTraderPositionPnlV3(

@@ -1,4 +1,4 @@
-export const traderTabValues = ["active", "closed", "activity", "wins", "losses"] as const;
+export const traderTabValues = ["active", "closed", "activity", "categories", "markets", "wins", "losses"] as const;
 export const maxTraderPageNumber = 1000;
 export type TraderTab = (typeof traderTabValues)[number];
 

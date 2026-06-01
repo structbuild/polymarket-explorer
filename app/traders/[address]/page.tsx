@@ -36,7 +36,7 @@ import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { getServerTimezone } from "@/lib/timezone.server";
 import { getTraderAnalyticsChanges, getTraderAnalyticsDeltas, getTraderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import { parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } from "@/lib/struct/analytics-shared";
-import { getTraderPnlSummary, getTraderPnlV3Changes, getTraderProfile } from "@/lib/struct/queries";
+import { getTraderCategoryPnlV3, getTraderPnlSummary, getTraderPnlV3Changes, getTraderProfile } from "@/lib/struct/queries";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata } from "@/lib/site-metadata";
@@ -110,7 +110,7 @@ function loadTraderInsights(address: string, range: ResolvedPnlRange, fillGaps: 
 	});
 	const dailyPnlPromise = getTraderDailyPnl(address);
 	const periodsPromise = getTraderPnlPeriods(address);
-	const chartExitsPromise = getTraderChartExits(address);
+	const chartExitsPromise = getTraderChartExits(address, { from: range.from, to: range.to });
 
 	return Promise.all([pnlCandlesPromise, dailyPnlPromise, periodsPromise, chartExitsPromise]).then(
 		([pnlCandles, dailyPnl, periods, chartExits]) => {
@@ -377,11 +377,17 @@ async function TraderDnaSection({
 	displayName: string;
 	profileImage?: string | null;
 }) {
-	const [pnlSummary, cumulativePnlUsd] = await Promise.all([pnlSummaryPromise, cumulativePnlUsdPromise]);
+	const [pnlSummary, cumulativePnlUsd, categoryPage] = await Promise.all([
+		pnlSummaryPromise,
+		cumulativePnlUsdPromise,
+		getTraderCategoryPnlV3(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
+	]);
+	const categoryVolumes = categoryPage.data.map((entry) => entry.total_volume_usd ?? 0);
 	return (
 		<TraderDnaCard
 			pnlSummary={pnlSummary}
 			cumulativePnlUsd={cumulativePnlUsd}
+			categoryVolumes={categoryVolumes}
 			address={address}
 			displayName={displayName}
 			profileImage={profileImage}
@@ -464,6 +470,8 @@ async function TraderPageContent({
 			openPage,
 			closedPage,
 			activityPage,
+			categoriesPage,
+			marketsPage,
 			winsPage,
 			lossesPage,
 			pnlTimeframe,
@@ -500,6 +508,8 @@ async function TraderPageContent({
 		openPage,
 		closedPage,
 		activityPage,
+		categoriesPage,
+		marketsPage,
 		winsPage,
 		lossesPage,
 		openSortBy,

@@ -76,6 +76,18 @@ export function TraderTabs({
 					</TabsTrigger>
 					<TabsTrigger
 						className="text-base! sm:text-xl!"
+						value="categories"
+					>
+						Categories
+					</TabsTrigger>
+					<TabsTrigger
+						className="text-base! sm:text-xl!"
+						value="markets"
+					>
+						Markets
+					</TabsTrigger>
+					<TabsTrigger
+						className="text-base! sm:text-xl!"
 						value="wins"
 					>
 						Best Wins

@@ -260,11 +260,67 @@ function ExitPopoverRow({
 }
 
 const EXIT_BUBBLE_HIT_SIZE = 48
+const EXIT_STACK_PITCH = 26
+const EXIT_CLUSTER_THRESHOLD = EXIT_BUBBLE_SIZE
+const EXIT_STACK_MAX_VISIBLE = 5
 
 type ExitPosition = {
 	exit: PnlChartExit
 	cx: number
 	cy: number
+}
+
+type StackedBubble =
+	| { type: "exit"; exit: PnlChartExit; cx: number; cy: number }
+	| { type: "overflow"; count: number; tone: "win" | "loss" | "mixed"; cx: number; cy: number }
+
+function stackExitPositions(positions: ExitPosition[]): StackedBubble[] {
+	if (positions.length === 0) return []
+
+	const sorted = [...positions].sort((a, b) => a.cx - b.cx)
+	const stacked: StackedBubble[] = []
+
+	let cluster: ExitPosition[] = []
+	let anchorCx = sorted[0].cx
+
+	const flush = () => {
+		if (cluster.length === 0) return
+
+		const avgCx = cluster.reduce((sum, pos) => sum + pos.cx, 0) / cluster.length
+		const avgCy = cluster.reduce((sum, pos) => sum + pos.cy, 0) / cluster.length
+
+		const byMagnitude = [...cluster].sort((a, b) => Math.abs(b.exit.pnlUsd) - Math.abs(a.exit.pnlUsd))
+		const kept = byMagnitude.slice(0, EXIT_STACK_MAX_VISIBLE).sort((a, b) => b.exit.pnlUsd - a.exit.pnlUsd)
+		const overflowCount = cluster.length - kept.length
+
+		const wins = cluster.filter((pos) => pos.exit.pnlUsd >= 0).length
+		const tone: "win" | "loss" | "mixed" = wins === cluster.length ? "win" : wins === 0 ? "loss" : "mixed"
+
+		const rows = kept.length + (overflowCount > 0 ? 1 : 0)
+		const offset = (rows - 1) / 2
+
+		kept.forEach((pos, index) => {
+			stacked.push({ type: "exit", exit: pos.exit, cx: avgCx, cy: avgCy + (index - offset) * EXIT_STACK_PITCH })
+		})
+
+		if (overflowCount > 0) {
+			stacked.push({ type: "overflow", count: overflowCount, tone, cx: avgCx, cy: avgCy + (kept.length - offset) * EXIT_STACK_PITCH })
+		}
+
+		cluster = []
+	}
+
+	for (const pos of sorted) {
+		if (cluster.length > 0 && pos.cx - anchorCx > EXIT_CLUSTER_THRESHOLD) {
+			flush()
+			anchorCx = pos.cx
+		}
+		if (cluster.length === 0) anchorCx = pos.cx
+		cluster.push(pos)
+	}
+	flush()
+
+	return stacked
 }
 
 function ExitScaleProbe({
@@ -336,6 +392,28 @@ function ExitBubble({ exit, timezone, style }: { exit: PnlChartExit; timezone?: 
 					<ExitBubblePopoverContent exit={exit} timezone={timezone} />
 				</PopoverContent>
 			</Popover>
+		</div>
+	)
+}
+
+function ExitOverflowBubble({ count, tone, style }: { count: number; tone: "win" | "loss" | "mixed"; style?: CSSProperties }) {
+	return (
+		<div className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={style}>
+			<div className="flex items-center justify-center" style={{ width: EXIT_BUBBLE_HIT_SIZE, height: EXIT_BUBBLE_HIT_SIZE }}>
+				<span
+					className={cn(
+						"flex items-center justify-center rounded-full border-2 bg-card text-[11px] font-semibold tabular-nums shadow-md",
+						tone === "win"
+							? "border-emerald-500 text-emerald-600 dark:text-emerald-400"
+							: tone === "loss"
+								? "border-red-500 text-red-600 dark:text-red-400"
+								: "border-border text-muted-foreground",
+					)}
+					style={{ width: EXIT_BUBBLE_SIZE, height: EXIT_BUBBLE_SIZE }}
+				>
+					+{count}
+				</span>
+			</div>
 		</div>
 	)
 }
@@ -980,14 +1058,23 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 					</ChartContainer>
 					{exitPositions.length > 0 ? (
 						<div className="pointer-events-none absolute inset-0">
-							{exitPositions.map((pos) => (
-								<ExitBubble
-									key={`exit-${pos.exit.t}-${pos.exit.marketSlug ?? pos.exit.question}`}
-									exit={pos.exit}
-									timezone={timezone}
-									style={{ left: pos.cx, top: pos.cy }}
-								/>
-							))}
+							{stackExitPositions(exitPositions).map((pos, index) =>
+								pos.type === "exit" ? (
+									<ExitBubble
+										key={`exit-${pos.exit.t}-${pos.exit.marketSlug ?? pos.exit.question}`}
+										exit={pos.exit}
+										timezone={timezone}
+										style={{ left: pos.cx, top: pos.cy }}
+									/>
+								) : (
+									<ExitOverflowBubble
+										key={`exit-overflow-${index}-${Math.round(pos.cx)}`}
+										count={pos.count}
+										tone={pos.tone}
+										style={{ left: pos.cx, top: pos.cy }}
+									/>
+								),
+							)}
 						</div>
 					) : null}
 					</>
