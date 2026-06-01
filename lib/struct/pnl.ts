@@ -18,6 +18,14 @@ export type PnlDataPoint = {
 	low: number;
 	close: number;
 	p: number;
+	realizedOpen: number;
+	realizedHigh: number;
+	realizedLow: number;
+	realizedClose: number;
+	unrealizedOpen: number;
+	unrealizedHigh: number;
+	unrealizedLow: number;
+	unrealizedClose: number;
 	portfolioOpen: number;
 	portfolioHigh: number;
 	portfolioLow: number;
@@ -77,7 +85,15 @@ const getTraderPnlCandlesCached = cache(
 					const portfolioOpen = candle.po ?? portfolioClose;
 					const portfolioHigh = candle.ph ?? Math.max(portfolioOpen, portfolioClose);
 					const portfolioLow = candle.pl ?? Math.min(portfolioOpen, portfolioClose);
-					const close = candle.c ?? candle.rp + candle.up;
+					const realizedClose = candle.rc ?? 0;
+					const realizedOpen = candle.ro ?? realizedClose;
+					const realizedHigh = candle.rh ?? Math.max(realizedOpen, realizedClose);
+					const realizedLow = candle.rl ?? Math.min(realizedOpen, realizedClose);
+					const unrealizedClose = candle.uc ?? 0;
+					const unrealizedOpen = candle.uo ?? unrealizedClose;
+					const unrealizedHigh = candle.uh ?? Math.max(unrealizedOpen, unrealizedClose);
+					const unrealizedLow = candle.ul ?? Math.min(unrealizedOpen, unrealizedClose);
+					const close = candle.c ?? realizedClose + unrealizedClose;
 					const open = candle.o ?? close;
 					const high = candle.h ?? Math.max(open, close);
 					const low = candle.l ?? Math.min(open, close);
@@ -89,6 +105,14 @@ const getTraderPnlCandlesCached = cache(
 						low,
 						close,
 						p: close,
+						realizedOpen,
+						realizedHigh,
+						realizedLow,
+						realizedClose,
+						unrealizedOpen,
+						unrealizedHigh,
+						unrealizedLow,
+						unrealizedClose,
 						portfolioOpen,
 						portfolioHigh,
 						portfolioLow,

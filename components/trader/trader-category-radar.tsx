@@ -11,7 +11,7 @@ import {
 	Tooltip,
 } from "recharts";
 
-import { formatNumber } from "@/lib/format";
+import { formatNumber, readTotalPnlUsd } from "@/lib/format";
 
 const CATEGORY_AXES: PolymarketCategory[] = [
 	"Politics",
@@ -47,7 +47,7 @@ function buildData(rows: CategoryEntry[]): RadarRow[] {
 		return {
 			category,
 			volume: match?.total_volume_usd ?? 0,
-			pnl: match?.realized_pnl_usd ?? 0,
+			pnl: readTotalPnlUsd(match),
 		};
 	});
 }

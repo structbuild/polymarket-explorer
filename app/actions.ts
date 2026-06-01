@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { BuilderSortBy, BuilderTimeframe, MarketEntry, PnlTimeframe } from "@structbuild/sdk";
+import type { BuilderSortBy, BuilderTimeframe, MarketEntry, PnlTimeframe, PolymarketCategory } from "@structbuild/sdk";
 
 import {
 	defaultTraderTablePageSize,
@@ -65,6 +65,7 @@ import {
 	type MarketTimeframe,
 } from "@/lib/market-search-params-shared";
 import { marketResponseToRow } from "@/lib/market-table-map";
+import { parsePolymarketCategory } from "@/lib/tag-category";
 import {
 	maxTraderPageNumber,
 	defaultTraderPositionSortBy,
@@ -262,12 +263,14 @@ export async function getTraderPositionsPageAction({
 	pageNumber,
 	sortBy,
 	sortDirection,
+	category,
 }: {
 	address: string;
 	status: "open" | "closed";
 	pageNumber: number;
 	sortBy: TraderPositionSortBy;
 	sortDirection: TraderSortDirection;
+	category?: PolymarketCategory | null;
 }) {
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
 	const page = await getTraderPositionsPage(address, status, {
@@ -275,6 +278,7 @@ export async function getTraderPositionsPageAction({
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
 		sort_by: sortBy,
 		sort_direction: sortDirection,
+		...(category ? { category } : {}),
 	});
 
 	return { page, pageNumber: safePageNumber };
@@ -334,11 +338,13 @@ export async function getTraderTabPageAction({
 	const pageNumber = parseTraderPageSearchParam(params, pageKey);
 	const sortBy = parseTraderSortByParam(params, sortByKey, defaultTraderPositionSortBy[status]);
 	const sortDirection = parseTraderSortDirectionParam(params, sortDirectionKey);
+	const category = parsePolymarketCategory(params.get("positionsCategory") ?? undefined) ?? undefined;
 	const page = await getTraderPositionsPage(address, status, {
 		limit: defaultTraderTablePageSize,
 		offset: (pageNumber - 1) * defaultTraderTablePageSize,
 		sort_by: sortBy,
 		sort_direction: sortDirection,
+		...(category ? { category } : {}),
 	});
 
 	return {
@@ -348,6 +354,7 @@ export async function getTraderTabPageAction({
 		pageNumber,
 		sortBy,
 		sortDirection,
+		category,
 		page,
 	};
 }

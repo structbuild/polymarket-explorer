@@ -1,6 +1,6 @@
 "use client"
 
-import type { PositionEntry } from "@structbuild/sdk"
+import type { PolymarketCategory, PositionEntry } from "@structbuild/sdk"
 import { useCallback, useRef, useState, useTransition } from "react"
 
 import { getTraderTabPageAction } from "@/app/actions"
@@ -28,6 +28,7 @@ type TraderTabPanelClientProps =
 			pageNumber: number
 			sortBy: TraderPositionSortBy
 			sortDirection: TraderSortDirection
+			category?: PolymarketCategory
 			page: PaginatedResource<PositionEntry, number>
 	  }
 	| {
@@ -164,6 +165,7 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 			status={currentData.status}
 			sortBy={currentData.sortBy}
 			sortDirection={currentData.sortDirection}
+			category={currentData.category}
 			tabs={tabs}
 			onRefresh={handleRefresh}
 		/>

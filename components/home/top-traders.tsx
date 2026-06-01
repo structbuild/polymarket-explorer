@@ -1,13 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getGlobalLeaderboard } from "@/lib/struct/market-queries";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, readTotalPnlUsd } from "@/lib/format";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 import type { Route } from "next";
 import Link from "next/link";
 
 export async function TopTraders() {
 	const { data: entries } = await getGlobalLeaderboard("7d", 10);
-	const traders = entries.map((entry) => ({ ...entry.trader, pnl: entry.realized_pnl_usd ?? 0 }));
+	const traders = entries.map((entry) => ({ ...entry.trader, pnl: readTotalPnlUsd(entry) }));
 
 	return (
 		<>

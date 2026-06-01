@@ -26,6 +26,7 @@ type RawRow = (MarketEntry | PositionEntry) & {
 type TraderRow = {
 	rank: number;
 	trader: TraderInfo;
+	total_pnl_usd: number | null;
 	realized_pnl_usd: number | null;
 	volume_usd: number | null;
 	buy_usd: number | null;
@@ -89,6 +90,7 @@ function buildRows(rows: RawRow[]): TraderRow[] {
 			{
 				rank: index + 1,
 				trader,
+				total_pnl_usd: readNumber(row, "total_pnl_usd"),
 				realized_pnl_usd: readNumber(row, "realized_pnl_usd"),
 				volume_usd: volumeUsd,
 				buy_usd: buyUsd,
@@ -151,10 +153,10 @@ const columns: ColumnDef<TraderRow, unknown>[] = [
 	},
 	{
 		id: "realized_pnl_usd",
-		header: "Realized PnL",
+		header: "PnL",
 		size: 140,
 		cell: ({ row }) => {
-			const pnl = row.original.realized_pnl_usd;
+			const pnl = row.original.total_pnl_usd ?? row.original.realized_pnl_usd;
 			if (pnl == null) return <span className="text-muted-foreground">—</span>;
 			return (
 				<span className={cn("tabular-nums", pnlColorClass(pnl))}>

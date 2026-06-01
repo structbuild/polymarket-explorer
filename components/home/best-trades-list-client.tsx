@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Volume } from "@/components/ui/volume";
-import { formatNumber, pnlColorClass } from "@/lib/format";
+import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
 
@@ -151,13 +151,13 @@ export function BestTradesListClient({
 							<TableHead className="w-12">#</TableHead>
 							<TableHead className="w-[16rem]">Trader</TableHead>
 							<TableHead>Market</TableHead>
-							<TableHead className="w-32">Realized PnL</TableHead>
+							<TableHead className="w-32">PnL</TableHead>
 							<TableHead className="w-28">Volume</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{rows.map((row, index) => {
-							const pnl = row.realized_pnl_usd ?? 0;
+							const pnl = readTotalPnlUsd(row);
 							const marketTitle = readableMarketTitle(row);
 
 							return (

@@ -51,11 +51,13 @@ type PnlChartPoint = PnlDataPoint & {
 	metric: number
 }
 
-export type PnlChartOhlcMetric = "pnl" | "portfolio"
+export type PnlChartOhlcMetric = "pnl" | "realized" | "unrealized" | "portfolio"
 export type PnlChartMetric = PnlChartOhlcMetric | "usdBalance" | "openPositions"
 
 const chartMetricOptions = [
-	{ value: "pnl", label: "Profit/Loss" },
+	{ value: "pnl", label: "PnL" },
+	{ value: "realized", label: "Realized PnL" },
+	{ value: "unrealized", label: "Unrealized PnL" },
 	{ value: "portfolio", label: "Portfolio Value" },
 	{ value: "usdBalance", label: "USD Balance" },
 	{ value: "openPositions", label: "Open Positions" },
@@ -340,13 +342,15 @@ function ExitBubble({ exit, timezone, style }: { exit: PnlChartExit; timezone?: 
 
 function getChartMetricValue(point: PnlDataPoint, metric: PnlChartMetric) {
 	if (metric === "portfolio") return point.portfolioClose
+	if (metric === "realized") return point.realizedClose
+	if (metric === "unrealized") return point.unrealizedClose
 	if (metric === "usdBalance") return point.usdBalance
 	if (metric === "openPositions") return point.numOpenPositions
 	return point.p
 }
 
 function isOhlcMetric(metric: PnlChartMetric): metric is PnlChartOhlcMetric {
-	return metric === "pnl" || metric === "portfolio"
+	return metric === "pnl" || metric === "realized" || metric === "unrealized" || metric === "portfolio"
 }
 
 function getChartMetricOhlc(point: PnlDataPoint, metric: PnlChartOhlcMetric) {
@@ -356,6 +360,24 @@ function getChartMetricOhlc(point: PnlDataPoint, metric: PnlChartOhlcMetric) {
 			high: point.portfolioHigh,
 			low: point.portfolioLow,
 			close: point.portfolioClose,
+		}
+	}
+
+	if (metric === "realized") {
+		return {
+			open: point.realizedOpen,
+			high: point.realizedHigh,
+			low: point.realizedLow,
+			close: point.realizedClose,
+		}
+	}
+
+	if (metric === "unrealized") {
+		return {
+			open: point.unrealizedOpen,
+			high: point.unrealizedHigh,
+			low: point.unrealizedLow,
+			close: point.unrealizedClose,
 		}
 	}
 
@@ -412,6 +434,8 @@ function PnlTooltipContent({
 				<TooltipValue label="Low" value={entry.low} />
 				<TooltipValue label="Close" value={entry.close} />
 				<TooltipValue label="Change" value={change} valueClassName={pnlColorClass(change)} />
+				<TooltipValue label="Realized PnL" value={entry.realizedClose} valueClassName={pnlColorClass(entry.realizedClose)} />
+				<TooltipValue label="Unrealized PnL" value={entry.unrealizedClose} valueClassName={pnlColorClass(entry.unrealizedClose)} />
 				<TooltipValue label="Portfolio value" value={entry.portfolioClose} />
 				<TooltipValue label="USD balance" value={entry.usdBalance} />
 				<TooltipValue label="Open positions" value={entry.numOpenPositions} currency={false} />

@@ -11,7 +11,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Volume } from "@/components/ui/volume";
-import { formatNumber, pnlColorClass } from "@/lib/format";
+import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
 import { getCategoryTopTradersV3 } from "@/lib/struct/queries";
 import { cn, normalizeWalletAddress } from "@/lib/utils";
 
@@ -51,7 +51,7 @@ export async function TagTopTradersListing({
 							<TableRow>
 								<TableHead className="w-12">#</TableHead>
 								<TableHead>Trader</TableHead>
-								<TableHead className="text-right">Realized PnL</TableHead>
+								<TableHead className="text-right">PnL</TableHead>
 								<TableHead className="text-right">Markets</TableHead>
 								<TableHead className="text-right">Volume</TableHead>
 							</TableRow>
@@ -59,7 +59,7 @@ export async function TagTopTradersListing({
 						<TableBody>
 							{rows.map((row, index) => {
 								const address = normalizeWalletAddress(row.trader.address) ?? row.trader.address;
-								const pnl = row.realized_pnl_usd ?? 0;
+								const pnl = readTotalPnlUsd(row);
 
 								return (
 									<TableRow key={`${address}-${index}`}>

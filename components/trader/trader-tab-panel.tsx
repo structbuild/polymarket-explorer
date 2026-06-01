@@ -1,3 +1,5 @@
+import type { PolymarketCategory } from "@structbuild/sdk"
+
 import type {
 	TraderExitMode,
 	TraderPositionSortBy,
@@ -26,6 +28,7 @@ type TraderTabPanelData =
 			pageNumber: number
 			sortBy: TraderPositionSortBy
 			sortDirection: TraderSortDirection
+			category?: PolymarketCategory
 			page: Awaited<ReturnType<typeof getTraderPositionsPage>>
 	  }
 	| {
@@ -54,6 +57,7 @@ type LoadTraderTabPanelDataProps = {
 	openSortDirection: TraderSortDirection
 	closedSortBy: TraderPositionSortBy
 	closedSortDirection: TraderSortDirection
+	category?: PolymarketCategory
 }
 
 export function loadTraderTabPanelData({
@@ -68,8 +72,10 @@ export function loadTraderTabPanelData({
 	openSortDirection,
 	closedSortBy,
 	closedSortDirection,
+	category,
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
 	const pageSize = defaultTraderTablePageSize
+	const categoryOption = category ? { category } : {}
 
 	const rankedMode = exitModeForTab(currentTab)
 	if (rankedMode) {
@@ -95,6 +101,7 @@ export function loadTraderTabPanelData({
 				offset: (closedPage - 1) * pageSize,
 				sort_by: closedSortBy,
 				sort_direction: closedSortDirection,
+				...categoryOption,
 			}).then((page) => ({
 				kind: "positions" as const,
 				address,
@@ -102,6 +109,7 @@ export function loadTraderTabPanelData({
 				pageNumber: closedPage,
 				sortBy: closedSortBy,
 				sortDirection: closedSortDirection,
+				category,
 				page,
 			}))
 		case "activity":
@@ -122,6 +130,7 @@ export function loadTraderTabPanelData({
 				offset: (openPage - 1) * pageSize,
 				sort_by: openSortBy,
 				sort_direction: openSortDirection,
+				...categoryOption,
 			}).then((page) => ({
 				kind: "positions" as const,
 				address,
@@ -129,6 +138,7 @@ export function loadTraderTabPanelData({
 				pageNumber: openPage,
 				sortBy: openSortBy,
 				sortDirection: openSortDirection,
+				category,
 				page,
 			}))
 	}

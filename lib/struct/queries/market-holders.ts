@@ -108,8 +108,8 @@ export async function getGlobalLeaderboard(
 	}
 
 	const tf = timeframe as "1d" | "7d" | "30d" | "lifetime";
-	const sortBy = (sort?.sortBy ?? "realized_pnl_usd") as NonNullable<Parameters<typeof client.trader.getGlobalPnlV3>[0]>["sort_by"];
-	const sortDirection = sort?.sortDirection ?? "desc";
+	const sortBy = sort?.sortBy as NonNullable<Parameters<typeof client.trader.getGlobalPnlV3>[0]>["sort_by"] | undefined;
+	const sortOption = sortBy ? { sort_by: sortBy, sort_direction: sort?.sortDirection ?? "desc" } : {};
 	const data: TraderLeaderboardEntry[] = [];
 	let paginationKey: string | undefined = cursor;
 	let hasMore = false;
@@ -127,8 +127,7 @@ export async function getGlobalLeaderboard(
 			const chunkLimit = Math.min(MAX_LEADERBOARD_PAGE_SIZE, limit - data.length);
 			const response = await client.trader.getGlobalPnlV3({
 				timeframe: tf,
-				sort_by: sortBy,
-				sort_direction: sortDirection,
+				...sortOption,
 				limit: chunkLimit,
 				pagination_key: paginationKey,
 			});
@@ -170,8 +169,8 @@ export async function getCategoryLeaderboard(
 	}
 
 	const tf = timeframe as "1d" | "7d" | "30d" | "lifetime";
-	const sortBy = (sort?.sortBy ?? "realized_pnl_usd") as NonNullable<Parameters<typeof client.tags.getCategoryTopTradersV3>[0]>["sort_by"];
-	const sortDirection = sort?.sortDirection ?? "desc";
+	const sortBy = sort?.sortBy as NonNullable<Parameters<typeof client.tags.getCategoryTopTradersV3>[0]>["sort_by"] | undefined;
+	const sortOption = sortBy ? { sort_by: sortBy, sort_direction: sort?.sortDirection ?? "desc" } : {};
 	const data: TraderLeaderboardEntry[] = [];
 	let paginationKey: string | undefined = cursor;
 	let hasMore = false;
@@ -190,8 +189,7 @@ export async function getCategoryLeaderboard(
 			const response = await client.tags.getCategoryTopTradersV3({
 				category,
 				timeframe: tf,
-				sort_by: sortBy,
-				sort_direction: sortDirection,
+				...sortOption,
 				limit: chunkLimit,
 				pagination_key: paginationKey,
 			});

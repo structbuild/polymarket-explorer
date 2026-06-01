@@ -1,5 +1,7 @@
 export const TRADER_LEADERBOARD_SORT_KEYS = [
+	"total_pnl_usd",
 	"realized_pnl_usd",
+	"usd_balance",
 	"unrealized_pnl",
 	"open_position_count",
 	"total_volume_usd",
@@ -40,10 +42,15 @@ export type TraderLeaderboardSortKey = (typeof TRADER_LEADERBOARD_SORT_KEYS)[num
 export const TRADER_LEADERBOARD_SORT_DIRECTIONS = ["asc", "desc"] as const;
 export type TraderLeaderboardSortDirection = (typeof TRADER_LEADERBOARD_SORT_DIRECTIONS)[number];
 
-export const DEFAULT_TRADER_LEADERBOARD_SORT: TraderLeaderboardSortKey = "realized_pnl_usd";
+export const DEFAULT_TRADER_LEADERBOARD_SORT: TraderLeaderboardSortKey = "total_pnl_usd";
 export const DEFAULT_TRADER_LEADERBOARD_SORT_DIRECTION: TraderLeaderboardSortDirection = "desc";
 
 export type LeaderboardScope = "global" | "category";
+
+const UNSORTABLE_KEYS = new Set<TraderLeaderboardSortKey>([
+	"total_pnl_usd",
+	"usd_balance",
+]);
 
 const CATEGORY_SORT_OVERRIDES: Partial<Record<TraderLeaderboardSortKey, string>> = {
 	total_redemptions: "redeem_count",
@@ -64,6 +71,7 @@ export function isLeaderboardSortSupported(
 	sortKey: TraderLeaderboardSortKey,
 	scope: LeaderboardScope,
 ): boolean {
+	if (UNSORTABLE_KEYS.has(sortKey)) return false;
 	if (scope === "category" && CATEGORY_UNSUPPORTED_SORTS.has(sortKey)) return false;
 	return true;
 }
@@ -89,7 +97,9 @@ export function parseTraderLeaderboardSortDirection(
 }
 
 const SORT_LABELS: Record<TraderLeaderboardSortKey, string> = {
+	total_pnl_usd: "total profit",
 	realized_pnl_usd: "realized profit",
+	usd_balance: "wallet balance",
 	unrealized_pnl: "open positions value",
 	open_position_count: "open positions",
 	total_volume_usd: "volume",
@@ -132,7 +142,8 @@ export function getLeaderboardSortLabel(sort: TraderLeaderboardSortKey): string 
 export function resolveLeaderboardSortField(
 	sort: TraderLeaderboardSortKey,
 	scope: LeaderboardScope,
-): string {
+): string | undefined {
+	if (UNSORTABLE_KEYS.has(sort)) return undefined;
 	if (sort === "best_win") return "best_trade_pnl_usd";
 	if (sort === "worst_loss") return "worst_trade_pnl_usd";
 	if (sort === "unrealized_pnl") return "open_positions_value";

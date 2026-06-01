@@ -14,7 +14,7 @@ import { dateCol, durationCol, numericCol } from "@/components/ui/table-columns"
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { Volume } from "@/components/ui/volume";
 import { facehashColorClasses } from "@/lib/facehash";
-import { formatNumber, pnlColorClass } from "@/lib/format";
+import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
 import type { TraderLeaderboardEntry } from "@/lib/struct/trader-leaderboard";
 import {
 	DEFAULT_TRADER_LEADERBOARD_SORT,
@@ -29,7 +29,10 @@ import { TRADER_TABLE_COLUMN_SIZES } from "./traders-table-columns";
 
 type NumericField = Extract<
 	keyof TraderLeaderboardEntry,
+	| "total_pnl_usd"
 	| "realized_pnl_usd"
+	| "unrealized_pnl_usd"
+	| "usd_balance"
 	| "open_positions_value"
 	| "open_position_count"
 	| "events_traded"
@@ -284,12 +287,12 @@ function buildColumns(
 		},
 		{
 			id: "pnl",
-			meta: { title: "Realized PnL" },
-			header: () => renderSortableHeader("Realized PnL", "realized_pnl_usd", sortCtx),
+			meta: { title: "PnL" },
+			header: () => renderSortableHeader("PnL", "total_pnl_usd", sortCtx),
 			size: TRADER_TABLE_COLUMN_SIZES.pnl,
 			enableHiding: false,
 			cell: ({ row }) => {
-				const pnl = row.original.realized_pnl_usd ?? 0;
+				const pnl = readTotalPnlUsd(row.original);
 				return (
 					<p className={cn("tabular-nums font-medium", pnlColorClass(pnl))}>
 						{formatNumber(pnl, numericFormat.currency)}
@@ -297,6 +300,9 @@ function buildColumns(
 				);
 			},
 		},
+		numericColumn({ id: "realizedPnl", title: "Realized PnL", field: "realized_pnl_usd", sortKey: "realized_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.pnl, format: numericFormat.currency, colorizePnl: true }, sortCtx),
+		numericColumn({ id: "unrealizedPnl", title: "Unrealized PnL", field: "unrealized_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.pnl, format: numericFormat.currency, colorizePnl: true }, sortCtx),
+		numericColumn({ id: "usdBalance", title: "USD Balance", field: "usd_balance", sortKey: "usd_balance", size: 128, format: numericFormat.currency }, sortCtx),
 		{
 			id: "openPositions",
 			meta: { title: "Open Positions" },
@@ -361,6 +367,7 @@ function buildColumns(
 const CATEGORY_UNAVAILABLE_COLUMN_IDS = new Set([
 	"events",
 	"openPositions",
+	"usdBalance",
 	"makerRebates",
 	"rewards",
 	"yields",

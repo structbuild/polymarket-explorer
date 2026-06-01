@@ -475,6 +475,7 @@ async function TraderPageContent({
 			openSortDirection,
 			closedSortBy,
 			closedSortDirection,
+			positionsCategory,
 		},
 		resolvedSearchParams,
 		serverTimezone,
@@ -505,6 +506,7 @@ async function TraderPageContent({
 		openSortDirection,
 		closedSortBy,
 		closedSortDirection,
+		category: positionsCategory ?? undefined,
 	});
 
 	const displayName = getTraderDisplayName({

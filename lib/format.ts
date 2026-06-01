@@ -15,6 +15,16 @@ export function formatPriceCents(price: number | null | undefined): string {
 	return `${(price * 100).toFixed(1)}¢`
 }
 
+export function readTotalPnlUsd(
+	entry: { total_pnl_usd?: number | null; realized_pnl_usd?: number | null } | null | undefined,
+): number {
+	if (!entry) return 0
+	const total = entry.total_pnl_usd
+	if (typeof total === "number" && Number.isFinite(total)) return total
+	const realized = entry.realized_pnl_usd
+	return typeof realized === "number" && Number.isFinite(realized) ? realized : 0
+}
+
 export function formatDateShort(seconds: number | null | undefined): string {
 	if (!seconds) return "—"
 	return new Date(seconds * 1000).toLocaleDateString("en-US", {

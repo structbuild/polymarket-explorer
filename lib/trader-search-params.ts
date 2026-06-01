@@ -1,5 +1,6 @@
 import { createParser, parseAsBoolean, parseAsStringLiteral, type inferParserType } from "nuqs";
 
+import { POLYMARKET_CATEGORIES } from "./tag-category";
 import {
 	defaultTraderPositionSortBy,
 	pnlAnchorValues,
@@ -31,6 +32,7 @@ export const traderSearchParamParsers = {
 	openSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
 	closedSortBy: parseAsStringLiteral(traderPositionSortByValues).withDefault(defaultTraderPositionSortBy.closed),
 	closedSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
+	positionsCategory: parseAsStringLiteral(POLYMARKET_CATEGORIES),
 	pnlTimeframe: pnlTimeframeParser,
 	pnlAnchor: pnlAnchorParser,
 	pnlFrom: pnlFromParser,

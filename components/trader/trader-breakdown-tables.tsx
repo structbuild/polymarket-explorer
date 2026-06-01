@@ -16,7 +16,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Volume } from "@/components/ui/volume";
-import { formatNumber, pnlColorClass } from "@/lib/format";
+import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
 import type { CursorPage } from "@/lib/struct/queries";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +53,7 @@ function BreakdownTable<Row>({
 						<TableRow>
 							<TableHead className="w-12">#</TableHead>
 							<TableHead>{identityHeader}</TableHead>
-							<TableHead className="text-right">Realized PnL</TableHead>
+							<TableHead className="text-right">PnL</TableHead>
 							<TableHead className="text-right">Volume</TableHead>
 							{rightHeader ? <TableHead className="text-right">{rightHeader}</TableHead> : null}
 						</TableRow>
@@ -160,7 +160,7 @@ export function TraderMarketsTable({
 					}
 					return <span className="block max-w-[28rem] truncate font-medium text-foreground">{label}</span>;
 				}}
-				pnl={(row) => row.realized_pnl_usd ?? 0}
+				pnl={(row) => readTotalPnlUsd(row)}
 				volume={(row) => row.total_volume_usd ?? null}
 				rightHeader="Trades"
 				rightCell={(row) => formatNumber((row.total_buys ?? 0) + (row.total_sells ?? 0), { decimals: 0 })}
@@ -206,7 +206,7 @@ export function TraderEventsTable({
 						<span className="text-muted-foreground">—</span>
 					)
 				)}
-				pnl={(row) => row.realized_pnl_usd ?? 0}
+				pnl={(row) => readTotalPnlUsd(row)}
 				volume={(row) => row.total_volume_usd ?? null}
 				rightHeader="Markets"
 				rightCell={(row) => formatNumber(row.markets_traded ?? 0, { decimals: 0 })}
@@ -246,7 +246,7 @@ export function TraderCategoriesTable({
 						<span className="text-muted-foreground">—</span>
 					)
 				)}
-				pnl={(row) => row.realized_pnl_usd ?? 0}
+				pnl={(row) => readTotalPnlUsd(row)}
 				volume={(row) => row.total_volume_usd ?? null}
 				rightHeader="Markets"
 				rightCell={(row) => formatNumber(row.markets_traded ?? 0, { decimals: 0 })}
