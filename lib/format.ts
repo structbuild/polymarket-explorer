@@ -25,6 +25,16 @@ export function readTotalPnlUsd(
 	return typeof realized === "number" && Number.isFinite(realized) ? realized : 0
 }
 
+export function readTotalPnlPct(
+	entry: { total_pnl_pct?: number | null; realized_pnl_pct?: number | null } | null | undefined,
+): number | null {
+	if (!entry) return null
+	const total = entry.total_pnl_pct
+	if (typeof total === "number" && Number.isFinite(total)) return total
+	const realized = entry.realized_pnl_pct
+	return typeof realized === "number" && Number.isFinite(realized) ? realized : null
+}
+
 export function formatDateShort(seconds: number | null | undefined): string {
 	if (!seconds) return "—"
 	return new Date(seconds * 1000).toLocaleDateString("en-US", {

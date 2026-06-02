@@ -483,6 +483,10 @@ async function TraderPageContent({
 			openSortDirection,
 			closedSortBy,
 			closedSortDirection,
+			categoriesSortBy,
+			categoriesSortDirection,
+			marketsSortBy,
+			marketsSortDirection,
 			positionsCategory,
 		},
 		resolvedSearchParams,
@@ -516,6 +520,10 @@ async function TraderPageContent({
 		openSortDirection,
 		closedSortBy,
 		closedSortDirection,
+		categoriesSortBy,
+		categoriesSortDirection,
+		marketsSortBy,
+		marketsSortDirection,
 		category: positionsCategory ?? undefined,
 	});
 

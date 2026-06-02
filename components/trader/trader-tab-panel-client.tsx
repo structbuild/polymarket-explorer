@@ -5,7 +5,9 @@ import { useCallback, useRef, useState, useTransition } from "react"
 
 import { getTraderTabPageAction } from "@/app/actions"
 import type {
+	TraderCategorySortBy,
 	TraderExitMode,
+	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
@@ -43,12 +45,16 @@ type TraderTabPanelClientProps =
 			kind: "categories"
 			address: string
 			pageNumber: number
+			sortBy: TraderCategorySortBy
+			sortDirection: TraderSortDirection
 			page: PaginatedResource<CategoryEntry, number>
 	  }
 	| {
 			kind: "markets"
 			address: string
 			pageNumber: number
+			sortBy: TraderMarketSortBy
+			sortDirection: TraderSortDirection
 			page: PaginatedResource<MarketEntry, number>
 	  }
 	| {
@@ -163,6 +169,8 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				address={currentData.address}
 				page={currentData.page}
 				pageNumber={currentData.pageNumber}
+				sortBy={currentData.sortBy}
+				sortDirection={currentData.sortDirection}
 				tabs={tabs}
 				onRefresh={handleRefresh}
 			/>
@@ -175,6 +183,8 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				address={currentData.address}
 				page={currentData.page}
 				pageNumber={currentData.pageNumber}
+				sortBy={currentData.sortBy}
+				sortDirection={currentData.sortDirection}
 				tabs={tabs}
 				onRefresh={handleRefresh}
 			/>

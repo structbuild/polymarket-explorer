@@ -1,6 +1,7 @@
 export const TRADER_LEADERBOARD_SORT_KEYS = [
 	"total_pnl_usd",
 	"realized_pnl_usd",
+	"unrealized_pnl_usd",
 	"usd_balance",
 	"unrealized_pnl",
 	"open_position_count",
@@ -47,17 +48,13 @@ export const DEFAULT_TRADER_LEADERBOARD_SORT_DIRECTION: TraderLeaderboardSortDir
 
 export type LeaderboardScope = "global" | "category";
 
-const UNSORTABLE_KEYS = new Set<TraderLeaderboardSortKey>([
-	"total_pnl_usd",
-	"usd_balance",
-]);
-
 const CATEGORY_SORT_OVERRIDES: Partial<Record<TraderLeaderboardSortKey, string>> = {
 	total_redemptions: "redeem_count",
 	total_merges: "merge_count",
 };
 
 const CATEGORY_UNSUPPORTED_SORTS = new Set<TraderLeaderboardSortKey>([
+	"usd_balance",
 	"events_traded",
 	"maker_rebate_count",
 	"maker_rebate_usd",
@@ -71,7 +68,6 @@ export function isLeaderboardSortSupported(
 	sortKey: TraderLeaderboardSortKey,
 	scope: LeaderboardScope,
 ): boolean {
-	if (UNSORTABLE_KEYS.has(sortKey)) return false;
 	if (scope === "category" && CATEGORY_UNSUPPORTED_SORTS.has(sortKey)) return false;
 	return true;
 }
@@ -99,6 +95,7 @@ export function parseTraderLeaderboardSortDirection(
 const SORT_LABELS: Record<TraderLeaderboardSortKey, string> = {
 	total_pnl_usd: "total profit",
 	realized_pnl_usd: "realized profit",
+	unrealized_pnl_usd: "unrealized profit",
 	usd_balance: "wallet balance",
 	unrealized_pnl: "open positions value",
 	open_position_count: "open positions",
@@ -143,7 +140,6 @@ export function resolveLeaderboardSortField(
 	sort: TraderLeaderboardSortKey,
 	scope: LeaderboardScope,
 ): string | undefined {
-	if (UNSORTABLE_KEYS.has(sort)) return undefined;
 	if (sort === "best_win") return "best_trade_pnl_usd";
 	if (sort === "worst_loss") return "worst_trade_pnl_usd";
 	if (sort === "unrealized_pnl") return "open_positions_value";

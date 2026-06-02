@@ -34,7 +34,7 @@ import {
 } from "../ui/select"
 import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle"
 import { TraderTabs } from "./trader-tabs"
-import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass, readTotalPnlUsd } from "@/lib/format"
+import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass, readTotalPnlUsd, readTotalPnlPct } from "@/lib/format"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
 import { cn } from "@/lib/utils"
 
@@ -208,13 +208,14 @@ function buildColumns(
 			cell: ({ row }) => {
 				const entry = row.original
 				const pnl = readTotalPnlUsd(entry)
+				const pnlPct = readTotalPnlPct(entry)
 				return (
 					<p className={cn(pnlColorClass(pnl))}>
 						{formatNumber(pnl, { currency: true, compact: true })}
-						{entry.realized_pnl_pct != null ? (
+						{pnlPct != null ? (
 							<span className="text-muted-foreground">
 								{" "}
-								({formatNumber(entry.realized_pnl_pct, { percent: true })})
+								({formatNumber(pnlPct, { percent: true })})
 							</span>
 						) : null}
 					</p>
@@ -442,7 +443,7 @@ export default function TraderPositions({
 
 	const hasUnknownMarkets = currentPage.data.some((entry) => !entry.question)
 
-	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection, nextCategory: PolymarketCategory | undefined = currentCategory) => {
+	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection, nextCategory: PolymarketCategory | undefined) => {
 		startTransition(async () => {
 			if (ranked) {
 				void setSearchParams(
@@ -508,24 +509,24 @@ export default function TraderPositions({
 				category: nextCategory,
 			})
 		})
-	}, [address, category, currentCategory, page, pageNumber, ranked, setSearchParams, sortBy, sortDirection, startTransition, status])
+	}, [address, category, page, pageNumber, ranked, setSearchParams, sortBy, sortDirection, startTransition, status])
 
 	const handleSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		const nextSortDirection: TraderSortDirection =
 			nextSortBy === currentSortBy && currentSortDirection === "desc" ? "asc" : "desc"
 
-		loadPage(1, nextSortBy, nextSortDirection)
-	}, [currentSortBy, currentSortDirection, loadPage])
+		loadPage(1, nextSortBy, nextSortDirection, currentCategory)
+	}, [currentCategory, currentSortBy, currentSortDirection, loadPage])
 
 	const handleSelectSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		if (nextSortBy === currentSortBy) return
-		loadPage(1, nextSortBy, "desc")
-	}, [currentSortBy, loadPage])
+		loadPage(1, nextSortBy, "desc", currentCategory)
+	}, [currentCategory, currentSortBy, loadPage])
 
 	const handleDirectionToggle = useCallback(() => {
 		const nextDirection: TraderSortDirection = currentSortDirection === "desc" ? "asc" : "desc"
-		loadPage(1, currentSortBy, nextDirection)
-	}, [currentSortBy, currentSortDirection, loadPage])
+		loadPage(1, currentSortBy, nextDirection, currentCategory)
+	}, [currentCategory, currentSortBy, currentSortDirection, loadPage])
 
 	const handleCategoryChange = useCallback((value: string | null) => {
 		const nextCategory = !value || value === ALL_CATEGORIES_VALUE
@@ -668,7 +669,7 @@ export default function TraderPositions({
 					return
 				}
 
-				loadPage(nextPageNumber, currentSortBy, currentSortDirection)
+				loadPage(nextPageNumber, currentSortBy, currentSortDirection, currentCategory)
 			}}
 		/>
 	)

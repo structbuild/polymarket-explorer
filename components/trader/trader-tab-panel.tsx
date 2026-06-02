@@ -1,7 +1,9 @@
 import type { PolymarketCategory } from "@structbuild/sdk"
 
 import type {
+	TraderCategorySortBy,
 	TraderExitMode,
+	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
@@ -43,12 +45,16 @@ type TraderTabPanelData =
 			kind: "categories"
 			address: string
 			pageNumber: number
+			sortBy: TraderCategorySortBy
+			sortDirection: TraderSortDirection
 			page: Awaited<ReturnType<typeof getTraderCategoriesPage>>
 	  }
 	| {
 			kind: "markets"
 			address: string
 			pageNumber: number
+			sortBy: TraderMarketSortBy
+			sortDirection: TraderSortDirection
 			page: Awaited<ReturnType<typeof getTraderMarketsPage>>
 	  }
 	| {
@@ -73,6 +79,10 @@ type LoadTraderTabPanelDataProps = {
 	openSortDirection: TraderSortDirection
 	closedSortBy: TraderPositionSortBy
 	closedSortDirection: TraderSortDirection
+	categoriesSortBy: TraderCategorySortBy
+	categoriesSortDirection: TraderSortDirection
+	marketsSortBy: TraderMarketSortBy
+	marketsSortDirection: TraderSortDirection
 	category?: PolymarketCategory
 }
 
@@ -90,6 +100,10 @@ export function loadTraderTabPanelData({
 	openSortDirection,
 	closedSortBy,
 	closedSortDirection,
+	categoriesSortBy,
+	categoriesSortDirection,
+	marketsSortBy,
+	marketsSortDirection,
 	category,
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
 	const pageSize = defaultTraderTablePageSize
@@ -145,20 +159,28 @@ export function loadTraderTabPanelData({
 			return getTraderCategoriesPage(address, {
 				limit: pageSize,
 				offset: (categoriesPage - 1) * pageSize,
+				sort_by: categoriesSortBy,
+				sort_direction: categoriesSortDirection,
 			}).then((page) => ({
 				kind: "categories" as const,
 				address,
 				pageNumber: categoriesPage,
+				sortBy: categoriesSortBy,
+				sortDirection: categoriesSortDirection,
 				page,
 			}))
 		case "markets":
 			return getTraderMarketsPage(address, {
 				limit: pageSize,
 				offset: (marketsPage - 1) * pageSize,
+				sort_by: marketsSortBy,
+				sort_direction: marketsSortDirection,
 			}).then((page) => ({
 				kind: "markets" as const,
 				address,
 				pageNumber: marketsPage,
+				sortBy: marketsSortBy,
+				sortDirection: marketsSortDirection,
 				page,
 			}))
 		case "active":

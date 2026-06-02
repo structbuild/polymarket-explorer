@@ -38,6 +38,59 @@ export const traderPositionSortByValues = [
 ] as const;
 export type TraderPositionSortBy = (typeof traderPositionSortByValues)[number];
 
+export const traderCategorySortByValues = [
+	"total_pnl_usd",
+	"realized_pnl_usd",
+	"unrealized_pnl_usd",
+	"total_volume_usd",
+	"buy_volume_usd",
+	"sell_volume_usd",
+	"redemption_volume_usd",
+	"merge_volume_usd",
+	"split_volume_usd",
+	"total_fees",
+	"total_shares_bought",
+	"markets_traded",
+	"markets_resolved",
+	"markets_won",
+	"markets_lost",
+	"market_win_rate_pct",
+	"avg_win_usd",
+	"avg_loss_usd",
+	"profit_factor",
+	"total_wins_usd",
+	"total_losses_usd",
+	"best_trade_pnl_usd",
+	"worst_trade_pnl_usd",
+	"avg_hold_time_seconds",
+	"outcomes_traded",
+	"first_trade_at",
+	"last_trade_at",
+] as const;
+export type TraderCategorySortBy = (typeof traderCategorySortByValues)[number];
+
+export const traderMarketSortByValues = [
+	"total_pnl_usd",
+	"realized_pnl_usd",
+	"unrealized_pnl_usd",
+	"total_volume_usd",
+	"buy_volume_usd",
+	"sell_volume_usd",
+	"redemption_volume_usd",
+	"merge_volume_usd",
+	"split_volume_usd",
+	"total_fees",
+	"total_shares_bought",
+	"total_shares_sold",
+	"outcomes_traded",
+	"first_trade_at",
+	"last_trade_at",
+] as const;
+export type TraderMarketSortBy = (typeof traderMarketSortByValues)[number];
+
+export const defaultTraderCategorySortBy: TraderCategorySortBy = "total_volume_usd";
+export const defaultTraderMarketSortBy: TraderMarketSortBy = "total_volume_usd";
+
 export const traderSortDirectionValues = ["asc", "desc"] as const;
 export type TraderSortDirection = (typeof traderSortDirectionValues)[number];
 

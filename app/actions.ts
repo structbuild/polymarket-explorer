@@ -74,10 +74,16 @@ import {
 	exitModeForTab,
 	rankedPositionSortBy,
 	rankedPositionSortDirection,
+	defaultTraderCategorySortBy,
+	defaultTraderMarketSortBy,
+	type TraderCategorySortBy,
 	type TraderExitMode,
+	type TraderMarketSortBy,
 	type TraderPositionSortBy,
 	type TraderSortDirection,
 	type TraderTab,
+	traderCategorySortByValues,
+	traderMarketSortByValues,
 	traderPositionSortByValues,
 	traderSortDirectionValues,
 	traderTabValues,
@@ -160,6 +166,20 @@ function parseTraderSortDirectionParam(params: URLSearchParams, key: string) {
 	return traderSortDirectionValues.includes(raw as TraderSortDirection)
 		? (raw as TraderSortDirection)
 		: "desc";
+}
+
+function parseTraderCategorySortByParam(params: URLSearchParams) {
+	const raw = params.get("categoriesSortBy");
+	return traderCategorySortByValues.includes(raw as TraderCategorySortBy)
+		? (raw as TraderCategorySortBy)
+		: defaultTraderCategorySortBy;
+}
+
+function parseTraderMarketSortByParam(params: URLSearchParams) {
+	const raw = params.get("marketsSortBy");
+	return traderMarketSortByValues.includes(raw as TraderMarketSortBy)
+		? (raw as TraderMarketSortBy)
+		: defaultTraderMarketSortBy;
 }
 
 function parseTraderTab(value: TraderTab) {
@@ -335,30 +355,42 @@ export async function getTraderTabPageAction({
 
 	if (safeTab === "categories") {
 		const pageNumber = parseTraderPageSearchParam(params, "categoriesPage");
+		const sortBy = parseTraderCategorySortByParam(params);
+		const sortDirection = parseTraderSortDirectionParam(params, "categoriesSortDirection");
 		const page = await getTraderCategoriesPage(address, {
 			limit: defaultTraderTablePageSize,
 			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+			sort_by: sortBy,
+			sort_direction: sortDirection,
 		});
 
 		return {
 			kind: "categories" as const,
 			address,
 			pageNumber,
+			sortBy,
+			sortDirection,
 			page,
 		};
 	}
 
 	if (safeTab === "markets") {
 		const pageNumber = parseTraderPageSearchParam(params, "marketsPage");
+		const sortBy = parseTraderMarketSortByParam(params);
+		const sortDirection = parseTraderSortDirectionParam(params, "marketsSortDirection");
 		const page = await getTraderMarketsPage(address, {
 			limit: defaultTraderTablePageSize,
 			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+			sort_by: sortBy,
+			sort_direction: sortDirection,
 		});
 
 		return {
 			kind: "markets" as const,
 			address,
 			pageNumber,
+			sortBy,
+			sortDirection,
 			page,
 		};
 	}
@@ -411,14 +443,20 @@ export async function getTraderActivityPageAction({
 export async function getTraderCategoriesPageAction({
 	address,
 	pageNumber,
+	sortBy,
+	sortDirection,
 }: {
 	address: string;
 	pageNumber: number;
+	sortBy: TraderCategorySortBy;
+	sortDirection: TraderSortDirection;
 }) {
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
 	const page = await getTraderCategoriesPage(address, {
 		limit: defaultTraderTablePageSize,
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_by: sortBy,
+		sort_direction: sortDirection,
 	});
 
 	return { page, pageNumber: safePageNumber };
@@ -427,14 +465,20 @@ export async function getTraderCategoriesPageAction({
 export async function getTraderMarketsPageAction({
 	address,
 	pageNumber,
+	sortBy,
+	sortDirection,
 }: {
 	address: string;
 	pageNumber: number;
+	sortBy: TraderMarketSortBy;
+	sortDirection: TraderSortDirection;
 }) {
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
 	const page = await getTraderMarketsPage(address, {
 		limit: defaultTraderTablePageSize,
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_by: sortBy,
+		sort_direction: sortDirection,
 	});
 
 	return { page, pageNumber: safePageNumber };

@@ -301,7 +301,7 @@ function buildColumns(
 			},
 		},
 		numericColumn({ id: "realizedPnl", title: "Realized PnL", field: "realized_pnl_usd", sortKey: "realized_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.pnl, format: numericFormat.currency, colorizePnl: true }, sortCtx),
-		numericColumn({ id: "unrealizedPnl", title: "Unrealized PnL", field: "unrealized_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.pnl, format: numericFormat.currency, colorizePnl: true }, sortCtx),
+		numericColumn({ id: "unrealizedPnl", title: "Unrealized PnL", field: "unrealized_pnl_usd", sortKey: "unrealized_pnl_usd", size: TRADER_TABLE_COLUMN_SIZES.pnl, format: numericFormat.currency, colorizePnl: true }, sortCtx),
 		numericColumn({ id: "usdBalance", title: "USD Balance", field: "usd_balance", sortKey: "usd_balance", size: 128, format: numericFormat.currency }, sortCtx),
 		{
 			id: "openPositions",

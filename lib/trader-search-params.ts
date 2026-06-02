@@ -2,10 +2,14 @@ import { createParser, parseAsBoolean, parseAsStringLiteral, type inferParserTyp
 
 import { POLYMARKET_CATEGORIES } from "./tag-category";
 import {
+	defaultTraderCategorySortBy,
+	defaultTraderMarketSortBy,
 	defaultTraderPositionSortBy,
 	pnlAnchorValues,
 	pnlTimeframeValues,
 	positivePageParserDef,
+	traderCategorySortByValues,
+	traderMarketSortByValues,
 	traderPositionSortByValues,
 	traderSortDirectionValues,
 	traderTabValues,
@@ -34,6 +38,10 @@ export const traderSearchParamParsers = {
 	openSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
 	closedSortBy: parseAsStringLiteral(traderPositionSortByValues).withDefault(defaultTraderPositionSortBy.closed),
 	closedSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
+	categoriesSortBy: parseAsStringLiteral(traderCategorySortByValues).withDefault(defaultTraderCategorySortBy),
+	categoriesSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
+	marketsSortBy: parseAsStringLiteral(traderMarketSortByValues).withDefault(defaultTraderMarketSortBy),
+	marketsSortDirection: parseAsStringLiteral(traderSortDirectionValues).withDefault("desc"),
 	positionsCategory: parseAsStringLiteral(POLYMARKET_CATEGORIES),
 	pnlTimeframe: pnlTimeframeParser,
 	pnlAnchor: pnlAnchorParser,
