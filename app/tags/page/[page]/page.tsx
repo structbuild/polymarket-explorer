@@ -56,7 +56,6 @@ async function TagPaginatedPageContent({
 	const resolved = await searchParams;
 	const sort = parseTagSort(resolved.sort);
 	const timeframe = parseTagTimeframe(resolved.timeframe);
-	const query = typeof resolved.q === "string" ? resolved.q : undefined;
 
-	return <TagGridPage page={page} sort={sort} timeframe={timeframe} query={query} />;
+	return <TagGridPage page={page} sort={sort} timeframe={timeframe} />;
 }

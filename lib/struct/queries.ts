@@ -348,7 +348,7 @@ export async function getTraderTradesPage(
 	return fetchTraderTradesPage(normalizedAddress, options);
 }
 
-export async function getRewardsMarkets(): Promise<MarketResponse[]> {
+export async function getRewardsMarkets(limit: number = 100): Promise<MarketResponse[]> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -359,7 +359,7 @@ export async function getRewardsMarkets(): Promise<MarketResponse[]> {
 		const response = await client.markets.getMarkets({
 			has_rewards: true,
 			status: "open",
-			limit: 100,
+			limit,
 		});
 		return response.data
 			.filter(

@@ -16,6 +16,7 @@ export const maxDuration = 60;
 // Per-shard caps keep each sitemap file well under the 50k URL limit; bump or shard further when datasets grow.
 const MARKET_CAP = 5000;
 const EVENT_CAP = 5000;
+const TAG_CAP = 5000;
 const TRADER_CAP = 500;
 
 const STATIC_SHARD = "0";
@@ -66,7 +67,7 @@ export async function GET(
 async function buildStaticAndTagsShard(
 	siteUrl: string,
 ): Promise<SitemapEntry[]> {
-	const [tags, builderCodes] = await Promise.all([getAllTags(), getAllBuilderCodes()]);
+	const [tags, builderCodes] = await Promise.all([getAllTags(undefined, undefined, TAG_CAP), getAllBuilderCodes()]);
 	const tagsWithSlug = tags.filter((tag) => tag.slug);
 	const tagPageCount = getPageCount(tagsWithSlug.length, TAGS_PAGE_SIZE);
 

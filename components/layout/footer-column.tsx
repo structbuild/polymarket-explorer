@@ -1,27 +1,16 @@
-import Link from "next/link";
 import type { Route } from "next";
+import Link from "next/link";
 
 type FooterColumnProps = {
 	title: string;
-	viewAllHref?: Route;
-	viewAllLabel?: string;
 	children: React.ReactNode;
 };
 
-export function FooterColumn({ title, viewAllHref, viewAllLabel = "View all", children }: FooterColumnProps) {
+export function FooterColumn({ title, children }: FooterColumnProps) {
 	return (
 		<div className="flex min-w-0 flex-col">
 			<span className="font-medium">{title}</span>
 			<ul className="mt-4 space-y-3">{children}</ul>
-			{viewAllHref && (
-				<Link
-					href={viewAllHref}
-					prefetch={false}
-					className="mt-4 text-sm text-muted-foreground/80 transition-colors duration-150 hover:text-primary"
-				>
-					{viewAllLabel} →
-				</Link>
-			)}
 		</div>
 	);
 }
@@ -47,18 +36,5 @@ export function FooterColumnLink({ href, external, children, title }: FooterColu
 				{children}
 			</Link>
 		</li>
-	);
-}
-
-export function FooterColumnFallback({ title, rowCount = 5 }: { title: string; rowCount?: number }) {
-	return (
-		<div className="flex min-w-0 flex-col">
-			<span className="font-medium">{title}</span>
-			<ul className="mt-4 space-y-3">
-				{Array.from({ length: rowCount }, (_, i) => (
-					<li key={i} className="h-4 w-3/4 animate-pulse rounded bg-muted/60" />
-				))}
-			</ul>
-		</div>
 	);
 }

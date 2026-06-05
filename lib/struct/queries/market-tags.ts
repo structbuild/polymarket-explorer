@@ -28,7 +28,12 @@ function hasTagSlug(tag: Tag): tag is Tag & { slug: string } {
 export async function getAllTags(
 	sort?: TagSortBy,
 	timeframe?: TagSortTimeframe,
+	maxCount?: number,
 ): Promise<Tag[]> {
+	if (maxCount !== undefined && maxCount <= 0) {
+		return [];
+	}
+
 	const client = getStructClient();
 
 	if (!client) {
@@ -58,6 +63,10 @@ export async function getAllTags(
 			});
 			results.push(...response.data);
 			requestCount += 1;
+
+			if (maxCount !== undefined && results.length >= maxCount) {
+				return results.slice(0, maxCount);
+			}
 
 			if (response.data.length < batchSize) break;
 
@@ -168,19 +177,6 @@ export async function getTagPageCount(
 
 	return Math.max(1, low - 1);
 }
-
-export const searchTags = cache(
-	async (
-		query: string,
-		sort?: TagSortBy,
-		timeframe?: TagSortTimeframe,
-	): Promise<Tag[]> => {
-		const q = query.trim().toLowerCase();
-		if (!q) return [];
-		const tags = (await getAllTags(sort, timeframe)).filter(hasTagSlug);
-		return tags.filter((tag) => tag.label.toLowerCase().includes(q));
-	},
-);
 
 export async function getTagCount(): Promise<number> {
 	const client = getStructClient();

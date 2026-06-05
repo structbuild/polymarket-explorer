@@ -1,130 +1,110 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { connection } from "next/server";
-import { Suspense } from "react";
 
 import {
 	FooterColumn,
-	FooterColumnFallback,
 	FooterColumnLink,
 } from "@/components/layout/footer-column";
-import { getFooterData } from "@/components/layout/footer-data";
 import { FooterStructCta } from "@/components/layout/footer-struct-column";
 import { FooterThemeToggle } from "@/components/layout/footer-theme-toggle";
 import { Github } from "@/components/ui/svgs/github";
 import { StructLogo } from "@/components/ui/svgs/struct-logo";
-import { formatCapitalizeWords } from "@/lib/format";
-import { normalizeWalletAddress, truncateAddress } from "@/lib/utils";
 import { XLogoIcon } from "../ui/svgs/xtwitter";
 
 export default function Footer() {
 	return (
 		<footer className="relative z-10 m-1 mt-12 rounded-3xl border bg-muted/20">
-			<div className="mx-auto w-full max-w-7xl space-y-12 px-5 py-12 sm:space-y-16 sm:px-8 sm:py-16">
-				<div className="flex flex-wrap items-center justify-between gap-4 border-b pb-8">
-					<Link
-						href="/"
-						prefetch={false}
-						aria-label="Struct Polymarket Explorer home"
-						className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-80"
-					>
-						<StructLogo className="h-5 text-foreground" />
-						<span className="text-sm text-muted-foreground">Polymarket Explorer</span>
-					</Link>
-					<div className="flex items-center gap-5">
-						<FooterThemeToggle />
+			<div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
+				<FooterStructCta />
+
+				<div className="mt-12 grid gap-10 sm:mt-16 lg:grid-cols-[1fr_1.85fr] lg:gap-16">
+					<div className="flex flex-col gap-5">
 						<Link
-							href="https://x.com/structbuild"
+							href="/"
 							prefetch={false}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="Struct on X"
-							className="block text-muted-foreground transition-colors hover:text-primary"
+							aria-label="Struct Polymarket Explorer home"
+							className="inline-flex w-fit items-center gap-2.5 transition-opacity hover:opacity-80"
 						>
-							<XLogoIcon className="size-4.5" />
+							<StructLogo className="h-5 text-foreground" />
+							<span className="text-sm text-muted-foreground">Polymarket Explorer</span>
 						</Link>
-						<Link
-							href="https://github.com/structbuild/polymarket-explorer"
-							prefetch={false}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="GitHub repository"
-							className="block text-muted-foreground transition-colors hover:text-primary"
-						>
-							<Github className="size-5" />
-						</Link>
+						<p className="max-w-xs text-sm text-muted-foreground">
+							An open explorer for Polymarket markets, traders, and on-chain activity — powered by the Struct data
+							API.
+						</p>
+						<div className="flex items-center gap-2">
+							<Link
+								href="https://x.com/structbuild"
+								prefetch={false}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label="Struct on X"
+								className="inline-flex size-9 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-muted hover:text-primary"
+							>
+								<XLogoIcon className="size-4" />
+							</Link>
+							<Link
+								href="https://github.com/structbuild/polymarket-explorer"
+								prefetch={false}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label="GitHub repository"
+								className="inline-flex size-9 items-center justify-center rounded-lg border text-muted-foreground transition-colors hover:border-foreground/20 hover:bg-muted hover:text-primary"
+							>
+								<Github className="size-4.5" />
+							</Link>
+						</div>
 					</div>
+
+					<FooterColumns />
 				</div>
 
-				<Suspense fallback={<FooterColumnsFallback />}>
-					<FooterColumns />
-				</Suspense>
-
-				<FooterStructCta />
+				<div className="mt-12 flex flex-col gap-4 border-t pt-8 sm:mt-16 sm:flex-row sm:items-center sm:justify-between">
+					<p className="text-xs text-muted-foreground">
+						Built by Struct. Not affiliated with Polymarket.
+					</p>
+					<FooterThemeToggle />
+				</div>
 			</div>
 		</footer>
 	);
 }
 
-async function FooterColumns() {
-	await connection();
-	const { topMarkets, topTags, topTraders, rewardsMarkets } = await getFooterData();
-
+function FooterColumns() {
 	return (
-		<div className="grid grid-cols-2 gap-8 sm:grid-cols-[1.4fr_0.6fr_0.6fr_1.4fr]">
-			<FooterColumn title="Top Markets" viewAllHref={"/markets" as Route}>
-				{topMarkets.map((market) => (
-					<FooterColumnLink
-						key={market.market_slug ?? market.condition_id}
-						href={market.market_slug ? (`/markets/${market.market_slug}` as Route) : "/markets"}
-						title={market.question ?? undefined}
-					>
-						{market.question ?? "Untitled market"}
-					</FooterColumnLink>
-				))}
+		<div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+			<FooterColumn title="Markets">
+				<FooterColumnLink href={"/markets" as Route}>All markets</FooterColumnLink>
+				<FooterColumnLink href={"/events" as Route}>Events</FooterColumnLink>
+				<FooterColumnLink href={"/rewards" as Route}>Rewards markets</FooterColumnLink>
+				<FooterColumnLink href={"/analytics" as Route}>Market analytics</FooterColumnLink>
 			</FooterColumn>
-			<FooterColumn title="Top Categories" viewAllHref={"/tags" as Route}>
-				{topTags.map((tag) => (
-					<FooterColumnLink key={tag.slug} href={`/tags/${tag.slug}` as Route} title={tag.label}>
-						{formatCapitalizeWords(tag.label)}
-					</FooterColumnLink>
-				))}
+			<FooterColumn title="Categories">
+				<FooterColumnLink href={"/tags" as Route}>All categories</FooterColumnLink>
+				<FooterColumnLink href={"/tags/politics" as Route}>Politics</FooterColumnLink>
+				<FooterColumnLink href={"/tags/crypto" as Route}>Crypto</FooterColumnLink>
+				<FooterColumnLink href={"/tags/sports" as Route}>Sports</FooterColumnLink>
 			</FooterColumn>
-			<FooterColumn title="Top Traders" viewAllHref={"/traders" as Route}>
-				{topTraders.map((entry) => {
-					const address = normalizeWalletAddress(entry.trader.address) ?? entry.trader.address;
-					const name = entry.trader.name?.trim();
-					const isAddressLike = name ? /^0x[0-9a-fA-F]{40}\b/.test(name) : false;
-					const displayName = name && !isAddressLike ? name : truncateAddress(entry.trader.address);
-					return (
-						<FooterColumnLink key={entry.trader.address} href={`/traders/${address}` as Route} title={displayName}>
-							{displayName}
-						</FooterColumnLink>
-					);
-				})}
+			<FooterColumn title="Explore">
+				<FooterColumnLink href={"/traders" as Route}>Traders</FooterColumnLink>
+				<FooterColumnLink href={"/builders" as Route}>Builders</FooterColumnLink>
+				<FooterColumnLink href={"/leaderboard" as Route}>Leaderboard</FooterColumnLink>
+				<FooterColumnLink href={"/analytics" as Route}>Analytics</FooterColumnLink>
 			</FooterColumn>
-			<FooterColumn title="Rewards Markets" viewAllHref={"/rewards" as Route}>
-				{rewardsMarkets.map((market) => (
-					<FooterColumnLink
-						key={market.market_slug ?? market.condition_id}
-						href={market.market_slug ? (`/markets/${market.market_slug}` as Route) : "/rewards"}
-						title={market.question ?? undefined}
-					>
-						{market.question ?? "Untitled market"}
-					</FooterColumnLink>
-				))}
+			<FooterColumn title="Developer">
+				<FooterColumnLink href="https://www.struct.to/rest-api" external>
+					REST API
+				</FooterColumnLink>
+				<FooterColumnLink href="https://docs.struct.to/" external>
+					Documentation
+				</FooterColumnLink>
+				<FooterColumnLink href="https://github.com/structbuild/polymarket-explorer" external>
+					GitHub
+				</FooterColumnLink>
+				<FooterColumnLink href="https://x.com/structbuild" external>
+					Updates
+				</FooterColumnLink>
 			</FooterColumn>
-		</div>
-	);
-}
-
-function FooterColumnsFallback() {
-	return (
-		<div className="grid grid-cols-2 gap-8 sm:grid-cols-[1.4fr_0.6fr_0.6fr_1.4fr]">
-			<FooterColumnFallback title="Top Markets" />
-			<FooterColumnFallback title="Top Categories" />
-			<FooterColumnFallback title="Top Traders" />
-			<FooterColumnFallback title="Rewards Markets" />
 		</div>
 	);
 }

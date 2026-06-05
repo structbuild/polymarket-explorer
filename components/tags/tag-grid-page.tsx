@@ -5,7 +5,6 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { RoutePaginationNav } from "@/components/seo/route-pagination-nav";
 import { SortableTagsTable } from "@/components/tags/sortable-tags-table";
-import { TagSearchInput } from "@/components/tags/tag-search-input";
 import { getSiteUrl } from "@/lib/env";
 import { TAGS_PAGE_SIZE } from "@/lib/pagination";
 import { SITE_NAME } from "@/lib/site-metadata";
@@ -13,47 +12,35 @@ import { DEFAULT_TAG_SORT, DEFAULT_TAG_TIMEFRAME } from "@/lib/struct/tag-shared
 import {
 	getTagsPaginated,
 	getTagPageCount,
-	searchTags,
 } from "@/lib/struct/market-queries";
 
 type TagGridPageProps = {
 	page: number;
 	sort?: TagSortBy;
 	timeframe?: TagSortTimeframe;
-	query?: string;
 };
 
 export async function TagGridPage({
 	page,
 	sort,
 	timeframe,
-	query,
 }: TagGridPageProps) {
 	const effectiveSort = sort ?? DEFAULT_TAG_SORT;
 	const effectiveTimeframe = timeframe ?? DEFAULT_TAG_TIMEFRAME;
-	const trimmedQuery = query?.trim() ?? "";
-	const isSearching = trimmedQuery.length > 0;
 
-	const tags = isSearching
-		? await searchTags(trimmedQuery, effectiveSort, effectiveTimeframe)
-		: null;
-	const paginated = isSearching
-		? null
-		: await getTagsPaginated(
-				TAGS_PAGE_SIZE,
-				(page - 1) * TAGS_PAGE_SIZE,
-				effectiveSort,
-				effectiveTimeframe,
-			);
-	const totalPages = isSearching
-		? 1
-		: await getTagPageCount(TAGS_PAGE_SIZE, effectiveSort, effectiveTimeframe);
+	const paginated = await getTagsPaginated(
+		TAGS_PAGE_SIZE,
+		(page - 1) * TAGS_PAGE_SIZE,
+		effectiveSort,
+		effectiveTimeframe,
+	);
+	const totalPages = await getTagPageCount(TAGS_PAGE_SIZE, effectiveSort, effectiveTimeframe);
 
-	if (!isSearching && page > totalPages && page !== 1) {
+	if (page > totalPages && page !== 1) {
 		notFound();
 	}
 
-	const displayTags = isSearching ? tags! : paginated!.data.filter((tag) => tag.slug);
+	const displayTags = paginated.data.filter((tag) => tag.slug);
 
 	const breadcrumbs = [
 		{ label: "Home", href: "/" },
@@ -63,7 +50,7 @@ export async function TagGridPage({
 
 	const siteUrl = getSiteUrl();
 	const canonicalPath = page > 1 ? `/tags/page/${page}` : "/tags";
-	const positionOffset = isSearching ? 0 : (page - 1) * TAGS_PAGE_SIZE;
+	const positionOffset = (page - 1) * TAGS_PAGE_SIZE;
 	const pageSuffix = page > 1 ? ` — Page ${page}` : "";
 
 	const jsonLd: Record<string, unknown> = {
@@ -109,18 +96,15 @@ export async function TagGridPage({
 							</p>
 						</div>
 					}
-					toolbarRight={<TagSearchInput query={trimmedQuery} />}
 				/>
 			</div>
 
-			{isSearching ? null : (
-				<RoutePaginationNav
-					basePath="/tags"
-					currentPage={page}
-					totalPages={totalPages}
-					searchParams={paginationParams}
-				/>
-			)}
+			<RoutePaginationNav
+				basePath="/tags"
+				currentPage={page}
+				totalPages={totalPages}
+				searchParams={paginationParams}
+			/>
 		</div>
 	);
 }
