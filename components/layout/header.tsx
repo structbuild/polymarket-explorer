@@ -9,7 +9,7 @@ import { StructLogoMark } from "../ui/svgs/struct-logo";
 
 export function Header() {
 	return (
-		<header className="relative z-10">
+		<header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
 			<div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
 				<div className="flex min-w-0 items-center gap-2 sm:gap-4">
 					<Link href="/" title="Struct Polymarket Explorer" className="flex min-w-0 items-center gap-1.5 transition-opacity hover:opacity-80">
