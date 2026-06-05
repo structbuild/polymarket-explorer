@@ -1,5 +1,6 @@
 "use client"
 
+import type { ComponentProps } from "react"
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -70,6 +71,36 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
   )
 }
 
+const tabTeaserVariants = cva(
+  "ml-1 text-base tracking-normal tabular-nums transition-colors",
+  {
+    variants: {
+      tone: {
+        muted: "text-muted-foreground/80",
+        positive: "text-emerald-500",
+        negative: "text-red-500",
+      },
+    },
+    defaultVariants: {
+      tone: "muted",
+    },
+  }
+)
+
+function TabTeaser({
+  className,
+  tone,
+  ...props
+}: ComponentProps<"span"> & VariantProps<typeof tabTeaserVariants>) {
+  return (
+    <span
+      data-slot="tab-teaser"
+      className={cn(tabTeaserVariants({ tone }), className)}
+      {...props}
+    />
+  )
+}
+
 function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
@@ -80,4 +111,4 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export { Tabs, TabsList, TabsTrigger, TabsContent, TabTeaser, tabsListVariants }

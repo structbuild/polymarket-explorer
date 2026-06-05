@@ -11,10 +11,12 @@ import { MarketPriceSpikesTable } from "@/components/market/market-price-spikes-
 import { MarketTabs } from "@/components/market/market-tabs";
 import { MarketTopTradersClient } from "@/components/market/market-top-traders-client";
 import { MarketTradesTable } from "@/components/market/market-trades-table";
+import { TabTeaser } from "@/components/ui/tabs";
 import {
 	defaultMarketDetailTab,
 	type MarketDetailTab,
 } from "@/lib/market-detail-search-params-shared";
+import { formatNumber } from "@/lib/format";
 
 type MarketTabPanelData = Awaited<ReturnType<typeof getMarketTabPageAction>>;
 
@@ -88,8 +90,10 @@ function renderPanelData(data: MarketTabPanelData, marketTabsToolbar?: ReactNode
 
 export function MarketTabPanelClient({
 	initialData,
+	totalHolders,
 }: {
 	initialData: MarketTabPanelData;
+	totalHolders?: number | null;
 }) {
 	const [isPending, startTransition] = useTransition();
 	const requestIdRef = useRef(0);
@@ -99,6 +103,11 @@ export function MarketTabPanelClient({
 	}));
 	const currentData = panelState.sourceData === initialData ? panelState.data : initialData;
 	const currentTab = tabForPanelData(currentData);
+
+	const tabTeasers =
+		totalHolders && totalHolders > 0
+			? { holders: <TabTeaser>{formatNumber(totalHolders, { compact: true })}</TabTeaser> }
+			: undefined;
 
 	const handleTabChange = useCallback((nextTab: MarketDetailTab) => {
 		if (nextTab === currentTab) {
@@ -135,6 +144,7 @@ export function MarketTabPanelClient({
 						onValueChange={handleTabChange}
 						pending={isPending}
 						omitTopSpacing
+						teasers={tabTeasers}
 					/>
 				))
 			) : (
@@ -143,6 +153,7 @@ export function MarketTabPanelClient({
 						value={currentTab}
 						onValueChange={handleTabChange}
 						pending={isPending}
+						teasers={tabTeasers}
 					/>
 					{renderPanelData(currentData)}
 				</>

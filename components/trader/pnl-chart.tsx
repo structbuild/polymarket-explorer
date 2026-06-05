@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { PnlChartAnnotation, PnlChartExit, PnlDataPoint } from "@/lib/struct/pnl"
 import { formatDateCompact, formatDateFull, formatDateTimeFull, pnlColorClass } from "@/lib/format"
@@ -55,13 +56,13 @@ export type PnlChartOhlcMetric = "pnl" | "realized" | "unrealized" | "portfolio"
 export type PnlChartMetric = PnlChartOhlcMetric | "usdBalance" | "openPositions"
 
 const chartMetricOptions = [
-	{ value: "pnl", label: "PnL" },
-	{ value: "realized", label: "Realized PnL" },
-	{ value: "unrealized", label: "Unrealized PnL" },
-	{ value: "portfolio", label: "Portfolio Value" },
-	{ value: "usdBalance", label: "USD Balance" },
-	{ value: "openPositions", label: "Open Positions" },
-] satisfies Array<{ value: PnlChartMetric; label: string }>
+	{ value: "pnl", label: "PnL", short: "PnL" },
+	{ value: "realized", label: "Realized PnL", short: "Realized" },
+	{ value: "unrealized", label: "Unrealized PnL", short: "Unrealized" },
+	{ value: "portfolio", label: "Portfolio Value", short: "Portfolio" },
+	{ value: "usdBalance", label: "USD Balance", short: "Balance" },
+	{ value: "openPositions", label: "Open Positions", short: "Positions" },
+] satisfies Array<{ value: PnlChartMetric; label: string; short: string }>
 
 const annotationConfig = {
 	best: {
@@ -154,6 +155,18 @@ const EXIT_BUBBLE_SIZE = 30
 
 function exitCloseLabel(reason: PnlChartExit["reason"]): string {
 	return reason === "resolved_win" || reason === "resolved_loss" ? "Resolved" : "Sold"
+}
+
+const EXIT_SIGNIFICANCE_RATIO = 0.02
+
+function filterSignificantExits(exits: PnlChartExit[]): PnlChartExit[] {
+	if (exits.length === 0) return exits
+
+	const maxAbs = exits.reduce((max, exit) => Math.max(max, Math.abs(exit.pnlUsd)), 0)
+	if (maxAbs === 0) return exits
+
+	const threshold = maxAbs * EXIT_SIGNIFICANCE_RATIO
+	return exits.filter((exit) => Math.abs(exit.pnlUsd) >= threshold)
 }
 
 type ExitDot = {
@@ -263,6 +276,17 @@ const EXIT_BUBBLE_HIT_SIZE = 48
 const EXIT_STACK_PITCH = 26
 const EXIT_CLUSTER_THRESHOLD = EXIT_BUBBLE_SIZE
 const EXIT_STACK_MAX_VISIBLE = 5
+const EXIT_BUBBLE_MARGIN = EXIT_BUBBLE_SIZE / 2
+const EXIT_BUBBLE_EDGE_PADDING = 8
+const EXIT_PLOT_INSET_RIGHT = 60
+const EXIT_PLOT_INSET_BOTTOM = 28
+
+type ChartBounds = {
+	left: number
+	right: number
+	top: number
+	bottom: number
+}
 
 type ExitPosition = {
 	exit: PnlChartExit
@@ -274,7 +298,7 @@ type StackedBubble =
 	| { type: "exit"; exit: PnlChartExit; cx: number; cy: number }
 	| { type: "overflow"; count: number; tone: "win" | "loss" | "mixed"; cx: number; cy: number }
 
-function stackExitPositions(positions: ExitPosition[]): StackedBubble[] {
+function stackExitPositions(positions: ExitPosition[], bounds: ChartBounds | null): StackedBubble[] {
 	if (positions.length === 0) return []
 
 	const sorted = [...positions].sort((a, b) => a.cx - b.cx)
@@ -299,12 +323,26 @@ function stackExitPositions(positions: ExitPosition[]): StackedBubble[] {
 		const rows = kept.length + (overflowCount > 0 ? 1 : 0)
 		const offset = (rows - 1) / 2
 
+		const cx = bounds
+			? Math.min(Math.max(avgCx, bounds.left + EXIT_BUBBLE_MARGIN), bounds.right - EXIT_BUBBLE_MARGIN)
+			: avgCx
+
+		let shiftY = 0
+		if (bounds) {
+			const stackTop = avgCy - offset * EXIT_STACK_PITCH
+			const stackBottom = avgCy + (rows - 1 - offset) * EXIT_STACK_PITCH
+			const minAllowed = bounds.top + EXIT_BUBBLE_MARGIN + EXIT_BUBBLE_EDGE_PADDING
+			const maxAllowed = bounds.bottom - EXIT_BUBBLE_MARGIN - EXIT_BUBBLE_EDGE_PADDING
+			if (stackTop < minAllowed) shiftY = minAllowed - stackTop
+			else if (stackBottom > maxAllowed) shiftY = maxAllowed - stackBottom
+		}
+
 		kept.forEach((pos, index) => {
-			stacked.push({ type: "exit", exit: pos.exit, cx: avgCx, cy: avgCy + (index - offset) * EXIT_STACK_PITCH })
+			stacked.push({ type: "exit", exit: pos.exit, cx, cy: avgCy + (index - offset) * EXIT_STACK_PITCH + shiftY })
 		})
 
 		if (overflowCount > 0) {
-			stacked.push({ type: "overflow", count: overflowCount, tone, cx: avgCx, cy: avgCy + (kept.length - offset) * EXIT_STACK_PITCH })
+			stacked.push({ type: "overflow", count: overflowCount, tone, cx, cy: avgCy + (kept.length - offset) * EXIT_STACK_PITCH + shiftY })
 		}
 
 		cluster = []
@@ -427,7 +465,7 @@ function getChartMetricValue(point: PnlDataPoint, metric: PnlChartMetric) {
 	return point.p
 }
 
-function isOhlcMetric(metric: PnlChartMetric): metric is PnlChartOhlcMetric {
+export function isOhlcMetric(metric: PnlChartMetric): metric is PnlChartOhlcMetric {
 	return metric === "pnl" || metric === "realized" || metric === "unrealized" || metric === "portfolio"
 }
 
@@ -482,16 +520,72 @@ function toChartPoint(point: PnlDataPoint, metric: PnlChartMetric): PnlChartPoin
 	}
 }
 
+export type TooltipFieldKey =
+	| "open"
+	| "high"
+	| "low"
+	| "close"
+	| "change"
+	| "realized"
+	| "unrealized"
+	| "portfolio"
+	| "usdBalance"
+	| "openPositions"
+
+export const tooltipFieldOptions = [
+	{ key: "close", label: "Close" },
+	{ key: "change", label: "Change" },
+	{ key: "open", label: "Open" },
+	{ key: "high", label: "High" },
+	{ key: "low", label: "Low" },
+	{ key: "realized", label: "Realized PnL" },
+	{ key: "unrealized", label: "Unrealized PnL" },
+	{ key: "portfolio", label: "Portfolio value" },
+	{ key: "usdBalance", label: "USD balance" },
+	{ key: "openPositions", label: "Open positions" },
+] satisfies Array<{ key: TooltipFieldKey; label: string }>
+
+export const defaultTooltipFields: TooltipFieldKey[] = ["close", "change", "realized", "unrealized", "openPositions"]
+
+function getTooltipFieldValue(entry: PnlChartPoint, key: TooltipFieldKey): { value: number; valueClassName?: string; currency: boolean } {
+	switch (key) {
+		case "open":
+			return { value: entry.open, currency: true }
+		case "high":
+			return { value: entry.high, currency: true }
+		case "low":
+			return { value: entry.low, currency: true }
+		case "close":
+			return { value: entry.close, currency: true }
+		case "change": {
+			const change = entry.close - entry.open
+			return { value: change, valueClassName: pnlColorClass(change), currency: true }
+		}
+		case "realized":
+			return { value: entry.realizedClose, valueClassName: pnlColorClass(entry.realizedClose), currency: true }
+		case "unrealized":
+			return { value: entry.unrealizedClose, valueClassName: pnlColorClass(entry.unrealizedClose), currency: true }
+		case "portfolio":
+			return { value: entry.portfolioClose, currency: true }
+		case "usdBalance":
+			return { value: entry.usdBalance, currency: true }
+		case "openPositions":
+			return { value: entry.numOpenPositions, currency: false }
+	}
+}
+
 function PnlTooltipContent({
 	active,
 	payload,
 	showTime,
 	timezone,
+	fields = defaultTooltipFields,
 }: {
 	active?: boolean
 	payload?: Array<{ payload?: PnlChartPoint }>
 	showTime: boolean
 	timezone?: string
+	fields?: TooltipFieldKey[]
 }) {
 	const entry = payload?.[0]?.payload
 
@@ -499,25 +593,30 @@ function PnlTooltipContent({
 		return null
 	}
 
-	const change = entry.close - entry.open
+	const selected = new Set(fields)
+	const visibleFields = tooltipFieldOptions.filter((option) => selected.has(option.key))
 
 	return (
 		<div className="grid min-w-40 items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
 			<div className="font-medium">
 				{showTime ? formatDateTimeFull(entry.t, timezone) : formatDateFull(entry.t, timezone)}
 			</div>
-			<div className="grid gap-1.5">
-				<TooltipValue label="Open" value={entry.open} />
-				<TooltipValue label="High" value={entry.high} />
-				<TooltipValue label="Low" value={entry.low} />
-				<TooltipValue label="Close" value={entry.close} />
-				<TooltipValue label="Change" value={change} valueClassName={pnlColorClass(change)} />
-				<TooltipValue label="Realized PnL" value={entry.realizedClose} valueClassName={pnlColorClass(entry.realizedClose)} />
-				<TooltipValue label="Unrealized PnL" value={entry.unrealizedClose} valueClassName={pnlColorClass(entry.unrealizedClose)} />
-				<TooltipValue label="Portfolio value" value={entry.portfolioClose} />
-				<TooltipValue label="USD balance" value={entry.usdBalance} />
-				<TooltipValue label="Open positions" value={entry.numOpenPositions} currency={false} />
-			</div>
+			{visibleFields.length > 0 ? (
+				<div className="grid gap-1.5">
+					{visibleFields.map((option) => {
+						const { value, valueClassName, currency } = getTooltipFieldValue(entry, option.key)
+						return (
+							<TooltipValue
+								key={option.key}
+								label={option.label}
+								value={value}
+								valueClassName={valueClassName}
+								currency={currency}
+							/>
+						)
+					})}
+				</div>
+			) : null}
 		</div>
 	)
 }
@@ -570,11 +669,42 @@ export function ChartModeToggle({ value, onChange }: { value: PnlChartMode; onCh
 	)
 }
 
-export function ChartSettingsButton({
+export function PnlMetricTabs({
+	value,
+	onChange,
 	chartMode,
-	onChartModeChange,
-	chartMetric,
-	onChartMetricChange,
+}: {
+	value: PnlChartMetric
+	onChange: (value: PnlChartMetric) => void
+	chartMode: PnlChartMode
+}) {
+	return (
+		<Tabs
+			value={value}
+			onValueChange={(next) => {
+				if (typeof next === "string") onChange(next as PnlChartMetric)
+			}}
+			className="min-w-0 flex-1"
+		>
+			<TabsList variant="line" className="w-full justify-start gap-4 overflow-x-auto">
+				{chartMetricOptions.map((option) => (
+					<TabsTrigger
+						key={option.value}
+						value={option.value}
+						disabled={chartMode === "candles" && !isOhlcMetric(option.value)}
+						title={option.label}
+						className="flex-none px-0.5"
+					>
+						{option.short}
+					</TabsTrigger>
+				))}
+			</TabsList>
+		</Tabs>
+	)
+}
+
+export function ChartSettingsButton({
+	exitsDisabled = false,
 	highlightsAvailable = false,
 	highlightsActive = false,
 	onHighlightsChange,
@@ -586,11 +716,10 @@ export function ChartSettingsButton({
 	onLossExitsChange,
 	fillGapsActive = true,
 	onFillGapsChange,
+	tooltipFields = defaultTooltipFields,
+	onTooltipFieldChange,
 }: {
-	chartMode: PnlChartMode
-	onChartModeChange: (value: PnlChartMode) => void
-	chartMetric: PnlChartMetric
-	onChartMetricChange: (value: PnlChartMetric) => void
+	exitsDisabled?: boolean
 	highlightsAvailable?: boolean
 	highlightsActive?: boolean
 	onHighlightsChange?: (next: boolean) => void
@@ -602,14 +731,18 @@ export function ChartSettingsButton({
 	onLossExitsChange?: (next: boolean) => void
 	fillGapsActive?: boolean
 	onFillGapsChange?: (next: boolean) => void
+	tooltipFields?: TooltipFieldKey[]
+	onTooltipFieldChange?: (key: TooltipFieldKey, next: boolean) => void
 }) {
-	const exitsDisabled = chartMode !== "area" || chartMetric !== "pnl"
-	function handleChartModeChange(nextMode: PnlChartMode) {
-		onChartModeChange(nextMode)
-		if (nextMode === "candles" && !isOhlcMetric(chartMetric)) {
-			onChartMetricChange("pnl")
-		}
-	}
+	const hasOverlays =
+		(highlightsAvailable && onHighlightsChange) ||
+		(winExitsAvailable && onWinExitsChange) ||
+		(lossExitsAvailable && onLossExitsChange) ||
+		Boolean(onFillGapsChange)
+
+	if (!hasOverlays && !onTooltipFieldChange) return null
+
+	const activeTooltipFields = new Set(tooltipFields)
 
 	return (
 		<Popover>
@@ -620,38 +753,10 @@ export function ChartSettingsButton({
 					</Button>
 				}
 			/>
-			<PopoverContent align="end" className="w-52 p-2">
+			<PopoverContent align="end" className="max-h-[70vh] w-56 overflow-y-auto p-2">
 				<div className="grid gap-3">
-					<div className="grid gap-1.5">
-						<div className="px-1 text-xs text-muted-foreground">Chart type</div>
-						<ChartModeToggle value={chartMode} onChange={handleChartModeChange} />
-					</div>
-					<div className="grid gap-1">
-						<div className="px-1 text-xs text-muted-foreground">Metric</div>
-						{chartMetricOptions.map((option) => {
-							const isDisabled = chartMode === "candles" && !isOhlcMetric(option.value)
-
-							return (
-								<button
-									key={option.value}
-									type="button"
-									onClick={() => onChartMetricChange(option.value)}
-									disabled={isDisabled}
-									className={cn(
-										"rounded-sm px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50",
-										chartMetric === option.value ? "bg-muted text-foreground" : "text-muted-foreground"
-									)}
-								>
-									{option.label}
-								</button>
-							)
-						})}
-					</div>
-					{(highlightsAvailable && onHighlightsChange) ||
-					(winExitsAvailable && onWinExitsChange) ||
-					(lossExitsAvailable && onLossExitsChange) ||
-					onFillGapsChange ? (
-						<div className="grid gap-1.5 border-t pt-2">
+					{hasOverlays ? (
+						<div className="grid gap-1.5">
 							<div className="px-1 text-xs text-muted-foreground">Overlays</div>
 							{highlightsAvailable && onHighlightsChange ? (
 								<ToggleRow
@@ -685,6 +790,19 @@ export function ChartSettingsButton({
 									onChange={onFillGapsChange}
 								/>
 							) : null}
+						</div>
+					) : null}
+					{onTooltipFieldChange ? (
+						<div className={cn("grid gap-1.5", hasOverlays && "border-t pt-2")}>
+							<div className="px-1 text-xs text-muted-foreground">Tooltip fields</div>
+							{tooltipFieldOptions.map((option) => (
+								<ToggleRow
+									key={option.key}
+									label={option.label}
+									active={activeTooltipFields.has(option.key)}
+									onChange={(next) => onTooltipFieldChange(option.key, next)}
+								/>
+							))}
 						</div>
 					) : null}
 				</div>
@@ -842,12 +960,35 @@ type PnlChartProps = {
 	timezone?: string
 	showTooltipTime?: boolean
 	action?: ReactNode
+	toolbar?: ReactNode
 	chartMode?: PnlChartMode
 	chartMetric?: PnlChartMetric
+	tooltipFields?: TooltipFieldKey[]
 }
 
-export function PnlChartContent({ data, annotations = [], showAnnotations = false, exits = [], showWinExits = false, showLossExits = false, timeframe, timezone, showTooltipTime, action, chartMode = "area", chartMetric = "pnl" }: PnlChartProps) {
+export function PnlChartContent({ data, annotations = [], showAnnotations = false, exits = [], showWinExits = false, showLossExits = false, timeframe, timezone, showTooltipTime, action, toolbar, chartMode = "area", chartMetric = "pnl", tooltipFields = defaultTooltipFields }: PnlChartProps) {
 	const [exitPositions, setExitPositions] = useState<ExitPosition[]>([])
+	const [exitBounds, setExitBounds] = useState<ChartBounds | null>(null)
+	const chartAreaRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		const element = chartAreaRef.current
+		if (!element || typeof ResizeObserver === "undefined") return
+
+		const measure = () => {
+			setExitBounds({
+				left: 0,
+				right: element.clientWidth - EXIT_PLOT_INSET_RIGHT,
+				top: 0,
+				bottom: element.clientHeight - EXIT_PLOT_INSET_BOTTOM,
+			})
+		}
+
+		measure()
+		const observer = new ResizeObserver(measure)
+		observer.observe(element)
+		return () => observer.disconnect()
+	}, [])
 
 	if (data.length === 0) {
 		return (
@@ -879,7 +1020,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 	const visibleAnnotations = chartMode === "area" && chartMetric === "pnl" && showAnnotations ? annotations : []
 	const exitsEligible = chartMode === "area" && chartMetric === "pnl"
 	const visibleExits = exitsEligible
-		? exits.filter((exit) => (exit.pnlUsd >= 0 ? showWinExits : showLossExits))
+		? filterSignificantExits(exits.filter((exit) => (exit.pnlUsd >= 0 ? showWinExits : showLossExits)))
 		: []
 	const exitDots = snapExitsToChart(visibleExits, chartData)
 	const shouldShowTooltipTime = showTooltipTime ?? timeframe !== undefined
@@ -888,7 +1029,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 
 	return (
 		<div className="overflow-hidden">
-			<div className="mb-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end">
+			<div className={cn("flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between group-data-[share-mode=image]/share-card:mb-6 group-data-[share-mode=image]/share-card:items-end", toolbar ? "mb-5" : "mb-8")}>
 				<div className="grid w-full grid-cols-3 gap-3 sm:w-auto sm:shrink-0 sm:gap-5">
 					<PnlSummaryMetric
 						label="Cumulative PnL"
@@ -926,6 +1067,14 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 					) : null}
 				</div>
 			</div>
+			{toolbar ? (
+				<div
+					className="mb-6 flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 group-data-[share-mode=image]/share-card:hidden"
+					data-share-ignore="true"
+				>
+					{toolbar}
+				</div>
+			) : null}
 			{hasAnnotations ? (
 				<div
 					aria-hidden={!showAnnotations}
@@ -948,7 +1097,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 					</div>
 				</div>
 			) : null}
-			<div className="relative">
+			<div ref={chartAreaRef} className="relative">
 				{chartMode === "candles" ? (
 					<PnlCandlestickChart data={data} metric={candlestickMetric} timezone={timezone} />
 				) : (
@@ -988,7 +1137,7 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 						<ChartTooltip
 							wrapperStyle={{ zIndex: 30 }}
 							content={
-								<PnlTooltipContent showTime={shouldShowTooltipTime} timezone={timezone} />
+								<PnlTooltipContent showTime={shouldShowTooltipTime} timezone={timezone} fields={tooltipFields} />
 							}
 						/>
 						<Area
@@ -1058,10 +1207,10 @@ export function PnlChartContent({ data, annotations = [], showAnnotations = fals
 					</ChartContainer>
 					{exitPositions.length > 0 ? (
 						<div className="pointer-events-none absolute inset-0">
-							{stackExitPositions(exitPositions).map((pos, index) =>
+							{stackExitPositions(exitPositions, exitBounds).map((pos, index) =>
 								pos.type === "exit" ? (
 									<ExitBubble
-										key={`exit-${pos.exit.t}-${pos.exit.marketSlug ?? pos.exit.question}`}
+										key={`exit-${index}-${pos.exit.t}-${pos.exit.marketSlug ?? pos.exit.question}`}
 										exit={pos.exit}
 										timezone={timezone}
 										style={{ left: pos.cx, top: pos.cy }}

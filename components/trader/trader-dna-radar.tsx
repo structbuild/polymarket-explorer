@@ -61,7 +61,7 @@ function RadarTooltip({ active, payload }: RadarTooltipProps) {
 export function TraderDnaRadar({ axes }: TraderDnaRadarProps) {
 	const data = buildRows(axes);
 	return (
-		<div className="relative aspect-12/10 min-w-0 w-full">
+		<div className="relative aspect-12/11 min-w-0 w-full">
 			<ResponsiveContainer
 				width="100%"
 				height="100%"

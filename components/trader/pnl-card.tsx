@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useQueryState } from "nuqs"
 
-import { ChartSettingsButton, PnlChartContent, type PnlChartMetric, type PnlChartMode } from "@/components/trader/pnl-chart"
+import { ChartModeToggle, ChartSettingsButton, defaultTooltipFields, isOhlcMetric, PnlChartContent, PnlMetricTabs, type PnlChartMetric, type PnlChartMode, type TooltipFieldKey } from "@/components/trader/pnl-chart"
 import { PnlRangeDialog } from "@/components/trader/pnl-range-dialog"
 import { PnlTimeframeSelector } from "@/components/trader/pnl-timeframe-selector"
 import { PnlShareDialog } from "@/components/trader/pnl-share-dialog"
@@ -20,6 +20,7 @@ const SHOW_HIGHLIGHTS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-highlight
 const SHOW_WIN_EXITS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-win-exits"
 const SHOW_LOSS_EXITS_STORAGE_KEY = "polymarket-explorer:pnl-card:show-loss-exits"
 const FILL_GAPS_STORAGE_KEY = "polymarket-explorer:pnl-card:fill-gaps"
+const TOOLTIP_FIELDS_STORAGE_KEY = "polymarket-explorer:pnl-card:tooltip-fields"
 
 type PnlCardProps = {
 	data: PnlDataPoint[]
@@ -40,6 +41,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 	const [showAnnotations, setShowAnnotations] = useLocalStorage(SHOW_HIGHLIGHTS_STORAGE_KEY, false)
 	const [showWinExits, setShowWinExits] = useLocalStorage(SHOW_WIN_EXITS_STORAGE_KEY, true)
 	const [showLossExits, setShowLossExits] = useLocalStorage(SHOW_LOSS_EXITS_STORAGE_KEY, true)
+	const [tooltipFields, setTooltipFields] = useLocalStorage<TooltipFieldKey[]>(TOOLTIP_FIELDS_STORAGE_KEY, defaultTooltipFields)
 	const [periodWindow] = usePnlPeriodWindow()
 	const { timezone: clientTimezone } = useTimezone()
 	const timezone = clientTimezone ?? pnlRange.timezone
@@ -102,6 +104,28 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 		[setFillGaps, setStoredFillGaps],
 	)
 
+	const handleTooltipFieldChange = useCallback(
+		(key: TooltipFieldKey, next: boolean) => {
+			setTooltipFields((current) => {
+				const without = current.filter((field) => field !== key)
+				return next ? [...without, key] : without
+			})
+		},
+		[setTooltipFields],
+	)
+
+	const handleChartModeChange = useCallback(
+		(nextMode: PnlChartMode) => {
+			setChartMode(nextMode)
+			if (nextMode === "candles") {
+				setChartMetric((current) => (isOhlcMetric(current) ? current : "pnl"))
+			}
+		},
+		[setChartMode, setChartMetric],
+	)
+
+	const exitsDisabled = chartMode !== "area" || chartMetric !== "pnl"
+
 	return (
 		<div ref={cardRef} className={cn("group/share-card rounded-lg bg-card p-4 sm:p-6")}>
 			<ShareIdentityHeader address={address} displayName={displayName} profileImage={profileImage} />
@@ -117,6 +141,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 				showTooltipTime={showTooltipTime}
 				chartMode={chartMode}
 				chartMetric={chartMetric}
+				tooltipFields={tooltipFields}
 				action={
 					<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
 						<PnlTimeframeSelector active={pnlRange.mode === "preset" ? pnlRange.timeframe : null} />
@@ -129,25 +154,32 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 							timezone={timezone}
 							firstTradeAt={firstTradeAt}
 						/>
-						<ChartSettingsButton
-							chartMode={chartMode}
-							onChartModeChange={setChartMode}
-							chartMetric={chartMetric}
-							onChartMetricChange={setChartMetric}
-							highlightsAvailable={highlightsAvailable}
-							highlightsActive={showAnnotations}
-							onHighlightsChange={handleHighlightsChange}
-							winExitsAvailable={hasWinExits}
-							winExitsActive={showWinExits}
-							onWinExitsChange={handleWinExitsChange}
-							lossExitsAvailable={hasLossExits}
-							lossExitsActive={showLossExits}
-							onLossExitsChange={handleLossExitsChange}
-							fillGapsActive={storedFillGaps}
-							onFillGapsChange={handleFillGapsChange}
-						/>
 						<PnlShareDialog address={address} displayName={displayName} targetRef={cardRef} />
 					</div>
+				}
+				toolbar={
+					<>
+						<PnlMetricTabs value={chartMetric} onChange={setChartMetric} chartMode={chartMode} />
+						<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+							<ChartModeToggle value={chartMode} onChange={handleChartModeChange} />
+							<ChartSettingsButton
+								exitsDisabled={exitsDisabled}
+								highlightsAvailable={highlightsAvailable}
+								highlightsActive={showAnnotations}
+								onHighlightsChange={handleHighlightsChange}
+								winExitsAvailable={hasWinExits}
+								winExitsActive={showWinExits}
+								onWinExitsChange={handleWinExitsChange}
+								lossExitsAvailable={hasLossExits}
+								lossExitsActive={showLossExits}
+								onLossExitsChange={handleLossExitsChange}
+								fillGapsActive={storedFillGaps}
+								onFillGapsChange={handleFillGapsChange}
+								tooltipFields={tooltipFields}
+								onTooltipFieldChange={handleTooltipFieldChange}
+							/>
+						</div>
+					</>
 				}
 			/>
 		</div>

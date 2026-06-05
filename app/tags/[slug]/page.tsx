@@ -13,6 +13,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { TagStatsRow } from "@/components/tags/tag-stats-row";
 import { TagTopTradersListing } from "@/components/tags/tag-top-traders-listing";
 import { TagViewTabs } from "@/components/tags/tag-view-tabs";
+import { TabTeaser } from "@/components/ui/tabs";
 import { tagToCategory } from "@/lib/tag-category";
 import { DEFAULT_TAG_VIEW, parseTagView, tagViewValues, type TagView } from "@/lib/tag-view-shared";
 import { eventResponseToRow } from "@/lib/event-table-map";
@@ -193,7 +194,19 @@ async function TagPageContent({
 
 			<div className="mt-6 space-y-4">
 				<TagHeader tag={tag} tagDisplay={tagDisplay} />
-				<TagViewTabs value={tagView} availableViews={availableViews} />
+				<TagViewTabs
+					value={tagView}
+					availableViews={availableViews}
+					teasers={
+						(tag.unique_traders ?? 0) > 0
+							? {
+									"top-traders": (
+										<TabTeaser>{formatNumber(tag.unique_traders, { compact: true })}</TabTeaser>
+									),
+								}
+							: undefined
+					}
+				/>
 				{tagView === "events" && (
 					<TagEventsStatusListing
 						basePath={`/tags/${canonicalSlug}`}

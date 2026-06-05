@@ -1,7 +1,7 @@
 "use client";
 
 import type { Route } from "next";
-import { useCallback, useTransition } from "react";
+import { useCallback, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 
@@ -33,7 +33,15 @@ function buildViewHref(pathname: string, search: string, view: TagView) {
 	return (nextSearch ? `${pathname}?${nextSearch}` : pathname) as Route;
 }
 
-export function TagViewTabs({ value, availableViews }: { value: TagView; availableViews?: readonly TagView[] }) {
+export function TagViewTabs({
+	value,
+	availableViews,
+	teasers,
+}: {
+	value: TagView;
+	availableViews?: readonly TagView[];
+	teasers?: Partial<Record<TagView, ReactNode>>;
+}) {
 	const visibleViews = availableViews ?? tagViewValues;
 	const [isPending, startTransition] = useTransition();
 	const router = useRouter();
@@ -70,6 +78,7 @@ export function TagViewTabs({ value, availableViews }: { value: TagView; availab
 						value={view}
 					>
 						{viewLabels[view]}
+						{teasers?.[view]}
 					</TabsTrigger>
 				))}
 			</TabsList>

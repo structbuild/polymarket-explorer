@@ -166,7 +166,7 @@ async function MarketPageContent({
 						<MarketCharts conditionId={conditionId} />
 					</Suspense>
 					<Suspense fallback={<MarketTabPanelFallback />}>
-						<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} />
+						<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} totalHolders={market.total_holders} />
 					</Suspense>
 					<div className="mt-8">
 						<AnalyticsSection
