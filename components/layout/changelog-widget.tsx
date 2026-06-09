@@ -3,12 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import {
 	ArrowRightIcon,
 	ArrowUpRightIcon,
-	ChevronLeftIcon,
-	ChevronRightIcon,
 	type LucideIcon,
 	SparklesIcon,
 	WandSparklesIcon,
@@ -31,7 +29,7 @@ import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { cn } from "@/lib/utils";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const AUTOPLAY_DURATION = 3600;
+const AUTOPLAY_DURATION = 7000;
 
 let cachedNowMs: number | null = null;
 
@@ -99,133 +97,112 @@ export function ChangelogWidget() {
 			>
 				<XIcon className="size-3.5" />
 			</button>
-			<ChangelogCarousel key={showOlder ? "all" : "recent"} entries={visible} />
-			{older.length > 0 ? (
-				<div className="border-t border-border px-2 py-1.5">
-					<button
-						type="button"
-						onClick={() => setShowOlder((value) => !value)}
-						className="w-full rounded-md px-2 py-1 text-center text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-					>
-						{showOlder ? "Show less" : `Show older updates (${older.length})`}
-					</button>
-				</div>
-			) : null}
+			<ChangelogCarousel
+				key={showOlder ? "all" : "recent"}
+				entries={visible}
+				olderCount={older.length}
+				showOlder={showOlder}
+				onToggleOlder={() => setShowOlder((value) => !value)}
+			/>
 		</div>
 	);
 }
 
-function ChangelogCarousel({ entries }: { entries: ChangelogEntry[] }) {
+function ChangelogCarousel({
+	entries,
+	olderCount,
+	showOlder,
+	onToggleOlder,
+}: {
+	entries: ChangelogEntry[];
+	olderCount: number;
+	showOlder: boolean;
+	onToggleOlder: () => void;
+}) {
 	const count = entries.length;
 	const [index, setIndex] = useState(0);
 	const [progressKey, setProgressKey] = useState(0);
 	const [paused, setPaused] = useState(false);
-	const pausedRef = useRef(false);
-
-	useEffect(() => {
-		if (count <= 1) return;
-		const id = setInterval(() => {
-			if (pausedRef.current) return;
-			setIndex((current) => (current + 1) % count);
-			setProgressKey((key) => key + 1);
-		}, AUTOPLAY_DURATION);
-		return () => clearInterval(id);
-	}, [count]);
 
 	const goTo = useCallback((next: number) => {
 		setIndex(next);
 		setProgressKey((key) => key + 1);
 	}, []);
 
-	const goRelative = useCallback(
-		(delta: number) => {
-			setIndex((current) => (current + delta + count) % count);
-			setProgressKey((key) => key + 1);
-		},
-		[count],
-	);
+	const advance = useCallback(() => {
+		setIndex((current) => (current + 1) % count);
+		setProgressKey((key) => key + 1);
+	}, [count]);
 
-	const pause = useCallback(() => {
-		pausedRef.current = true;
-		setPaused(true);
-	}, []);
-
-	const resume = useCallback(() => {
-		pausedRef.current = false;
-		setPaused(false);
-	}, []);
+	const pause = useCallback(() => setPaused(true), []);
+	const resume = useCallback(() => setPaused(false), []);
 
 	const active = entries[index] ?? entries[0];
 
 	return (
 		<div onMouseEnter={pause} onMouseLeave={resume} onFocusCapture={pause} onBlurCapture={resume}>
-			<div className="relative">
-				{count > 1 ? (
-					<div className="absolute inset-x-0 top-0 z-20 h-0.5 overflow-hidden bg-foreground/10">
-						<div
-							key={progressKey}
-							className="h-full w-full origin-left bg-foreground/60"
-							style={{
-								animation: `changelogProgress ${AUTOPLAY_DURATION}ms linear forwards`,
-								animationPlayState: paused ? "paused" : "running",
-							}}
-						/>
+			<div className="grid">
+				{entries.map((entry, i) => (
+					<div
+						key={entry.id}
+						aria-hidden={i !== index}
+						className={cn(
+							"col-start-1 row-start-1 transition-opacity duration-500 ease-out",
+							i === index ? "opacity-100" : "pointer-events-none opacity-0",
+						)}
+					>
+						<ChangelogCard entry={entry} />
 					</div>
-				) : null}
-				<div className="grid">
-					{entries.map((entry, i) => (
-						<div
-							key={entry.id}
-							aria-hidden={i !== index}
-							className={cn(
-								"col-start-1 row-start-1 transition-opacity duration-500 ease-out",
-								i === index ? "opacity-100" : "pointer-events-none opacity-0",
-							)}
-						>
-							<ChangelogCard entry={entry} />
-						</div>
-					))}
-				</div>
+				))}
 			</div>
-			<div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2.5">
+			<div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
 				{count > 1 ? (
-					<div className="flex items-center gap-1.5">
-						<button
-							type="button"
-							aria-label="Previous update"
-							onClick={() => goRelative(-1)}
-							className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-						>
-							<ChevronLeftIcon className="size-4" />
-						</button>
-						<div className="flex items-center justify-center gap-1.5">
-							{entries.map((entry, i) => (
-								<button
-									key={entry.id}
-									type="button"
-									aria-label={`Go to update ${i + 1}`}
-									aria-current={i === index}
-									onClick={() => goTo(i)}
+					<div className="flex items-center">
+						{entries.map((entry, i) => (
+							<button
+								key={entry.id}
+								type="button"
+								aria-label={`Go to update ${i + 1}`}
+								aria-current={i === index}
+								onClick={() => goTo(i)}
+								className="group flex h-7 items-center px-1"
+							>
+								<span
 									className={cn(
-										"h-1.5 rounded-full transition-all",
-										i === index ? "w-4 bg-foreground" : "w-1.5 bg-foreground/25 hover:bg-foreground/40",
+										"h-2 overflow-hidden rounded-full transition-all",
+										i === index ? "w-7 bg-foreground/20" : "w-2 bg-foreground/25 group-hover:bg-foreground/50",
 									)}
-								/>
-							))}
-						</div>
-						<button
-							type="button"
-							aria-label="Next update"
-							onClick={() => goRelative(1)}
-							className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-						>
-							<ChevronRightIcon className="size-4" />
-						</button>
+								>
+									{i === index ? (
+										<span
+											key={progressKey}
+											onAnimationEnd={advance}
+											className="block h-full w-full origin-left rounded-full bg-foreground"
+											style={{
+												animation: `changelogProgress ${AUTOPLAY_DURATION}ms linear forwards`,
+												animationPlayState: paused ? "paused" : "running",
+											}}
+										/>
+									) : null}
+								</span>
+							</button>
+						))}
 					</div>
 				) : (
 					<span />
 				)}
-				<ChangelogCTA href={active.href} />
+				<div className="flex items-center gap-1.5">
+					{olderCount > 0 ? (
+						<button
+							type="button"
+							onClick={onToggleOlder}
+							className="rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+						>
+							{showOlder ? "Show less" : `Older (${olderCount})`}
+						</button>
+					) : null}
+					<ChangelogCTA href={active.href} />
+				</div>
 			</div>
 		</div>
 	);

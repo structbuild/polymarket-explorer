@@ -3,28 +3,25 @@ import Image from "next/image";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { ChangelogTag } from "@/lib/changelog";
 
-function meshBackground(c1: string, c2: string, c3: string) {
+function meshBackground(color: string) {
 	return [
-		`radial-gradient(90% 90% at 10% 5%, color-mix(in oklab, ${c1} 38%, transparent), transparent 60%)`,
-		`radial-gradient(85% 85% at 95% 0%, color-mix(in oklab, ${c2} 32%, transparent), transparent 58%)`,
-		`radial-gradient(120% 100% at 60% 120%, color-mix(in oklab, ${c3} 30%, transparent), transparent 62%)`,
+		`radial-gradient(110% 110% at 12% 0%, color-mix(in oklab, ${color} 26%, transparent), transparent 62%)`,
+		`radial-gradient(130% 120% at 88% 115%, color-mix(in oklab, ${color} 16%, transparent), transparent 66%)`,
 		"var(--background)",
 	].join(", ");
 }
 
-const MESH = {
-	leaderboards: meshBackground("var(--color-sky-400)", "var(--color-indigo-400)", "var(--color-emerald-400)"),
-	pnl: meshBackground("var(--color-emerald-400)", "var(--color-teal-400)", "var(--color-lime-400)"),
-	bestWorst: meshBackground("var(--color-teal-400)", "var(--color-cyan-400)", "var(--color-blue-400)"),
-	performance: meshBackground("var(--color-violet-400)", "var(--color-fuchsia-400)", "var(--color-indigo-400)"),
-	topTraders: meshBackground("var(--color-indigo-400)", "var(--color-blue-400)", "var(--color-sky-400)"),
-	rewards: meshBackground("var(--color-amber-400)", "var(--color-orange-400)", "var(--color-pink-400)"),
+const MESH: Record<ChangelogTag, string> = {
+	new: meshBackground("var(--color-emerald-400)"),
+	improved: meshBackground("var(--color-violet-400)"),
+	fixed: meshBackground("var(--color-amber-400)"),
 };
 
-function Stage({ mesh, children }: { mesh: string; children: ReactNode }) {
+function Stage({ tag, children }: { tag: ChangelogTag; children: ReactNode }) {
 	return (
-		<div aria-hidden className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ background: mesh }}>
+		<div aria-hidden className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ background: MESH[tag] }}>
 			{children}
 		</div>
 	);
@@ -32,7 +29,7 @@ function Stage({ mesh, children }: { mesh: string; children: ReactNode }) {
 
 function Card({ className, children }: { className?: string; children: ReactNode }) {
 	return (
-		<div className={cn("relative rounded-xl bg-card p-3 shadow-lg shadow-black/10 ring-1 ring-border", className)}>{children}</div>
+		<div className={cn("relative w-64 rounded-xl bg-card p-3 shadow-lg shadow-black/10 ring-1 ring-border", className)}>{children}</div>
 	);
 }
 
@@ -40,7 +37,7 @@ function Pill({ active, children }: { active?: boolean; children: ReactNode }) {
 	return (
 		<span
 			className={cn(
-				"rounded-full px-1.5 py-0.5 text-[9px] font-medium",
+				"shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium",
 				active ? "bg-foreground text-background" : "bg-foreground/5 text-muted-foreground",
 			)}
 		>
@@ -70,7 +67,7 @@ function Delta({ tone, children }: { tone: "up" | "down"; children: ReactNode })
 			<span className={cn("flex size-3 items-center justify-center rounded-sm", up ? "bg-emerald-600" : "bg-rose-600")}>
 				<Icon className="size-2 text-white" />
 			</span>
-			<span className={cn("text-[10px] font-medium tabular-nums", up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
+			<span className={cn("text-[11px] font-medium tabular-nums", up ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
 				{children}
 			</span>
 		</span>
@@ -93,33 +90,38 @@ function MarketIcon({ src, round }: { src: string; round?: boolean }) {
 	);
 }
 
+function RankedRow({ rank, avatar, name, value, valueClass }: { rank: number; avatar: string; name: string; value: string; valueClass?: string }) {
+	return (
+		<div className="flex items-center gap-2">
+			<span className="w-2.5 text-[9px] tabular-nums text-muted-foreground">{rank}</span>
+			<Avatar tone={avatar} />
+			<span className="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">{name}</span>
+			<span className={cn("text-[10px] font-semibold tabular-nums", valueClass ?? "text-emerald-500")}>{value}</span>
+		</div>
+	);
+}
+
 function TraderLeaderboardsArt() {
 	const rows = [
-		{ rank: 1, name: "Theo4", addr: "0x56…839", avatar: "bg-neutral-400", wr: "85.7%", pnl: "$22M" },
-		{ rank: 2, name: "Fredi9999", addr: "0x1f…0cf", avatar: "bg-sky-400", wr: "78.0%", pnl: "$16.6M" },
-		{ rank: 3, name: "kch123", addr: "0x6a…3ee", avatar: "bg-violet-400", wr: "68.1%", pnl: "$11.8M" },
-		{ rank: 4, name: "0xWhale", addr: "0x9d…b21", avatar: "bg-amber-400", wr: "64.5%", pnl: "$9.2M" },
+		{ rank: 1, name: "Theo4", avatar: "bg-neutral-400", pnl: "$22M" },
+		{ rank: 2, name: "Fredi9999", avatar: "bg-sky-400", pnl: "$16.6M" },
+		{ rank: 3, name: "kch123", avatar: "bg-violet-400", pnl: "$11.8M" },
+		{ rank: 4, name: "0xWhale", avatar: "bg-amber-400", pnl: "$9.2M" },
 	];
 	return (
-		<Stage mesh={MESH.leaderboards}>
-			<Card className="w-64">
-				<div className="mb-2 flex items-center gap-1">
+		<Stage tag="new">
+			<Card>
+				<div className="mb-2 flex items-center gap-1 overflow-hidden mask-r-from-70%">
 					<Pill active>Global</Pill>
 					<Pill>Politics</Pill>
 					<Pill>Sports</Pill>
+					<Pill>Crypto</Pill>
+					<Pill>Economy</Pill>
+					<Pill>Tech</Pill>
 				</div>
-				<div className="mask-b-from-80% space-y-1.5">
+				<div className="mask-b-from-75% space-y-2">
 					{rows.map((row) => (
-						<div key={row.rank} className="flex items-center gap-2">
-							<span className="w-2 text-[9px] tabular-nums text-muted-foreground">{row.rank}</span>
-							<Avatar tone={row.avatar} />
-							<div className="min-w-0 flex-1 leading-none">
-								<div className="truncate text-[9px] font-medium text-foreground">{row.name}</div>
-								<div className="mt-0.5 truncate font-mono text-[7px] text-muted-foreground">{row.addr}</div>
-							</div>
-							<span className="text-[8px] tabular-nums text-muted-foreground">{row.wr}</span>
-							<span className="w-9 text-right text-[9px] font-semibold tabular-nums text-emerald-500">{row.pnl}</span>
-						</div>
+						<RankedRow key={row.rank} rank={row.rank} avatar={row.avatar} name={row.name} value={row.pnl} />
 					))}
 				</div>
 			</Card>
@@ -150,8 +152,8 @@ function ExitDot({ x, y, tone }: { x: number; y: number; tone: "win" | "loss" })
 
 function TraderPnlChartArt() {
 	return (
-		<Stage mesh={MESH.pnl}>
-			<Card className="w-64">
+		<Stage tag="improved">
+			<Card>
 				<div className="mb-2 flex items-center justify-between">
 					<span className="text-base font-semibold tabular-nums text-emerald-500">+$7.08M</span>
 					<div className="flex items-center gap-1">
@@ -195,7 +197,7 @@ function TraderPnlChartArt() {
 					))}
 					<span className="absolute right-0 top-3 size-2 -translate-y-1/2 translate-x-1/2 rounded-full bg-emerald-500 ring-2 ring-card" />
 				</div>
-				<div className="mt-2 flex justify-between px-1 text-[8px] text-foreground/45">
+				<div className="mt-2 flex justify-between px-1 text-[9px] text-muted-foreground">
 					<span>1D</span>
 					<span>1W</span>
 					<span className="font-medium text-foreground">1M</span>
@@ -209,27 +211,23 @@ function TraderPnlChartArt() {
 
 function BestWorstTradesArt() {
 	const rows = [
-		{ img: "/changelog/markets/zverev-alcaraz.webp", label: "Zverev vs Alcaraz", pnl: "$243K", pct: "172.8%" },
-		{ img: "/changelog/markets/lakers-timberwolves.webp", label: "Lakers vs Timberwolves", pnl: "$129K", pct: "213.0%" },
-		{ img: "/changelog/markets/chiefs-texans.webp", label: "Chiefs vs Texans", pnl: "$129K", pct: "316.8%" },
+		{ img: "/changelog/markets/zverev-alcaraz.webp", label: "Zverev vs Alcaraz", pnl: "$243K" },
+		{ img: "/changelog/markets/lakers-timberwolves.webp", label: "Lakers vs Timberwolves", pnl: "$129K" },
+		{ img: "/changelog/markets/chiefs-texans.webp", label: "Chiefs vs Texans", pnl: "$129K" },
 	];
 	return (
-		<Stage mesh={MESH.bestWorst}>
-			<Card className="w-64">
+		<Stage tag="new">
+			<Card>
 				<div className="mb-2 flex items-center gap-2">
 					<Tab active>Best Wins</Tab>
 					<Tab>Worst Losses</Tab>
 				</div>
-				<div className="space-y-1.5">
+				<div className="space-y-2">
 					{rows.map((row) => (
 						<div key={row.label} className="flex items-center gap-2">
 							<MarketIcon src={row.img} />
-							<div className="min-w-0 flex-1 truncate text-[9px] font-medium text-foreground">{row.label}</div>
-							<span className="rounded bg-emerald-500/15 px-1 py-0.5 text-[7px] font-medium text-emerald-500">Won</span>
-							<div className="w-12 text-right leading-none">
-								<div className="text-[9px] font-semibold tabular-nums text-emerald-500">{row.pnl}</div>
-								<div className="mt-0.5 text-[7px] tabular-nums text-emerald-500/70">{row.pct}</div>
-							</div>
+							<span className="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">{row.label}</span>
+							<span className="text-[10px] font-semibold tabular-nums text-emerald-500">{row.pnl}</span>
 						</div>
 					))}
 				</div>
@@ -240,11 +238,11 @@ function BestWorstTradesArt() {
 
 function SummaryStat({ label, value, tone }: { label: string; value: string; tone?: "positive" | "negative" }) {
 	return (
-		<div className="rounded-md bg-foreground/5 px-1.5 py-1">
-			<div className="truncate text-[7px] text-muted-foreground">{label}</div>
+		<div className="rounded-md bg-foreground/5 px-2 py-1.5">
+			<div className="truncate text-[9px] text-muted-foreground">{label}</div>
 			<div
 				className={cn(
-					"text-[10px] font-semibold tabular-nums",
+					"text-[11px] font-semibold tabular-nums",
 					tone === "positive" ? "text-emerald-500" : tone === "negative" ? "text-rose-500" : "text-foreground",
 				)}
 			>
@@ -256,23 +254,17 @@ function SummaryStat({ label, value, tone }: { label: string; value: string; ton
 
 function PerformanceSummaryArt() {
 	return (
-		<Stage mesh={MESH.performance}>
-			<Card className="w-64">
-				<div className="mb-1.5 flex items-center justify-between">
+		<Stage tag="improved">
+			<Card>
+				<div className="mb-2 flex items-center justify-between">
 					<span className="text-[10px] font-medium text-muted-foreground">Performance Summary</span>
 					<Delta tone="up">30D +$1.74M</Delta>
 				</div>
-				<div className="grid grid-cols-3 gap-1">
+				<div className="grid grid-cols-2 gap-1.5">
 					<SummaryStat label="Win Rate" value="74.4%" />
 					<SummaryStat label="Profit Factor" value="3.57x" />
 					<SummaryStat label="Avg Win" value="$889" tone="positive" />
-					<SummaryStat label="Avg Loss" value="-$724" tone="negative" />
-					<SummaryStat label="Best Win" value="$91K" tone="positive" />
-					<SummaryStat label="Max DD" value="-4.7%" tone="negative" />
-				</div>
-				<div className="mt-1.5 flex items-center gap-1 text-[7px] text-muted-foreground">
-					<span className="rounded bg-foreground/5 px-1 py-0.5">Avg hold 21d 12h</span>
-					<span className="rounded bg-foreground/5 px-1 py-0.5">Streak 21d W</span>
+					<SummaryStat label="Max Drawdown" value="-4.7%" tone="negative" />
 				</div>
 			</Card>
 		</Stage>
@@ -281,38 +273,32 @@ function PerformanceSummaryArt() {
 
 function MarketTopTradersArt() {
 	const rows = [
-		{ name: "LesterDiamond", vol: "$105K", pnl: "+$105K", up: true, avatar: "bg-rose-400" },
-		{ name: "GingerMcKenna", vol: "$64K", pnl: "+$64K", up: true, avatar: "bg-neutral-400" },
-		{ name: "ScottyNooo", vol: "$546K", pnl: "-$3.7K", up: false, avatar: "bg-emerald-400" },
+		{ rank: 1, name: "LesterDiamond", pnl: "+$105K", up: true, avatar: "bg-rose-400" },
+		{ rank: 2, name: "GingerMcKenna", pnl: "+$64K", up: true, avatar: "bg-neutral-400" },
+		{ rank: 3, name: "ScottyNooo", pnl: "-$3.7K", up: false, avatar: "bg-emerald-400" },
 	];
 	return (
-		<Stage mesh={MESH.topTraders}>
-			<Card className="w-64">
-				<div className="mb-1.5 flex items-center gap-1.5">
+		<Stage tag="new">
+			<Card>
+				<div className="mb-2 flex items-center gap-1.5">
 					<MarketIcon src="/changelog/markets/jd-vance.webp" round />
-					<span className="truncate text-[9px] font-medium text-foreground/80">JD Vance · 2028 President</span>
+					<span className="truncate text-[10px] font-medium text-foreground/80">JD Vance · 2028 President</span>
 				</div>
 				<div className="mb-2 flex items-center gap-2">
 					<Tab>Holders</Tab>
 					<Tab active>Top Traders</Tab>
 					<Tab>Price Spikes</Tab>
 				</div>
-				<div className="space-y-1.5">
-					{rows.map((row, index) => (
-						<div key={row.name} className="flex items-center gap-2">
-							<span className="w-2 text-[9px] tabular-nums text-muted-foreground">{index + 1}</span>
-							<Avatar tone={row.avatar} />
-							<div className="min-w-0 flex-1 truncate text-[9px] font-medium text-foreground">{row.name}</div>
-							<span className="text-[8px] tabular-nums text-muted-foreground">{row.vol}</span>
-							<span
-								className={cn(
-									"w-11 text-right text-[9px] font-semibold tabular-nums",
-									row.up ? "text-emerald-500" : "text-rose-500",
-								)}
-							>
-								{row.pnl}
-							</span>
-						</div>
+				<div className="space-y-2">
+					{rows.map((row) => (
+						<RankedRow
+							key={row.name}
+							rank={row.rank}
+							avatar={row.avatar}
+							name={row.name}
+							value={row.pnl}
+							valueClass={row.up ? "text-emerald-500" : "text-rose-500"}
+						/>
 					))}
 				</div>
 			</Card>
@@ -322,39 +308,35 @@ function MarketTopTradersArt() {
 
 function RewardsIncentivesArt() {
 	const bars = [
-		{ h: 8, o: 60, v: 40, teal: false },
-		{ h: 12, o: 55, v: 45, teal: false },
-		{ h: 10, o: 66, v: 34, teal: false },
-		{ h: 19, o: 60, v: 40, teal: false },
-		{ h: 31, o: 62, v: 38, teal: false },
-		{ h: 53, o: 66, v: 34, teal: true },
-		{ h: 94, o: 64, v: 30, teal: true },
-		{ h: 73, o: 68, v: 28, teal: true },
-		{ h: 81, o: 62, v: 34, teal: false },
-		{ h: 63, o: 64, v: 36, teal: false },
+		{ h: 8, liq: 0 },
+		{ h: 12, liq: 0 },
+		{ h: 10, liq: 0 },
+		{ h: 19, liq: 12 },
+		{ h: 31, liq: 16 },
+		{ h: 53, liq: 26 },
+		{ h: 94, liq: 32 },
+		{ h: 73, liq: 28 },
+		{ h: 81, liq: 22 },
+		{ h: 63, liq: 18 },
 	];
 	return (
-		<Stage mesh={MESH.rewards}>
-			<Card className="w-64">
+		<Stage tag="new">
+			<Card>
 				<div className="mb-2 flex items-center justify-between">
 					<span className="text-[10px] font-medium text-muted-foreground">Rewards &amp; incentives</span>
-					<span className="text-[8px] tabular-nums text-muted-foreground">$14M</span>
+					<span className="text-[10px] font-semibold tabular-nums text-foreground">$14M</span>
 				</div>
 				<div className="flex h-16 items-end gap-1 border-b border-border pb-px">
 					{bars.map((bar, index) => (
 						<div key={index} className="flex flex-1 flex-col overflow-hidden rounded-t-[3px]" style={{ height: `${bar.h}%` }}>
-							{bar.teal ? <div className="w-full bg-teal-400" style={{ flex: 8 }} /> : null}
-							<div className="w-full bg-amber-500/85" style={{ flex: bar.o }} />
-							<div className="w-full bg-violet-500/70" style={{ flex: bar.v }} />
+							{bar.liq > 0 ? <div className="w-full bg-teal-400" style={{ flex: bar.liq }} /> : null}
+							<div className="w-full bg-amber-500/85" style={{ flex: 100 - bar.liq }} />
 						</div>
 					))}
 				</div>
-				<div className="mt-1.5 flex items-center gap-2 text-[7px] text-muted-foreground">
+				<div className="mt-2 flex items-center gap-2.5 text-[9px] text-muted-foreground">
 					<span className="flex items-center gap-1">
-						<span className="size-1.5 rounded-full bg-amber-500/85" />Maker
-					</span>
-					<span className="flex items-center gap-1">
-						<span className="size-1.5 rounded-full bg-violet-500/70" />Taker
+						<span className="size-1.5 rounded-full bg-amber-500/85" />Maker rewards
 					</span>
 					<span className="flex items-center gap-1">
 						<span className="size-1.5 rounded-full bg-teal-400" />Liquidity
