@@ -103,6 +103,7 @@ function buildColumns(sort: SortState | null, flags: { anyLiquidity: boolean; an
 		const HeaderComponent = function SortableHeaderForColumn() {
 			return (
 				<SortableHeader
+					table="events"
 					sortBy={apiSortBy}
 					currentSortBy={sort.sortBy}
 					currentSortDirection={sort.sortDirection}
@@ -347,6 +348,7 @@ export function EventsTable(props: EventsTableProps) {
 	return (
 		<DataTable
 			paginationMode={paginationMode}
+			tableName="events"
 			columns={columns}
 			data={sortedEvents}
 			storageKey={storageKey}

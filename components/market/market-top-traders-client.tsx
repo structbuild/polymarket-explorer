@@ -434,6 +434,7 @@ export function MarketTopTradersClient({
 			<DataTable
 				columns={visibleColumns}
 				data={rows}
+				tableName="market_top_traders"
 				storageKey="market-top-traders-table"
 				defaultColumnVisibility={defaultColumnVisibility}
 				emptyMessage="No traders yet for this outcome."

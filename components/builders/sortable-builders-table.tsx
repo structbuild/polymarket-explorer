@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useMemo, useState, useTransition } from "react";
+import posthog from "posthog-js";
 import type { BuilderLatestRowWithMetadata, BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import {
@@ -60,7 +61,11 @@ export function SortableBuildersTable({
 			<Checkbox
 				id={checkboxId}
 				checked={showUnnamed}
-				onCheckedChange={(value) => setShowUnnamed(Boolean(value))}
+				onCheckedChange={(value) => {
+					const nextShowUnnamed = Boolean(value);
+					setShowUnnamed(nextShowUnnamed);
+					posthog.capture("builders_unnamed_toggled", { show_unnamed: nextShowUnnamed });
+				}}
 			/>
 			Show unnamed builders
 		</label>

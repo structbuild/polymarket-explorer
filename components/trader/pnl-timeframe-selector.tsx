@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import { useQueryStates } from "nuqs"
+import posthog from "posthog-js"
 
 import {
 	pnlAnchorParser,
@@ -42,6 +43,7 @@ export function PnlTimeframeSelector({ active }: PnlTimeframeSelectorProps) {
 
 	function applyTimeframe(next: PnlTimeframe) {
 		if (next === active) return
+		posthog.capture("trader_pnl_timeframe_selected", { timeframe: next })
 		setParams({
 			pnlTimeframe: next,
 			pnlAnchor: null,

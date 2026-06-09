@@ -1,5 +1,8 @@
+"use client";
+
 import type { Route } from "next";
 import Link from "next/link";
+import posthog from "posthog-js";
 import {
 	ArrowUpRightIcon,
 	BarChart3Icon,
@@ -84,6 +87,7 @@ export function HomeExploreGrid() {
 						key={href}
 						href={href}
 						prefetch={false}
+						onClick={() => posthog.capture("home_explore_card_clicked", { section: label })}
 						className={cn(
 							"group relative flex flex-col justify-between gap-4 overflow-hidden rounded-lg bg-card p-4 md:p-5 ring-1 ring-foreground/10 transition-colors hover:bg-accent",
 						)}

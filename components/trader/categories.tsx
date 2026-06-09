@@ -196,7 +196,7 @@ export default function TraderCategories({ address, page, pageNumber, sortBy, so
 	});
 
 	const columns = useMemo(
-		() => buildColumns({ currentSortBy, currentSortDirection, onSortChange: handleSortChange }),
+		() => buildColumns({ currentSortBy, currentSortDirection, onSortChange: handleSortChange, table: "trader_categories" }),
 		[currentSortBy, currentSortDirection, handleSortChange],
 	);
 
@@ -210,6 +210,7 @@ export default function TraderCategories({ address, page, pageNumber, sortBy, so
 
 	return (
 		<DataTable
+			tableName="trader_categories"
 			toolbarLeft={tabs ?? <TraderTabs />}
 			toolbarRight={
 				<Button

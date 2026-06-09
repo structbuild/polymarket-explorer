@@ -155,6 +155,7 @@ function numericColumn(spec: ColumnSpec, sort: SortState): ColumnDef<BuilderRowW
 				currentSortDirection="desc"
 				onSortChange={sort.onSortChange}
 				tooltip={BUILDER_SORT_DESCRIPTIONS[spec.sortKey]}
+				table="builders"
 			>
 				{spec.title}
 			</SortableHeader>
@@ -287,6 +288,7 @@ export function BuildersTable({
 			pageSize={pageSize}
 			hasNextPage={hasNextPage}
 			onPageIndexChange={onPageIndexChange ?? (() => {})}
+			tableName="builders"
 			storageKey="builders-leaderboard"
 			columns={columns}
 			data={builders}

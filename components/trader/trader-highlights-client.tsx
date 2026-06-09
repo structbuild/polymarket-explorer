@@ -3,6 +3,7 @@
 import type { PositionEntry } from "@structbuild/sdk"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useQueryStates } from "nuqs"
+import posthog from "posthog-js"
 
 import { getTraderRankedPositionsPageAction } from "@/app/actions"
 import { useTabBridge } from "@/components/layout/tab-bridge"
@@ -66,6 +67,8 @@ export function TraderHighlightsClient({
 			if (nextMode === mode) {
 				return
 			}
+
+			posthog.capture("trader_highlights_mode_changed", { mode: nextMode })
 
 			const requestId = requestIdRef.current + 1
 			requestIdRef.current = requestId

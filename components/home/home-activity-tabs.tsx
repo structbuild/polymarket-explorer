@@ -1,5 +1,7 @@
 "use client";
 
+import posthog from "posthog-js";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, type ReactNode } from "react";
 
@@ -41,7 +43,20 @@ export function HomeActivityTabs({
 	const [tab, setTab] = useState<HomeActivityTab>("trades");
 
 	return (
-		<Tabs value={tab} onValueChange={(value) => setTab(value as HomeActivityTab)} className="gap-3">
+		<Tabs
+			value={tab}
+			onValueChange={(value) => {
+				const next = value as HomeActivityTab;
+				if (next !== tab) {
+					posthog.capture("home_activity_tab_changed", {
+						tab: next,
+						previous_tab: tab,
+					});
+				}
+				setTab(next);
+			}}
+			className="gap-3"
+		>
 			<div className="grid gap-x-4 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 				<div className="min-w-0">
 					<HomeTabsBar />

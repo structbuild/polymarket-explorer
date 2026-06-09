@@ -1,5 +1,7 @@
 "use client";
 
+import posthog from "posthog-js";
+
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { TIMEFRAME_LABELS, type MetricsTimeframeChoice } from "@/lib/timeframes";
 import { cn } from "@/lib/utils";
@@ -9,6 +11,7 @@ type TimeframeToggleProps = {
 	value: MetricsTimeframeChoice;
 	onValueChange: (value: MetricsTimeframeChoice) => void;
 	className?: string;
+	context?: string;
 	"aria-label"?: string;
 };
 
@@ -17,6 +20,7 @@ export function TimeframeToggle({
 	value,
 	onValueChange,
 	className,
+	context,
 	"aria-label": ariaLabel = "Metrics timeframe",
 }: TimeframeToggleProps) {
 	return (
@@ -26,6 +30,11 @@ export function TimeframeToggle({
 			onValueChange={(next) => {
 				const picked = next[0];
 				if (picked && picked !== value) {
+					posthog.capture("timeframe_changed", {
+						context,
+						timeframe: picked,
+						previous_timeframe: value,
+					});
 					onValueChange(picked as MetricsTimeframeChoice);
 				}
 			}}

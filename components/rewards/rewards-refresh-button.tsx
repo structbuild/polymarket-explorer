@@ -3,6 +3,7 @@
 import { RefreshCwIcon } from "lucide-react";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 
 import { refreshRewardsPageAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function RewardsRefreshButton() {
 			size="sm"
 			className="shrink-0"
 			onClick={() => {
+				posthog.capture("rewards_refreshed", {});
 				startTransition(async () => {
 					await refreshRewardsPageAction();
 					router.refresh();

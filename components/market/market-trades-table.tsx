@@ -14,6 +14,7 @@ import { getMarketTradesPageAction } from "@/app/actions";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { ExternalLink } from "@/components/ui/external-link";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, formatPriceCents } from "@/lib/format";
@@ -151,11 +152,11 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polygonscan">
-						<a href={`https://polygonscan.com/tx/${trade.hash}`} target="_blank" rel="noopener noreferrer">
+						<ExternalLink href={`https://polygonscan.com/tx/${trade.hash}`} linkType="polygonscan">
 							<Button variant="ghost" size="icon" aria-label="View on Polygonscan">
 								<HashIcon className="size-4" />
 							</Button>
-						</a>
+						</ExternalLink>
 					</TooltipWrapper>
 				</div>
 			);
@@ -195,6 +196,7 @@ export function MarketTradesTable({ conditionId, page, pageNumber, toolbarLeft }
 		<DataTable
 			columns={columns}
 			data={currentPage.data}
+			tableName="market_trades"
 			storageKey="market-trades-table"
 			emptyMessage="No trades to show."
 			columnLayout="fixed"

@@ -9,6 +9,7 @@ import { ExternalLinkIcon, InfoIcon } from "lucide-react";
 
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
+import { ExternalLink } from "@/components/ui/external-link";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
@@ -206,11 +207,11 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polymarket">
-						<a href={`https://polymarket.com/event/${eventSlug}`} target="_blank" rel="noopener noreferrer">
+						<ExternalLink href={`https://polymarket.com/event/${eventSlug}`} linkType="polymarket">
 							<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 								<ExternalLinkIcon className="size-4" />
 							</Button>
-						</a>
+						</ExternalLink>
 					</TooltipWrapper>
 				</div>
 			);
@@ -227,6 +228,7 @@ export function RewardsTable({ markets }: Props) {
 		<DataTable
 			columns={columns}
 			data={markets}
+			tableName="rewards"
 			storageKey="rewards-table"
 			emptyMessage="No reward markets found."
 			columnLayout="fixed"

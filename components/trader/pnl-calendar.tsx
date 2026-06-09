@@ -3,6 +3,7 @@
 import type { DailyPnlEntry, PnlPeriodRecord, PnlPeriods } from "@/lib/struct/pnl"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import posthog from "posthog-js"
 
 import { Button } from "@/components/ui/button"
 import { getMonthGrid, intensityClass } from "@/lib/calendar-utils"
@@ -95,6 +96,11 @@ export function PnlCalendar({ data, periods }: { data: DailyPnlEntry[]; periods:
 		if (m < 0) { m = 11; y-- }
 		if (m > 11) { m = 0; y++ }
 		if (y > currentYear || (y === currentYear && m > currentMonth)) return
+		posthog.capture("trader_pnl_calendar_navigated", {
+			direction: delta < 0 ? "previous" : "next",
+			month: m,
+			year: y,
+		})
 		setViewMonth(m)
 		setViewYear(y)
 	}
@@ -203,7 +209,11 @@ export function PnlCalendar({ data, periods }: { data: DailyPnlEntry[]; periods:
 						<button
 							type="button"
 							key={key}
-							onClick={() => hasData && setSelectedKey(key)}
+							onClick={() => {
+								if (!hasData) return
+								posthog.capture("trader_pnl_calendar_day_selected", { date: key })
+								setSelectedKey(key)
+							}}
 							disabled={!hasData}
 							aria-pressed={activeSelectedKey === key}
 							className={cellClassName}

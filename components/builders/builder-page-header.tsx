@@ -1,13 +1,45 @@
+"use client";
+
 import type { BuilderMetadata } from "@structbuild/sdk";
 import { ExternalLinkIcon } from "lucide-react";
 
 import { BuilderAvatar } from "@/components/builders/builder-avatar";
 import { CopyAddress } from "@/components/trader/copy-address";
 import { Button } from "@/components/ui/button";
+import { captureOutbound } from "@/components/ui/external-link";
 import { getBuilderDisplayName } from "@/lib/builder-display-name";
 import { formatBuilderCodeDisplay } from "@/lib/utils";
 
 const BUILDER_METADATA_CONTACT_HREF = "https://x.com/structbuild";
+
+type OutboundButtonProps = {
+	href: string;
+	linkType: string;
+	label: string;
+	variant?: "default" | "secondary";
+};
+
+function OutboundButton({ href, linkType, label, variant = "default" }: OutboundButtonProps) {
+	return (
+		<Button
+			className="w-full sm:w-fit"
+			size="lg"
+			variant={variant}
+			nativeButton={false}
+			render={
+				<a
+					href={href}
+					rel="noopener noreferrer"
+					target="_blank"
+					onClick={() => captureOutbound(href, { link_type: linkType })}
+				/>
+			}
+		>
+			{label}
+			<ExternalLinkIcon />
+		</Button>
+	);
+}
 
 type BuilderPageHeaderProps = {
 	builderCode: string;
@@ -73,50 +105,28 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 			{showContactCta || websiteUrl || twitterUrl ? (
 				<div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 lg:items-end">
 					{showContactCta ? (
-						<Button
-							className="w-full sm:w-fit"
-							size="lg"
-							nativeButton={false}
-							render={
-								<a
-									href={BUILDER_METADATA_CONTACT_HREF}
-									rel="noopener noreferrer"
-									target="_blank"
-								/>
-							}
-						>
-							Contact us
-							<ExternalLinkIcon />
-						</Button>
+						<OutboundButton
+							href={BUILDER_METADATA_CONTACT_HREF}
+							linkType="builder_contact"
+							label="Contact us"
+						/>
 					) : (
 						<div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
 							{websiteUrl ? (
-								<Button
-									className="w-full sm:w-fit"
-									size="lg"
+								<OutboundButton
+									href={websiteUrl}
+									linkType="builder_website"
+									label="Website"
 									variant="secondary"
-									nativeButton={false}
-									render={
-										<a href={websiteUrl} rel="noopener noreferrer" target="_blank" />
-									}
-								>
-									Website
-									<ExternalLinkIcon />
-								</Button>
+								/>
 							) : null}
 							{twitterUrl ? (
-								<Button
-									className="w-full sm:w-fit"
-									size="lg"
+								<OutboundButton
+									href={twitterUrl}
+									linkType="builder_twitter"
+									label="X (Twitter)"
 									variant="secondary"
-									nativeButton={false}
-									render={
-										<a href={twitterUrl} rel="noopener noreferrer" target="_blank" />
-									}
-								>
-									X (Twitter)
-									<ExternalLinkIcon />
-								</Button>
+								/>
 							) : null}
 						</div>
 					)}

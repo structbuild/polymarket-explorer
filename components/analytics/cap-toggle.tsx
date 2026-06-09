@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { useTransition } from "react";
 
 import { Toggle } from "@/components/ui/toggle";
@@ -19,6 +20,7 @@ export function AnalyticsCapToggle({
 	const [isPending, startTransition] = useTransition();
 
 	function handleChange(pressed: boolean) {
+		posthog.capture("analytics_cap_toggled", { capped: pressed });
 		const params = new URLSearchParams(searchParams.toString());
 		if (pressed === defaultCap) {
 			params.delete("cap");

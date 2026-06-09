@@ -11,6 +11,7 @@ import {
 	type UTCTimestamp,
 } from "lightweight-charts"
 import { ChartArea, ChartCandlestick, Settings2Icon } from "lucide-react"
+import posthog from "posthog-js"
 import { Area, AreaChart, CartesianGrid, Line, ReferenceArea, ReferenceDot, useXAxisScale, useYAxisScale, XAxis, YAxis } from "recharts"
 
 import {
@@ -19,6 +20,7 @@ import {
 	type ChartConfig,
 } from "@/components/ui/chart"
 import { Badge } from "@/components/ui/badge"
+import { ExternalLink } from "@/components/ui/external-link"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -281,9 +283,9 @@ function ExitClusterRow({ exit, timezone }: { exit: PnlChartExit; timezone?: str
 
 	if (href) {
 		return (
-			<a href={href} target="_blank" rel="noopener noreferrer" className={cn(className, "transition-colors hover:bg-muted")}>
+			<ExternalLink href={href} linkType="polymarket_market" className={cn(className, "transition-colors hover:bg-muted")}>
 				{content}
-			</a>
+			</ExternalLink>
 		)
 	}
 
@@ -673,6 +675,7 @@ export function ChartModeToggle({ value, onChange }: { value: PnlChartMode; onCh
 			onValueChange={(nextValue) => {
 				const next = Array.isArray(nextValue) ? nextValue[0] : nextValue
 				if (next === "area" || next === "candles") {
+					posthog.capture("trader_pnl_chart_mode_changed", { mode: next })
 					onChange(next)
 				}
 			}}
@@ -706,7 +709,13 @@ export function PnlMetricTabs({
 		<Tabs
 			value={value}
 			onValueChange={(next) => {
-				if (typeof next === "string") onChange(next as PnlChartMetric)
+				if (typeof next === "string") {
+					posthog.capture("trader_pnl_chart_metric_changed", {
+						metric: next,
+						previous_metric: value,
+					})
+					onChange(next as PnlChartMetric)
+				}
 			}}
 			className="min-w-0 flex-1"
 		>

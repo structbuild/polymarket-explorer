@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ExternalLinkIcon } from "lucide-react";
+import posthog from "posthog-js";
 
 import type { MarketTableRow, TimeframeMetrics } from "@/lib/market-table-map";
 import type { MarketSortBy, MarketSortDirection } from "@/lib/market-search-params-shared";
@@ -14,6 +15,7 @@ import { defaultMarketSortBy, defaultMarketSortDirection } from "@/lib/market-se
 import { DataTable, useDataTableTimeframe, useTimeframeState } from "@/components/ui/data-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { Button } from "@/components/ui/button";
+import { captureOutbound } from "@/components/ui/external-link";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { ShowUnknownMarketsToggle } from "@/components/ui/show-unknown-markets-toggle";
 import { Volume } from "@/components/ui/volume";
@@ -118,6 +120,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 		const HeaderComponent = function SortableHeaderForColumn() {
 			return (
 				<SortableHeader
+					table="markets"
 					sortBy={apiSortBy}
 					currentSortBy={sort.sortBy}
 					currentSortDirection={sort.sortDirection}
@@ -298,6 +301,11 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 							href={`https://polymarket.com/market/${slug}`}
 							target="_blank"
 							rel="noopener noreferrer"
+							onClick={() =>
+								captureOutbound(`https://polymarket.com/market/${slug}`, {
+									link_type: "polymarket",
+								})
+							}
 						>
 							<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 								<ExternalLinkIcon className="size-4" />
@@ -471,7 +479,13 @@ export function MarketsTable(props: MarketsTableProps) {
 
 	const mergedToolbarRight = hasUnknownMarkets ? (
 		<div className="flex items-center gap-3">
-			<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
+			<ShowUnknownMarketsToggle
+				show={showUnknown}
+				onToggle={(next) => {
+					posthog.capture("unknown_markets_toggled", { show_unknown: next });
+					setShowUnknown(next);
+				}}
+			/>
 			{toolbarRight}
 		</div>
 	) : (
@@ -481,6 +495,7 @@ export function MarketsTable(props: MarketsTableProps) {
 	return (
 		<DataTable
 			paginationMode={paginationMode}
+			tableName="markets"
 			columns={columns}
 			data={sortedMarkets}
 			storageKey={storageKey}

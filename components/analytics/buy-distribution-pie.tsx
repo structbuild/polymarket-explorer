@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import { useCallback, useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 
@@ -164,7 +165,13 @@ export function BuyDistributionPie({ points }: BuyDistributionPieProps) {
 						<li key={d.key}>
 							<button
 								type="button"
-								onClick={() => toggleKey(d.key)}
+								onClick={() => {
+									posthog.capture("pie_slice_toggled", {
+										bucket: d.key,
+										visible: hidden,
+									});
+									toggleKey(d.key);
+								}}
 								aria-pressed={!hidden}
 								className={`flex w-full items-center justify-between gap-2 rounded-sm text-left transition-opacity hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
 									hidden ? "opacity-40" : "opacity-100"

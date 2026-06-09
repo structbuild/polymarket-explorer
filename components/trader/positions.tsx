@@ -8,6 +8,7 @@ import Link from "next/link"
 import { ArrowDownIcon, ArrowUpIcon, ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
 import { type ReactNode, useCallback, useMemo, useState, useTransition } from "react"
 import { useQueryStates } from "nuqs"
+import posthog from "posthog-js"
 
 import { getTraderPositionsPageAction, getTraderRankedPositionsPageAction } from "@/app/actions"
 import type {
@@ -33,6 +34,7 @@ import {
 	SelectValue,
 } from "../ui/select"
 import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle"
+import { ExternalLink } from "../ui/external-link"
 import { TraderTabs } from "./trader-tabs"
 import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass, readTotalPnlUsd, readTotalPnlPct } from "@/lib/format"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
@@ -87,6 +89,7 @@ function buildColumns(
 		sortable
 			? () => (
 					<SortableHeader
+						table="trader_positions"
 						sortBy={sortBy}
 						currentSortBy={currentSortBy}
 						currentSortDirection={currentSortDirection}
@@ -363,15 +366,14 @@ function buildColumns(
 				return (
 					<div className="flex justify-end">
 						<TooltipWrapper content="View on Polymarket">
-							<a
+							<ExternalLink
 								href={`https://polymarket.com/market/${slug}`}
-								target="_blank"
-								rel="noopener noreferrer"
+								linkType="polymarket_market"
 							>
 								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 									<ExternalLinkIcon className="size-4" />
 								</Button>
-							</a>
+							</ExternalLink>
 						</TooltipWrapper>
 					</div>
 				)
@@ -520,21 +522,35 @@ export default function TraderPositions({
 
 	const handleSelectSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		if (nextSortBy === currentSortBy) return
+		posthog.capture("trader_positions_sorted", {
+			sort_by: nextSortBy,
+			sort_direction: "desc",
+			status,
+		})
 		loadPage(1, nextSortBy, "desc", currentCategory)
-	}, [currentCategory, currentSortBy, loadPage])
+	}, [currentCategory, currentSortBy, loadPage, status])
 
 	const handleDirectionToggle = useCallback(() => {
 		const nextDirection: TraderSortDirection = currentSortDirection === "desc" ? "asc" : "desc"
+		posthog.capture("trader_positions_sorted", {
+			sort_by: currentSortBy,
+			sort_direction: nextDirection,
+			status,
+		})
 		loadPage(1, currentSortBy, nextDirection, currentCategory)
-	}, [currentCategory, currentSortBy, currentSortDirection, loadPage])
+	}, [currentCategory, currentSortBy, currentSortDirection, loadPage, status])
 
 	const handleCategoryChange = useCallback((value: string | null) => {
 		const nextCategory = !value || value === ALL_CATEGORIES_VALUE
 			? undefined
 			: (POLYMARKET_CATEGORIES.find((option) => option === value) ?? undefined)
 		if (nextCategory === currentCategory) return
+		posthog.capture("trader_positions_category_filtered", {
+			category: nextCategory ?? "all",
+			status,
+		})
 		loadPage(1, currentSortBy, currentSortDirection, nextCategory)
-	}, [currentCategory, currentSortBy, currentSortDirection, loadPage])
+	}, [currentCategory, currentSortBy, currentSortDirection, loadPage, status])
 
 	const sortOptions = useMemo(() => getSortOptions(status), [status])
 	const sortOptionValues = useMemo(
@@ -643,6 +659,7 @@ export default function TraderPositions({
 
 	return (
 		<DataTable
+			tableName="trader_positions"
 			toolbarLeft={tabs ?? <TraderTabs />}
 			toolbarRight={toolbarRight}
 			columns={columns}

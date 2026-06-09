@@ -4,6 +4,7 @@ import type { Tag, TagSortBy, TagSortTimeframe } from "@structbuild/sdk";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Route } from "next";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { useMemo } from "react";
 
 import { DataTable } from "@/components/ui/data-table";
@@ -110,6 +111,7 @@ function numericColumn(
 					currentSortBy={sort.sortBy}
 					currentSortDirection="desc"
 					onSortChange={sort.onSortChange}
+					table="tags"
 				>
 					{spec.title}
 				</SortableHeader>
@@ -223,6 +225,10 @@ export function TagsTable({
 			onValueChange={(next) => {
 				const picked = next[0];
 				if (picked && picked !== timeframe) {
+					posthog.capture("tags_timeframe_changed", {
+						timeframe: picked,
+						previous_timeframe: timeframe,
+					});
 					onTimeframeChange(picked as TagSortTimeframe);
 				}
 			}}
@@ -252,6 +258,7 @@ export function TagsTable({
 			data={tags}
 			emptyMessage="No tags found."
 			columnLayout="fixed"
+			tableName="tags"
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRightCombined}
 		/>

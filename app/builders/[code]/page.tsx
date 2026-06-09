@@ -249,7 +249,7 @@ async function BuilderPageContent({
 				<SectionAnchor id="builder-breakdown">
 					<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 						<BuilderConcentrationCard data={concentration} />
-						<BuilderTagBreakdown rows={tagBreakdown} />
+						<BuilderTagBreakdown rows={tagBreakdown} builderCode={builderCode} />
 					</div>
 				</SectionAnchor>
 

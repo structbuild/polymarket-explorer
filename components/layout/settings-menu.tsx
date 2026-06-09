@@ -3,6 +3,7 @@
 import { SettingsIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import posthog from "posthog-js";
 import { useTransition } from "react";
 
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -28,6 +29,7 @@ export function SettingsMenu() {
 
 	function handleTimezoneChange(next: string) {
 		if (next === timezone) return;
+		posthog.capture("timezone_changed", { timezone: next });
 		setTimezone(next);
 		startTransition(() => router.refresh());
 	}
@@ -56,6 +58,10 @@ export function SettingsMenu() {
 						onValueChange={(next) => {
 							const picked = next[0] as VolumeMode | undefined;
 							if (picked && picked !== mode) {
+								posthog.capture("volume_mode_changed", {
+									mode: picked,
+									previous_mode: mode,
+								});
 								setMode(picked);
 							}
 						}}

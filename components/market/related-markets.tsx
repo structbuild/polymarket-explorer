@@ -4,6 +4,7 @@ import type { Route } from "next";
 import type { MarketResponse } from "@structbuild/sdk";
 
 import { Volume } from "@/components/ui/volume";
+import { RelatedMarketsViewAllLink } from "@/components/market/related-markets-view-all-link";
 import { formatCapitalizeWords, slugify } from "@/lib/format";
 
 type RelatedMarketsProps = {
@@ -28,13 +29,7 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 				<h2 id="related-markets-heading" className="text-lg font-medium tracking-tight">
 					More {tagLabel} markets
 				</h2>
-				<Link
-					href={`/tags/${tagSlug}` as Route}
-					prefetch={false}
-					className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-				>
-					View all
-				</Link>
+				<RelatedMarketsViewAllLink href={`/tags/${tagSlug}` as Route} tag={tag} />
 			</div>
 			<ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				{items.map((m) => {

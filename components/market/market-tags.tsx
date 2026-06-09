@@ -4,6 +4,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
+import posthog from "posthog-js";
 
 import { Badge } from "@/components/ui/badge";
 import { slugify } from "@/lib/format";
@@ -33,7 +34,13 @@ export function MarketTags({ tags }: MarketTagsProps) {
 			{shouldCollapse && (
 				<button
 					type="button"
-					onClick={() => setExpanded((v) => !v)}
+					onClick={() =>
+						setExpanded((v) => {
+							const next = !v;
+							posthog.capture("market_tags_toggled", { expanded: next, hidden_count: hiddenCount });
+							return next;
+						})
+					}
 					className="inline-flex h-7 items-center gap-1 rounded-md bg-secondary px-3 text-xs font-medium text-secondary-foreground transition-colors hover:bg-muted"
 				>
 					{expanded ? <MinusIcon className="size-3" /> : <PlusIcon className="size-3" />}

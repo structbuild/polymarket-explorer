@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 import {
 	Area,
@@ -305,7 +306,13 @@ export function AnalyticsChart({
 						<button
 							key={s.key}
 							type="button"
-							onClick={() => toggleKey(s.key)}
+							onClick={() => {
+								posthog.capture("chart_series_toggled", {
+									series_key: s.key,
+									visible: hidden,
+								});
+								toggleKey(s.key);
+							}}
 							aria-pressed={!hidden}
 							className={`flex items-center gap-1.5 rounded-sm font-medium text-muted-foreground transition-opacity hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
 								hidden ? "opacity-40" : "opacity-100"

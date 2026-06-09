@@ -1,6 +1,7 @@
 "use client"
 
 import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react"
+import posthog from "posthog-js"
 
 import { InfoTooltip } from "@/components/ui/info-tooltip"
 import { TooltipWrapper } from "@/components/ui/tooltip"
@@ -14,6 +15,7 @@ type SortableHeaderProps<T extends string> = {
 	onSortChange: (sortBy: T) => void
 	tooltip?: string
 	label?: string
+	table?: string
 }
 
 export function SortableHeader<T extends string>({
@@ -24,6 +26,7 @@ export function SortableHeader<T extends string>({
 	onSortChange,
 	tooltip,
 	label,
+	table,
 }: SortableHeaderProps<T>) {
 	const isActive = currentSortBy === sortBy
 	const SortIcon = isActive
@@ -48,7 +51,20 @@ export function SortableHeader<T extends string>({
 						"inline-flex items-center gap-1.5 text-left transition-colors hover:text-foreground",
 						isActive && "text-foreground",
 					)}
-					onClick={() => onSortChange(sortBy)}
+					onClick={() => {
+						const nextDirection = isActive
+							? currentSortDirection === "asc"
+								? "desc"
+								: "asc"
+							: currentSortDirection
+						posthog.capture("table_sorted", {
+							table,
+							column: sortBy,
+							direction: nextDirection,
+							previous_column: currentSortBy,
+						})
+						onSortChange(sortBy)
+					}}
 				>
 					<span>{children}</span>
 					<SortIcon className="size-4" />

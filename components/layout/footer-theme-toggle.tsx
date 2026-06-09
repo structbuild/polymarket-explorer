@@ -2,6 +2,7 @@
 
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
+import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ export function FooterThemeToggle() {
 				aria-label="Toggle theme"
 				onClick={() => {
 					const nextTheme = document.documentElement.classList.contains("dark") ? "light" : "dark";
+					posthog.capture("theme_toggled", { theme: nextTheme });
 					setTheme(nextTheme);
 				}}
 				className="size-8 text-muted-foreground hover:text-primary"

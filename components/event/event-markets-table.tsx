@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
+import posthog from "posthog-js";
 import type { EventMarket, EventMarketOutcome } from "@structbuild/sdk";
 
 import { Button } from "@/components/ui/button";
@@ -213,6 +214,7 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 							<TableHead className="w-auto">Market</TableHead>
 							<TableHead className="w-[140px]">
 								<SortableHeader
+									table="event_markets"
 									sortBy="probability"
 									currentSortBy={sortKey}
 									currentSortDirection={sortDirection}
@@ -223,6 +225,7 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 							</TableHead>
 							<TableHead className="w-[140px]">
 								<SortableHeader
+									table="event_markets"
 									sortBy="volume"
 									currentSortBy={sortKey}
 									currentSortDirection={sortDirection}
@@ -234,6 +237,7 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 							{anyLiquidity && (
 								<TableHead className="w-[140px]">
 									<SortableHeader
+										table="event_markets"
 										sortBy="liquidity"
 										currentSortBy={sortKey}
 										currentSortDirection={sortDirection}
@@ -276,7 +280,13 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 
 			{hiddenCount > 0 && (
 				<div className="flex justify-center">
-					<Button variant="ghost" onClick={() => setShowAll(true)}>
+					<Button
+						variant="ghost"
+						onClick={() => {
+							posthog.capture("event_markets_show_more_clicked", { hidden_count: hiddenCount });
+							setShowAll(true);
+						}}
+					>
 						Show {hiddenCount} more <ChevronDownIcon className="size-4" />
 					</Button>
 				</div>

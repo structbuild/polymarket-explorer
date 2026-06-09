@@ -3,6 +3,7 @@
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import posthog from "posthog-js";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { NAV_ITEMS } from "./nav-items";
@@ -15,7 +16,10 @@ export function MobileNav() {
 		<Sheet open={open} onOpenChange={setOpen}>
 			<button
 				type="button"
-				onClick={() => setOpen(true)}
+				onClick={() => {
+					posthog.capture("mobile_menu_opened", {});
+					setOpen(true);
+				}}
 				aria-label="Open navigation menu"
 				className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border bg-card/50 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
 			>

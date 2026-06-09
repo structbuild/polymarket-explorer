@@ -92,6 +92,7 @@ export function MarketPriceSpikesTable({ spikes }: { spikes: SpikeRow[] }) {
 		<DataTable
 			columns={columns}
 			data={spikes}
+			tableName="market_price_spikes"
 			storageKey="market-price-spikes-table"
 			emptyMessage="No significant price moves."
 			columnLayout="fixed"

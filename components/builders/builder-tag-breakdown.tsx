@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import type { Route } from "next";
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
 import type { BuilderTagRow } from "@structbuild/sdk";
@@ -69,9 +70,10 @@ function TagNameBarLabel(props: BarLabelProps) {
 
 type BuilderTagBreakdownProps = {
 	rows: BuilderTagRow[];
+	builderCode: string;
 };
 
-export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
+export function BuilderTagBreakdown({ rows, builderCode }: BuilderTagBreakdownProps) {
 	const router = useRouter();
 	const { mode } = useVolumeMode();
 	const metricKey: "volumeUsd" | "sharesVolume" = mode === "usd" ? "volumeUsd" : "sharesVolume";
@@ -164,6 +166,10 @@ export function BuilderTagBreakdown({ rows }: BuilderTagBreakdownProps) {
 							onClick={(payload) => {
 								const datum = payload as unknown as TagDatum;
 								if (datum?.slug) {
+									posthog.capture("builder_tag_bar_clicked", {
+										tag: datum.tag,
+										builder_code: builderCode,
+									});
 									router.push(`/tags/${datum.slug}` as Route);
 								}
 							}}

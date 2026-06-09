@@ -4,6 +4,8 @@ import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
+import posthog from "posthog-js";
+
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 
@@ -50,6 +52,12 @@ export function AnalyticsUrlToggle<T extends string>({
 		if (!next) return;
 		const candidate = options.includes(next as T) ? (next as T) : defaultValue;
 		if (candidate === value) return;
+
+		posthog.capture("analytics_filter_changed", {
+			param: paramKey,
+			value: candidate,
+			previous: value,
+		});
 
 		const params = new URLSearchParams(searchParams.toString());
 		if (candidate === defaultValue) {

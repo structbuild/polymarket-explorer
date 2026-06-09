@@ -19,6 +19,7 @@ import { DataTable } from "../ui/data-table";
 import { TableCell, TableRow } from "../ui/table";
 import { TooltipWrapper } from "../ui/tooltip";
 import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle";
+import { ExternalLink } from "../ui/external-link";
 import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -184,19 +185,19 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polygonscan">
-						<a href={`https://polygonscan.com/tx/${trade.hash}`} target="_blank" rel="noopener noreferrer">
+						<ExternalLink href={`https://polygonscan.com/tx/${trade.hash}`} linkType="polygonscan">
 							<Button variant="ghost" size="icon" aria-label="View on Polygonscan">
 								<HashIcon className="size-4" />
 							</Button>
-						</a>
+						</ExternalLink>
 					</TooltipWrapper>
 					{slug ? (
 						<TooltipWrapper content="View on Polymarket">
-							<a href={`https://polymarket.com/${slug}`} target="_blank" rel="noopener noreferrer">
+							<ExternalLink href={`https://polymarket.com/${slug}`} linkType="polymarket_market">
 								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 									<ExternalLinkIcon className="size-4" />
 								</Button>
-							</a>
+							</ExternalLink>
 						</TooltipWrapper>
 					) : null}
 				</div>
@@ -280,11 +281,11 @@ export default function TraderActivity({ address, page, pageNumber, tabs, onRefr
 				<TableCell>
 					<div className="flex justify-end">
 						<TooltipWrapper content="View on Polygonscan">
-							<a href={`https://polygonscan.com/tx/${trade.hash}`} target="_blank" rel="noopener noreferrer">
+							<ExternalLink href={`https://polygonscan.com/tx/${trade.hash}`} linkType="polygonscan">
 								<Button variant="ghost" size="icon" aria-label="View on Polygonscan">
 									<HashIcon className="size-4" />
 								</Button>
-							</a>
+							</ExternalLink>
 						</TooltipWrapper>
 					</div>
 				</TableCell>
@@ -294,6 +295,7 @@ export default function TraderActivity({ address, page, pageNumber, tabs, onRefr
 
 	return (
 		<DataTable
+			tableName="trader_activity"
 			toolbarLeft={tabs ?? <TraderTabs />}
 			toolbarRight={
 				<div className="flex items-center gap-3">

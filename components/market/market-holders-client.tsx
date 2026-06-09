@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import posthog from "posthog-js";
 import Link from "next/link";
 import type { Route } from "next";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -174,7 +175,19 @@ export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHoldersV3[]
 	);
 
 	const outcomePicker = (
-		<Tabs value={activeOutcomeId} onValueChange={(value) => setActiveOutcomeId(String(value))}>
+		<Tabs
+			value={activeOutcomeId}
+			onValueChange={(value) => {
+				const next = String(value);
+				if (next !== activeOutcomeId) {
+					const picked = outcomes.find((o) => o.position_id === next);
+					posthog.capture("market_holders_outcome_changed", {
+						outcome_name: picked?.outcome_name,
+					});
+				}
+				setActiveOutcomeId(next);
+			}}
+		>
 			<TabsList>
 				{outcomes.map((outcome) => (
 					<TabsTrigger key={outcome.position_id} value={outcome.position_id}>
@@ -199,6 +212,7 @@ export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHoldersV3[]
 			emptyMessage="No holders for this outcome."
 			columnLayout="fixed"
 			paginationMode="none"
+			tableName="market_holders"
 			toolbarLeft={outcomePicker}
 		/>
 	);

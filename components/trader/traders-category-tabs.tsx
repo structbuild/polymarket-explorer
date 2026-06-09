@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { PolymarketCategory } from "@structbuild/sdk";
 import { useCallback, useTransition } from "react";
+import posthog from "posthog-js";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { POLYMARKET_CATEGORIES } from "@/lib/tag-category";
@@ -27,6 +28,11 @@ export function TradersCategoryTabs({ category }: TradersCategoryTabsProps) {
 	const setTab = useCallback(
 		(next: TabValue) => {
 			if (next === currentTab) return;
+
+			posthog.capture("traders_category_tab_changed", {
+				category: next,
+				previous_category: currentTab,
+			});
 
 			const params = new URLSearchParams(searchParams.toString());
 			if (next === GLOBAL_VALUE) {

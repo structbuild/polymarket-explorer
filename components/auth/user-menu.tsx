@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOutIcon } from "lucide-react";
+import posthog from "posthog-js";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export function UserMenu() {
 	const router = useRouter();
 
 	async function handleSignOut() {
+		posthog.capture("auth_signed_out", {});
 		setSigningOut(true);
 		await authClient.signOut();
 		setSigningOut(false);
@@ -35,7 +37,13 @@ export function UserMenu() {
 	if (!session?.user) {
 		return (
 			<>
-				<Button onClick={() => setSignInOpen(true)} className="h-8 px-3 sm:h-9">
+				<Button
+					onClick={() => {
+						posthog.capture("sign_in_dialog_opened", { trigger: "header" });
+						setSignInOpen(true);
+					}}
+					className="h-8 px-3 sm:h-9"
+				>
 					Sign in
 				</Button>
 				<SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />

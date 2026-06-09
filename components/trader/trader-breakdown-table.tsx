@@ -11,6 +11,7 @@ export type BreakdownSortContext<S extends string> = {
 	currentSortBy: S;
 	currentSortDirection: TraderSortDirection;
 	onSortChange: (sortBy: S) => void;
+	table?: string;
 };
 
 function renderBreakdownHeader<S extends string>(
@@ -20,6 +21,7 @@ function renderBreakdownHeader<S extends string>(
 ): ReactNode {
 	return (
 		<SortableHeader<S>
+			table={ctx.table}
 			sortBy={sortKey}
 			currentSortBy={ctx.currentSortBy}
 			currentSortDirection={ctx.currentSortDirection}

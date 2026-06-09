@@ -1,5 +1,7 @@
 "use client";
 
+import posthog from "posthog-js";
+
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePnlPeriodWindow } from "@/lib/hooks/use-pnl-period-window";
 import { formatDateCompact, formatNumber } from "@/lib/format";
@@ -79,7 +81,10 @@ export function PeriodRows({ periods }: { periods: PnlPeriods }) {
 					value={[window]}
 					onValueChange={(next) => {
 						const picked = next[0] as PnlPeriodWindow | undefined;
-						if (picked && picked !== window) setWindow(picked);
+						if (picked && picked !== window) {
+							posthog.capture("trader_period_window_changed", { window: picked });
+							setWindow(picked);
+						}
 					}}
 					variant="outline"
 					size="sm"

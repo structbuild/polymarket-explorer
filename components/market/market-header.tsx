@@ -1,13 +1,12 @@
 import Image from "next/image";
-import { ExternalLinkIcon } from "lucide-react";
 
 import type { ReactNode } from "react";
 
 import { MarketDescription } from "@/components/market/market-description";
 import { MarketTags } from "@/components/market/market-tags";
+import { ViewOnPolymarketButton } from "@/components/market/view-on-polymarket-button";
 import { CopyLink } from "@/components/trader/copy-link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Volume } from "@/components/ui/volume";
 import { formatDateShort, formatNumber } from "@/lib/format";
 import type { MarketResponse } from "@structbuild/sdk";
@@ -66,10 +65,7 @@ export function MarketHeader({ market, slug }: MarketHeaderProps) {
 
 				<div className="hidden shrink-0 items-center gap-2 lg:flex">
 					<CopyLink />
-					<Button size="lg" nativeButton={false} render={<a href={polymarketUrl} rel="noreferrer" target="_blank" />}>
-						View Market
-						<ExternalLinkIcon />
-					</Button>
+					<ViewOnPolymarketButton href={polymarketUrl} label="View Market" />
 				</div>
 			</div>
 
@@ -98,10 +94,7 @@ export function MarketHeader({ market, slug }: MarketHeaderProps) {
 
 			<div className="flex flex-col gap-2 sm:flex-row lg:hidden">
 				<CopyLink />
-				<Button className="w-full" size="lg" nativeButton={false} render={<a href={polymarketUrl} rel="noreferrer" target="_blank" />}>
-					View Market
-					<ExternalLinkIcon />
-				</Button>
+				<ViewOnPolymarketButton className="w-full" href={polymarketUrl} label="View Market" />
 			</div>
 		</div>
 	);

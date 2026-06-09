@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2Icon } from "lucide-react";
+import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 	const [error, setError] = useState<string | null>(null);
 
 	async function handleSocialSignIn(provider: SocialProvider) {
+		posthog.capture("auth_social_provider_clicked", { provider });
 		setSocialLoading(provider);
 		setError(null);
 
@@ -36,6 +38,7 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 
 	async function handleEmailSubmit(event: React.FormEvent) {
 		event.preventDefault();
+		posthog.capture("auth_email_submitted", {});
 		setLoading(true);
 		setError(null);
 
@@ -52,6 +55,7 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 	}
 
 	async function verifyOtp(code: string) {
+		posthog.capture("auth_otp_submitted", {});
 		setLoading(true);
 		setError(null);
 
@@ -102,6 +106,7 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 				<button
 					type="button"
 					onClick={() => {
+						posthog.capture("auth_back_to_email_clicked", {});
 						setStep("email");
 						setOtp("");
 						setError(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import { Settings2Icon } from "lucide-react";
+import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,6 +44,7 @@ export function VolumeComponentsToggle({
 			if (nextSet.size <= 1) return;
 			nextSet.delete(id);
 		}
+		posthog.capture("volume_components_changed", { component: id, checked: pressed });
 		onChange(allowed.filter((i) => nextSet.has(i)));
 	}
 
@@ -77,7 +79,10 @@ export function VolumeComponentsToggle({
 					))}
 					<button
 						type="button"
-						onClick={() => onChange(allowed)}
+						onClick={() => {
+							posthog.capture("volume_components_reset", {});
+							onChange(allowed);
+						}}
 						disabled={isDefault}
 						className="mt-1 rounded-sm px-2 py-1 text-left text-xs text-muted-foreground hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
 					>

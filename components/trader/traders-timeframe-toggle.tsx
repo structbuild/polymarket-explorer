@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import posthog from "posthog-js";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -36,6 +37,11 @@ export function TradersTimeframeToggle({
 				if (!picked || picked === timeframe) {
 					return;
 				}
+
+				posthog.capture("traders_leaderboard_timeframe_changed", {
+					timeframe: picked,
+					previous_timeframe: timeframe,
+				});
 
 				const params = new URLSearchParams(searchParams.toString());
 				params.set("timeframe", picked);

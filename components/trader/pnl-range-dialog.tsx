@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryStates } from "nuqs"
+import posthog from "posthog-js"
 import { CalendarIcon, ChevronDownIcon } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
@@ -105,6 +106,11 @@ export function PnlRangeDialog({ mode, timeframe, anchor, from, to, timezone: se
 	const label = mode === "preset" ? "Custom" : pnlRangeChipLabel({ mode, timeframe, anchor, from, to, timezone })
 
 	function applyAnchor(nextAnchor: PnlAnchor) {
+		posthog.capture("trader_pnl_range_changed", {
+			mode: "anchor",
+			timeframe,
+			anchor: nextAnchor,
+		})
 		setParams({
 			pnlAnchor: nextAnchor,
 			pnlFrom: null,
@@ -115,16 +121,27 @@ export function PnlRangeDialog({ mode, timeframe, anchor, from, to, timezone: se
 
 	function applyTimezone(nextTimezone: string) {
 		if (nextTimezone === timezone) return
+		posthog.capture("trader_pnl_timezone_changed", {
+			timezone: nextTimezone,
+			previous_timezone: timezone,
+		})
 		setTimezone(nextTimezone)
 		startTransition(() => router.refresh())
 	}
 
 	function applyCustom() {
 		if (!draftRange?.from || !draftRange?.to) return
+		const nextFrom = startOfDayUtcSeconds(draftRange.from)
+		const nextTo = endOfDayUtcSeconds(draftRange.to)
+		posthog.capture("trader_pnl_range_changed", {
+			mode: "custom",
+			from: nextFrom,
+			to: nextTo,
+		})
 		setParams({
 			pnlAnchor: null,
-			pnlFrom: startOfDayUtcSeconds(draftRange.from),
-			pnlTo: endOfDayUtcSeconds(draftRange.to),
+			pnlFrom: nextFrom,
+			pnlTo: nextTo,
 		})
 		setOpen(false)
 	}

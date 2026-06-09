@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpRightIcon, XIcon } from "lucide-react";
-import Link from "next/link";
+import { ExternalLink } from "@/components/ui/external-link";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 const NOTIFICATION = {
@@ -22,10 +22,9 @@ export function NotificationBar() {
 	return (
 		<div className="relative z-20 bg-muted">
 			<div className="relative mx-auto flex w-full max-w-7xl items-center justify-center px-4 py-1.5 pr-12 sm:px-6 sm:pr-14">
-				<Link
+				<ExternalLink
 					href={NOTIFICATION.href}
-					target="_blank"
-					rel="noopener noreferrer"
+					linkType="notification_cta"
 					className="group flex min-w-0 max-w-full items-center justify-center gap-2 text-center text-xs text-foreground/90 transition-opacity hover:opacity-90 sm:text-sm"
 				>
 					<span className="truncate">{NOTIFICATION.message}</span>
@@ -33,7 +32,7 @@ export function NotificationBar() {
 						{NOTIFICATION.cta}
 						<ArrowUpRightIcon className="size-3" />
 					</span>
-				</Link>
+				</ExternalLink>
 				<button
 					type="button"
 					onClick={() => setDismissed(true)}

@@ -13,6 +13,7 @@ import {
 	useReactTable,
 } from "@tanstack/react-table"
 import { ChevronLeftIcon, ChevronRightIcon, Settings2Icon } from "lucide-react"
+import posthog from "posthog-js"
 
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
 import {
@@ -47,6 +48,7 @@ export function useDataTableTimeframe(): MetricsTimeframeChoice | null {
 type BaseDataTableProps<TData> = {
 	columns: ColumnDef<TData, unknown>[]
 	data: TData[]
+	tableName?: string
 	storageKey?: string
 	defaultColumnVisibility?: VisibilityState
 	emptyMessage?: string
@@ -110,6 +112,7 @@ type DataTableViewProps<TData> = BaseDataTableProps<TData> & {
 
 function DataTableView<TData>({
 	data,
+	tableName,
 	emptyMessage = "No data to show.",
 	emptyClassName,
 	table,
@@ -333,7 +336,14 @@ function DataTableView<TData>({
 						<Button
 							variant="outline"
 							size="icon-sm"
-							onClick={pagination.onPreviousPage}
+							onClick={() => {
+								posthog.capture("table_paginated", {
+									table: tableName,
+									direction: "previous",
+									page: pagination.pageNumber,
+								})
+								pagination.onPreviousPage()
+							}}
 							disabled={!pagination.canPreviousPage || pagination.isLoading}
 							aria-label="Previous page"
 						>
@@ -342,7 +352,14 @@ function DataTableView<TData>({
 						<Button
 							variant="outline"
 							size="icon-sm"
-							onClick={pagination.onNextPage}
+							onClick={() => {
+								posthog.capture("table_paginated", {
+									table: tableName,
+									direction: "next",
+									page: pagination.pageNumber,
+								})
+								pagination.onNextPage()
+							}}
 							disabled={!pagination.canNextPage || pagination.isLoading}
 							aria-label="Next page"
 						>
@@ -375,6 +392,7 @@ export function useTimeframeState(
 function ClientPaginatedDataTable<TData>({
 	columns,
 	data,
+	tableName,
 	storageKey,
 	defaultPageSize = 25,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
@@ -445,6 +463,7 @@ function ClientPaginatedDataTable<TData>({
 		<DataTableView
 			columns={columns}
 			data={data}
+			tableName={tableName}
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}
@@ -548,6 +567,7 @@ function NonPaginatedDataTable<TData>({
 function ServerPaginatedDataTable<TData>({
 	columns,
 	data,
+	tableName,
 	storageKey,
 	defaultColumnVisibility = EMPTY_COLUMN_VISIBILITY,
 	emptyMessage,
@@ -595,6 +615,7 @@ function ServerPaginatedDataTable<TData>({
 		<DataTableView
 			columns={columns}
 			data={data}
+			tableName={tableName}
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage={emptyMessage}

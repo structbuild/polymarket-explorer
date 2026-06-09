@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PlusIcon, MinusIcon } from "lucide-react";
+import posthog from "posthog-js";
 
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,13 @@ export function MarketDescription({ text, className }: MarketDescriptionProps) {
 			{isLong && (
 				<button
 					type="button"
-					onClick={() => setExpanded((v) => !v)}
+					onClick={() =>
+						setExpanded((v) => {
+							const next = !v;
+							posthog.capture("market_description_toggled", { expanded: next });
+							return next;
+						})
+					}
 					className="inline-flex items-center gap-1 rounded-md bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
 				>
 					{expanded ? <MinusIcon className="size-3" /> : <PlusIcon className="size-3" />}

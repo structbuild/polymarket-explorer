@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import posthog from "posthog-js";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -104,7 +105,14 @@ function MarketVolumeChartClientContent({ outcomes }: { outcomes: VolumeOutcome[
 						value={[String(selectedOutcomeIndex)]}
 						onValueChange={(value) => {
 							const next = Array.isArray(value) ? value[0] : value;
-							if (next) setSelectedOutcomeIndex(Number(next));
+							if (next) {
+								const picked = outcomes.find((o) => String(o.outcomeIndex) === next);
+								posthog.capture("market_volume_chart_filter_changed", {
+									filter_type: "outcome",
+									value: picked?.name ?? next,
+								});
+								setSelectedOutcomeIndex(Number(next));
+							}
 						}}
 						variant="outline"
 						size="sm"
@@ -129,7 +137,13 @@ function MarketVolumeChartClientContent({ outcomes }: { outcomes: VolumeOutcome[
 					value={[selectedSeries]}
 					onValueChange={(value) => {
 						const next = Array.isArray(value) ? value[0] : value;
-						if (next) setSelectedSeries(next as SeriesKey);
+						if (next) {
+						posthog.capture("market_volume_chart_filter_changed", {
+							filter_type: "series",
+							value: next,
+						});
+						setSelectedSeries(next as SeriesKey);
+					}
 					}}
 					variant="outline"
 					size="sm"

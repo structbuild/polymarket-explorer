@@ -9,10 +9,13 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useQueryStates } from "nuqs";
 
+import posthog from "posthog-js";
+
 import { getBuilderTradesPageAction } from "@/app/actions";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { ExternalLink } from "@/components/ui/external-link";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { builderSearchParamParsers } from "@/lib/builder-search-params";
@@ -171,11 +174,11 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		enableHiding: false,
 		cell: ({ row }) => (
 			<TooltipWrapper content="View on Polygonscan">
-				<a href={`https://polygonscan.com/tx/${row.original.hash}`} target="_blank" rel="noopener noreferrer">
+				<ExternalLink href={`https://polygonscan.com/tx/${row.original.hash}`} linkType="polygonscan">
 					<Button variant="ghost" size="icon-xs" aria-label="View on Polygonscan">
 						<HashIcon className="size-3.5" />
 					</Button>
-				</a>
+				</ExternalLink>
 			</TooltipWrapper>
 		),
 	},
@@ -224,6 +227,7 @@ export function BuilderRecentTradesTable({
 				className="shrink-0"
 				disabled={isPending}
 				onClick={() => {
+					posthog.capture("builder_trades_refreshed", { builder_code: builderCode });
 					startTransition(async () => {
 						const result = await getBuilderTradesPageAction({
 							builderCode,
@@ -250,6 +254,7 @@ export function BuilderRecentTradesTable({
 		<DataTable
 			columns={columns}
 			data={currentPage.data}
+			tableName="builder_trades"
 			storageKey={`builder-recent-trades-${builderCode}`}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No trades to show."

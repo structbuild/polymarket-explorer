@@ -1,5 +1,6 @@
 "use client";
 
+import posthog from "posthog-js";
 import type { BuilderSortBy, BuilderTimeframe } from "@structbuild/sdk";
 
 import { AnalyticsUrlToggle } from "@/components/analytics/url-toggle";
@@ -49,6 +50,10 @@ export function BuildersHeaderControls({
 				defaultValue={DEFAULT_BUILDER_TIMEFRAME}
 				ariaLabelPrefix="Show timeframe"
 				transformParams={(params, nextTimeframe) => {
+					posthog.capture("builders_timeframe_changed", {
+						timeframe: nextTimeframe,
+						previous_timeframe: timeframe,
+					});
 					params.delete("resolution");
 					const sort = params.get("sort");
 					if (sort && !isBuilderSortAvailableForTimeframe(sort as BuilderSortBy, nextTimeframe)) {

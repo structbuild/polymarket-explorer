@@ -1,12 +1,11 @@
 import { CopyAddress } from "@/components/trader/copy-address";
 import { CopyLink } from "@/components/trader/copy-link";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
-import { Button } from "@/components/ui/button";
+import { ViewProfileButton } from "@/components/trader/view-profile-button";
 import { Volume } from "@/components/ui/volume";
 import { formatDateShort } from "@/lib/format";
 import { formatNumber } from "@/lib/format";
 import type { GlobalEntry } from "@structbuild/sdk";
-import { ExternalLinkIcon } from "lucide-react";
 
 type StatItemProps = {
 	label: string;
@@ -59,15 +58,7 @@ export function TraderHeader({
 						</div>
 						<div className="grid grid-cols-2 gap-2 lg:flex lg:w-auto lg:shrink-0 lg:justify-end">
 							<CopyLink />
-							<Button
-								className="w-full lg:w-fit"
-								size="lg"
-								nativeButton={false}
-								render={<a href={`https://polymarket.com/${address}`} rel="noreferrer" target="_blank" />}
-							>
-								View Profile
-								<ExternalLinkIcon />
-							</Button>
+							<ViewProfileButton address={address} />
 						</div>
 					</div>
 					<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-nowrap sm:items-center sm:gap-x-8 sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import posthog from "posthog-js";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import type { PositionChartOutcome } from "@structbuild/sdk";
 
@@ -109,7 +110,14 @@ function MarketProbabilityChartClientContent({ outcomes }: { outcomes: PositionC
 					value={[selectedKey]}
 					onValueChange={(value) => {
 						const next = Array.isArray(value) ? value[0] : value;
-						if (next) setSelectedKey(next);
+						if (next) {
+							const picked = keys.find((k) => k.key === next);
+							posthog.capture("market_chart_outcome_toggled", {
+								outcome_name: picked?.name,
+								outcome_index: outcomes.findIndex((o) => outcomeKey(o) === next),
+							});
+							setSelectedKey(next);
+						}
 					}}
 					variant="outline"
 					size="sm"

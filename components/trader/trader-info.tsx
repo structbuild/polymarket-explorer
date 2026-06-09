@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { UserProfile } from "@structbuild/sdk";
 import { ExternalLinkIcon } from "lucide-react";
 
+import { ExternalLink } from "@/components/ui/external-link";
 import { truncateAddress } from "@/lib/utils";
 
 type TraderInfoProps = {
@@ -34,15 +35,14 @@ export function TraderInfo({ address, profile }: TraderInfoProps) {
 				<InfoStat label="Pseudonym">{profile?.pseudonym ?? <Muted />}</InfoStat>
 				<InfoStat label="X (Twitter)">
 					{profile?.x_username ? (
-						<a
+						<ExternalLink
 							href={`https://x.com/${profile.x_username}`}
-							rel="noreferrer"
-							target="_blank"
+							linkType="x"
 							className="inline-flex items-center gap-1 hover:underline"
 						>
 							{profile.x_username}
 							<ExternalLinkIcon className="size-3.5" />
-						</a>
+						</ExternalLink>
 					) : (
 						<Muted />
 					)}

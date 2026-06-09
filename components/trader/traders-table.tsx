@@ -120,6 +120,7 @@ function renderSortableHeader(
 	}
 	return (
 		<SortableHeader<TraderLeaderboardSortKey>
+			table="traders"
 			sortBy={sortKey}
 			currentSortBy={sortCtx.sort}
 			currentSortDirection={sortCtx.direction}
@@ -480,6 +481,7 @@ export function TradersTable({
 
 	return (
 		<DataTable
+			tableName="traders"
 			paginationMode="none"
 			columns={columns}
 			data={traders}
