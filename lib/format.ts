@@ -91,6 +91,11 @@ export function formatTime(seconds: number | null | undefined): string | null {
 	})
 }
 
+export function toSeconds(value: number | null | undefined): number | null {
+	if (value == null) return null
+	return value > 1e12 ? Math.floor(value / 1000) : value
+}
+
 export function formatTimeAgo(timestampSeconds: number): string {
 	const now = Date.now()
 	const diffMs = now - timestampSeconds * 1000

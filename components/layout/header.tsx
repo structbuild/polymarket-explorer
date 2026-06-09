@@ -7,6 +7,7 @@ import { NAV_ITEMS } from "./nav-items";
 import { SettingsMenu } from "./settings-menu";
 import { StructLogoMark } from "../ui/svgs/struct-logo";
 import { buttonVariants } from "@/components/ui/button-variants";
+import { TooltipWrapper } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -20,21 +21,31 @@ export function Header() {
 					</Link>
 					<div className="hidden h-4 w-px bg-border sm:block" />
 					<nav className="hidden items-center gap-1 sm:flex">
-						{NAV_ITEMS.map((item) => (
-							<Link
-								key={item.href}
-								href={item.href}
-								prefetch={false}
-								target={item.external ? "_blank" : undefined}
-								className={
-									item.primary
-										? cn(buttonVariants({ variant: "default", size: "sm" }))
-										: "rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-								}
-							>
-								{item.label}
-							</Link>
-						))}
+						{NAV_ITEMS.map((item) => {
+							const link = (
+								<Link
+									key={item.href}
+									href={item.href}
+									prefetch={false}
+									target={item.external ? "_blank" : undefined}
+									className={
+										item.primary
+											? cn(buttonVariants({ variant: "default", size: "sm" }))
+											: "rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+									}
+								>
+									{item.label}
+								</Link>
+							);
+							if (item.primary) {
+								return (
+									<TooltipWrapper key={item.href} content="Free to get started — no credit card required">
+										{link}
+									</TooltipWrapper>
+								);
+							}
+							return link;
+						})}
 					</nav>
 				</div>
 				<div className="flex shrink-0 items-center gap-2">

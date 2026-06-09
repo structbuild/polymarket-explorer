@@ -12,7 +12,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { TooltipWrapper } from "@/components/ui/tooltip";
-import { formatNumber, formatPriceCents, pnlColorClass } from "@/lib/format";
+import { formatNumber, formatPriceCents, pnlColorClass, toSeconds } from "@/lib/format";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
 type OutcomeOption = { position_id: string; name: string };
@@ -68,11 +68,6 @@ function resolveTrader(raw: RawTrader): TraderInfo | null {
 function readNumber(row: RawRow, key: string): number | null {
 	const value = (row as unknown as Record<string, unknown>)[key];
 	return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function toSeconds(value: number | null): number | null {
-	if (value == null) return null;
-	return value > 1e12 ? Math.floor(value / 1000) : value;
 }
 
 function buildRows(rows: RawRow[]): TraderRow[] {

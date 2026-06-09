@@ -10,7 +10,7 @@ import type { HolderV3, OutcomeHoldersV3 } from "@structbuild/sdk";
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TraderAvatar } from "@/components/trader/trader-avatar";
-import { formatNumber, formatPriceCents } from "@/lib/format";
+import { formatNumber, formatPriceCents, toSeconds } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { cn, getTraderDisplayName } from "@/lib/utils";
 
@@ -132,7 +132,7 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 		header: "First Bought",
 		size: 110,
 		cell: ({ row }) => {
-			const t = row.original.pnl?.first_trade_at;
+			const t = toSeconds(row.original.pnl?.first_trade_at);
 			return t != null ? (
 				<TimeAgo timestamp={t} className="tabular-nums text-foreground/80" />
 			) : (
@@ -145,7 +145,7 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 		header: "Last Trade",
 		size: 110,
 		cell: ({ row }) => {
-			const t = row.original.pnl?.last_trade_at;
+			const t = toSeconds(row.original.pnl?.last_trade_at);
 			return t != null ? (
 				<TimeAgo timestamp={t} className="tabular-nums text-foreground/80" />
 			) : (
