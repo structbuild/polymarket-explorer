@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
 	ArrowRightIcon,
 	ArrowUpRightIcon,
@@ -76,10 +76,17 @@ export function ChangelogWidget() {
 		[recent, seenSet],
 	);
 
+	const shownAtRef = useRef<number | null>(null);
+	useEffect(() => {
+		if (shownAtRef.current === null) shownAtRef.current = performance.now();
+	}, []);
+
 	const dismiss = useCallback(() => {
 		const ids = recent.map((entry) => entry.id);
 		setSeen((prev) => Array.from(new Set([...prev, ...ids])));
-		posthog.capture("changelog_dismissed", { recent_count: recent.length });
+		const visibleForSeconds =
+			shownAtRef.current === null ? null : Math.round((performance.now() - shownAtRef.current) / 100) / 10;
+		posthog.capture("changelog_dismissed", { recent_count: recent.length, visible_for_seconds: visibleForSeconds });
 	}, [recent, setSeen]);
 
 	const visible = showOlder ? [...recent, ...older] : recent;
@@ -102,7 +109,10 @@ export function ChangelogWidget() {
 				entries={visible}
 				olderCount={older.length}
 				showOlder={showOlder}
-				onToggleOlder={() => setShowOlder((value) => !value)}
+				onToggleOlder={() => {
+					posthog.capture("changelog_older_toggled", { expanded: !showOlder });
+					setShowOlder((value) => !value);
+				}}
 			/>
 		</div>
 	);
@@ -124,9 +134,10 @@ function ChangelogCarousel({
 	const [progressKey, setProgressKey] = useState(0);
 	const [paused, setPaused] = useState(false);
 
-	const goTo = useCallback((next: number) => {
+	const goTo = useCallback((next: number, method: "dot" | "swipe") => {
 		setIndex(next);
 		setProgressKey((key) => key + 1);
+		posthog.capture("changelog_navigated", { method, to_index: next });
 	}, []);
 
 	const advance = useCallback(() => {
@@ -137,23 +148,108 @@ function ChangelogCarousel({
 	const pause = useCallback(() => setPaused(true), []);
 	const resume = useCallback(() => setPaused(false), []);
 
+	const [dragX, setDragX] = useState(0);
+	const [dragging, setDragging] = useState(false);
+	const dragRef = useRef<{ pointerId: number; startX: number; startTime: number; width: number } | null>(null);
+
+	const onPointerDown = useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			if (count <= 1 || !event.isPrimary) return;
+			dragRef.current = {
+				pointerId: event.pointerId,
+				startX: event.clientX,
+				startTime: event.timeStamp,
+				width: event.currentTarget.offsetWidth,
+			};
+			pause();
+		},
+		[count, pause],
+	);
+
+	const onPointerMove = useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			const drag = dragRef.current;
+			if (!drag || event.pointerId !== drag.pointerId) return;
+			let delta = event.clientX - drag.startX;
+			if (!dragging) {
+				if (Math.abs(delta) < 6) return;
+				setDragging(true);
+				event.currentTarget.setPointerCapture(event.pointerId);
+			}
+			if ((index === 0 && delta > 0) || (index === count - 1 && delta < 0)) delta /= 3;
+			setDragX(delta);
+		},
+		[count, dragging, index],
+	);
+
+	const settleDrag = useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			dragRef.current = null;
+			setDragging(false);
+			setDragX(0);
+			if (event.pointerType !== "mouse") resume();
+		},
+		[resume],
+	);
+
+	const onPointerUp = useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			const drag = dragRef.current;
+			if (!drag || event.pointerId !== drag.pointerId) return;
+			settleDrag(event);
+			const delta = event.clientX - drag.startX;
+			const elapsed = event.timeStamp - drag.startTime;
+			const isFlick = Math.abs(delta) > 24 && elapsed < 250;
+			if (Math.abs(delta) < drag.width / 4 && !isFlick) return;
+			if (delta < 0 && index < count - 1) goTo(index + 1, "swipe");
+			else if (delta > 0 && index > 0) goTo(index - 1, "swipe");
+		},
+		[count, goTo, index, settleDrag],
+	);
+
+	const onPointerCancel = useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			const drag = dragRef.current;
+			if (!drag || event.pointerId !== drag.pointerId) return;
+			settleDrag(event);
+		},
+		[settleDrag],
+	);
+
 	const active = entries[index] ?? entries[0];
 
 	return (
 		<div onMouseEnter={pause} onMouseLeave={resume} onFocusCapture={pause} onBlurCapture={resume}>
-			<div className="grid">
-				{entries.map((entry, i) => (
-					<div
-						key={entry.id}
-						aria-hidden={i !== index}
-						className={cn(
-							"col-start-1 row-start-1 transition-opacity duration-500 ease-out",
-							i === index ? "opacity-100" : "pointer-events-none opacity-0",
-						)}
-					>
-						<ChangelogCard entry={entry} />
-					</div>
-				))}
+			<div
+				className={cn("touch-pan-y overflow-hidden", count > 1 && "cursor-grab active:cursor-grabbing")}
+				onPointerDown={onPointerDown}
+				onPointerMove={onPointerMove}
+				onPointerUp={onPointerUp}
+				onPointerCancel={onPointerCancel}
+			>
+				<div
+					className={cn(
+						"flex [&_img]:pointer-events-none",
+						dragging
+							? "select-none"
+							: "transition-transform duration-300 ease-[cubic-bezier(0.215,0.61,0.355,1)] motion-reduce:transition-none",
+					)}
+					style={{ transform: `translate3d(calc(${index * -100}% + ${dragX}px), 0, 0)` }}
+				>
+					{entries.map((entry, i) => {
+						const offset = (i - index + count) % count;
+						const nearby = offset <= 1 || offset === count - 1;
+						return (
+							<div
+								key={entry.id}
+								aria-hidden={i !== index}
+								className={cn("w-full shrink-0 backface-hidden", !nearby && "invisible")}
+							>
+								<ChangelogCard entry={entry} />
+							</div>
+						);
+					})}
+				</div>
 			</div>
 			<div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
 				{count > 1 ? (
@@ -164,7 +260,7 @@ function ChangelogCarousel({
 								type="button"
 								aria-label={`Go to update ${i + 1}`}
 								aria-current={i === index}
-								onClick={() => goTo(i)}
+								onClick={() => goTo(i, "dot")}
 								className="group flex h-7 items-center px-1"
 							>
 								<span
