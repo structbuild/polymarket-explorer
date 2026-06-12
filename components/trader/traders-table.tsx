@@ -307,7 +307,7 @@ function buildColumns(
 		{
 			id: "openPositions",
 			meta: { title: "Open Positions" },
-			header: () => renderSortableHeader("Open Positions", "unrealized_pnl", sortCtx),
+			header: () => renderSortableHeader("Open Positions", "open_positions_value", sortCtx),
 			size: TRADER_TABLE_COLUMN_SIZES.openPositions,
 			cell: ({ row }) => {
 				const value = row.original.open_positions_value;

@@ -8,6 +8,7 @@ import {
 	ArrowRightIcon,
 	ArrowUpRightIcon,
 	type LucideIcon,
+	PauseIcon,
 	SparklesIcon,
 	WandSparklesIcon,
 	WrenchIcon,
@@ -253,7 +254,8 @@ function ChangelogCarousel({
 			</div>
 			<div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
 				{count > 1 ? (
-					<div className="flex items-center">
+					<div className="flex items-center gap-1.5">
+						<div className="flex items-center">
 						{entries.map((entry, i) => (
 							<button
 								key={entry.id}
@@ -273,7 +275,10 @@ function ChangelogCarousel({
 										<span
 											key={progressKey}
 											onAnimationEnd={advance}
-											className="block h-full w-full origin-left rounded-full bg-foreground"
+											className={cn(
+												"block h-full w-full origin-left rounded-full transition-colors",
+												paused ? "bg-amber-400" : "bg-foreground",
+											)}
 											style={{
 												animation: `changelogProgress ${AUTOPLAY_DURATION}ms linear forwards`,
 												animationPlayState: paused ? "paused" : "running",
@@ -283,6 +288,14 @@ function ChangelogCarousel({
 								</span>
 							</button>
 						))}
+						</div>
+						<PauseIcon
+							aria-hidden
+							className={cn(
+								"size-3 fill-current text-amber-400 transition-opacity duration-200",
+								paused ? "opacity-100" : "opacity-0",
+							)}
+						/>
 					</div>
 				) : (
 					<span />

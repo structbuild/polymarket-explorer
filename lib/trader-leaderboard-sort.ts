@@ -3,7 +3,7 @@ export const TRADER_LEADERBOARD_SORT_KEYS = [
 	"realized_pnl_usd",
 	"unrealized_pnl_usd",
 	"usd_balance",
-	"unrealized_pnl",
+	"open_positions_value",
 	"open_position_count",
 	"total_volume_usd",
 	"buy_volume_usd",
@@ -56,6 +56,8 @@ const CATEGORY_SORT_OVERRIDES: Partial<Record<TraderLeaderboardSortKey, string>>
 const CATEGORY_UNSUPPORTED_SORTS = new Set<TraderLeaderboardSortKey>([
 	"usd_balance",
 	"events_traded",
+	"open_positions_value",
+	"open_position_count",
 	"maker_rebate_count",
 	"maker_rebate_usd",
 	"reward_count",
@@ -77,6 +79,9 @@ export function parseTraderLeaderboardSort(
 	scope: LeaderboardScope,
 ): TraderLeaderboardSortKey {
 	const raw = Array.isArray(value) ? value[0] : value;
+	if (raw === "unrealized_pnl") {
+		return scope === "global" ? "open_positions_value" : DEFAULT_TRADER_LEADERBOARD_SORT;
+	}
 	if (raw && (TRADER_LEADERBOARD_SORT_KEYS as readonly string[]).includes(raw)) {
 		const key = raw as TraderLeaderboardSortKey;
 		if (isLeaderboardSortSupported(key, scope)) return key;
@@ -97,7 +102,7 @@ const SORT_LABELS: Record<TraderLeaderboardSortKey, string> = {
 	realized_pnl_usd: "realized profit",
 	unrealized_pnl_usd: "unrealized profit",
 	usd_balance: "wallet balance",
-	unrealized_pnl: "open positions value",
+	open_positions_value: "open positions value",
 	open_position_count: "open positions",
 	total_volume_usd: "volume",
 	buy_volume_usd: "buy volume",
@@ -142,7 +147,6 @@ export function resolveLeaderboardSortField(
 ): string | undefined {
 	if (sort === "best_win") return "best_trade_pnl_usd";
 	if (sort === "worst_loss") return "worst_trade_pnl_usd";
-	if (sort === "unrealized_pnl") return "open_positions_value";
 	if (scope === "category" && CATEGORY_SORT_OVERRIDES[sort]) {
 		return CATEGORY_SORT_OVERRIDES[sort] as string;
 	}
