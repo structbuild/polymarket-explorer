@@ -265,6 +265,7 @@ export default function TraderMarkets({ address, page, pageNumber, sortBy, sortD
 			}
 			columns={columns}
 			data={currentPage.data}
+			getRowHref={(row) => (row.market_slug ? `/markets/${row.market_slug}` : null)}
 			storageKey="markets-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No market PnL yet."

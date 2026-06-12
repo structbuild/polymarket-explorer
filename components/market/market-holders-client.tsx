@@ -207,6 +207,7 @@ export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHoldersV3[]
 		<DataTable
 			columns={columns}
 			data={rows}
+			getRowHref={(row) => `/traders/${row.trader.address}`}
 			storageKey="market-holders-table"
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No holders for this outcome."

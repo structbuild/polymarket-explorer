@@ -498,6 +498,7 @@ export function MarketsTable(props: MarketsTableProps) {
 			tableName="markets"
 			columns={columns}
 			data={sortedMarkets}
+			getRowHref={(row) => (row.slug ? `/markets/${row.slug}` : null)}
 			storageKey={storageKey}
 			defaultColumnVisibility={defaultColumnVisibility}
 			emptyMessage="No markets to show."

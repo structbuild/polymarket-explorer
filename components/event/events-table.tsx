@@ -359,6 +359,7 @@ export function EventsTable(props: EventsTableProps) {
 			defaultTimeframe={DEFAULT_TIMEFRAME}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			getRowHref={(row) => (row.slug ? `/events/${row.slug}` : null)}
 			{...controlledTimeframeProps}
 		/>
 	);

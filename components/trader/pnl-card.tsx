@@ -54,11 +54,11 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 		scroll: false,
 		startTransition: startFillGapsTransition,
 	})
-	const [storedFillGaps, setStoredFillGaps] = useLocalStorage<boolean>(FILL_GAPS_STORAGE_KEY, true)
+	const [storedFillGaps, setStoredFillGaps] = useLocalStorage<boolean>(FILL_GAPS_STORAGE_KEY, false)
 
 	useEffect(() => {
 		if (storedFillGaps !== pnlFillGaps) {
-			setFillGaps(storedFillGaps ? null : false)
+			setFillGaps(storedFillGaps ? true : null)
 		}
 	}, [storedFillGaps, pnlFillGaps, setFillGaps])
 
@@ -99,7 +99,7 @@ export function PnlCard({ data, displayName, address, profileImage, annotations 
 	const handleFillGapsChange = useCallback(
 		(next: boolean) => {
 			setStoredFillGaps(next)
-			setFillGaps(next ? null : false)
+			setFillGaps(next ? true : null)
 		},
 		[setFillGaps, setStoredFillGaps],
 	)

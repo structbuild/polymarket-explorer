@@ -233,6 +233,7 @@ export function RewardsTable({ markets }: Props) {
 			emptyMessage="No reward markets found."
 			columnLayout="fixed"
 			defaultPageSize={25}
+			getRowHref={(row) => (row.market_slug ? `/markets/${row.market_slug}` : null)}
 		/>
 	);
 }

@@ -9,6 +9,7 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site-metadata";
 import { Header } from "@/components/layout/header";
 import { NotificationBar } from "@/components/layout/notification-bar";
 import { ChangelogWidget } from "@/components/layout/changelog-widget";
+import { BackToTop } from "@/components/layout/back-to-top";
 import Footer from "@/components/layout/footer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -94,6 +95,7 @@ export default function RootLayout({
 								<Footer />
 							</div>
 							<ChangelogWidget />
+							<BackToTop />
 						</TooltipProvider>
 					</ThemeProvider>
 				</NuqsAdapter>

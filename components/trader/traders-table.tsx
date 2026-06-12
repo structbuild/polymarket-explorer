@@ -491,6 +491,7 @@ export function TradersTable({
 			columnLayout="fixed"
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRight}
+			getRowHref={(row) => `/traders/${normalizeWalletAddress(row.trader.address) ?? row.trader.address}`}
 		/>
 	);
 }

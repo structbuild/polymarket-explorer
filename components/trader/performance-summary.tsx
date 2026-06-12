@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { InfoRow } from "@/components/trader/info-row";
 import { PeriodRows } from "@/components/trader/period-rows";
 import { Separator } from "@/components/ui/separator";
+import { TruncateTooltip } from "@/components/ui/truncate-tooltip";
 import type { PnlPeriods, PnlStreaks } from "@/lib/struct/pnl";
 import { formatDuration, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
@@ -242,7 +243,7 @@ function MetricCell({ label, children }: { label: string; children: React.ReactN
 	return (
 		<div className="min-w-0">
 			<p className="truncate text-xs text-muted-foreground sm:text-sm">{label}</p>
-			<div className="mt-0.5 min-w-0 truncate text-sm font-medium tabular-nums sm:text-base">{children}</div>
+			<TruncateTooltip className="mt-0.5 text-sm font-medium tabular-nums sm:text-base">{children}</TruncateTooltip>
 		</div>
 	);
 }

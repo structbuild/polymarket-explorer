@@ -292,6 +292,7 @@ export function BuildersTable({
 			storageKey="builders-leaderboard"
 			columns={columns}
 			data={builders}
+			getRowHref={(row) => `/builders/${encodeURIComponent(row.builder_code)}`}
 			emptyMessage="No builders found."
 			columnLayout="fixed"
 			toolbarLeft={toolbarLeft}

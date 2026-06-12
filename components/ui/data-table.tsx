@@ -13,6 +13,8 @@ import {
 	useReactTable,
 } from "@tanstack/react-table"
 import { ChevronLeftIcon, ChevronRightIcon, Settings2Icon } from "lucide-react"
+import type { Route } from "next"
+import Link from "next/link"
 import posthog from "posthog-js"
 
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
@@ -63,6 +65,7 @@ type BaseDataTableProps<TData> = {
 	controlledTimeframe?: MetricsTimeframeChoice
 	onControlledTimeframeChange?: (value: MetricsTimeframeChoice) => void
 	renderRow?: (row: Row<TData>, columnCount: number) => React.ReactNode | undefined
+	getRowHref?: (row: TData) => string | null | undefined
 }
 
 type ClientPaginationProps = {
@@ -126,6 +129,7 @@ function DataTableView<TData>({
 	onTimeframeChange,
 	homeToolbarGrid = false,
 	renderRow,
+	getRowHref,
 }: DataTableViewProps<TData>) {
 	const hasRows = data.length > 0
 	const hideableColumns = table.getAllColumns().filter((col) => col.getCanHide())
@@ -262,9 +266,17 @@ function DataTableView<TData>({
 								if (custom !== undefined) {
 									return <Fragment key={row.id}>{custom}</Fragment>
 								}
+								const rowHref = getRowHref?.(row.original)
 								return (
-									<TableRow key={row.id} className="bg-card text-foreground/90 hover:bg-card">
-										{visibleCells.map((cell) => (
+									<TableRow
+										key={row.id}
+										className={cn(
+											"bg-card text-foreground/90 hover:bg-card",
+											rowHref &&
+												"relative cursor-pointer transition-colors hover:bg-muted/40 [&_a:not([data-row-link])]:relative [&_a:not([data-row-link])]:z-10 [&_button]:relative [&_button]:z-10",
+										)}
+									>
+										{visibleCells.map((cell, cellIndex) => (
 											<TableCell
 												key={cell.id}
 												className={cn(
@@ -272,6 +284,16 @@ function DataTableView<TData>({
 														?.cellClassName,
 												)}
 											>
+												{rowHref && cellIndex === 0 ? (
+													<Link
+														href={rowHref as Route}
+														prefetch={false}
+														tabIndex={-1}
+														aria-hidden="true"
+														data-row-link=""
+														className="absolute inset-0 z-0"
+													/>
+												) : null}
 												{flexRender(cell.column.columnDef.cell, cell.getContext())}
 											</TableCell>
 										))}
@@ -408,6 +430,7 @@ function ClientPaginatedDataTable<TData>({
 	onControlledTimeframeChange,
 	homeToolbarGrid,
 	renderRow,
+	getRowHref,
 }: BaseDataTableProps<TData> & ClientPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -477,6 +500,7 @@ function ClientPaginatedDataTable<TData>({
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
 			renderRow={renderRow}
+			getRowHref={getRowHref}
 			table={table}
 			pagination={{
 				show: totalRows > PAGE_SIZES[0],
@@ -514,6 +538,7 @@ function NonPaginatedDataTable<TData>({
 	onControlledTimeframeChange,
 	homeToolbarGrid,
 	renderRow,
+	getRowHref,
 }: BaseDataTableProps<TData> & NoPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -551,6 +576,7 @@ function NonPaginatedDataTable<TData>({
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
 			renderRow={renderRow}
+			getRowHref={getRowHref}
 			table={table}
 			pagination={{
 				show: false,
@@ -587,6 +613,7 @@ function ServerPaginatedDataTable<TData>({
 	isLoading,
 	onPageIndexChange,
 	renderRow,
+	getRowHref,
 }: BaseDataTableProps<TData> & ServerPaginationProps) {
 	const [columnVisibility, setColumnVisibility] = useLocalStorage<VisibilityState>(
 		storageKey ? `${storageKey}-columns` : "__unused__",
@@ -629,6 +656,7 @@ function ServerPaginatedDataTable<TData>({
 			timeframe={timeframes && timeframes.length > 0 ? timeframe : undefined}
 			onTimeframeChange={setTimeframe}
 			renderRow={renderRow}
+			getRowHref={getRowHref}
 			table={table}
 			pagination={{
 				show: pageIndex > 0 || hasNextPage || data.length > PAGE_SIZES[0],

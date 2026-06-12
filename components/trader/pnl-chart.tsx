@@ -2,6 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
+import Link from "next/link"
+import type { Route } from "next"
 import {
 	CandlestickSeries,
 	ColorType,
@@ -20,7 +22,6 @@ import {
 	type ChartConfig,
 } from "@/components/ui/chart"
 import { Badge } from "@/components/ui/badge"
-import { ExternalLink } from "@/components/ui/external-link"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -229,7 +230,7 @@ function ExitClusterList({ exits, timezone }: { exits: PnlChartExit[]; timezone?
 
 function ExitClusterRow({ exit, timezone }: { exit: PnlChartExit; timezone?: string }) {
 	const isWin = exit.pnlUsd >= 0
-	const href = exit.marketSlug ? `https://polymarket.com/market/${exit.marketSlug}` : null
+	const href = exit.marketSlug ? (`/markets/${exit.marketSlug}` as Route) : null
 	const image = exit.imageUrl ? normalizePolymarketS3ImageUrl(exit.imageUrl) : null
 	const className = "flex items-start gap-2.5 px-3 py-2.5"
 
@@ -283,9 +284,9 @@ function ExitClusterRow({ exit, timezone }: { exit: PnlChartExit; timezone?: str
 
 	if (href) {
 		return (
-			<ExternalLink href={href} linkType="polymarket_market" className={cn(className, "transition-colors hover:bg-muted")}>
+			<Link href={href} prefetch={false} className={cn(className, "transition-colors hover:bg-muted")}>
 				{content}
-			</ExternalLink>
+			</Link>
 		)
 	}
 
@@ -747,7 +748,7 @@ export function ChartSettingsButton({
 	lossExitsAvailable = false,
 	lossExitsActive = false,
 	onLossExitsChange,
-	fillGapsActive = true,
+	fillGapsActive = false,
 	onFillGapsChange,
 	tooltipFields = defaultTooltipFields,
 	onTooltipFieldChange,

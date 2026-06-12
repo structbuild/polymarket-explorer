@@ -435,6 +435,7 @@ export function MarketTopTradersClient({
 				emptyMessage="No traders yet for this outcome."
 				columnLayout="fixed"
 				paginationMode="none"
+				getRowHref={(row) => `/traders/${normalizeWalletAddress(row.trader.address) ?? row.trader.address}`}
 				toolbarLeft={outcomePicker}
 			/>
 		</div>

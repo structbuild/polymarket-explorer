@@ -259,6 +259,7 @@ export function TagsTable({
 			emptyMessage="No tags found."
 			columnLayout="fixed"
 			tableName="tags"
+			getRowHref={(row) => `/tags/${row.slug ?? row.label}`}
 			toolbarLeft={toolbarLeft}
 			toolbarRight={toolbarRightCombined}
 		/>

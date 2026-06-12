@@ -24,7 +24,7 @@ export const pnlTimeframeParser = parseAsStringLiteral(pnlTimeframeValues).withD
 export const pnlAnchorParser = parseAsStringLiteral(pnlAnchorValues);
 export const pnlFromParser = parseAsUnixSeconds;
 export const pnlToParser = parseAsUnixSeconds;
-export const pnlFillGapsParser = parseAsBoolean.withDefault(true);
+export const pnlFillGapsParser = parseAsBoolean.withDefault(false);
 
 export const traderSearchParamParsers = {
 	tab: parseAsStringLiteral(traderTabValues).withDefault("active"),
