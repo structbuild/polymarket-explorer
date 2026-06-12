@@ -5,9 +5,9 @@ import type { BuilderSortBy, BuilderTimeframe, MarketEntry, PnlTimeframe, Polyma
 
 import {
 	defaultTraderTablePageSize,
-	getMarketTopTradersV3,
-	getPositionTopTradersV3,
-	getTopTradesMarketsV3,
+	getMarketTopTraders,
+	getPositionTopTraders,
+	getTopTradesMarkets,
 	getTraderCategoriesPage,
 	getTraderMarketsPage,
 	getTraderPositionsPage,
@@ -565,7 +565,7 @@ export async function getMarketTabPageAction({
 		case "top-traders": {
 			const [market, topTraders] = await Promise.all([
 				getMarketBySlug(slug),
-				getMarketTopTradersV3({ market_slug: slug, limit: 20 }),
+				getMarketTopTraders({ market_slug: slug, limit: 20 }),
 			]);
 			const outcomes = (market?.outcomes ?? [])
 				.filter((o): o is { name: string; position_id: string } & typeof o => Boolean(o.position_id))
@@ -605,7 +605,7 @@ export async function getMarketPositionTopTradersAction({
 		return { positionId, traders: [] };
 	}
 
-	const { data } = await getPositionTopTradersV3(positionId, { limit: 20 });
+	const { data } = await getPositionTopTraders(positionId, { limit: 20 });
 	return { positionId, traders: data };
 }
 
@@ -619,7 +619,7 @@ export async function getBestTradesAction({
 	limit: number;
 }): Promise<{ timeframe: PnlTimeframe; rows: MarketEntry[] }> {
 	const safeTimeframe = BEST_TRADES_TIMEFRAME_SET.has(timeframe) ? timeframe : "1d";
-	const { data } = await getTopTradesMarketsV3({
+	const { data } = await getTopTradesMarkets({
 		timeframe: safeTimeframe,
 		limit,
 	});
@@ -718,7 +718,7 @@ export async function searchAction(query: string): Promise<SearchResult> {
 			name: t.name ?? null,
 			pseudonym: t.pseudonym ?? null,
 			profile_image: t.profile_image ?? null,
-			volume_usd: t.pnl?.total_volume_usd ?? null,
+			volume_usd: (t.pnl as { total_volume_usd?: number | null } | null | undefined)?.total_volume_usd ?? null,
 		})),
 		events: eventResults,
 		markets: marketResults,

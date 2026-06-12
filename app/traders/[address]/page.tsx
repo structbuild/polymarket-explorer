@@ -37,7 +37,7 @@ import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { getServerTimezone } from "@/lib/timezone.server";
 import { getTraderAnalyticsChanges, getTraderAnalyticsDeltas, getTraderAnalyticsTimeseries } from "@/lib/struct/analytics-queries";
 import { parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } from "@/lib/struct/analytics-shared";
-import { getTraderCategoryPnlV3, getTraderPnlSummary, getTraderPnlV3Changes, getTraderProfile } from "@/lib/struct/queries";
+import { getTraderCategoryPnl, getTraderPnlSummary, getTraderPnlChanges, getTraderProfile } from "@/lib/struct/queries";
 import { SectionAnchor } from "@/components/layout/section-anchor";
 import type { SubheaderSlot } from "@/components/layout/section-subheader-bar";
 import { BridgeSectionSubheader, TabBridgeProvider } from "@/components/layout/tab-bridge";
@@ -45,7 +45,7 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type { PnlV3ChangesResponse, PnlV3RiskResponse, GlobalEntry, UserProfile } from "@structbuild/sdk";
+import type { PnlChangesResponse, PnlRiskResponse, GlobalEntry, UserProfile } from "@structbuild/sdk";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -241,8 +241,8 @@ async function TraderPerformanceSummarySection({
 }: {
 	pnlSummary: GlobalEntry | null;
 	insightsPromise: Promise<TraderInsightsData>;
-	pnlRiskPromise: Promise<PnlV3RiskResponse | null>;
-	pnlChangesPromise: Promise<PnlV3ChangesResponse | null>;
+	pnlRiskPromise: Promise<PnlRiskResponse | null>;
+	pnlChangesPromise: Promise<PnlChangesResponse | null>;
 }) {
 	const [{ streaks, periods }, pnlRisk, pnlChanges] = await Promise.all([
 		insightsPromise,
@@ -296,7 +296,7 @@ async function TraderOverviewSection({
 }) {
 	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
 	const pnlRiskPromise = getTraderPnlRisk(address, PNL_RISK_TIMEFRAMES[pnlRange.timeframe]);
-	const pnlChangesPromise = getTraderPnlV3Changes(address);
+	const pnlChangesPromise = getTraderPnlChanges(address);
 
 	const displayName = getTraderDisplayName({
 		address,
@@ -392,7 +392,7 @@ async function TraderDnaSection({
 	const [pnlSummary, cumulativePnlUsd, categoryPage] = await Promise.all([
 		pnlSummaryPromise,
 		cumulativePnlUsdPromise,
-		getTraderCategoryPnlV3(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
+		getTraderCategoryPnl(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
 	]);
 	const categoryVolumes = categoryPage.data.map((entry) => entry.total_volume_usd ?? 0);
 	return (

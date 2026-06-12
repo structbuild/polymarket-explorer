@@ -4,14 +4,13 @@ import type {
 	BuilderMetadata,
 	CategoryEntry,
 	Event,
-	EventEntry,
 	GlobalEntry,
 	MarketEntry,
 	MarketResponse,
-	PnlV3CandlestickBar,
-	PnlV3ChangesResponse,
-	PnlV3PeriodsResponse,
-	PnlV3RiskResponse,
+	PnlCandlestickBar,
+	PnlChangesResponse,
+	PnlPeriodsResponse,
+	PnlRiskResponse,
 	PolymarketCategory,
 	PositionEntry,
 	StructClient,
@@ -36,10 +35,10 @@ const defaultCategoriesLimit = defaultTraderTablePageSize;
 const defaultMarketsLimit = defaultTraderTablePageSize;
 const maxTraderSearchQueryLength = 100;
 
-export type GetTraderPositionPnlV3Request = Parameters<StructClient["trader"]["getTraderPositionPnlV3"]>[0];
+export type GetTraderPositionPnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
 
-export type TraderPositionsOptions = Omit<GetTraderPositionPnlV3Request, "address" | "status">;
+export type TraderPositionsOptions = Omit<GetTraderPositionPnlRequest, "address" | "status">;
 export type TraderTradesPageOptions = Omit<GetTraderTradesRequest, "address">;
 
 function normalizeTraderSearchQuery(query: string) {
@@ -172,7 +171,7 @@ async function fetchTraderPnlSummary(address: string): Promise<GlobalEntry> {
 	}
 
 	try {
-		const response = await client.trader.getTraderPnlV3({ address, timeframe: "lifetime" });
+		const response = await client.trader.getTraderPnl({ address, timeframe: "lifetime" });
 
 		if (!response.data) {
 			throw new TraderDataUnavailableError("Trader PnL summary was empty");
@@ -254,7 +253,7 @@ async function fetchTraderPositionsPage(
 
 	try {
 		const requestLimit = limit + 1;
-		const params: GetTraderPositionPnlV3Request = {
+		const params: GetTraderPositionPnlRequest = {
 			address,
 			status,
 			...restOptions,
@@ -262,7 +261,7 @@ async function fetchTraderPositionsPage(
 			sort_by: sort_by ?? defaultTraderPositionSortBy[status],
 			sort_direction: sort_direction ?? "desc",
 		};
-		const response = await client.trader.getTraderPositionPnlV3(params);
+		const response = await client.trader.getTraderOutcomePnl(params);
 		const data = response.data.slice(0, limit);
 		const hasMore = response.data.length > limit;
 		const nextCursor = hasMore ? offset + data.length : null;
@@ -358,25 +357,23 @@ export async function getTraderTradesPage(
 	return fetchTraderTradesPage(normalizedAddress, options);
 }
 
-export type PnlV3Timeframe = "1d" | "7d" | "30d" | "lifetime";
-export type PnlV3SortDirection = "asc" | "desc";
+export type PnlTimeframe = "1d" | "7d" | "30d" | "lifetime";
+export type PnlSortDirection = "asc" | "desc";
 
-export type GetTraderPnlV3Options = {
-	timeframe?: PnlV3Timeframe;
+export type GetTraderPnlOptions = {
+	timeframe?: PnlTimeframe;
 };
 
-export type GetTraderPnlV3CandlesOptions = Parameters<StructClient["trader"]["getTraderPnlV3Candles"]>[0];
-export type GetTraderPnlV3PeriodsOptions = Parameters<StructClient["trader"]["getTraderPnlV3Periods"]>[0];
-export type GetTraderPnlV3RiskOptions = Parameters<StructClient["trader"]["getTraderPnlV3Risk"]>[0];
-export type GetTraderMarketPnlV3Options = Parameters<StructClient["trader"]["getTraderMarketPnlV3"]>[0];
-export type GetTraderEventPnlV3Options = Parameters<StructClient["trader"]["getTraderEventPnlV3"]>[0];
-export type GetTraderCategoryPnlV3Options = Parameters<StructClient["trader"]["getTraderCategoryPnlV3"]>[0];
-export type GetTraderPositionPnlV3Options = Parameters<StructClient["trader"]["getTraderPositionPnlV3"]>[0];
-export type GetTopTradesMarketsV3Options = Parameters<StructClient["trader"]["getTopTradesMarketsV3"]>[0];
-export type GetCategoryTopTradersV3Options = Parameters<StructClient["tags"]["getCategoryTopTradersV3"]>[0];
-export type GetEventTopTradersV3Options = Parameters<StructClient["events"]["getEventTopTradersV3"]>[0];
-export type GetMarketTopTradersV3Options = Parameters<StructClient["markets"]["getMarketTopTradersV3"]>[0];
-export type GetPositionTopTradersV3Options = Parameters<StructClient["markets"]["getPositionTopTradersV3"]>[0];
+export type GetTraderPnlCandlesOptions = Parameters<StructClient["trader"]["getTraderPnlCandles"]>[0];
+export type GetTraderPnlPeriodsOptions = Parameters<StructClient["trader"]["getTraderPnlPeriods"]>[0];
+export type GetTraderPnlRiskOptions = Parameters<StructClient["trader"]["getTraderPnlRisk"]>[0];
+export type GetTraderMarketPnlOptions = Parameters<StructClient["trader"]["getTraderMarketPnl"]>[0];
+export type GetTraderCategoryPnlOptions = Parameters<StructClient["trader"]["getTraderCategoryPnl"]>[0];
+export type GetTraderPositionPnlOptions = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
+export type GetTopTradesMarketsOptions = Parameters<StructClient["trader"]["getTopTradesMarkets"]>[0];
+export type GetCategoryTopTradersOptions = Parameters<StructClient["tags"]["getCategoryTopTraders"]>[0];
+export type GetMarketTopTradersOptions = Parameters<StructClient["markets"]["getMarketTopTraders"]>[0];
+export type GetPositionTopTradersOptions = Parameters<StructClient["markets"]["getPositionTopTraders"]>[0];
 
 export type CursorPage<T> = {
 	data: T[];
@@ -399,9 +396,9 @@ function readCursorPage<T>(response: { data?: T[] | null; pagination?: { has_mor
 	};
 }
 
-export async function getTraderPnlV3(
+export async function getTraderPnl(
 	address: string,
-	options?: GetTraderPnlV3Options,
+	options?: GetTraderPnlOptions,
 ): Promise<GlobalEntry | null> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
@@ -411,7 +408,7 @@ export async function getTraderPnlV3(
 	}
 
 	try {
-		const response = await client.trader.getTraderPnlV3({
+		const response = await client.trader.getTraderPnl({
 			address: normalizedAddress,
 			...(options ?? {}),
 		});
@@ -420,15 +417,15 @@ export async function getTraderPnlV3(
 		if (readStatus(error) === 404) {
 			return null;
 		}
-		logStructError(`getTraderPnlV3:${normalizedAddress}`, error);
+		logStructError(`getTraderPnl:${normalizedAddress}`, error);
 		return null;
 	}
 }
 
-export async function getTraderPnlV3Candles(
+export async function getTraderPnlCandles(
 	address: string,
-	options?: Omit<GetTraderPnlV3CandlesOptions, "address">,
-): Promise<PnlV3CandlestickBar[]> {
+	options?: Omit<GetTraderPnlCandlesOptions, "address">,
+): Promise<PnlCandlestickBar[]> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -437,7 +434,7 @@ export async function getTraderPnlV3Candles(
 	}
 
 	try {
-		const response = await client.trader.getTraderPnlV3Candles({
+		const response = await client.trader.getTraderPnlCandles({
 			address: normalizedAddress,
 			...(options ?? {}),
 		});
@@ -446,14 +443,14 @@ export async function getTraderPnlV3Candles(
 		if (readStatus(error) === 404) {
 			return [];
 		}
-		logStructError(`getTraderPnlV3Candles:${normalizedAddress}`, error);
+		logStructError(`getTraderPnlCandles:${normalizedAddress}`, error);
 		return [];
 	}
 }
 
-export async function getTraderPnlV3Changes(
+export async function getTraderPnlChanges(
 	address: string,
-): Promise<PnlV3ChangesResponse | null> {
+): Promise<PnlChangesResponse | null> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -462,7 +459,7 @@ export async function getTraderPnlV3Changes(
 	}
 
 	try {
-		const response = await client.trader.getTraderPnlV3Changes({
+		const response = await client.trader.getTraderPnlChanges({
 			address: normalizedAddress,
 		});
 		return response.data ?? null;
@@ -470,15 +467,15 @@ export async function getTraderPnlV3Changes(
 		if (readStatus(error) === 404) {
 			return null;
 		}
-		logStructError(`getTraderPnlV3Changes:${normalizedAddress}`, error);
+		logStructError(`getTraderPnlChanges:${normalizedAddress}`, error);
 		return null;
 	}
 }
 
-export async function getTraderPnlV3Periods(
+export async function getTraderPnlPeriods(
 	address: string,
-	options?: Omit<GetTraderPnlV3PeriodsOptions, "address">,
-): Promise<PnlV3PeriodsResponse | null> {
+	options?: Omit<GetTraderPnlPeriodsOptions, "address">,
+): Promise<PnlPeriodsResponse | null> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -487,33 +484,7 @@ export async function getTraderPnlV3Periods(
 	}
 
 	try {
-		const response = await client.trader.getTraderPnlV3Periods({
-			address: normalizedAddress,
-			...(options ?? {}),
-		});
-		return response.data ?? null;
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return null;
-		}
-		logStructError(`getTraderPnlV3Periods:${normalizedAddress}`, error);
-		return null;
-	}
-}
-
-export async function getTraderPnlV3Risk(
-	address: string,
-	options?: Omit<GetTraderPnlV3RiskOptions, "address">,
-): Promise<PnlV3RiskResponse | null> {
-	const client = getStructClient();
-	const normalizedAddress = normalizeWalletAddress(address);
-
-	if (!client || !normalizedAddress) {
-		return null;
-	}
-
-	try {
-		const response = await client.trader.getTraderPnlV3Risk({
+		const response = await client.trader.getTraderPnlPeriods({
 			address: normalizedAddress,
 			...(options ?? {}),
 		});
@@ -522,14 +493,40 @@ export async function getTraderPnlV3Risk(
 		if (readStatus(error) === 404) {
 			return null;
 		}
-		logStructError(`getTraderPnlV3Risk:${normalizedAddress}`, error);
+		logStructError(`getTraderPnlPeriods:${normalizedAddress}`, error);
 		return null;
 	}
 }
 
-export async function getTraderMarketPnlV3(
+export async function getTraderPnlRisk(
 	address: string,
-	options?: Omit<GetTraderMarketPnlV3Options, "address">,
+	options?: Omit<GetTraderPnlRiskOptions, "address">,
+): Promise<PnlRiskResponse | null> {
+	const client = getStructClient();
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!client || !normalizedAddress) {
+		return null;
+	}
+
+	try {
+		const response = await client.trader.getTraderPnlRisk({
+			address: normalizedAddress,
+			...(options ?? {}),
+		});
+		return response.data ?? null;
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return null;
+		}
+		logStructError(`getTraderPnlRisk:${normalizedAddress}`, error);
+		return null;
+	}
+}
+
+export async function getTraderMarketPnl(
+	address: string,
+	options?: Omit<GetTraderMarketPnlOptions, "address">,
 ): Promise<CursorPage<MarketEntry>> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
@@ -539,7 +536,7 @@ export async function getTraderMarketPnlV3(
 	}
 
 	try {
-		const response = await client.trader.getTraderMarketPnlV3({
+		const response = await client.trader.getTraderMarketPnl({
 			address: normalizedAddress,
 			...(options ?? {}),
 		});
@@ -548,40 +545,14 @@ export async function getTraderMarketPnlV3(
 		if (readStatus(error) === 404) {
 			return emptyCursorPage<MarketEntry>();
 		}
-		logStructError(`getTraderMarketPnlV3:${normalizedAddress}`, error);
+		logStructError(`getTraderMarketPnl:${normalizedAddress}`, error);
 		return emptyCursorPage<MarketEntry>();
 	}
 }
 
-export async function getTraderEventPnlV3(
+export async function getTraderCategoryPnl(
 	address: string,
-	options?: Omit<GetTraderEventPnlV3Options, "address">,
-): Promise<CursorPage<EventEntry>> {
-	const client = getStructClient();
-	const normalizedAddress = normalizeWalletAddress(address);
-
-	if (!client || !normalizedAddress) {
-		return emptyCursorPage<EventEntry>();
-	}
-
-	try {
-		const response = await client.trader.getTraderEventPnlV3({
-			address: normalizedAddress,
-			...(options ?? {}),
-		});
-		return readCursorPage<EventEntry>(response);
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return emptyCursorPage<EventEntry>();
-		}
-		logStructError(`getTraderEventPnlV3:${normalizedAddress}`, error);
-		return emptyCursorPage<EventEntry>();
-	}
-}
-
-export async function getTraderCategoryPnlV3(
-	address: string,
-	options?: Omit<GetTraderCategoryPnlV3Options, "address">,
+	options?: Omit<GetTraderCategoryPnlOptions, "address">,
 ): Promise<CursorPage<CategoryEntry>> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
@@ -591,7 +562,7 @@ export async function getTraderCategoryPnlV3(
 	}
 
 	try {
-		const response = await client.trader.getTraderCategoryPnlV3({
+		const response = await client.trader.getTraderCategoryPnl({
 			address: normalizedAddress,
 			...(options ?? {}),
 		});
@@ -600,12 +571,12 @@ export async function getTraderCategoryPnlV3(
 		if (readStatus(error) === 404) {
 			return emptyCursorPage<CategoryEntry>();
 		}
-		logStructError(`getTraderCategoryPnlV3:${normalizedAddress}`, error);
+		logStructError(`getTraderCategoryPnl:${normalizedAddress}`, error);
 		return emptyCursorPage<CategoryEntry>();
 	}
 }
 
-export type TraderCategoriesPageOptions = Omit<GetTraderCategoryPnlV3Options, "address">;
+export type TraderCategoriesPageOptions = Omit<GetTraderCategoryPnlOptions, "address">;
 
 async function fetchTraderCategoriesPage(
 	address: string,
@@ -628,7 +599,7 @@ async function fetchTraderCategoriesPage(
 
 	try {
 		const requestLimit = limit + 1;
-		const response = await client.trader.getTraderCategoryPnlV3({
+		const response = await client.trader.getTraderCategoryPnl({
 			address,
 			...restOptions,
 			limit: requestLimit,
@@ -669,7 +640,7 @@ export async function getTraderCategoriesPage(
 	return fetchTraderCategoriesPage(normalizedAddress, options);
 }
 
-export type TraderMarketsPageOptions = Omit<GetTraderMarketPnlV3Options, "address">;
+export type TraderMarketsPageOptions = Omit<GetTraderMarketPnlOptions, "address">;
 
 async function fetchTraderMarketsPage(
 	address: string,
@@ -692,7 +663,7 @@ async function fetchTraderMarketsPage(
 
 	try {
 		const requestLimit = limit + 1;
-		const response = await client.trader.getTraderMarketPnlV3({
+		const response = await client.trader.getTraderMarketPnl({
 			address,
 			...restOptions,
 			limit: requestLimit,
@@ -733,9 +704,9 @@ export async function getTraderMarketsPage(
 	return fetchTraderMarketsPage(normalizedAddress, options);
 }
 
-export async function getTraderPositionPnlV3(
+export async function getTraderOutcomePnl(
 	address: string,
-	options: Omit<GetTraderPositionPnlV3Options, "address">,
+	options: Omit<GetTraderPositionPnlOptions, "address">,
 ): Promise<CursorPage<PositionEntry>> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
@@ -745,7 +716,7 @@ export async function getTraderPositionPnlV3(
 	}
 
 	try {
-		const response = await client.trader.getTraderPositionPnlV3({
+		const response = await client.trader.getTraderOutcomePnl({
 			address: normalizedAddress,
 			...options,
 		});
@@ -754,13 +725,13 @@ export async function getTraderPositionPnlV3(
 		if (readStatus(error) === 404) {
 			return emptyCursorPage<PositionEntry>();
 		}
-		logStructError(`getTraderPositionPnlV3:${normalizedAddress}`, error);
+		logStructError(`getTraderOutcomePnl:${normalizedAddress}`, error);
 		return emptyCursorPage<PositionEntry>();
 	}
 }
 
-export async function getTopTradesMarketsV3(
-	options?: GetTopTradesMarketsV3Options,
+export async function getTopTradesMarkets(
+	options?: GetTopTradesMarketsOptions,
 ): Promise<CursorPage<MarketEntry>> {
 	const client = getStructClient();
 
@@ -769,17 +740,17 @@ export async function getTopTradesMarketsV3(
 	}
 
 	try {
-		const response = await client.trader.getTopTradesMarketsV3(options);
+		const response = await client.trader.getTopTradesMarkets(options);
 		return readCursorPage<MarketEntry>(response);
 	} catch (error) {
-		logStructError("getTopTradesMarketsV3", error);
+		logStructError("getTopTradesMarkets", error);
 		return emptyCursorPage<MarketEntry>();
 	}
 }
 
-export async function getCategoryTopTradersV3(
+export async function getCategoryTopTraders(
 	category: PolymarketCategory,
-	options?: Omit<GetCategoryTopTradersV3Options, "category">,
+	options?: Omit<GetCategoryTopTradersOptions, "category">,
 ): Promise<CursorPage<CategoryEntry>> {
 	const client = getStructClient();
 
@@ -788,44 +759,19 @@ export async function getCategoryTopTradersV3(
 	}
 
 	try {
-		const response = await client.tags.getCategoryTopTradersV3({
+		const response = await client.tags.getCategoryTopTraders({
 			category,
 			...(options ?? {}),
 		});
 		return readCursorPage<CategoryEntry>(response);
 	} catch (error) {
-		logStructError(`getCategoryTopTradersV3:${category}`, error);
+		logStructError(`getCategoryTopTraders:${category}`, error);
 		return emptyCursorPage<CategoryEntry>();
 	}
 }
 
-export async function getEventTopTradersV3(
-	eventSlug: string,
-	options?: Omit<GetEventTopTradersV3Options, "event_slug">,
-): Promise<CursorPage<EventEntry>> {
-	const client = getStructClient();
-
-	if (!client || !eventSlug) {
-		return emptyCursorPage<EventEntry>();
-	}
-
-	try {
-		const response = await client.events.getEventTopTradersV3({
-			event_slug: eventSlug,
-			...(options ?? {}),
-		});
-		return readCursorPage<EventEntry>(response);
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return emptyCursorPage<EventEntry>();
-		}
-		logStructError(`getEventTopTradersV3:${eventSlug}`, error);
-		return emptyCursorPage<EventEntry>();
-	}
-}
-
-export async function getMarketTopTradersV3(
-	options?: GetMarketTopTradersV3Options,
+export async function getMarketTopTraders(
+	options?: GetMarketTopTradersOptions,
 ): Promise<CursorPage<MarketEntry>> {
 	const client = getStructClient();
 
@@ -834,20 +780,20 @@ export async function getMarketTopTradersV3(
 	}
 
 	try {
-		const response = await client.markets.getMarketTopTradersV3(options);
+		const response = await client.markets.getMarketTopTraders(options);
 		return readCursorPage<MarketEntry>(response);
 	} catch (error) {
 		if (readStatus(error) === 404) {
 			return emptyCursorPage<MarketEntry>();
 		}
-		logStructError("getMarketTopTradersV3", error);
+		logStructError("getMarketTopTraders", error);
 		return emptyCursorPage<MarketEntry>();
 	}
 }
 
-export async function getPositionTopTradersV3(
+export async function getPositionTopTraders(
 	positionId: string,
-	options?: Omit<GetPositionTopTradersV3Options, "position_id">,
+	options?: Omit<GetPositionTopTradersOptions, "position_id">,
 ): Promise<CursorPage<PositionEntry>> {
 	const client = getStructClient();
 
@@ -856,7 +802,7 @@ export async function getPositionTopTradersV3(
 	}
 
 	try {
-		const response = await client.markets.getPositionTopTradersV3({
+		const response = await client.markets.getPositionTopTraders({
 			position_id: positionId,
 			...(options ?? {}),
 		});
@@ -865,7 +811,7 @@ export async function getPositionTopTradersV3(
 		if (readStatus(error) === 404) {
 			return emptyCursorPage<PositionEntry>();
 		}
-		logStructError(`getPositionTopTradersV3:${positionId}`, error);
+		logStructError(`getPositionTopTraders:${positionId}`, error);
 		return emptyCursorPage<PositionEntry>();
 	}
 }

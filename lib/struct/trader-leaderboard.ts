@@ -1,7 +1,8 @@
-import type { CategoryEntry, GlobalEntry, TraderInfo } from "@structbuild/sdk";
+import type { CategoryEntry, GlobalEntry, GlobalPnlTrader, TraderInfo } from "@structbuild/sdk";
 
-type GlobalLeaderboardFields = Omit<GlobalEntry, "trader">;
-type CategoryLeaderboardFields = Omit<CategoryEntry, "category" | "trader">;
+type NullableValues<T> = { [K in keyof T]: T[K] | null };
+type GlobalLeaderboardFields = NullableValues<Omit<GlobalEntry, "trader">>;
+type CategoryLeaderboardFields = NullableValues<Omit<CategoryEntry, "category" | "trader">>;
 
 export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 	Partial<CategoryLeaderboardFields> & {
@@ -16,7 +17,7 @@ export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 		total_trades: number;
 	};
 
-export type TraderLeaderboardApiEntry = (GlobalEntry | CategoryEntry) & {
+export type TraderLeaderboardApiEntry = (GlobalEntry | GlobalPnlTrader | CategoryEntry) & {
 	trader?: TraderInfo | null;
 	buy_count?: number | null;
 	sell_count?: number | null;
@@ -95,11 +96,11 @@ export function normalizeTraderLeaderboardEntry(
 		total_sells: totalSells,
 		total_redemptions: totalRedemptions,
 		total_merges: totalMerges,
-		total_volume_usd: volumeUnavailable ? undefined : entry.total_volume_usd,
-		buy_volume_usd: volumeUnavailable ? undefined : entry.buy_volume_usd,
-		sell_volume_usd: volumeUnavailable ? undefined : entry.sell_volume_usd,
-		redemption_volume_usd: volumeUnavailable ? undefined : entry.redemption_volume_usd,
-		merge_volume_usd: volumeUnavailable ? undefined : entry.merge_volume_usd,
+		total_volume_usd: volumeUnavailable ? undefined : (entry.total_volume_usd ?? undefined),
+		buy_volume_usd: volumeUnavailable ? undefined : (entry.buy_volume_usd ?? undefined),
+		sell_volume_usd: volumeUnavailable ? undefined : (entry.sell_volume_usd ?? undefined),
+		redemption_volume_usd: volumeUnavailable ? undefined : (entry.redemption_volume_usd ?? undefined),
+		merge_volume_usd: volumeUnavailable ? undefined : (entry.merge_volume_usd ?? undefined),
 		total_trades: totalTrades,
 	};
 }

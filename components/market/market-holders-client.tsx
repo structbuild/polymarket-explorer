@@ -5,7 +5,7 @@ import posthog from "posthog-js";
 import Link from "next/link";
 import type { Route } from "next";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { HolderV3, OutcomeHoldersV3 } from "@structbuild/sdk";
+import type { MarketHolder, OutcomeHolders } from "@structbuild/sdk";
 
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +14,7 @@ import { formatNumber, formatPriceCents, toSeconds } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { cn, getTraderDisplayName } from "@/lib/utils";
 
-type HolderRow = HolderV3 & { rank: number };
+type HolderRow = MarketHolder & { rank: number };
 
 function toNumber(value: string | number | null | undefined): number | null {
 	if (value == null) return null;
@@ -80,18 +80,24 @@ const columns: ColumnDef<HolderRow, unknown>[] = [
 		id: "avg_entry",
 		header: "Avg Entry",
 		size: 110,
-		cell: ({ row }) => (
-			<span className="tabular-nums text-foreground/80">
-				{formatPriceCents(row.original.pnl?.avg_entry_price ?? null)}
-			</span>
-		),
+		cell: ({ row }) => {
+			const buyVolume = row.original.pnl?.buy_volume_usd;
+			const sharesBought = row.original.pnl?.total_shares_bought;
+			const avgEntry = buyVolume != null && sharesBought ? buyVolume / sharesBought : null;
+			return (
+				<span className="tabular-nums text-foreground/80">
+					{formatPriceCents(avgEntry)}
+				</span>
+			);
+		},
 	},
 	{
 		id: "realized_pnl",
 		header: "Realized PnL",
 		size: 140,
 		cell: ({ row }) => {
-			const pnl = row.original.pnl?.realized_pnl_usd ?? null;
+			const raw = row.original.pnl?.realized_pnl_usd;
+			const pnl = raw == null ? null : Number(raw);
 			if (pnl == null) return <span className="text-muted-foreground">—</span>;
 			return (
 				<span
@@ -160,7 +166,7 @@ const defaultColumnVisibility = {
 	fees: false,
 };
 
-export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHoldersV3[] }) {
+export function MarketHoldersClient({ outcomes }: { outcomes: OutcomeHolders[] }) {
 	const defaultValue = outcomes[0]?.position_id ?? "0";
 	const [activeOutcomeId, setActiveOutcomeId] = useState(defaultValue);
 

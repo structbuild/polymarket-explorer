@@ -1,4 +1,4 @@
-import type { MetricPctChange } from "@structbuild/sdk";
+import type { AnalyticsMetricPctChange } from "@structbuild/sdk";
 import { Suspense } from "react";
 
 import { AnalyticsChartsGrid, AnalyticsChartsGridFallback, type AnalyticsMetricPlacement } from "@/components/analytics/analytics-charts-grid";
@@ -24,7 +24,7 @@ import {
 export type AnalyticsFetchers = {
 	deltas: () => Promise<AnalyticsPoint[]>;
 	timeseries: () => Promise<AnalyticsPoint[]>;
-	changes: () => Promise<MetricPctChange | null>;
+	changes: () => Promise<AnalyticsMetricPctChange | null>;
 };
 
 async function KpiLoader({

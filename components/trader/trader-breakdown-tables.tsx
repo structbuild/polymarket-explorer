@@ -1,6 +1,5 @@
 import type {
 	CategoryEntry,
-	EventEntry,
 	MarketEntry,
 } from "@structbuild/sdk";
 import type { ReactNode } from "react";
@@ -171,52 +170,6 @@ export function TraderMarketsTable({
 				pageNumber={pageNumber}
 				hasMore={page.hasMore}
 				pageKey="marketsPage"
-			/>
-		</div>
-	);
-}
-
-export function TraderEventsTable({
-	page,
-	pageNumber,
-	basePath,
-	baseParams,
-}: {
-	page: CursorPage<EventEntry>;
-	pageNumber: number;
-	basePath: string;
-	baseParams: Record<string, string>;
-}) {
-	return (
-		<div className="space-y-4">
-			<BreakdownTable<EventEntry>
-				rows={page.data}
-				emptyMessage="No event PnL yet."
-				identityHeader="Event"
-				identityCell={(row) => (
-					row.event_slug ? (
-						<Link
-							href={`/events/${row.event_slug}` as Route}
-							prefetch={false}
-							className="block max-w-[28rem] truncate font-medium text-foreground underline-offset-4 hover:underline"
-						>
-							{row.event_slug}
-						</Link>
-					) : (
-						<span className="text-muted-foreground">—</span>
-					)
-				)}
-				pnl={(row) => readTotalPnlUsd(row)}
-				volume={(row) => row.total_volume_usd ?? null}
-				rightHeader="Markets"
-				rightCell={(row) => formatNumber(row.markets_traded ?? 0, { decimals: 0 })}
-			/>
-			<BreakdownPagination
-				basePath={basePath}
-				baseParams={baseParams}
-				pageNumber={pageNumber}
-				hasMore={page.hasMore}
-				pageKey="eventsPage"
 			/>
 		</div>
 	);

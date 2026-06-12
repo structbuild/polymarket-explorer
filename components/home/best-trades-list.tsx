@@ -4,7 +4,7 @@ import {
 	BestTradesListClient,
 	type BestTradesTimeframe,
 } from "@/components/home/best-trades-list-client";
-import { getTopTradesMarketsV3 } from "@/lib/struct/queries";
+import { getTopTradesMarkets } from "@/lib/struct/queries";
 
 const ROW_COUNT = 12;
 const DEFAULT_TIMEFRAME: BestTradesTimeframe = "1d";
@@ -12,7 +12,7 @@ const DEFAULT_TIMEFRAME: BestTradesTimeframe = "1d";
 export async function BestTradesList() {
 	await connection();
 
-	const { data: rows } = await getTopTradesMarketsV3({
+	const { data: rows } = await getTopTradesMarkets({
 		timeframe: DEFAULT_TIMEFRAME,
 		limit: ROW_COUNT,
 	});

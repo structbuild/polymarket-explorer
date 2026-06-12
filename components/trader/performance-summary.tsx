@@ -9,12 +9,12 @@ import type { PnlPeriods, PnlStreaks } from "@/lib/struct/pnl";
 import { formatDuration, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
-import type { PnlV3ChangesResponse, PnlV3RiskResponse, GlobalEntry } from "@structbuild/sdk";
+import type { PnlChangesResponse, PnlRiskResponse, GlobalEntry } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {
 	pnlSummary: GlobalEntry | null;
-	pnlRisk?: PnlV3RiskResponse | null;
-	pnlChanges?: PnlV3ChangesResponse | null;
+	pnlRisk?: PnlRiskResponse | null;
+	pnlChanges?: PnlChangesResponse | null;
 	streaks: PnlStreaks;
 	periods: PnlPeriods;
 };
@@ -25,7 +25,7 @@ const PNL_CHANGE_WINDOWS = [
 	{ key: "30d", label: "30D" },
 ] as const;
 
-function PnlChangeBadges({ changes }: { changes: PnlV3ChangesResponse["changes"] | undefined }) {
+function PnlChangeBadges({ changes }: { changes: PnlChangesResponse["changes"] | undefined }) {
 	const byTimeframe = new Map(changes?.map((window) => [window.timeframe, window]) ?? []);
 
 	return (
@@ -272,7 +272,7 @@ function StreakRow({ streaks }: { streaks: PnlStreaks }) {
 	);
 }
 
-function RiskGrid({ totalPnlRisk }: { totalPnlRisk: PnlV3RiskResponse["total_pnl"] | null }) {
+function RiskGrid({ totalPnlRisk }: { totalPnlRisk: PnlRiskResponse["total_pnl"] | null }) {
 	return (
 		<>
 			<div className="grid grid-cols-3 gap-2">

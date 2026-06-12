@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Volume } from "@/components/ui/volume";
 import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
-import { getCategoryTopTradersV3 } from "@/lib/struct/queries";
+import { getCategoryTopTraders } from "@/lib/struct/queries";
 import { cn, normalizeWalletAddress } from "@/lib/utils";
 
 const PAGE_SIZE = 25;
@@ -30,7 +30,7 @@ export async function TagTopTradersListing({
 	baseParams: Record<string, string>;
 	cursor: string | null;
 }) {
-	const { data, hasMore, nextCursor } = await getCategoryTopTradersV3(category, {
+	const { data, hasMore, nextCursor } = await getCategoryTopTraders(category, {
 		limit: PAGE_SIZE,
 		sort_by: "realized_pnl_usd",
 		sort_direction: "desc",

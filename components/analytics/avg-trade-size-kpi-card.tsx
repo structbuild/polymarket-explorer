@@ -1,6 +1,6 @@
 "use client";
 
-import type { MetricPctChange } from "@structbuild/sdk";
+import type { AnalyticsMetricPctChange } from "@structbuild/sdk";
 
 import { formatPctChange, pctToneClass } from "@/components/analytics/pct-display";
 import { VolumeComponentsToggle } from "@/components/analytics/volume-components-toggle";
@@ -31,7 +31,7 @@ export function AvgTradeSizeKpiCard({
 	summary: AnalyticsSummary;
 	volumeTotals: ComponentTotals;
 	tradeCountTotals: ComponentTotals;
-	changes: MetricPctChange | null;
+	changes: AnalyticsMetricPctChange | null;
 	allowedComponents?: readonly VolumeComponentId[];
 }) {
 	const { mode } = useVolumeMode();

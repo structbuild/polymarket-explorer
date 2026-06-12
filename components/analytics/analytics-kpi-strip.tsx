@@ -1,4 +1,4 @@
-import type { MetricPctChange } from "@structbuild/sdk";
+import type { AnalyticsMetricPctChange } from "@structbuild/sdk";
 
 import { AvgTradeSizeKpiCard } from "@/components/analytics/avg-trade-size-kpi-card";
 import { ComponentsKpiCard } from "@/components/analytics/components-kpi-card";
@@ -23,9 +23,9 @@ type KpiSpec = {
 	tooltip?: string;
 	currency?: boolean;
 	compact?: boolean;
-	pctKey?: keyof MetricPctChange;
+	pctKey?: keyof AnalyticsMetricPctChange;
 	notionalKey?: keyof AnalyticsSummary;
-	notionalPctKey?: keyof MetricPctChange;
+	notionalPctKey?: keyof AnalyticsMetricPctChange;
 };
 
 const KPIS: KpiSpec[] = [
@@ -45,7 +45,7 @@ const KPIS: KpiSpec[] = [
 	{ id: "avgTradeSize", key: "avgTradeSizeUsd", label: "Avg trade size", currency: true, compact: true },
 ];
 
-function getPct(spec: KpiSpec, changes: MetricPctChange | null): number | null {
+function getPct(spec: KpiSpec, changes: AnalyticsMetricPctChange | null): number | null {
 	if (!changes || !spec.pctKey) return null;
 	const raw = changes[spec.pctKey];
 	return typeof raw === "number" ? raw : null;
@@ -53,7 +53,7 @@ function getPct(spec: KpiSpec, changes: MetricPctChange | null): number | null {
 
 type AnalyticsKpiStripProps = {
 	summary: AnalyticsSummary;
-	changes: MetricPctChange | null;
+	changes: AnalyticsMetricPctChange | null;
 	volumeComponentTotals: ComponentTotals;
 	tradeCountComponentTotals: ComponentTotals;
 	excludeMetrics?: readonly AnalyticsMetricId[];

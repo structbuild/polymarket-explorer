@@ -1,4 +1,4 @@
-import type { AnalyticsV3GlobalCountsResponse } from "@structbuild/sdk";
+import type { AnalyticsGlobalCountsResponse } from "@structbuild/sdk";
 import { connection } from "next/server";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { formatNumber } from "@/lib/format";
 import { getPlatformCounts } from "@/lib/struct/market-queries";
 
 type StatSpec = {
-	key: keyof AnalyticsV3GlobalCountsResponse;
+	key: keyof AnalyticsGlobalCountsResponse;
 	label: string;
 	currency?: boolean;
 	compact?: boolean;

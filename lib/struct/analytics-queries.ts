@@ -1,16 +1,15 @@
 import "server-only";
 
 import type {
-	AnalyticsV3TimeBucketRow,
+	AnalyticsChangeTimeframe,
+	AnalyticsMetricPctChange,
+	AnalyticsTimeBucketRow,
 	BuilderPctChange,
 	BuilderTimeBucketRow,
-	ChangeTimeframe,
 	GlobalChangeTimeframe,
 	GlobalPctChange,
-	MetricPctChange,
-	TagChangeTimeframe,
-	TimeBucketRow,
-	TraderTimeBucketRow,
+	TraderAnalyticsDeltaTimeBucketRow,
+	TraderAnalyticsTimeBucketRow,
 } from "@structbuild/sdk";
 import { HttpError } from "@structbuild/sdk";
 import type { HttpResponse } from "@structbuild/sdk";
@@ -62,14 +61,14 @@ function buildRangeConfig(
 	};
 }
 
-const CHANGES_TIMEFRAME: Record<AnalyticsRange, ChangeTimeframe> = {
+const CHANGES_TIMEFRAME: Record<AnalyticsRange, AnalyticsChangeTimeframe> = {
 	"1d": "24h",
 	"7d": "7d",
 	"30d": "30d",
 	all: "1y",
 };
 
-const TAG_CHANGES_TIMEFRAME: Record<AnalyticsRange, TagChangeTimeframe> = {
+const TAG_CHANGES_TIMEFRAME: Record<AnalyticsRange, AnalyticsChangeTimeframe> = {
 	"1d": "24h",
 	"7d": "7d",
 	"30d": "30d",
@@ -83,9 +82,9 @@ function toNumber(value: number | undefined | null): number {
 }
 
 type AnyTimeBucketRow =
-	| TimeBucketRow
-	| AnalyticsV3TimeBucketRow
-	| TraderTimeBucketRow
+	| AnalyticsTimeBucketRow
+	| TraderAnalyticsDeltaTimeBucketRow
+	| TraderAnalyticsTimeBucketRow
 	| BuilderTimeBucketRow;
 
 function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
@@ -311,7 +310,7 @@ function handleDeltasError(label: string, error: unknown): AnalyticsPoint[] {
 	return [];
 }
 
-function handleChangesError(label: string, error: unknown): MetricPctChange | null {
+function handleChangesError(label: string, error: unknown): AnalyticsMetricPctChange | null {
 	if (error instanceof HttpError && error.status === 404) {
 		return null;
 	}
@@ -331,7 +330,7 @@ export async function getAnalyticsDeltas(
 	if (!client) return [];
 	try {
 		return await fetchTimeBucketsWithPagination(
-			(params) => client.analytics.getDeltasV3(params),
+			(params) => client.analytics.getDeltas(params),
 			{},
 			buildRangeConfig(range, resolution),
 			`getAnalyticsDeltas:${range}:${resolution}`,
@@ -344,11 +343,11 @@ export async function getAnalyticsDeltas(
 	}
 }
 
-export async function getAnalyticsChanges(range: AnalyticsRange): Promise<MetricPctChange | null> {
+export async function getAnalyticsChanges(range: AnalyticsRange): Promise<AnalyticsMetricPctChange | null> {
 	const client = getStructClient();
 	if (!client) return null;
 	try {
-		const response = await client.analytics.getChangesV3({
+		const response = await client.analytics.getChanges({
 			timeframe: CHANGES_TIMEFRAME[range],
 		});
 		return response.data;
@@ -382,7 +381,7 @@ export async function getMarketAnalyticsDeltas(
 export async function getMarketAnalyticsChanges(
 	conditionId: string,
 	range: AnalyticsRange,
-): Promise<MetricPctChange | null> {
+): Promise<AnalyticsMetricPctChange | null> {
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -424,7 +423,7 @@ export async function getTagAnalyticsDeltas(
 export async function getTagAnalyticsChanges(
 	tag: string,
 	range: AnalyticsRange,
-): Promise<MetricPctChange | null> {
+): Promise<AnalyticsMetricPctChange | null> {
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -463,7 +462,7 @@ export async function getTraderAnalyticsDeltas(
 export async function getTraderAnalyticsChanges(
 	address: string,
 	range: AnalyticsRange,
-): Promise<MetricPctChange | null> {
+): Promise<AnalyticsMetricPctChange | null> {
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -488,7 +487,7 @@ export async function getAnalyticsTimeseries(
 	if (!client) return [];
 	try {
 		return await fetchTimeBucketsWithPagination(
-			(params) => client.analytics.getTimeseriesV3(params),
+			(params) => client.analytics.getTimeseries(params),
 			{},
 			buildRangeConfig(range, resolution),
 			`getAnalyticsTimeseries:${range}:${resolution}`,
@@ -580,7 +579,7 @@ const BUILDER_GLOBAL_CHANGES_TIMEFRAME: Record<AnalyticsRange, GlobalChangeTimef
 
 function projectBuilderChanges(
 	source: BuilderPctChange | GlobalPctChange,
-): MetricPctChange {
+): AnalyticsMetricPctChange {
 	return {
 		volume_usd: source.volume_usd,
 		buy_volume_usd: source.buy_volume_usd,
@@ -644,7 +643,7 @@ export async function getBuilderAnalyticsTimeseries(
 export async function getBuilderAnalyticsChanges(
 	builderCode: string,
 	range: AnalyticsRange,
-): Promise<MetricPctChange | null> {
+): Promise<AnalyticsMetricPctChange | null> {
 	const client = getStructClient();
 	if (!client) return null;
 	try {
@@ -706,7 +705,7 @@ export async function getBuilderGlobalAnalyticsTimeseries(
 
 export async function getBuilderGlobalAnalyticsChanges(
 	range: AnalyticsRange,
-): Promise<MetricPctChange | null> {
+): Promise<AnalyticsMetricPctChange | null> {
 	const client = getStructClient();
 	if (!client) return null;
 	try {

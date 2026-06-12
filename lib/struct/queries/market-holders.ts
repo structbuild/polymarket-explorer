@@ -1,10 +1,8 @@
 import "server-only";
 
 import type {
-	CategoryEntry,
-	GlobalEntry,
-	HolderHistoryCandle,
-	MarketHoldersV3Response,
+	HolderCountHistoryCandle,
+	MarketHoldersResponse,
 	PolymarketCategory,
 } from "@structbuild/sdk";
 
@@ -17,6 +15,7 @@ import {
 } from "@/lib/struct/queries/_shared";
 import {
 	normalizeTraderLeaderboardEntry,
+	type TraderLeaderboardApiEntry,
 	type TraderLeaderboardEntry,
 } from "@/lib/struct/trader-leaderboard";
 
@@ -27,7 +26,7 @@ export type { TraderLeaderboardEntry } from "@/lib/struct/trader-leaderboard";
 
 function appendNormalizedLeaderboardEntries(
 	target: TraderLeaderboardEntry[],
-	entries: readonly (GlobalEntry | CategoryEntry)[],
+	entries: readonly TraderLeaderboardApiEntry[],
 ) {
 	for (const entry of entries) {
 		const normalized = normalizeTraderLeaderboardEntry(entry);
@@ -40,7 +39,7 @@ function appendNormalizedLeaderboardEntries(
 export async function getMarketHolders(
 	marketSlug: string,
 	limit: number = 10,
-): Promise<MarketHoldersV3Response | null> {
+): Promise<MarketHoldersResponse | null> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -48,7 +47,7 @@ export async function getMarketHolders(
 	}
 
 	try {
-		const response = await client.holders.getMarketHoldersV3({
+		const response = await client.holders.getMarketHolders({
 			market_slug: marketSlug,
 			limit,
 			include_pnl: true,
@@ -67,7 +66,7 @@ export async function getMarketHolders(
 export async function getMarketHoldersHistory(
 	conditionId: string,
 	hours: number = 336,
-): Promise<HolderHistoryCandle[] | null> {
+): Promise<HolderCountHistoryCandle[] | null> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -108,7 +107,7 @@ export async function getGlobalLeaderboard(
 	}
 
 	const tf = timeframe as "1d" | "7d" | "30d" | "lifetime";
-	const sortBy = sort?.sortBy as NonNullable<Parameters<typeof client.trader.getGlobalPnlV3>[0]>["sort_by"] | undefined;
+	const sortBy = sort?.sortBy as NonNullable<Parameters<typeof client.trader.getGlobalPnl>[0]>["sort_by"] | undefined;
 	const sortOption = sortBy ? { sort_by: sortBy, sort_direction: sort?.sortDirection ?? "desc" } : {};
 	const data: TraderLeaderboardEntry[] = [];
 	let paginationKey: string | undefined = cursor;
@@ -125,7 +124,7 @@ export async function getGlobalLeaderboard(
 			}
 
 			const chunkLimit = Math.min(MAX_LEADERBOARD_PAGE_SIZE, limit - data.length);
-			const response = await client.trader.getGlobalPnlV3({
+			const response = await client.trader.getGlobalPnl({
 				timeframe: tf,
 				...sortOption,
 				limit: chunkLimit,
@@ -169,7 +168,7 @@ export async function getCategoryLeaderboard(
 	}
 
 	const tf = timeframe as "1d" | "7d" | "30d" | "lifetime";
-	const sortBy = sort?.sortBy as NonNullable<Parameters<typeof client.tags.getCategoryTopTradersV3>[0]>["sort_by"] | undefined;
+	const sortBy = sort?.sortBy as NonNullable<Parameters<typeof client.tags.getCategoryTopTraders>[0]>["sort_by"] | undefined;
 	const sortOption = sortBy ? { sort_by: sortBy, sort_direction: sort?.sortDirection ?? "desc" } : {};
 	const data: TraderLeaderboardEntry[] = [];
 	let paginationKey: string | undefined = cursor;
@@ -186,7 +185,7 @@ export async function getCategoryLeaderboard(
 			}
 
 			const chunkLimit = Math.min(MAX_CATEGORY_LEADERBOARD_PAGE_SIZE, limit - data.length);
-			const response = await client.tags.getCategoryTopTradersV3({
+			const response = await client.tags.getCategoryTopTraders({
 				category,
 				timeframe: tf,
 				...sortOption,

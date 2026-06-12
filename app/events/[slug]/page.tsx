@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { EventHeader, EventHeaderFallback } from "@/components/event/event-header";
 import { EventMarketsTable } from "@/components/event/event-markets-table";
 import { EventOverviewChart, EventOverviewChartFallback } from "@/components/event/event-overview-chart";
-import { EventTopTraders, EventTopTradersFallback } from "@/components/event/event-top-traders";
 import { EventTrades, EventTradesFallback } from "@/components/event/event-trades";
 import { AnchorSectionNav } from "@/components/layout/anchor-section-nav";
 import { SectionAnchor } from "@/components/layout/section-anchor";
@@ -159,14 +158,6 @@ async function EventPageContent({ params }: { params: Props["params"] }) {
 					<SectionAnchor id="event-markets">
 						<EventMarketsTable markets={childMarkets} />
 					</SectionAnchor>
-
-					{event.event_slug && (
-						<SectionAnchor id="event-top-traders">
-							<Suspense fallback={<EventTopTradersFallback />}>
-								<EventTopTraders eventSlug={event.event_slug} />
-							</Suspense>
-						</SectionAnchor>
-					)}
 
 					{childMarkets.length > 0 && (
 						<SectionAnchor id="event-trades">

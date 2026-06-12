@@ -9,7 +9,7 @@ import type { StructPnlCandleResolution, StructPnlCandleTimeframe, StructPnlPeri
 import type { PaginatedResource } from "@/lib/struct/types";
 import type { TraderExitMode } from "@/lib/trader-search-params-shared";
 import { normalizeWalletAddress } from "@/lib/utils";
-import type { PnlV3ExitMarker, PnlV3ExitReason, PnlV3RiskResponse } from "@structbuild/sdk";
+import type { PnlExitMarker, PnlExitReason, PnlRiskResponse } from "@structbuild/sdk";
 
 export type PnlDataPoint = {
 	t: number;
@@ -70,7 +70,7 @@ const getTraderPnlCandlesCached = cache(
 		}
 
 		try {
-			const response = await client.trader.getTraderPnlV3Candles({
+			const response = await client.trader.getTraderPnlCandles({
 				address,
 				timeframe,
 				resolution,
@@ -128,7 +128,7 @@ const getTraderPnlCandlesCached = cache(
 			}
 
 			const rangeKey = `${options.from ?? ""}:${options.to ?? ""}`;
-			logStructError(`getTraderPnlV3Candles:${address}:${timeframe}:${resolution}:${rangeKey}`, error);
+			logStructError(`getTraderPnlCandles:${address}:${timeframe}:${resolution}:${rangeKey}`, error);
 			return [];
 		}
 	},
@@ -155,7 +155,7 @@ export async function getTraderCumulativePnlUsd(address: string): Promise<number
 }
 
 const getTraderPnlRiskCached = cache(
-	async (address: string, timeframe: StructPnlPeriodTimeframe = defaultPnlRiskTimeframe): Promise<PnlV3RiskResponse | null> => {
+	async (address: string, timeframe: StructPnlPeriodTimeframe = defaultPnlRiskTimeframe): Promise<PnlRiskResponse | null> => {
 		const client = getStructClient();
 
 		if (!client) {
@@ -163,20 +163,20 @@ const getTraderPnlRiskCached = cache(
 		}
 
 		try {
-			const response = await client.trader.getTraderPnlV3Risk({ address, timeframe });
+			const response = await client.trader.getTraderPnlRisk({ address, timeframe });
 			return response.data ?? null;
 		} catch (error) {
 			if (readStatus(error) === 404) {
 				return null;
 			}
 
-			logStructError(`getTraderPnlV3Risk:${address}:${timeframe}`, error);
+			logStructError(`getTraderPnlRisk:${address}:${timeframe}`, error);
 			return null;
 		}
 	},
 );
 
-export async function getTraderPnlRisk(address: string, timeframe: StructPnlPeriodTimeframe = defaultPnlRiskTimeframe): Promise<PnlV3RiskResponse | null> {
+export async function getTraderPnlRisk(address: string, timeframe: StructPnlPeriodTimeframe = defaultPnlRiskTimeframe): Promise<PnlRiskResponse | null> {
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) return null;
@@ -186,7 +186,7 @@ export async function getTraderPnlRisk(address: string, timeframe: StructPnlPeri
 
 export const defaultTraderExitsPageSize = 25;
 
-function emptyExitsPage(limit: number): PaginatedResource<PnlV3ExitMarker, number> {
+function emptyExitsPage(limit: number): PaginatedResource<PnlExitMarker, number> {
 	return { data: [], hasMore: false, nextCursor: null, pageSize: limit };
 }
 
@@ -198,7 +198,7 @@ const getTraderExitsPageCached = cache(
 		limit: number,
 		from: number | undefined,
 		to: number | undefined,
-	): Promise<PaginatedResource<PnlV3ExitMarker, number>> => {
+	): Promise<PaginatedResource<PnlExitMarker, number>> => {
 		const client = getStructClient();
 
 		if (!client) {
@@ -206,7 +206,7 @@ const getTraderExitsPageCached = cache(
 		}
 
 		try {
-			const response = await client.trader.getTraderPnlV3Exits({
+			const response = await client.trader.getTraderPnlExits({
 				address,
 				sort_by: "pnl_usd",
 				sort_direction: mode === "wins" ? "desc" : "asc",
@@ -231,7 +231,7 @@ const getTraderExitsPageCached = cache(
 				return emptyExitsPage(limit);
 			}
 
-			logStructError(`getTraderPnlV3Exits:${address}:${mode}:${offset}:${from ?? ""}:${to ?? ""}`, error);
+			logStructError(`getTraderPnlExits:${address}:${mode}:${offset}:${from ?? ""}:${to ?? ""}`, error);
 			return emptyExitsPage(limit);
 		}
 	},
@@ -241,7 +241,7 @@ export async function getTraderExitsPage(
 	address: string,
 	mode: TraderExitMode,
 	options: { offset?: number; limit?: number; from?: number; to?: number } = {},
-): Promise<PaginatedResource<PnlV3ExitMarker, number>> {
+): Promise<PaginatedResource<PnlExitMarker, number>> {
 	const limit = options.limit ?? defaultTraderExitsPageSize;
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -260,10 +260,10 @@ export type PnlChartExit = {
 	outcomeIndex: number | null;
 	imageUrl: string | null;
 	marketSlug: string | null;
-	reason: PnlV3ExitReason;
+	reason: PnlExitReason;
 };
 
-function toChartExit(exit: PnlV3ExitMarker): PnlChartExit {
+function toChartExit(exit: PnlExitMarker): PnlChartExit {
 	return {
 		t: exit.t,
 		pnlUsd: exit.pnl_usd ?? 0,
@@ -281,9 +281,9 @@ function toChartExit(exit: PnlV3ExitMarker): PnlChartExit {
 export const defaultChartExitsPerSide = 24;
 const chartExitsCandidatePoolSize = 250;
 
-function pickDistinctMarkets(exits: PnlV3ExitMarker[], limit: number): PnlV3ExitMarker[] {
+function pickDistinctMarkets(exits: PnlExitMarker[], limit: number): PnlExitMarker[] {
 	const seen = new Set<string>();
-	const picked: PnlV3ExitMarker[] = [];
+	const picked: PnlExitMarker[] = [];
 
 	for (const exit of exits) {
 		if (picked.length >= limit) break;
@@ -432,7 +432,7 @@ const getTraderPnlPeriodsCached = cache(
 		}
 
 		try {
-			const response = await client.trader.getTraderPnlV3Periods({ address, timeframe });
+			const response = await client.trader.getTraderPnlPeriods({ address, timeframe });
 			const periods = response.data;
 
 			return {
@@ -452,7 +452,7 @@ const getTraderPnlPeriodsCached = cache(
 				return emptyPnlPeriods;
 			}
 
-			logStructError(`getTraderPnlV3Periods:${address}:${timeframe}`, error);
+			logStructError(`getTraderPnlPeriods:${address}:${timeframe}`, error);
 			return emptyPnlPeriods;
 		}
 	},

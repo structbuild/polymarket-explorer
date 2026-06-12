@@ -406,7 +406,10 @@ export function MarketTopTradersClient({
 	const rows = useMemo(() => buildRows(rawRows), [rawRows]);
 	const isPositionView = activeValue !== ALL_VALUE;
 	const visibleColumns = useMemo(
-		() => (isPositionView ? columns.filter((col) => col.id !== "outcomes_traded") : columns),
+		() =>
+			isPositionView
+				? columns.filter((col) => col.id !== "outcomes_traded")
+				: columns.filter((col) => col.id !== "avg_entry_price" && col.id !== "avg_exit_price"),
 		[isPositionView],
 	);
 
