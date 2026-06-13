@@ -9,7 +9,9 @@ import { HomeRefreshButton } from "@/components/home/home-refresh-button";
 import { RecentTradesTable } from "@/components/home/recent-trades-table";
 import { MarketsTable } from "@/components/market/markets-table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TimeframeToggle } from "@/components/ui/timeframe-toggle";
 import type { HomeActivityData, HomeActivityTab } from "@/lib/home-activity";
+import { METRICS_TIMEFRAMES } from "@/lib/timeframes";
 
 export function HomeTabsBar({ pending = false }: { pending?: boolean }) {
 	return (
@@ -69,7 +71,19 @@ function HomeActivityContent({
 }
 
 function HomeActivityFallback() {
-	return <div className="h-72 animate-pulse rounded-lg bg-muted sm:h-96" />;
+	return (
+		<>
+			<div
+				aria-hidden="true"
+				className="invisible pointer-events-none flex w-full flex-col gap-3 justify-self-end sm:col-start-2 sm:row-start-1 sm:w-auto sm:items-end"
+			>
+				<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end">
+					<TimeframeToggle timeframes={METRICS_TIMEFRAMES} value={METRICS_TIMEFRAMES[2]} onValueChange={() => {}} />
+				</div>
+			</div>
+			<div className="h-72 animate-pulse rounded-lg bg-muted sm:col-span-2 sm:row-start-2 sm:h-96" />
+		</>
+	);
 }
 
 export function HomeActivityTabs({ initialData }: { initialData: HomeActivityData }) {
