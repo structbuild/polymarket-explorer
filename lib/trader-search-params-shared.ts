@@ -10,6 +10,7 @@ export const traderPositionSortByValues = [
 	"avg_entry_price",
 	"avg_exit_price",
 	"realized_pnl_usd",
+	"total_pnl_usd",
 	"current_value",
 	"current_price",
 	"total_shares_bought",
@@ -23,6 +24,7 @@ export const traderPositionSortByValues = [
 	"first_trade_at",
 	"last_trade_at",
 	"realized_pnl_pct",
+	"total_pnl_pct",
 	"current_shares_balance",
 	"end_date",
 	"redeemable",
@@ -94,7 +96,7 @@ export const defaultTraderPositionSortBy = {
 	closed: "last_trade_at",
 } as const satisfies Record<"open" | "closed", TraderPositionSortBy>;
 
-export const rankedPositionSortBy: TraderPositionSortBy = "realized_pnl_usd";
+export const rankedPositionSortBy: TraderPositionSortBy = "total_pnl_usd";
 
 export const rankedPositionSortDirection = {
 	wins: "desc",
@@ -128,4 +130,3 @@ export const unixSecondsParserDef = {
 		return String(value);
 	},
 };
-

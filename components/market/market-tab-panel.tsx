@@ -1,7 +1,7 @@
-import { getMarketTabPageAction } from "@/app/actions";
 import { MarketTabPanelClient } from "@/components/market/market-tab-panel-client";
 import { MarketTradesFallback } from "@/components/market/market-trades";
 import type { MarketDetailTab } from "@/lib/market-detail-search-params-shared";
+import { loadMarketTabPage } from "@/lib/struct/market-tab-page";
 
 type MarketTabPanelProps = {
 	currentTab: MarketDetailTab;
@@ -14,7 +14,7 @@ type MarketTabPanelProps = {
 export async function MarketTabPanel({ currentTab, slug, conditionId, tradesPage, totalHolders }: MarketTabPanelProps) {
 	const params = new URLSearchParams();
 	params.set("tradesPage", String(tradesPage));
-	const initialData = await getMarketTabPageAction({
+	const initialData = await loadMarketTabPage({
 		slug,
 		conditionId,
 		tab: currentTab,

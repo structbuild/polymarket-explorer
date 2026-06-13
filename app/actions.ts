@@ -6,7 +6,6 @@ import { checkBotId } from "botid/server";
 
 import {
 	defaultTraderTablePageSize,
-	getMarketTopTraders,
 	getPositionTopTraders,
 	getTopTradesMarkets,
 	getTraderCategoriesPage,
@@ -18,10 +17,6 @@ import {
 } from "@/lib/struct/queries";
 import {
 	defaultMarketTradesPageSize,
-	getMarketBySlug,
-	getMarketHolders,
-	getMarketHoldersHistory,
-	getMarketPriceJumps,
 	getPositionVolumeChart,
 	getMarketsByTag,
 	getTopMarkets,
@@ -72,11 +67,9 @@ import {
 	parseBuilderTimeframe,
 } from "@/lib/struct/builder-shared";
 import {
-	defaultMarketDetailTab,
-	marketDetailTabValues,
 	maxMarketTradesPageNumber,
-	type MarketDetailTab,
 } from "@/lib/market-detail-search-params-shared";
+import { loadMarketTabPage, type MarketTabPageParams } from "@/lib/struct/market-tab-page";
 import {
 	DEFAULT_MARKET_STATUS_TAB,
 	defaultMarketSortBy,
@@ -218,10 +211,6 @@ function parseTraderTab(value: TraderTab) {
 	return traderTabValues.includes(value) ? value : "active";
 }
 
-function parseMarketDetailTab(value: MarketDetailTab) {
-	return marketDetailTabValues.includes(value) ? value : defaultMarketDetailTab;
-}
-
 function parseMarketStatus(value: MarketStatusTab) {
 	return marketStatusTabValues.includes(value) ? value : DEFAULT_MARKET_STATUS_TAB;
 }
@@ -236,15 +225,6 @@ function parseMarketSortDirection(value: MarketSortDirection) {
 
 function parseMarketTimeframe(value: MarketTimeframe) {
 	return marketTimeframeValues.includes(value) ? value : defaultMarketTimeframe;
-}
-
-function parseMarketTradesPageParam(params: URLSearchParams) {
-	const raw = params.get("tradesPage");
-	if (!raw) {
-		return 1;
-	}
-
-	return clampPageNumber(Number.parseInt(raw, 10), maxMarketTradesPageNumber);
 }
 
 export async function getMarketsStatusPageAction({
@@ -560,85 +540,9 @@ export async function getBuilderTradesPageAction({
 	return { page, pageNumber: safePageNumber };
 }
 
-export async function getMarketTabPageAction({
-	slug,
-	conditionId,
-	tab,
-	search,
-}: {
-	slug: string;
-	conditionId: string;
-	tab: MarketDetailTab;
-	search: string;
-}) {
+export async function getMarketTabPageAction(params: MarketTabPageParams) {
 	await assertHumanRequest();
-	const params = new URLSearchParams(search);
-	const safeTab = parseMarketDetailTab(tab);
-
-	switch (safeTab) {
-		case "holders": {
-			const data = await getMarketHolders(slug, 25);
-			return {
-				kind: "holders" as const,
-				slug,
-				conditionId,
-				data,
-			};
-		}
-		case "spikes": {
-			const jumps = await getMarketPriceJumps(conditionId);
-			const spikes = (jumps ?? []).slice().sort((a, b) => b.from - a.from);
-			return {
-				kind: "spikes" as const,
-				slug,
-				conditionId,
-				spikes,
-			};
-		}
-		case "holders-history": {
-			const candles = await getMarketHoldersHistory(conditionId);
-			const data = (candles ?? [])
-				.filter((c): c is { t: number; h: number } => Number.isFinite(c.t) && Number.isFinite(c.h))
-				.sort((a, b) => a.t - b.t);
-			return {
-				kind: "holders-history" as const,
-				slug,
-				conditionId,
-				data,
-			};
-		}
-		case "top-traders": {
-			const [market, topTraders] = await Promise.all([
-				getMarketBySlug(slug),
-				getMarketTopTraders({ market_slug: slug, limit: 20 }),
-			]);
-			const outcomes = (market?.outcomes ?? [])
-				.filter((o): o is { name: string; position_id: string } & typeof o => Boolean(o.position_id))
-				.map((o) => ({ position_id: o.position_id as string, name: o.name }));
-			return {
-				kind: "top-traders" as const,
-				slug,
-				conditionId,
-				outcomes,
-				traders: topTraders.data,
-			};
-		}
-		case "trades":
-		default: {
-			const pageNumber = parseMarketTradesPageParam(params);
-			const page = await getMarketTradesPage(conditionId, {
-				limit: defaultMarketTradesPageSize,
-				offset: (pageNumber - 1) * defaultMarketTradesPageSize,
-			});
-			return {
-				kind: "trades" as const,
-				slug,
-				conditionId,
-				pageNumber,
-				page,
-			};
-		}
-	}
+	return loadMarketTabPage(params);
 }
 
 export async function getMarketPositionTopTradersAction({

@@ -48,8 +48,8 @@ const defaultColumnVisibility: VisibilityState = {
 }
 
 const baseSortOptions: { value: TraderPositionSortBy; label: string }[] = [
-	{ value: "realized_pnl_usd", label: "PnL ($)" },
-	{ value: "realized_pnl_pct", label: "PnL (%)" },
+	{ value: "total_pnl_usd", label: "PnL ($)" },
+	{ value: "total_pnl_pct", label: "PnL (%)" },
 	{ value: "current_value", label: "Current Value" },
 	{ value: "current_price", label: "Current Price" },
 	{ value: "current_shares_balance", label: "Shares Held" },
@@ -206,7 +206,7 @@ function buildColumns(
 		{
 			id: "realized_pnl",
 			meta: { title: "PnL" },
-			header: columnHeader("realized_pnl_usd", "PnL"),
+			header: columnHeader("total_pnl_usd", "PnL"),
 			size: 150,
 			cell: ({ row }) => {
 				const entry = row.original

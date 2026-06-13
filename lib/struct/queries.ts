@@ -21,11 +21,15 @@ import type {
 } from "@structbuild/sdk";
 import { cache } from "react";
 
+import { readTotalPnlUsd } from "@/lib/format";
 import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
 import type { PaginatedResource } from "@/lib/struct/types";
-import { defaultTraderPositionSortBy } from "@/lib/trader-search-params-shared";
+import {
+	defaultTraderPositionSortBy,
+	type TraderPositionSortBy,
+} from "@/lib/trader-search-params-shared";
 import { normalizeWalletAddress } from "@/lib/utils";
 
 export const defaultTraderTablePageSize = 25;
@@ -35,7 +39,10 @@ const defaultCategoriesLimit = defaultTraderTablePageSize;
 const defaultMarketsLimit = defaultTraderTablePageSize;
 const maxTraderSearchQueryLength = 100;
 
-export type GetTraderPositionPnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
+type SdkGetTraderPositionPnlRequest = Parameters<StructClient["trader"]["getTraderOutcomePnl"]>[0];
+export type GetTraderPositionPnlRequest = Omit<SdkGetTraderPositionPnlRequest, "sort_by"> & {
+	sort_by?: TraderPositionSortBy;
+};
 export type GetTraderTradesRequest = Parameters<StructClient["trader"]["getTraderTrades"]>[0];
 
 export type TraderPositionsOptions = Omit<GetTraderPositionPnlRequest, "address" | "status">;
@@ -248,15 +255,48 @@ async function fetchTraderPositionsPage(
 	const sort_by = restOptions.sort_by;
 	const sort_direction = restOptions.sort_direction;
 	delete restOptions.limit;
+	delete restOptions.offset;
 	delete restOptions.sort_by;
 	delete restOptions.sort_direction;
 
 	try {
+		// The endpoint returns total_pnl_usd but cannot sort by it server-side.
+		if (sort_by === "total_pnl_usd") {
+			const batchSize = 200;
+			const entries: PositionEntry[] = [];
+
+			for (let batchOffset = 0; ; batchOffset += batchSize) {
+				const response = await client.trader.getTraderOutcomePnl({
+					address,
+					status,
+					...restOptions,
+					limit: batchSize,
+					offset: batchOffset,
+					sort_by: "last_trade_at",
+					sort_direction: "desc",
+				});
+				entries.push(...response.data);
+				if (response.data.length < batchSize) break;
+			}
+
+			const direction = sort_direction === "asc" ? 1 : -1;
+			entries.sort((a, b) => direction * (readTotalPnlUsd(a) - readTotalPnlUsd(b)));
+			const data = entries.slice(offset, offset + limit);
+			const hasMore = offset + data.length < entries.length;
+			return {
+				data,
+				hasMore,
+				nextCursor: hasMore ? offset + data.length : null,
+				pageSize: limit,
+			};
+		}
+
 		const requestLimit = limit + 1;
-		const params: GetTraderPositionPnlRequest = {
+		const params: SdkGetTraderPositionPnlRequest = {
 			address,
 			status,
 			...restOptions,
+			offset,
 			limit: requestLimit,
 			sort_by: sort_by ?? defaultTraderPositionSortBy[status],
 			sort_direction: sort_direction ?? "desc",
