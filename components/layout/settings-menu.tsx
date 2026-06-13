@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsIcon, SparklesIcon } from "lucide-react";
+import { SettingsIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import posthog from "posthog-js";

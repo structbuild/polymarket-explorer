@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 
 export function useScrollSpy(ids: string[], offset = 130) {
-	const key = ids.join("|");
+	const key = ids.join("\0");
 	const [activeId, setActiveId] = useState<string | null>(ids[0] ?? null);
 
 	useEffect(() => {
-		if (ids.length === 0) {
-			setActiveId(null);
+		const currentIds = key ? key.split("\0") : [];
+		if (currentIds.length === 0) {
 			return;
 		}
 
@@ -18,7 +18,7 @@ export function useScrollSpy(ids: string[], offset = 130) {
 			frame = 0;
 
 			let current: string | null = null;
-			for (const id of ids) {
+			for (const id of currentIds) {
 				const el = document.getElementById(id);
 				if (!el) {
 					continue;
@@ -30,13 +30,13 @@ export function useScrollSpy(ids: string[], offset = 130) {
 			}
 
 			if (!current) {
-				current = ids.find((id) => document.getElementById(id)) ?? ids[0] ?? null;
+				current = currentIds.find((id) => document.getElementById(id)) ?? currentIds[0] ?? null;
 			}
 
 			const scrolledToBottom =
 				window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
 			if (scrolledToBottom) {
-				const last = [...ids].reverse().find((id) => document.getElementById(id));
+				const last = [...currentIds].reverse().find((id) => document.getElementById(id));
 				if (last) {
 					current = last;
 				}
@@ -65,5 +65,5 @@ export function useScrollSpy(ids: string[], offset = 130) {
 		};
 	}, [key, offset]);
 
-	return activeId;
+	return ids.length === 0 ? null : activeId;
 }

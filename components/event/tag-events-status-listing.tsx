@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 
 import { getTagEventsStatusPageAction } from "@/app/actions";
 import { EventStatusTabs } from "@/components/event/event-status-tabs";
@@ -73,8 +73,7 @@ export function TagEventsStatusListing({
 		nextCursor: initialNextCursor,
 		cursor: initialCursor,
 	}));
-
-	const lastSyncedProps = useRef({
+	const [lastSyncedProps, setLastSyncedProps] = useState({
 		events: initialEvents,
 		tab: initialTab,
 		hasMore: initialHasMore,
@@ -83,24 +82,20 @@ export function TagEventsStatusListing({
 	});
 	const latestRequestId = useRef(0);
 
-	useEffect(() => {
-		const prev = lastSyncedProps.current;
-		if (
-			prev.events === initialEvents &&
-			prev.tab === initialTab &&
-			prev.hasMore === initialHasMore &&
-			prev.nextCursor === initialNextCursor &&
-			prev.cursor === initialCursor
-		) {
-			return;
-		}
-		lastSyncedProps.current = {
+	if (
+		lastSyncedProps.events !== initialEvents ||
+		lastSyncedProps.tab !== initialTab ||
+		lastSyncedProps.hasMore !== initialHasMore ||
+		lastSyncedProps.nextCursor !== initialNextCursor ||
+		lastSyncedProps.cursor !== initialCursor
+	) {
+		setLastSyncedProps({
 			events: initialEvents,
 			tab: initialTab,
 			hasMore: initialHasMore,
 			nextCursor: initialNextCursor,
 			cursor: initialCursor,
-		};
+		});
 		setState({
 			events: initialEvents,
 			tab: initialTab,
@@ -108,7 +103,7 @@ export function TagEventsStatusListing({
 			nextCursor: initialNextCursor,
 			cursor: initialCursor,
 		});
-	}, [initialEvents, initialTab, initialHasMore, initialNextCursor, initialCursor]);
+	}
 
 	const handleTabChange = useCallback(
 		(nextTab: EventStatusTab) => {

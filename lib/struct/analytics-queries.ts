@@ -303,7 +303,9 @@ function handleDeltasError(label: string, error: unknown): AnalyticsPoint[] {
 	}
 	const status = error instanceof HttpError ? error.status : "unknown";
 	console.error(
-		`${label} failed (status=${status})`,
+		"%s failed (status=%s)",
+		label,
+		status,
 		error instanceof Error ? error.message : error,
 	);
 	return [];
@@ -315,7 +317,9 @@ function handleChangesError(label: string, error: unknown): AnalyticsMetricPctCh
 	}
 	const status = error instanceof HttpError ? error.status : "unknown";
 	console.error(
-		`${label} failed (status=${status})`,
+		"%s failed (status=%s)",
+		label,
+		status,
 		error instanceof Error ? error.message : error,
 	);
 	return null;
