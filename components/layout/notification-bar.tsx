@@ -8,7 +8,7 @@ const NOTIFICATION = {
 	version: "3",
 	message: "Struct v0.6 is live - The Most Accurate & Comprehensive PnL for Polymarket",
 	cta: "Learn more",
-	href: "/",
+	href: "https://www.struct.to/blog/v0.6-release",
 } as const;
 
 
