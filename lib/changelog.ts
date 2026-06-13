@@ -29,7 +29,7 @@ const TRADER_PROFILE_HREF = "/traders/0x2005d16a84ceefa912d4e380cd32e7ff827875ea
 export const CHANGELOG: ChangelogEntry[] = [
 	{
 		id: "trader-category-leaderboards",
-		date: "2026-06-09",
+		date: "2026-06-13",
 		title: "Trader category leaderboards",
 		description:
 			"Sort the trader leaderboard by category — Politics, Sports, Crypto and more — with many more columns to compare.",
@@ -38,7 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 	},
 	{
 		id: "trader-pnl-chart-updates",
-		date: "2026-06-09",
+		date: "2026-06-13",
 		title: "Trader PnL chart upgrades",
 		description:
 			"Custom date & time ranges, new chart options, and exit bubbles that mark exactly where positions were closed.",
@@ -47,7 +47,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 	},
 	{
 		id: "trader-best-worst-trades",
-		date: "2026-06-08",
+		date: "2026-06-13",
 		title: "Best wins & worst losses",
 		description:
 			"A new breakdown of every trader's most profitable wins and biggest losing trades, market by market.",
@@ -56,7 +56,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 	},
 	{
 		id: "trader-performance-summary",
-		date: "2026-06-08",
+		date: "2026-06-13",
 		title: "Enhanced performance summary",
 		description:
 			"Far more depth — profit factor, win/loss streaks, drawdown, hold time, rebates and rewards all at a glance.",
@@ -65,7 +65,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 	},
 	{
 		id: "market-top-traders",
-		date: "2026-06-06",
+		date: "2026-06-13",
 		title: "Market top traders",
 		description:
 			"See the most profitable traders in any market, with full PnL, volume and share breakdowns.",
@@ -74,7 +74,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 	},
 	{
 		id: "analytics-rewards-incentives",
-		date: "2026-06-05",
+		date: "2026-06-13",
 		title: "Rewards & incentives in Analytics",
 		description:
 			"Track maker rewards and liquidity incentives across Polymarket over time in the Analytics dashboard.",
