@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2Icon } from "lucide-react";
 import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 type Step = "email" | "otp";
 type SocialProvider = "google" | "github";
@@ -18,6 +21,8 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 	const [loading, setLoading] = useState(false);
 	const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const turnstileRef = useRef<TurnstileInstance | null>(null);
+	const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
 	async function handleSocialSignIn(provider: SocialProvider) {
 		posthog.capture("auth_social_provider_clicked", { provider });
@@ -39,12 +44,24 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 	async function handleEmailSubmit(event: React.FormEvent) {
 		event.preventDefault();
 		posthog.capture("auth_email_submitted", {});
+
+		if (turnstileSiteKey && !captchaToken) {
+			setError("Please complete the verification challenge.");
+			return;
+		}
+
 		setLoading(true);
 		setError(null);
 
-		const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
+		const { error } = await authClient.emailOtp.sendVerificationOtp({
+			email,
+			type: "sign-in",
+			fetchOptions: captchaToken ? { headers: { "x-captcha-response": captchaToken } } : undefined,
+		});
 
 		setLoading(false);
+		turnstileRef.current?.reset();
+		setCaptchaToken(null);
 
 		if (error) {
 			setError(error.message ?? "Failed to send verification code. Please try again.");
@@ -171,8 +188,24 @@ export function SignInForm({ onSuccess, callbackURL }: { onSuccess?: () => void;
 					onChange={(event) => setEmail(event.target.value)}
 					className="h-11"
 				/>
+				{turnstileSiteKey && (
+					<Turnstile
+						ref={turnstileRef}
+						siteKey={turnstileSiteKey}
+						onSuccess={setCaptchaToken}
+						onError={() => setCaptchaToken(null)}
+						onExpire={() => setCaptchaToken(null)}
+						options={{ theme: "auto", size: "flexible" }}
+						className="w-full"
+					/>
+				)}
 				{error && <p className="text-sm text-destructive">{error}</p>}
-				<Button type="submit" size="lg" className="w-full" disabled={loading || socialLoading !== null}>
+				<Button
+					type="submit"
+					size="lg"
+					className="w-full"
+					disabled={loading || socialLoading !== null || (!!turnstileSiteKey && !captchaToken)}
+				>
 					{loading && <Loader2Icon className="size-4 animate-spin" />}
 					{loading ? "Sending code..." : "Continue with email"}
 				</Button>
