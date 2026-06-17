@@ -1,11 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getAuthBaseUrl } from "@/lib/env";
+import { getAuthBaseUrl, getSitePasswordGate } from "@/lib/env";
 
 const GATED_PREFIXES = ["/account"];
 
 function isGatedRoute(pathname: string): boolean {
 	return GATED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	let mismatch = 0;
+	for (let index = 0; index < a.length; index += 1) {
+		mismatch |= a.charCodeAt(index) ^ b.charCodeAt(index);
+	}
+	return mismatch === 0;
+}
+
+function isPasswordAuthorized(request: NextRequest, password: string): boolean {
+	const header = request.headers.get("authorization");
+	if (!header?.startsWith("Basic ")) return false;
+
+	try {
+		const decoded = atob(header.slice("Basic ".length));
+		const separatorIndex = decoded.indexOf(":");
+		const provided = separatorIndex === -1 ? decoded : decoded.slice(separatorIndex + 1);
+		return timingSafeEqual(provided, password);
+	} catch {
+		return false;
+	}
+}
+
+function passwordPromptResponse(): NextResponse {
+	return new NextResponse("Authentication required", {
+		status: 401,
+		headers: {
+			"WWW-Authenticate": 'Basic realm="Restricted", charset="UTF-8"',
+		},
+	});
 }
 
 async function hasValidSession(request: NextRequest): Promise<boolean> {
@@ -33,6 +65,11 @@ async function hasValidSession(request: NextRequest): Promise<boolean> {
 export async function proxy(request: NextRequest) {
 	const { pathname, search } = request.nextUrl;
 
+	const passwordGate = getSitePasswordGate();
+	if (passwordGate.enabled && passwordGate.password && !isPasswordAuthorized(request, passwordGate.password)) {
+		return passwordPromptResponse();
+	}
+
 	if (!isGatedRoute(pathname)) {
 		return NextResponse.next();
 	}
@@ -48,5 +85,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/account/:path*"],
+	matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
