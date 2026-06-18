@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { BuilderAvatar } from "@/components/builders/builder-avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DataTable } from "@/components/ui/data-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { Volume } from "@/components/ui/volume";
@@ -132,6 +133,12 @@ type SortState = {
 	onSortChange: (sortBy: BuilderSortBy) => void;
 };
 
+type SelectionState = {
+	selectedCodes: Set<string>;
+	onToggleSelect: (code: string) => void;
+	isSelectDisabled: (code: string) => boolean;
+};
+
 function formatNumericCell(value: number | null | undefined, format: ColumnSpec["format"]) {
 	const numericValue = value ?? 0;
 	if (numericValue < 0) return "—";
@@ -188,12 +195,35 @@ function buildColumns(
 	rankOffset: number,
 	sort: SortState,
 	timeframe: BuilderTimeframe,
+	selection?: SelectionState,
 ): ColumnDef<BuilderRowWithDisplayRank, unknown>[] {
 	const numericColumns = NUMERIC_COLUMNS.filter((spec) =>
 		isBuilderSortAvailableForTimeframe(spec.sortKey, timeframe),
 	);
 
+	const selectColumn: ColumnDef<BuilderRowWithDisplayRank, unknown> = {
+		id: "select",
+		meta: { title: "Select" },
+		header: () => null,
+		size: 44,
+		enableHiding: false,
+		cell: ({ row }) => {
+			const code = row.original.builder_code;
+			const checked = selection!.selectedCodes.has(code);
+			const disabled = !checked && selection!.isSelectDisabled(code);
+			return (
+				<Checkbox
+					checked={checked}
+					disabled={disabled}
+					onCheckedChange={() => selection!.onToggleSelect(code)}
+					aria-label={`Select ${formatBuilderCodeDisplay(code)} to compare`}
+				/>
+			);
+		},
+	};
+
 	return [
+		...(selection ? [selectColumn] : []),
 		{
 			id: "rank",
 			meta: { title: "#" },
@@ -261,6 +291,10 @@ type BuildersTableProps = {
 	toolbarRight?: React.ReactNode;
 	onSortChange: (sortBy: BuilderSortBy) => void;
 	onPageIndexChange?: (pageIndex: number) => void;
+	selectable?: boolean;
+	selectedCodes?: Set<string>;
+	onToggleSelect?: (code: string) => void;
+	isSelectDisabled?: (code: string) => boolean;
 };
 
 export function BuildersTable({
@@ -275,10 +309,23 @@ export function BuildersTable({
 	toolbarRight,
 	onSortChange,
 	onPageIndexChange,
+	selectable = false,
+	selectedCodes,
+	onToggleSelect,
+	isSelectDisabled,
 }: BuildersTableProps) {
+	const selection = useMemo<SelectionState | undefined>(() => {
+		if (!selectable || !selectedCodes || !onToggleSelect) return undefined;
+		return {
+			selectedCodes,
+			onToggleSelect,
+			isSelectDisabled: isSelectDisabled ?? (() => false),
+		};
+	}, [selectable, selectedCodes, onToggleSelect, isSelectDisabled]);
+
 	const columns = useMemo(
-		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }, timeframe),
-		[rankOffset, sort, onSortChange, timeframe],
+		() => buildColumns(rankOffset, { sortBy: sort, onSortChange }, timeframe, selection),
+		[rankOffset, sort, onSortChange, timeframe, selection],
 	);
 
 	return (

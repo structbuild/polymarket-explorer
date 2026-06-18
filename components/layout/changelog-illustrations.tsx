@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import Image from "next/image";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
@@ -347,7 +347,46 @@ function RewardsIncentivesArt() {
 	);
 }
 
+function BuilderCompareArt() {
+	const rows: { label: string; a: string; b: string; win: "a" | "b" }[] = [
+		{ label: "Volume", a: "$5.5M", b: "$229M", win: "b" },
+		{ label: "Builder fees", a: "$211K", b: "$0", win: "a" },
+		{ label: "Traders", a: "6.7K", b: "1.0K", win: "a" },
+		{ label: "Trades", a: "65.8K", b: "463K", win: "b" },
+	];
+	const valueClass = (active: boolean) =>
+		cn(
+			"justify-self-end rounded px-1 text-[10px] tabular-nums",
+			active ? "bg-foreground font-semibold text-background" : "text-foreground/70",
+		);
+	return (
+		<Stage tag="new">
+			<Card>
+				<div className="grid grid-cols-[1.2fr_1fr_1fr] items-center gap-x-2 gap-y-2">
+					<span />
+					<div className="flex min-w-0 items-center justify-end gap-1">
+						<span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+						<span className="truncate text-[10px] font-medium text-foreground">MetaMask</span>
+					</div>
+					<div className="flex min-w-0 items-center justify-end gap-1">
+						<span className="size-1.5 shrink-0 rounded-full bg-violet-400" />
+						<span className="truncate text-[10px] font-medium text-foreground">Betmoar</span>
+					</div>
+					{rows.map((row) => (
+						<Fragment key={row.label}>
+							<span className="truncate text-[10px] text-muted-foreground">{row.label}</span>
+							<span className={valueClass(row.win === "a")}>{row.a}</span>
+							<span className={valueClass(row.win === "b")}>{row.b}</span>
+						</Fragment>
+					))}
+				</div>
+			</Card>
+		</Stage>
+	);
+}
+
 export const CHANGELOG_ILLUSTRATIONS: Record<string, () => ReactNode> = {
+	"builder-compare": BuilderCompareArt,
 	"trader-category-leaderboards": TraderLeaderboardsArt,
 	"trader-pnl-chart-updates": TraderPnlChartArt,
 	"trader-best-worst-trades": BestWorstTradesArt,

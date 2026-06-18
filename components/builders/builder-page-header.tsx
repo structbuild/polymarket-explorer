@@ -1,13 +1,16 @@
 "use client";
 
 import type { BuilderMetadata } from "@structbuild/sdk";
-import { ExternalLinkIcon } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
+import { ExternalLinkIcon, GitCompareIcon } from "lucide-react";
 
 import { BuilderAvatar } from "@/components/builders/builder-avatar";
 import { CopyAddress } from "@/components/trader/copy-address";
 import { Button } from "@/components/ui/button";
 import { captureOutbound } from "@/components/ui/external-link";
 import { getBuilderDisplayName } from "@/lib/builder-display-name";
+import { DEFAULT_BUILDER_TIMEFRAME } from "@/lib/struct/builder-shared";
 import { formatBuilderCodeDisplay } from "@/lib/utils";
 
 const BUILDER_METADATA_CONTACT_HREF = "https://x.com/structbuild";
@@ -102,8 +105,24 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 				</div>
 			</div>
 
-			{showContactCta || websiteUrl || twitterUrl ? (
-				<div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 lg:items-end">
+			<div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 lg:items-end">
+				<div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+					<Button
+						className="w-full sm:w-fit"
+						size="lg"
+						variant="secondary"
+						nativeButton={false}
+						render={
+							<Link
+								href={
+									`/builders/compare?codes=${encodeURIComponent(builderCode)}&timeframe=${DEFAULT_BUILDER_TIMEFRAME}` as Route
+								}
+							/>
+						}
+					>
+						<GitCompareIcon />
+						Compare
+					</Button>
 					{showContactCta ? (
 						<OutboundButton
 							href={BUILDER_METADATA_CONTACT_HREF}
@@ -111,7 +130,7 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 							label="Contact us"
 						/>
 					) : (
-						<div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+						<>
 							{websiteUrl ? (
 								<OutboundButton
 									href={websiteUrl}
@@ -128,10 +147,10 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 									variant="secondary"
 								/>
 							) : null}
-						</div>
+						</>
 					)}
 				</div>
-			) : null}
+			</div>
 		</div>
 	);
 }

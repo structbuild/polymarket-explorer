@@ -28,6 +28,15 @@ const TRADER_PROFILE_HREF = "/traders/0x2005d16a84ceefa912d4e380cd32e7ff827875ea
 
 export const CHANGELOG: ChangelogEntry[] = [
 	{
+		id: "builder-compare",
+		date: "2026-06-18",
+		title: "Compare builders",
+		description:
+			"Put up to 4 builders side by side — headline metrics, per-bucket activity, trader concentration and category focus, all in one view.",
+		tag: "new",
+		href: "/builders/compare",
+	},
+	{
 		id: "trader-category-leaderboards",
 		date: "2026-06-13",
 		title: "Trader category leaderboards",
