@@ -21,23 +21,13 @@ import {
 	type BuildersStackedSlot,
 } from "@/lib/struct/builders-stacked-shared";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
-
-const BUILDER_PALETTE = [
-	"#10b981",
-	"#8b5cf6",
-	"#f59e0b",
-	"#06b6d4",
-	"#ef4444",
-	"#ec4899",
-	"#84cc16",
-	"#3b82f6",
-];
+import { colorForCompareIndex } from "@/lib/builder-compare-colors";
 
 const OTHER_COLOR = "#64748b";
 
 function colorFor(slot: BuildersStackedSlot, idx: number): string {
 	if (slot.id === OTHER_SLOT) return OTHER_COLOR;
-	return BUILDER_PALETTE[idx % BUILDER_PALETTE.length];
+	return colorForCompareIndex(idx);
 }
 
 type BuildersStackedChartProps = {

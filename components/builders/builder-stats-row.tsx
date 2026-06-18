@@ -6,6 +6,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Volume } from "@/components/ui/volume";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
+import { bpsToLabel } from "@/lib/builder-compare-metrics";
 import { BUILDER_SORT_DESCRIPTIONS } from "@/lib/struct/builder-shared";
 
 type Stat = {
@@ -16,11 +17,6 @@ type Stat = {
 };
 
 const GRID_CLASS = "grid grid-cols-2 gap-3 sm:grid-cols-4";
-
-function bpsToLabel(bps: number | null | undefined): string {
-	if (bps == null) return "—";
-	return `${(bps / 100).toFixed(2)}%`;
-}
 
 function buildStats(row: BuilderLatestRow, fees: BuilderFeeRate | null): Stat[] {
 	const baseStats: Stat[] = [

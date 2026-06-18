@@ -57,25 +57,22 @@ export function ChangelogWidget() {
 	const nowMs = useSyncExternalStore(subscribeNoop, getClientNowMs, () => 0);
 	const mounted = nowMs > 0;
 
-	const { recent, older } = useMemo(() => {
+	const seenSet = useMemo(() => new Set(seen), [seen]);
+
+	const { pending, rest } = useMemo(() => {
 		const cutoff = nowMs - CHANGELOG_RECENT_WINDOW_DAYS * DAY_MS;
-		const recentEntries: ChangelogEntry[] = [];
-		const olderEntries: ChangelogEntry[] = [];
+		const pendingEntries: ChangelogEntry[] = [];
+		const restEntries: ChangelogEntry[] = [];
 		for (const entry of CHANGELOG) {
-			if (entryDateSeconds(entry) * 1000 >= cutoff) {
-				recentEntries.push(entry);
+			const isRecent = entryDateSeconds(entry) * 1000 >= cutoff;
+			if (isRecent && !seenSet.has(entry.id)) {
+				pendingEntries.push(entry);
 			} else {
-				olderEntries.push(entry);
+				restEntries.push(entry);
 			}
 		}
-		return { recent: recentEntries, older: olderEntries };
-	}, [nowMs]);
-
-	const seenSet = useMemo(() => new Set(seen), [seen]);
-	const unseenCount = useMemo(
-		() => recent.reduce((count, entry) => (seenSet.has(entry.id) ? count : count + 1), 0),
-		[recent, seenSet],
-	);
+		return { pending: pendingEntries, rest: restEntries };
+	}, [nowMs, seenSet]);
 
 	const shownAtRef = useRef<number | null>(null);
 	useEffect(() => {
@@ -83,16 +80,16 @@ export function ChangelogWidget() {
 	}, []);
 
 	const dismiss = useCallback(() => {
-		const ids = recent.map((entry) => entry.id);
+		const ids = pending.map((entry) => entry.id);
 		setSeen((prev) => Array.from(new Set([...prev, ...ids])));
 		const visibleForSeconds =
 			shownAtRef.current === null ? null : Math.round((performance.now() - shownAtRef.current) / 100) / 10;
-		posthog.capture("changelog_dismissed", { recent_count: recent.length, visible_for_seconds: visibleForSeconds });
-	}, [recent, setSeen]);
+		posthog.capture("changelog_dismissed", { recent_count: pending.length, visible_for_seconds: visibleForSeconds });
+	}, [pending, setSeen]);
 
-	const visible = showOlder ? [...recent, ...older] : recent;
+	const visible = showOlder ? [...pending, ...rest] : pending;
 
-	if (!mounted || unseenCount === 0 || visible.length === 0) return null;
+	if (!mounted || pending.length === 0 || visible.length === 0) return null;
 
 	return (
 		<div className="fixed right-4 bottom-4 z-40 w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-xl ring-1 ring-foreground/10 duration-300 animate-in fade-in-0 slide-in-from-bottom-4 sm:right-6 sm:bottom-6 sm:w-96">
@@ -108,7 +105,7 @@ export function ChangelogWidget() {
 			<ChangelogCarousel
 				key={showOlder ? "all" : "recent"}
 				entries={visible}
-				olderCount={older.length}
+				olderCount={rest.length}
 				showOlder={showOlder}
 				onToggleOlder={() => {
 					posthog.capture("changelog_older_toggled", { expanded: !showOlder });
