@@ -16,7 +16,7 @@
     "@marsidev/react-turnstile": "^1.5.3",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
-    "@structbuild/sdk": "github:structbuild/struct-typescript-sdk#v0.6.0-staging.18",
+    "@structbuild/sdk": "github:structbuild/struct-typescript-sdk#v0.6.8-staging.1",
     "@tanstack/react-hotkeys": "^0.4.2",
     "@tanstack/react-table": "^8.21.3",
     "@vercel/analytics": "^2.0.1",

@@ -47,6 +47,7 @@ import {
 	getTraderChartExits,
 	getTraderPnlCandles,
 	getTraderPnlRisk,
+	type PnlChartExit,
 } from "@/lib/struct/pnl";
 import { resolvePnlRange } from "@/lib/struct/pnl-range";
 import {
@@ -679,6 +680,7 @@ export async function getTraderPnlViewAction({
 	to,
 	fillGaps,
 	timezone,
+	category,
 }: {
 	address: string;
 	timeframe: TraderPnlTimeframe;
@@ -687,11 +689,13 @@ export async function getTraderPnlViewAction({
 	to: number | null;
 	fillGaps: boolean;
 	timezone: string;
+	category: PolymarketCategory | null;
 }) {
 	await assertHumanRequest();
 	const normalizedAddress = normalizeWalletAddress(address);
 	if (!normalizedAddress) throw new Error("Invalid trader address");
 
+	const safeCategory = category ? parsePolymarketCategory(category) : null;
 	const safeTimeframe = pnlTimeframeValues.includes(timeframe) ? timeframe : "all";
 	const safeAnchor = anchor && pnlAnchorValues.includes(anchor) ? anchor : null;
 	const safeFrom = typeof from === "number" && Number.isFinite(from) ? Math.trunc(from) : null;
@@ -717,12 +721,15 @@ export async function getTraderPnlViewAction({
 			from: range.from,
 			to: range.to,
 			fillGaps: safeFillGaps,
+			...(safeCategory ? { category: safeCategory } : {}),
 		}),
-		getTraderChartExits(normalizedAddress, { from: range.from, to: range.to }),
+		safeCategory
+			? Promise.resolve<PnlChartExit[]>([])
+			: getTraderChartExits(normalizedAddress, { from: range.from, to: range.to }),
 		getTraderPnlRisk(normalizedAddress, PNL_RISK_TIMEFRAMES[range.timeframe]),
 	]);
 
-	return { range, fillGaps: safeFillGaps, candles, exits, risk };
+	return { range, fillGaps: safeFillGaps, category: safeCategory, candles, exits, risk };
 }
 
 export async function searchTradersAction(query: string) {

@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useQueryState } from "nuqs"
 
+import type { PolymarketCategory } from "@structbuild/sdk"
+
 import { ChartModeToggle, ChartSettingsButton, defaultTooltipFields, isOhlcMetric, PnlChartContent, PnlMetricTabs, type PnlChartMetric, type PnlChartMode, type TooltipFieldKey } from "@/components/trader/pnl-chart"
+import { PnlCategorySelect } from "@/components/trader/pnl-category-select"
 import { PnlRangeDialog } from "@/components/trader/pnl-range-dialog"
 import { PnlTimeframeSelector } from "@/components/trader/pnl-timeframe-selector"
 import { PnlShareDialog } from "@/components/trader/pnl-share-dialog"
@@ -26,14 +29,16 @@ type PnlCardProps = {
 	address: string
 	profileImage?: string | null
 	firstTradeAt?: number
+	availableCategories?: PolymarketCategory[]
 }
 
-export function PnlCard({ displayName, address, profileImage, firstTradeAt }: PnlCardProps) {
+export function PnlCard({ displayName, address, profileImage, firstTradeAt, availableCategories = [] }: PnlCardProps) {
 	const pnlView = useTraderPnlView()
 	const {
 		candles: data,
 		annotations,
 		exits,
+		category,
 		range: pnlRange,
 		fillGaps: pnlFillGaps,
 		update: updatePnlView,
@@ -82,7 +87,7 @@ export function PnlCard({ displayName, address, profileImage, firstTradeAt }: Pn
 	const hasWinExits = useMemo(() => exits.some((exit) => exit.pnlUsd >= 0), [exits])
 	const hasLossExits = useMemo(() => exits.some((exit) => exit.pnlUsd < 0), [exits])
 
-	const annotationsEligible = pnlRange.mode === "preset" && pnlRange.timeframe === "all"
+	const annotationsEligible = pnlRange.mode === "preset" && pnlRange.timeframe === "all" && !category
 	const showChartAnnotations = annotationsEligible && showAnnotations
 	const showTooltipTime = data.length > 1 ? data[1].t - data[0].t < 86_400 : pnlRange.resolution !== "1d"
 	const highlightsAvailable = hasAnnotations && annotationsEligible
@@ -185,6 +190,14 @@ export function PnlCard({ displayName, address, profileImage, firstTradeAt }: Pn
 					<>
 						<PnlMetricTabs value={chartMetric} onChange={setChartMetric} chartMode={chartMode} />
 						<div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+							{availableCategories.length > 0 && (
+								<PnlCategorySelect
+									value={category}
+									categories={availableCategories}
+									disabled={pnlView.isPending}
+									onChange={(nextCategory) => pnlView.update({ category: nextCategory })}
+								/>
+							)}
 							<ChartModeToggle value={chartMode} onChange={handleChartModeChange} />
 							<ChartSettingsButton
 								exitsDisabled={exitsDisabled}

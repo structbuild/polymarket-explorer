@@ -46,7 +46,8 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { readTotalPnlUsd } from "@/lib/format";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type { GlobalEntry } from "@structbuild/sdk";
+import type { GlobalEntry, PolymarketCategory } from "@structbuild/sdk";
+import { parsePolymarketCategory } from "@/lib/tag-category";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -241,11 +242,22 @@ async function TraderOverviewSection({
 	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
 	const pnlRiskPromise = getTraderPnlRisk(address, PNL_RISK_TIMEFRAMES[pnlRange.timeframe]);
 	const pnlChangesPromise = getTraderPnlChanges(address);
-	const [insights, pnlRisk, pnlChanges] = await Promise.all([
+	const [insights, pnlRisk, pnlChanges, categoryPage] = await Promise.all([
 		insightsPromise,
 		pnlRiskPromise,
 		pnlChangesPromise,
+		getTraderCategoryPnl(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
 	]);
+
+	const seenCategories = new Set<PolymarketCategory>();
+	const availableCategories: PolymarketCategory[] = [];
+	for (const entry of categoryPage.data) {
+		const parsed = parsePolymarketCategory(entry.category ?? undefined);
+		if (parsed && !seenCategories.has(parsed)) {
+			seenCategories.add(parsed);
+			availableCategories.push(parsed);
+		}
+	}
 
 	const displayName = getTraderDisplayName({
 		address,
@@ -302,6 +314,7 @@ async function TraderOverviewSection({
 							displayName={displayName}
 							profileImage={profile?.profile_image}
 							firstTradeAt={pnlSummary?.first_trade_at ?? undefined}
+							availableCategories={availableCategories}
 						/>
 						<div className="rounded-lg bg-card p-4 sm:p-6">
 							<PnlCalendar data={insights.dailyPnl} periods={insights.periods} />

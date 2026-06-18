@@ -561,30 +561,43 @@ export async function getTraderMarketPnl(
 	}
 }
 
+const getTraderCategoryPnlCached = cache(
+	async (normalizedAddress: string, optionsJson: string): Promise<CursorPage<CategoryEntry>> => {
+		const client = getStructClient();
+
+		if (!client) {
+			return emptyCursorPage<CategoryEntry>();
+		}
+
+		const options = optionsJson ? (JSON.parse(optionsJson) as Omit<GetTraderCategoryPnlOptions, "address">) : undefined;
+
+		try {
+			const response = await client.trader.getTraderCategoryPnl({
+				address: normalizedAddress,
+				...(options ?? {}),
+			});
+			return readCursorPage<CategoryEntry>(response);
+		} catch (error) {
+			if (readStatus(error) === 404) {
+				return emptyCursorPage<CategoryEntry>();
+			}
+			logStructError(`getTraderCategoryPnl:${normalizedAddress}`, error);
+			return emptyCursorPage<CategoryEntry>();
+		}
+	},
+);
+
 export async function getTraderCategoryPnl(
 	address: string,
 	options?: Omit<GetTraderCategoryPnlOptions, "address">,
 ): Promise<CursorPage<CategoryEntry>> {
-	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
-	if (!client || !normalizedAddress) {
+	if (!normalizedAddress) {
 		return emptyCursorPage<CategoryEntry>();
 	}
 
-	try {
-		const response = await client.trader.getTraderCategoryPnl({
-			address: normalizedAddress,
-			...(options ?? {}),
-		});
-		return readCursorPage<CategoryEntry>(response);
-	} catch (error) {
-		if (readStatus(error) === 404) {
-			return emptyCursorPage<CategoryEntry>();
-		}
-		logStructError(`getTraderCategoryPnl:${normalizedAddress}`, error);
-		return emptyCursorPage<CategoryEntry>();
-	}
+	return getTraderCategoryPnlCached(normalizedAddress, options ? JSON.stringify(options) : "");
 }
 
 export type TraderCategoriesPageOptions = Omit<GetTraderCategoryPnlOptions, "address">;

@@ -40,6 +40,10 @@ const activityLabels: Record<Trade["trade_type"], string> = {
 	ManualResolution: "Manual Resolution",
 	NegRiskOutcomeReported: "NegRisk Outcome Reported",
 	RegisterToken: "Token Registered",
+	ComboCreation: "Combo Created",
+	ComboExecution: "Combo Executed",
+	ComboStatusUpdate: "Combo Updated",
+	ComboLifecycle: "Combo Lifecycle",
 }
 
 export function getActivityLabel(trade: Trade): string {
