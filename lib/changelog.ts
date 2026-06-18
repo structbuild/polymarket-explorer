@@ -34,7 +34,7 @@ export const CHANGELOG: ChangelogEntry[] = [
 		description:
 			"Put up to 4 builders side by side — headline metrics, per-bucket activity, trader concentration and category focus, all in one view.",
 		tag: "new",
-		href: "/builders/compare",
+		href: "/builders/compare?codes=0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1,0x11a22276beb720e66a072cba8b8e74cded60afda510af535b947b81a1b81a883,0xbc37cc54237a06aa0d380814fadf2f5b6d20483300833f381e4727f1066845fb,0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
 	},
 	{
 		id: "trader-category-leaderboards",

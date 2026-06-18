@@ -184,7 +184,7 @@ function EmptyState({
 }) {
 	const needsMore = selected.length === 1;
 	return (
-		<div className="mx-auto max-w-3xl space-y-6">
+		<div className="space-y-6">
 			<Breadcrumbs items={BREADCRUMBS} />
 			<div className="space-y-2">
 				<h1 className="text-2xl font-medium">Compare builders</h1>
