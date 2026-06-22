@@ -15,6 +15,6 @@ export const COMPARE_ACTIVITY_METRICS: readonly CompareActivityMetric[] = [
 	{ id: "uniqueTraders", label: "Traders", format: "count", selector: (p) => p.uniqueTraders },
 	{ id: "newUsers", label: "New users", format: "count", selector: (p) => p.newUsers },
 	{ id: "fees", label: "Fees", format: "currency", selector: (p) => p.feesUsd },
-	{ id: "makers", label: "Makers", format: "count", selector: (p) => p.uniqueTakers },
-	{ id: "takers", label: "Takers", format: "count", selector: (p) => p.uniqueMakers },
+	{ id: "makers", label: "Makers", format: "count", selector: (p) => p.uniqueMakers },
+	{ id: "takers", label: "Takers", format: "count", selector: (p) => p.uniqueTakers },
 ];

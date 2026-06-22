@@ -98,8 +98,12 @@ function mapRow(row: AnyTimeBucketRow): AnalyticsPoint {
 		yesVolumeUsd: toNumber(row.yv),
 		noVolumeUsd: toNumber(row.nv),
 		uniqueTraders: toNumber("ut" in row ? row.ut : 0),
-		uniqueMakers: toNumber("um" in row ? row.um : 0),
-		uniqueTakers: toNumber("uk" in row ? row.uk : 0),
+		// NOTE: temporary frontend workaround — the backend currently emits maker
+		// and taker counts under swapped keys (`um` holds takers, `uk` holds makers).
+		// We swap them here so the rest of the app reads correct values. Revert this
+		// swap once the backend fix lands.
+		uniqueMakers: toNumber("uk" in row ? row.uk : 0),
+		uniqueTakers: toNumber("um" in row ? row.um : 0),
 		txnCount: toNumber(row.tc),
 		buyCount: toNumber(row.bc),
 		sellCount: toNumber(row.sc),
