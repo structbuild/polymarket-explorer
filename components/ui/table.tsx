@@ -6,18 +6,26 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { useHorizontalScrollState } from "@/lib/hooks/use-horizontal-scroll-state"
 import { cn } from "@/lib/utils"
 
-const FADE_WIDTH = "2rem"
 const SCROLL_STEP_PX = 320
 
-function buildScrollMask(canScrollLeft: boolean, canScrollRight: boolean) {
-  if (!canScrollLeft && !canScrollRight) {
-    return undefined
-  }
+type ScrollFadeProps = {
+  direction: "left" | "right"
+  visible: boolean
+}
 
-  const leftStop = canScrollLeft ? "transparent" : "black"
-  const rightStop = canScrollRight ? "transparent" : "black"
-
-  return `linear-gradient(to right, ${leftStop}, black ${FADE_WIDTH}, black calc(100% - ${FADE_WIDTH}), ${rightStop})`
+function ScrollFade({ direction, visible }: ScrollFadeProps) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute inset-y-0 z-10 w-8 transition-opacity duration-200",
+        direction === "left"
+          ? "left-0 bg-gradient-to-r from-card to-transparent"
+          : "right-0 bg-gradient-to-l from-card to-transparent",
+        visible ? "opacity-100" : "opacity-0",
+      )}
+    />
+  )
 }
 
 type ScrollHintButtonProps = {
@@ -48,7 +56,6 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   const wrapperRef = React.useRef<HTMLDivElement | null>(null)
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const { canScrollLeft, canScrollRight } = useHorizontalScrollState(containerRef)
-  const maskImage = buildScrollMask(canScrollLeft, canScrollRight)
   const showHints = canScrollLeft || canScrollRight
   const [hintTop, setHintTop] = React.useState<number | null>(null)
 
@@ -111,7 +118,6 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
         ref={containerRef}
         data-slot="table-container"
         className="w-full overflow-x-auto"
-        style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
       >
         <table
           data-slot="table"
@@ -119,6 +125,8 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
           {...props}
         />
       </div>
+      <ScrollFade direction="left" visible={canScrollLeft} />
+      <ScrollFade direction="right" visible={canScrollRight} />
       {showHints && hintTop !== null ? (
         <div
           aria-hidden
