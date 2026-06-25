@@ -44,6 +44,7 @@ export function VolumeAnalyticsChart({
 
 	return (
 		<AnalyticsChart
+			key={mode}
 			data={data}
 			variant={variant}
 			series={series}
