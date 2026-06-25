@@ -229,6 +229,7 @@ export function BuildersGlobalTags({ rows, sort, timeframe }: BuildersGlobalTags
 					descriptions={SORT_DESCRIPTIONS}
 					defaultValue="volume"
 					ariaLabelPrefix="Rank tags by"
+					scrollable
 					transformParams={(params, next) => {
 						params.set("tagSort", next);
 					}}

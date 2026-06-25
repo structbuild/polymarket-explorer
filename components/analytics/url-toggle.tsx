@@ -30,6 +30,7 @@ type Props<T extends string> = {
 	transformParams?: (params: URLSearchParams, next: T) => void;
 	pending?: boolean;
 	onNavigate?: AnalyticsNavigateHandler<T>;
+	scrollable?: boolean;
 };
 
 export function AnalyticsUrlToggle<T extends string>({
@@ -43,6 +44,7 @@ export function AnalyticsUrlToggle<T extends string>({
 	transformParams,
 	pending,
 	onNavigate,
+	scrollable,
 }: Props<T>) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -82,7 +84,7 @@ export function AnalyticsUrlToggle<T extends string>({
 		});
 	}
 
-	return (
+	const group = (
 		<ToggleGroup
 			value={[value]}
 			onValueChange={handleChange}
@@ -113,4 +115,14 @@ export function AnalyticsUrlToggle<T extends string>({
 			})}
 		</ToggleGroup>
 	);
+
+	if (scrollable) {
+		return (
+			<div className="min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+				{group}
+			</div>
+		);
+	}
+
+	return group;
 }

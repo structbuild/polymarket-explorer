@@ -86,6 +86,7 @@ export function BuildersStackedChart({
 			labels={BUILDERS_STACKED_METRIC_LABELS}
 			defaultValue={DEFAULT_BUILDERS_STACKED_METRIC}
 			ariaLabelPrefix="Show builder breakdown"
+			scrollable
 			transformParams={(params, next) => {
 				params.set("breakdownMetric", next);
 			}}

@@ -26,6 +26,8 @@ import {
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
+const EQUAL_HEIGHT_CARD_CLASS = "grid h-full grid-rows-[auto_minmax(0,1fr)_auto]";
+
 function slugForFilename(value: string): string {
 	return value
 		.toLowerCase()
@@ -92,8 +94,7 @@ const COLOR_YES = "var(--chart-1)";
 const COLOR_NO = "var(--chart-4)";
 const COLOR_SINGLE = "var(--chart-2)";
 const COLOR_TOTAL = "#64748b";
-const COLOR_MAKERS = "var(--chart-1)";
-const COLOR_TAKERS = "var(--chart-4)";
+const COLOR_OTHER = "#94a3b8";
 const COLOR_REWARDS = "#8b5cf6";
 const COLOR_MAKER_REBATE = "#f59e0b";
 const COLOR_YIELD = "#14b8a6";
@@ -135,6 +136,27 @@ const VOLUME_CUMULATIVE_SERIES: AnalyticsSeries[] = [
 	{ key: "splitVolumeUsd", label: "Splits", color: COLOR_SPLIT },
 	{ key: "convertedCollateralUsd", label: "Conversions", color: COLOR_CONVERT },
 	VOLUME_TOTAL_SERIES,
+];
+
+const SHARES_TOTAL_SERIES: AnalyticsSeries = {
+	key: "sharesVolume",
+	label: "Total",
+	color: COLOR_TOTAL,
+	isTotal: true,
+};
+
+const VOLUME_NOTIONAL_SERIES: AnalyticsSeries[] = [
+	{ key: "buySharesVolume", label: "Buys", color: COLOR_VOLUME_BUY, stackId: "vn" },
+	{ key: "sellSharesVolume", label: "Sells", color: COLOR_VOLUME_SELL, stackId: "vn" },
+	{ key: "otherSharesVolume", label: "Other", color: COLOR_OTHER, stackId: "vn" },
+	SHARES_TOTAL_SERIES,
+];
+
+const VOLUME_NOTIONAL_CUMULATIVE_SERIES: AnalyticsSeries[] = [
+	{ key: "buySharesVolume", label: "Buys", color: COLOR_VOLUME_BUY },
+	{ key: "sellSharesVolume", label: "Sells", color: COLOR_VOLUME_SELL },
+	{ key: "otherSharesVolume", label: "Other", color: COLOR_OTHER },
+	SHARES_TOTAL_SERIES,
 ];
 
 const TRADE_COUNT_SERIES: AnalyticsSeries[] = [
@@ -246,18 +268,6 @@ const CHART_SPECS: ChartSpec[] = [
 	},
 	{
 		kind: "timeSeries",
-		id: "makersTakers",
-		title: "Makers vs takers",
-		tooltip: "Distinct makers (order-resting side) and takers (order-initiator side) active in the bucket. A trader can appear in both.",
-		variant: "area",
-		series: [
-			{ key: "uniqueMakers", label: "Makers", color: COLOR_MAKERS },
-			{ key: "uniqueTakers", label: "Takers", color: COLOR_TAKERS },
-		],
-		valueFormat: "count",
-	},
-	{
-		kind: "timeSeries",
 		id: "fees",
 		title: "Fees",
 		tooltip: "Shows only fees from orders matched/filled.",
@@ -277,7 +287,7 @@ const CHART_SPECS: ChartSpec[] = [
 		title: "Shares traded",
 		tooltip:
 			"Total $1-payout shares filled in the bucket — Polymarket's headline volume metric. Switch the global volume display to Notional to make this the primary view.",
-		variant: "area",
+		variant: "bar",
 		series: [{ key: "sharesVolume", label: "Shares", color: COLOR_SINGLE }],
 		valueFormat: "count",
 		keepNarrow: true,
@@ -397,6 +407,12 @@ function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<str
 		avgRevenuePerUserUsd: p.avgRevenuePerUserUsd,
 		avgVolumePerUserUsd: p.avgVolumePerUserUsd,
 		sharesVolume: p.sharesVolume,
+		buySharesVolume: p.buySharesVolume,
+		sellSharesVolume: p.sellSharesVolume,
+		otherSharesVolume: Math.max(
+			0,
+			p.sharesVolume - p.buySharesVolume - p.sellSharesVolume,
+		),
 		convertedCollateralUsd: p.convertedCollateralUsd,
 		convertedCount: p.convertedCount,
 		makerRebateVolumeUsd: p.makerRebateVolumeUsd,
@@ -447,19 +463,22 @@ function applyMetricPlacements(
 }
 
 function balanceLayout(specs: ChartSpec[]): ChartSpec[] {
-	const nonWideCount = specs.reduce((acc, s) => acc + (s.wide ? 0 : 1), 0);
-	if (nonWideCount % 2 === 0) return specs;
-	const result = [...specs];
-	for (let i = result.length - 1; i >= 0; i--) {
-		if (!result[i].wide && !result[i].keepNarrow) {
-			result[i] = { ...result[i], wide: true };
-			return result;
+	const result = specs.map((spec) => ({ ...spec }));
+	let col = 0;
+	for (let i = 0; i < result.length; i++) {
+		if (result[i].wide) {
+			if (col === 1) {
+				result[i] = { ...result[i], wide: false };
+				col = 0;
+			}
+		} else {
+			col = col === 0 ? 1 : 0;
 		}
 	}
-	for (let i = result.length - 1; i >= 0; i--) {
-		if (!result[i].wide) {
-			result[i] = { ...result[i], wide: true };
-			break;
+	if (col === 1) {
+		const last = result[result.length - 1];
+		if (last && !last.wide && !last.keepNarrow) {
+			result[result.length - 1] = { ...last, wide: true };
 		}
 	}
 	return result;
@@ -569,8 +588,9 @@ export function AnalyticsChartsGrid({
 			{specs.map((spec) => {
 				const isVolumeChart = spec.kind === "timeSeries" && spec.id === "volume";
 				return (
-					<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
+					<div key={spec.id} className={spec.wide ? "lg:col-span-2" : "h-full"}>
 						<ShareableChartCard
+							cardClassName={EQUAL_HEIGHT_CARD_CLASS}
 							title={spec.title}
 							titleNode={
 								isVolumeChart ? (
@@ -602,6 +622,11 @@ export function AnalyticsChartsGrid({
 								<VolumeAnalyticsChart
 									data={data}
 									usdSeries={spec.series}
+									notionalSeries={
+										view === "cumulative"
+											? VOLUME_NOTIONAL_CUMULATIVE_SERIES
+											: VOLUME_NOTIONAL_SERIES
+									}
 									variant={spec.variant}
 									interactiveLegend={spec.interactiveLegend}
 									resolution={resolution}
@@ -655,8 +680,9 @@ export function AnalyticsChartsGridFallback({
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => (
-				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : undefined}>
+				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : "h-full"}>
 					<ChartCard
+						className={EQUAL_HEIGHT_CARD_CLASS}
 						title={spec.title}
 						tooltip={spec.tooltip}
 						footer={

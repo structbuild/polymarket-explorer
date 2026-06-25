@@ -187,6 +187,8 @@ export type AnalyticsPoint = {
 	avgRevenuePerUserUsd: number;
 	avgVolumePerUserUsd: number;
 	sharesVolume: number;
+	buySharesVolume: number;
+	sellSharesVolume: number;
 	buyDistUnder10: number;
 	buyDist10to100: number;
 	buyDist100to1k: number;

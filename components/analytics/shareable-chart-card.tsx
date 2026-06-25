@@ -17,6 +17,7 @@ type ShareableChartCardProps = {
 	children: ReactNode
 	footer?: ReactNode
 	headerAction?: ReactNode
+	cardClassName?: string
 }
 
 function waitForChartLayout(): Promise<void> {
@@ -37,6 +38,7 @@ export function ShareableChartCard({
 	children,
 	footer,
 	headerAction,
+	cardClassName,
 }: ShareableChartCardProps) {
 	const mirrorRef = useRef<HTMLDivElement>(null)
 	const [mirrorMounted, setMirrorMounted] = useState(false)
@@ -55,6 +57,7 @@ export function ShareableChartCard({
 			<ChartCard
 				title={titleNode ?? title}
 				tooltip={tooltip}
+				className={cardClassName}
 				action={
 					<div className="flex items-center gap-1">
 						{headerAction}
