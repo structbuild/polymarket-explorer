@@ -90,6 +90,7 @@ const METRIC_FIELDS: Record<AnalyticsMetricId, readonly AnalyticsPointKey[]> = {
 	incentives: ["rewardVolumeUsd", "makerRebateVolumeUsd", "yieldVolumeUsd"],
 	yesNoShares: ["yesSharesVolume", "noSharesVolume"],
 	builderFees: ["builderFeesUsd"],
+	trades: ["txnCount"],
 };
 
 const KPI_FIELDS: Partial<Record<AnalyticsMetricId, readonly AnalyticsPointKey[]>> = {

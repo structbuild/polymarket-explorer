@@ -252,7 +252,7 @@ async function TagPageContent({
 							basePath={`/tags/${canonicalSlug}`}
 							baseParams={paginationBaseParams}
 							tagLabel={tag.label}
-							initialMarkets={markets.map(marketResponseToRow)}
+							initialMarkets={markets.map((market) => marketResponseToRow(market))}
 							initialTab={marketTab}
 							initialCursor={cursor ?? null}
 							initialHasMore={marketsHasMore}

@@ -15,9 +15,11 @@ export function toVolumePoints(points: PositionVolumeDataPoint[] | null) {
 		.map((point) => ({ t: point.t, buy: point.bv ?? 0, sell: point.sv ?? 0 }));
 }
 
+import type { ChartResolution } from "@structbuild/sdk";
+
 export async function getMarketChart(
 	conditionId: string,
-	resolution: "ALL" | "D" | "W" | "60" | "240" = "D",
+	resolution: ChartResolution = "1D",
 ): Promise<PositionChartOutcome[] | null> {
 	const client = getStructClient();
 
