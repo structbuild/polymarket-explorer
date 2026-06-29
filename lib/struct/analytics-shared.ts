@@ -244,18 +244,18 @@ export function restrictAnalyticsComponents(
 
 	const allowed = new Set(allowedComponents);
 	return points.map((p) => {
-		const buyVolumeUsd = allowed.has("buy") ? p.buyVolumeUsd : 0;
-		const sellVolumeUsd = allowed.has("sell") ? p.sellVolumeUsd : 0;
-		const redemptionVolumeUsd = allowed.has("redeem") ? p.redemptionVolumeUsd : 0;
-		const mergeVolumeUsd = allowed.has("merge") ? p.mergeVolumeUsd : 0;
-		const splitVolumeUsd = allowed.has("split") ? p.splitVolumeUsd : 0;
-		const convertedCollateralUsd = allowed.has("convert") ? p.convertedCollateralUsd : 0;
-		const buyCount = allowed.has("buy") ? p.buyCount : 0;
-		const sellCount = allowed.has("sell") ? p.sellCount : 0;
-		const redemptionCount = allowed.has("redeem") ? p.redemptionCount : 0;
-		const mergeCount = allowed.has("merge") ? p.mergeCount : 0;
-		const splitCount = allowed.has("split") ? p.splitCount : 0;
-		const convertedCount = allowed.has("convert") ? p.convertedCount : 0;
+		const buyVolumeUsd = allowed.has("buy") ? (p.buyVolumeUsd ?? 0) : 0;
+		const sellVolumeUsd = allowed.has("sell") ? (p.sellVolumeUsd ?? 0) : 0;
+		const redemptionVolumeUsd = allowed.has("redeem") ? (p.redemptionVolumeUsd ?? 0) : 0;
+		const mergeVolumeUsd = allowed.has("merge") ? (p.mergeVolumeUsd ?? 0) : 0;
+		const splitVolumeUsd = allowed.has("split") ? (p.splitVolumeUsd ?? 0) : 0;
+		const convertedCollateralUsd = allowed.has("convert") ? (p.convertedCollateralUsd ?? 0) : 0;
+		const buyCount = allowed.has("buy") ? (p.buyCount ?? 0) : 0;
+		const sellCount = allowed.has("sell") ? (p.sellCount ?? 0) : 0;
+		const redemptionCount = allowed.has("redeem") ? (p.redemptionCount ?? 0) : 0;
+		const mergeCount = allowed.has("merge") ? (p.mergeCount ?? 0) : 0;
+		const splitCount = allowed.has("split") ? (p.splitCount ?? 0) : 0;
+		const convertedCount = allowed.has("convert") ? (p.convertedCount ?? 0) : 0;
 
 		return {
 			...p,
@@ -307,11 +307,11 @@ export function summarizeAnalytics(points: AnalyticsPoint[]): AnalyticsSummary {
 	let uniqueTradersTotal = 0;
 
 	for (const point of points) {
-		totalVolumeUsd += point.volumeUsd;
-		totalSharesVolume += point.sharesVolume;
-		totalFeesUsd += point.feesUsd;
-		totalTxnCount += point.txnCount;
-		uniqueTradersTotal += point.uniqueTraders;
+		totalVolumeUsd += point.volumeUsd ?? 0;
+		totalSharesVolume += point.sharesVolume ?? 0;
+		totalFeesUsd += point.feesUsd ?? 0;
+		totalTxnCount += point.txnCount ?? 0;
+		uniqueTradersTotal += point.uniqueTraders ?? 0;
 	}
 
 	return {
@@ -375,12 +375,12 @@ export function isDefaultVolumeComponents(
 export function computeVolumeComponentTotals(points: AnalyticsPoint[]): ComponentTotals {
 	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0, convert: 0 };
 	for (const p of points) {
-		totals.buy += p.buyVolumeUsd;
-		totals.sell += p.sellVolumeUsd;
-		totals.redeem += p.redemptionVolumeUsd;
-		totals.merge += p.mergeVolumeUsd;
-		totals.split += p.splitVolumeUsd;
-		totals.convert += p.convertedCollateralUsd;
+		totals.buy += p.buyVolumeUsd ?? 0;
+		totals.sell += p.sellVolumeUsd ?? 0;
+		totals.redeem += p.redemptionVolumeUsd ?? 0;
+		totals.merge += p.mergeVolumeUsd ?? 0;
+		totals.split += p.splitVolumeUsd ?? 0;
+		totals.convert += p.convertedCollateralUsd ?? 0;
 	}
 	return totals;
 }
@@ -388,12 +388,12 @@ export function computeVolumeComponentTotals(points: AnalyticsPoint[]): Componen
 export function computeTradeCountComponentTotals(points: AnalyticsPoint[]): ComponentTotals {
 	const totals: ComponentTotals = { buy: 0, sell: 0, redeem: 0, merge: 0, split: 0, convert: 0 };
 	for (const p of points) {
-		totals.buy += p.buyCount;
-		totals.sell += p.sellCount;
-		totals.redeem += p.redemptionCount;
-		totals.merge += p.mergeCount;
-		totals.split += p.splitCount;
-		totals.convert += p.convertedCount;
+		totals.buy += p.buyCount ?? 0;
+		totals.sell += p.sellCount ?? 0;
+		totals.redeem += p.redemptionCount ?? 0;
+		totals.merge += p.mergeCount ?? 0;
+		totals.split += p.splitCount ?? 0;
+		totals.convert += p.convertedCount ?? 0;
 	}
 	return totals;
 }

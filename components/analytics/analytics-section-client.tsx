@@ -99,6 +99,9 @@ export function AnalyticsSectionClient({
 					view: next.view,
 					defaultRange,
 					showKpis,
+					excludeMetrics,
+					appendMetrics,
+					allowedComponents,
 				});
 				if (requestIdRef.current !== requestId) return;
 				replaceUrl(href);
@@ -113,7 +116,7 @@ export function AnalyticsSectionClient({
 				console.error("Failed to load analytics section data", error);
 			}
 		});
-	}, [defaultCap, defaultRange, initialData, showKpis, source]);
+	}, [allowedComponents, appendMetrics, defaultCap, defaultRange, excludeMetrics, initialData, showKpis, source]);
 
 	const chartPoints = restrictAnalyticsComponents(
 		applyAnalyticsCap(data.chartPoints, endTime, current.cap),

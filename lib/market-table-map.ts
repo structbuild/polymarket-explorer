@@ -28,7 +28,26 @@ export type MarketTableRow = {
 	metrics: TimeframeMetrics;
 };
 
-export function marketResponseToRow(market: MarketResponse): MarketTableRow {
+type MarketRowOptions = {
+	metricsTimeframes?: MetricsTimeframe[];
+};
+
+function pickMetrics(
+	metrics: MarketResponse["metrics"],
+	timeframes?: MetricsTimeframe[],
+): TimeframeMetrics {
+	if (!metrics) return {};
+	if (!timeframes || timeframes.length === 0) return metrics;
+	const picked: TimeframeMetrics = {};
+	for (const timeframe of timeframes) {
+		const value = metrics[timeframe];
+		if (value) picked[timeframe] = value;
+	}
+	return picked;
+}
+
+export function marketResponseToRow(market: MarketResponse, options?: MarketRowOptions): MarketTableRow {
+	const metricsTimeframes = options?.metricsTimeframes;
 	return {
 		id: market.condition_id,
 		slug: market.market_slug ?? null,
@@ -50,7 +69,7 @@ export function marketResponseToRow(market: MarketResponse): MarketTableRow {
 		totalHolders: market.total_holders ?? null,
 		highestProbability: market.highest_probability ?? null,
 		isNegRisk: market.is_neg_risk ?? false,
-		metrics: market.metrics ?? {},
+		metrics: pickMetrics(market.metrics, metricsTimeframes),
 	};
 }
 

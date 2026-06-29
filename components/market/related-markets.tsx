@@ -1,25 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import type { MarketResponse } from "@structbuild/sdk";
 
 import { Volume } from "@/components/ui/volume";
 import { RelatedMarketsViewAllLink } from "@/components/market/related-markets-view-all-link";
 import { formatCapitalizeWords, slugify } from "@/lib/format";
+import type { RelatedMarketItem } from "@/lib/market-related";
 import { truncateMarketTitle } from "@/lib/utils";
 
 type RelatedMarketsProps = {
-	markets: MarketResponse[];
+	markets: RelatedMarketItem[];
 	tag: string;
-	currentSlug: string;
 };
 
-export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProps) {
-	const items = markets
-		.filter((m) => m.market_slug && m.market_slug !== currentSlug)
-		.slice(0, 6);
-
-	if (items.length === 0) return null;
+export function RelatedMarkets({ markets, tag }: RelatedMarketsProps) {
+	if (markets.length === 0) return null;
 
 	const tagLabel = formatCapitalizeWords(tag);
 	const tagSlug = slugify(tag);
@@ -33,30 +28,24 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 				<RelatedMarketsViewAllLink href={`/tags/${tagSlug}` as Route} tag={tag} />
 			</div>
 			<ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				{items.map((m) => {
-					const question = m.question ?? m.title ?? "Untitled market";
-					const displayTitle = truncateMarketTitle(question);
-					const outcomes = m.outcomes ?? [];
-					const leading = outcomes.reduce<(typeof outcomes)[number] | null>(
-						(best, o) => (best == null || (o.price ?? 0) > (best.price ?? 0) ? o : best),
-						null,
-					);
-					const probability = leading?.price != null ? `${(leading.price * 100).toFixed(0)}%` : null;
-					const usd = m.metrics?.lifetime?.volume ?? m.volume_usd ?? 0;
-					const shares = m.metrics?.lifetime?.shares_volume ?? null;
-					const lead = probability && leading?.name ? `${leading.name} ${probability}` : null;
+				{markets.map((market) => {
+					const lead =
+						market.probability && market.leadingOutcome
+							? `${market.leadingOutcome} ${market.probability}`
+							: null;
+					const displayTitle = truncateMarketTitle(market.question);
 
 					return (
-						<li key={m.condition_id}>
+						<li key={market.conditionId}>
 							<Link
-								href={`/markets/${m.market_slug}` as Route}
+								href={`/markets/${market.slug}` as Route}
 								prefetch={false}
 								className="group flex items-start gap-3 rounded-lg bg-card p-4 transition-colors hover:bg-accent"
 							>
-								{m.image_url ? (
+								{market.imageUrl ? (
 									<Image
-										src={m.image_url}
-										alt={question}
+										src={market.imageUrl}
+										alt={market.question}
 										width={48}
 										height={48}
 										className="size-12 shrink-0 rounded-md object-cover"
@@ -65,7 +54,10 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 									<div className="size-12 shrink-0 rounded-md bg-muted" />
 								)}
 								<div className="min-w-0 flex-1">
-									<p className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground" title={question}>
+									<p
+										className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground"
+										title={market.question}
+									>
 										{displayTitle}
 									</p>
 									<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -75,7 +67,7 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 												<span aria-hidden="true">·</span>
 											</>
 										) : null}
-										<Volume usd={usd} shares={shares} compact />
+										<Volume usd={market.volumeUsd} shares={market.sharesVolume} compact />
 										<span>volume</span>
 									</p>
 								</div>

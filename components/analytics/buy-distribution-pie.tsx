@@ -52,7 +52,7 @@ function aggregate(points: AnalyticsPoint[]): BucketDatum[] {
 		buyDistOver50k: 0,
 	};
 	for (const p of points) {
-		for (const k of BUY_DIST_KEYS) totals[k] += p[k];
+		for (const k of BUY_DIST_KEYS) totals[k] += p[k] ?? 0;
 	}
 	return BUY_DIST_KEYS.map((key) => ({
 		key,

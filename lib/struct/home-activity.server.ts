@@ -12,7 +12,7 @@ export async function loadHomeActivityData(tab: HomeActivityTab): Promise<HomeAc
 	switch (tab) {
 		case "trending": {
 			const result = await getTopMarkets(HOME_MARKET_COUNT, "open", undefined, "volume", "desc", "24h");
-			return { kind: tab, markets: result.data.map(marketResponseToRow) };
+			return { kind: tab, markets: result.data.map((market) => marketResponseToRow(market, { metricsTimeframes: ["24h"] })) };
 		}
 		case "bestTrades": {
 			const result = await getTopTradesMarkets({ timeframe: "1d", limit: HOME_MARKET_COUNT });
@@ -28,7 +28,7 @@ export async function loadHomeActivityData(tab: HomeActivityTab): Promise<HomeAc
 				"24h",
 				"Hide from New",
 			);
-			return { kind: tab, markets: result.data.map(marketResponseToRow) };
+			return { kind: tab, markets: result.data.map((market) => marketResponseToRow(market, { metricsTimeframes: ["24h"] })) };
 		}
 		case "trades":
 		default:

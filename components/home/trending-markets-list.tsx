@@ -11,7 +11,7 @@ export async function TrendingMarketsList() {
 	await connection();
 
 	const result = await getHomeTopMarkets(MARKET_FETCH_COUNT, "open", undefined, "volume", "desc", "24h");
-	const rows = result.data.map(marketResponseToRow);
+	const rows = result.data.map((market) => marketResponseToRow(market, { metricsTimeframes: ["24h"] }));
 
 	return (
 		<MarketsTable

@@ -62,6 +62,12 @@ async function AnalyticsSectionLoader({
 		resolution,
 		view,
 		showKpis,
+		projection: {
+			excludeMetrics,
+			appendMetrics,
+			showKpis,
+			allowedComponents,
+		},
 	});
 
 	return (
