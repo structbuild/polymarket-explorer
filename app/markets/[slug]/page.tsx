@@ -14,10 +14,12 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getSiteUrl } from "@/lib/env";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
+import { toRelatedMarketItems } from "@/lib/market-related";
 import { buildMarketJsonLd } from "@/lib/market-json-ld";
 import { loadMarketDetailSearchParams } from "@/lib/market-detail-search-params.server";
 import { parseAnalyticsCap, parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } from "@/lib/struct/analytics-shared";
 import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
+import type { MarketTabOutcomeRef } from "@/lib/struct/market-tab-page";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
 
@@ -145,8 +147,11 @@ async function MarketPageContent({
 	const breadcrumbTag = market.tags?.length ? market.tags[0] : null;
 	const conditionId = market.condition_id ?? null;
 	const relatedMarketsPromise = breadcrumbTag
-		? getMarketsByTag(breadcrumbTag, 8, undefined, "volume", "desc", isResolved ? "all" : "open")
+		? getMarketsByTag(breadcrumbTag, 8, undefined, "volume", "desc", isResolved ? "all" : "open", false)
 		: null;
+	const marketOutcomes: MarketTabOutcomeRef[] = (market.outcomes ?? [])
+		.filter((outcome): outcome is { name: string; position_id: string } & typeof outcome => Boolean(outcome.position_id))
+		.map((outcome) => ({ position_id: outcome.position_id as string, name: outcome.name }));
 
 	const subheaderSlots: SubheaderSlot[] = [
 		{ type: "anchor", id: "market-overview", label: "Overview" },
@@ -194,7 +199,14 @@ async function MarketPageContent({
 							</SectionAnchor>
 							<SectionAnchor id="market-activity">
 								<Suspense fallback={<MarketTabPanelFallback />}>
-									<MarketTabPanel currentTab={tab} slug={slug} conditionId={conditionId} tradesPage={tradesPage} totalHolders={market.total_holders} />
+									<MarketTabPanel
+										currentTab={tab}
+										slug={slug}
+										conditionId={conditionId}
+										tradesPage={tradesPage}
+										totalHolders={market.total_holders}
+										marketOutcomes={marketOutcomes}
+									/>
 								</Suspense>
 							</SectionAnchor>
 							<SectionAnchor id="market-analytics" className="mt-8">
@@ -210,6 +222,11 @@ async function MarketPageContent({
 									allowedComponents={SCOPED_VOLUME_COMPONENTS}
 									pathname={`/markets/${slug}`}
 									source={{ kind: "market", conditionId }}
+									subject={{
+										type: "Market",
+										label: (market.question ?? market.title ?? "Market").trim(),
+										image: market.image_url ?? null,
+									}}
 								/>
 							</SectionAnchor>
 						</>
@@ -255,5 +272,5 @@ async function RelatedMarketsSection({
 	currentSlug: string;
 }) {
 	const { data } = await relatedPromise;
-	return <RelatedMarkets markets={data} tag={tag} currentSlug={currentSlug} />;
+	return <RelatedMarkets markets={toRelatedMarketItems(data, currentSlug)} tag={tag} />;
 }

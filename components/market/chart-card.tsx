@@ -7,13 +7,14 @@ type ChartCardProps = {
 	title?: ReactNode;
 	tooltip?: string;
 	action?: ReactNode;
+	header?: ReactNode;
 	children: ReactNode;
 	footer?: ReactNode;
 	className?: string;
 };
 
-export function ChartCard({ title, tooltip, action, children, footer, className }: ChartCardProps) {
-	const hasHeader = title != null || action != null;
+export function ChartCard({ title, tooltip, action, header, children, footer, className }: ChartCardProps) {
+	const hasHeader = header != null || title != null || action != null;
 	return (
 		<section
 			className={cn(
@@ -23,20 +24,24 @@ export function ChartCard({ title, tooltip, action, children, footer, className 
 			)}
 		>
 			{hasHeader ? (
-				<div className="mb-4 flex items-center justify-between gap-3">
-					{title != null ? (
-						<div className="flex items-center gap-1.5">
-							<h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
-							{tooltip ? (
-								<InfoTooltip
-									content={tooltip}
-									className="group-data-[share-mode=image]/share-card:hidden"
-								/>
-							) : null}
-						</div>
-					) : null}
-					{action}
-				</div>
+				header != null ? (
+					<div className="mb-4">{header}</div>
+				) : (
+					<div className="mb-4 flex items-center justify-between gap-3">
+						{title != null ? (
+							<div className="flex min-w-0 items-center gap-1.5">
+								<h2 className="truncate text-sm font-medium text-muted-foreground">{title}</h2>
+								{tooltip ? (
+									<InfoTooltip
+										content={tooltip}
+										className="shrink-0 group-data-[share-mode=image]/share-card:hidden"
+									/>
+								) : null}
+							</div>
+						) : null}
+						{action ? <div className="flex shrink-0 items-center">{action}</div> : null}
+					</div>
+				)
 			) : null}
 			{children}
 			{footer}

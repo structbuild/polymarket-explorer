@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AnalyticsMetricPctChange } from "@structbuild/sdk";
 
+import { projectAnalyticsPoints, type AnalyticsProjectionOptions } from "@/lib/struct/analytics-projection";
 import {
 	getAnalyticsChanges,
 	getAnalyticsDeltas,
@@ -97,12 +98,14 @@ export async function loadAnalyticsSectionData({
 	resolution,
 	view,
 	showKpis,
+	projection,
 }: {
 	source: AnalyticsQuerySource;
 	range: AnalyticsRange;
 	resolution: AnalyticsResolution;
 	view: AnalyticsView;
 	showKpis: boolean;
+	projection?: AnalyticsProjectionOptions;
 }): Promise<AnalyticsSectionData> {
 	const loaders = getAnalyticsLoaders(source, range, resolution);
 	const deltasPromise = view === "deltas" || showKpis ? loaders.deltas() : null;
@@ -114,12 +117,16 @@ export async function loadAnalyticsSectionData({
 		showKpis ? loaders.changes() : Promise.resolve(null),
 	]);
 
+	const projectionOptions = projection ?? { showKpis };
+	const compactChartPoints = projectAnalyticsPoints(chartPoints, projectionOptions);
+	const compactKpiPoints = kpiPoints ? projectAnalyticsPoints(kpiPoints, projectionOptions) : null;
+
 	return {
 		view,
 		range,
 		resolution,
-		chartPoints,
-		kpiPoints,
+		chartPoints: compactChartPoints,
+		kpiPoints: compactKpiPoints,
 		changes,
 	};
 }

@@ -14,6 +14,7 @@ import {
 	BuyDistributionPie,
 	BuyDistributionPieFallback,
 } from "@/components/analytics/buy-distribution-pie";
+import { ShareCardHeader } from "@/components/analytics/share-card-header";
 import { VolumeAnalyticsChart } from "@/components/analytics/volume-analytics-chart";
 import { VolumeModeLabel } from "@/components/analytics/volume-mode-label";
 import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
@@ -22,11 +23,13 @@ import {
 	type AnalyticsMetricId,
 	type AnalyticsPoint,
 	type AnalyticsResolution,
+	type AnalyticsSubject,
 	type AnalyticsView,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
-const EQUAL_HEIGHT_CARD_CLASS = "grid h-full grid-rows-[auto_minmax(0,1fr)_auto]";
+const EQUAL_HEIGHT_CARD_CLASS =
+	"grid h-full grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto]";
 
 function slugForFilename(value: string): string {
 	return value
@@ -284,7 +287,7 @@ const CHART_SPECS: ChartSpec[] = [
 	{
 		kind: "timeSeries",
 		id: "shares",
-		title: "Shares traded",
+		title: "Notional volume",
 		tooltip:
 			"Total $1-payout shares filled in the bucket — Polymarket's headline volume metric. Switch the global volume display to Notional to make this the primary view.",
 		variant: "bar",
@@ -382,44 +385,44 @@ const EXTRA_CHART_SPECS: ChartSpec[] = [
 function toChartData(points: AnalyticsPoint[]): Array<{ t: number } & Record<string, number>> {
 	return points.map((p) => ({
 		t: p.t,
-		volumeUsd: p.volumeUsd,
-		buyVolumeUsd: p.buyVolumeUsd,
-		sellVolumeUsd: p.sellVolumeUsd,
-		redemptionVolumeUsd: p.redemptionVolumeUsd,
-		mergeVolumeUsd: p.mergeVolumeUsd,
-		splitVolumeUsd: p.splitVolumeUsd,
-		yesVolumeUsd: p.yesVolumeUsd,
-		noVolumeUsd: p.noVolumeUsd,
-		uniqueTraders: p.uniqueTraders,
-		uniqueMakers: p.uniqueMakers,
-		uniqueTakers: p.uniqueTakers,
-		txnCount: p.txnCount,
-		buyCount: p.buyCount,
-		sellCount: p.sellCount,
-		redemptionCount: p.redemptionCount,
-		mergeCount: p.mergeCount,
-		splitCount: p.splitCount,
-		yesCount: p.yesCount,
-		noCount: p.noCount,
-		feesUsd: p.feesUsd,
-		builderFeesUsd: p.builderFeesUsd,
-		newUsers: p.newUsers,
-		avgRevenuePerUserUsd: p.avgRevenuePerUserUsd,
-		avgVolumePerUserUsd: p.avgVolumePerUserUsd,
-		sharesVolume: p.sharesVolume,
-		buySharesVolume: p.buySharesVolume,
-		sellSharesVolume: p.sellSharesVolume,
+		volumeUsd: p.volumeUsd ?? 0,
+		buyVolumeUsd: p.buyVolumeUsd ?? 0,
+		sellVolumeUsd: p.sellVolumeUsd ?? 0,
+		redemptionVolumeUsd: p.redemptionVolumeUsd ?? 0,
+		mergeVolumeUsd: p.mergeVolumeUsd ?? 0,
+		splitVolumeUsd: p.splitVolumeUsd ?? 0,
+		yesVolumeUsd: p.yesVolumeUsd ?? 0,
+		noVolumeUsd: p.noVolumeUsd ?? 0,
+		uniqueTraders: p.uniqueTraders ?? 0,
+		uniqueMakers: p.uniqueMakers ?? 0,
+		uniqueTakers: p.uniqueTakers ?? 0,
+		txnCount: p.txnCount ?? 0,
+		buyCount: p.buyCount ?? 0,
+		sellCount: p.sellCount ?? 0,
+		redemptionCount: p.redemptionCount ?? 0,
+		mergeCount: p.mergeCount ?? 0,
+		splitCount: p.splitCount ?? 0,
+		yesCount: p.yesCount ?? 0,
+		noCount: p.noCount ?? 0,
+		feesUsd: p.feesUsd ?? 0,
+		builderFeesUsd: p.builderFeesUsd ?? 0,
+		newUsers: p.newUsers ?? 0,
+		avgRevenuePerUserUsd: p.avgRevenuePerUserUsd ?? 0,
+		avgVolumePerUserUsd: p.avgVolumePerUserUsd ?? 0,
+		sharesVolume: p.sharesVolume ?? 0,
+		buySharesVolume: p.buySharesVolume ?? 0,
+		sellSharesVolume: p.sellSharesVolume ?? 0,
 		otherSharesVolume: Math.max(
 			0,
-			p.sharesVolume - p.buySharesVolume - p.sellSharesVolume,
+			(p.sharesVolume ?? 0) - (p.buySharesVolume ?? 0) - (p.sellSharesVolume ?? 0),
 		),
-		convertedCollateralUsd: p.convertedCollateralUsd,
-		convertedCount: p.convertedCount,
-		makerRebateVolumeUsd: p.makerRebateVolumeUsd,
-		rewardVolumeUsd: p.rewardVolumeUsd,
-		yieldVolumeUsd: p.yieldVolumeUsd,
-		yesSharesVolume: p.yesSharesVolume,
-		noSharesVolume: p.noSharesVolume,
+		convertedCollateralUsd: p.convertedCollateralUsd ?? 0,
+		convertedCount: p.convertedCount ?? 0,
+		makerRebateVolumeUsd: p.makerRebateVolumeUsd ?? 0,
+		rewardVolumeUsd: p.rewardVolumeUsd ?? 0,
+		yieldVolumeUsd: p.yieldVolumeUsd ?? 0,
+		yesSharesVolume: p.yesSharesVolume ?? 0,
+		noSharesVolume: p.noSharesVolume ?? 0,
 	}));
 }
 
@@ -556,6 +559,7 @@ type AnalyticsChartsGridProps = {
 	allowedComponents?: readonly VolumeComponentId[];
 	pathname: string;
 	refreshedAt: Date;
+	subject?: AnalyticsSubject;
 };
 
 export function AnalyticsChartsGrid({
@@ -568,6 +572,7 @@ export function AnalyticsChartsGrid({
 	allowedComponents = VOLUME_COMPONENT_IDS,
 	pathname,
 	refreshedAt,
+	subject,
 }: AnalyticsChartsGridProps) {
 	const { mode } = useVolumeMode();
 	const data = toChartData(points);
@@ -587,15 +592,25 @@ export function AnalyticsChartsGrid({
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => {
 				const isVolumeChart = spec.kind === "timeSeries" && spec.id === "volume";
+				const headerTitle = isVolumeChart ? (
+					<VolumeModeLabel usd="Volume (USD)" notional="Volume (notional)" />
+				) : (
+					spec.title
+				);
 				return (
-					<div key={spec.id} className={spec.wide ? "lg:col-span-2" : "h-full"}>
+					<div key={spec.id} className={spec.wide ? "min-w-0 lg:col-span-2" : "h-full min-w-0"}>
 						<ShareableChartCard
 							cardClassName={EQUAL_HEIGHT_CARD_CLASS}
 							title={spec.title}
-							titleNode={
-								isVolumeChart ? (
-									<VolumeModeLabel usd="Volume (USD)" notional="Volume (notional)" />
-								) : undefined
+							titleNode={isVolumeChart ? headerTitle : undefined}
+							shareHeader={
+								<ShareCardHeader
+									title={headerTitle}
+									subject={subject}
+									view={view}
+									resolution={resolution}
+									points={points}
+								/>
 							}
 							tooltip={spec.tooltip}
 							filename={buildChartFilename(pathname, spec.title)}
@@ -680,7 +695,7 @@ export function AnalyticsChartsGridFallback({
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => (
-				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : "h-full"}>
+				<div key={spec.id} className={spec.wide ? "min-w-0 lg:col-span-2" : "h-full min-w-0"}>
 					<ChartCard
 						className={EQUAL_HEIGHT_CARD_CLASS}
 						title={spec.title}

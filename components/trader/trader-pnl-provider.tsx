@@ -16,6 +16,7 @@ import {
 import { getTraderPnlViewAction } from "@/app/actions";
 import { PerformanceSummary } from "@/components/trader/performance-summary";
 import { getPnlChartAnnotations } from "@/lib/pnl-chart-annotations";
+import { expandPnlDataPointsFromWire, type WirePnlPoint } from "@/lib/struct/pnl-wire";
 import type {
 	PnlChartAnnotation,
 	PnlChartExit,
@@ -73,7 +74,7 @@ export function TraderPnlProvider({
 	address: string;
 	initialRange: ResolvedPnlRange;
 	initialFillGaps: boolean;
-	initialCandles: PnlDataPoint[];
+	initialCandles: WirePnlPoint[];
 	initialAnnotations: PnlChartAnnotation[];
 	initialExits: PnlChartExit[];
 	initialRisk: PnlRiskResponse | null;
@@ -93,7 +94,7 @@ export function TraderPnlProvider({
 	const [state, setState] = useState({
 		range: initialRange,
 		fillGaps: initialFillGaps,
-		candles: initialCandles,
+		candles: expandPnlDataPointsFromWire(initialCandles),
 		annotations: initialAnnotations,
 		exits: initialExits,
 		risk: initialRisk,

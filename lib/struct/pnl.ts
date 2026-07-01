@@ -281,7 +281,7 @@ function toChartExit(exit: PnlExitMarker): PnlChartExit {
 }
 
 export const defaultChartExitsPerSide = 24;
-const chartExitsCandidatePoolSize = 250;
+const chartExitsCandidatePoolSize = 48;
 
 function pickDistinctMarkets(exits: PnlExitMarker[], limit: number): PnlExitMarker[] {
 	const seen = new Set<string>();

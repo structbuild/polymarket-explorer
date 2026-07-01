@@ -34,10 +34,10 @@ const RANGE_SECONDS: Record<Exclude<AnalyticsRange, "all">, number> = {
 };
 
 const ALL_RANGE_COUNT_BACK: Record<AnalyticsResolution, number> = {
-	"60": 500,
-	"240": 500,
-	D: 500,
-	W: 260,
+	"60": 200,
+	"240": 180,
+	D: 365,
+	W: 156,
 	M: 120,
 };
 

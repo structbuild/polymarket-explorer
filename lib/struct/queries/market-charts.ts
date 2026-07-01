@@ -15,7 +15,12 @@ export function toVolumePoints(points: PositionVolumeDataPoint[] | null) {
 		.map((point) => ({ t: point.t, buy: point.bv ?? 0, sell: point.sv ?? 0 }));
 }
 
-export async function getMarketChart(conditionId: string): Promise<PositionChartOutcome[] | null> {
+import type { ChartResolution } from "@structbuild/sdk";
+
+export async function getMarketChart(
+	conditionId: string,
+	resolution: ChartResolution = "1D",
+): Promise<PositionChartOutcome[] | null> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -23,7 +28,7 @@ export async function getMarketChart(conditionId: string): Promise<PositionChart
 	}
 
 	try {
-		const response = await client.markets.getMarketChart({ condition_id: conditionId, resolution: "ALL" });
+		const response = await client.markets.getMarketChart({ condition_id: conditionId, resolution });
 		return response.data;
 	} catch (error) {
 		if (readStatus(error) === 404) {

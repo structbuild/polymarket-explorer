@@ -26,6 +26,7 @@ import {
 } from "@/lib/struct/pnl";
 import { PNL_RISK_TIMEFRAMES } from "@/lib/struct/pnl-timeframes";
 import { resolvePnlRange, type ResolvedPnlRange } from "@/lib/struct/pnl-range";
+import { compactPnlDataPointsForWire } from "@/lib/struct/pnl-wire";
 import {
 	getTraderOgImageAlt,
 	getTraderOgImageUrl,
@@ -289,7 +290,7 @@ async function TraderOverviewSection({
 				address={address}
 				initialRange={pnlRange}
 				initialFillGaps={pnlFillGaps}
-				initialCandles={insights.pnlCandles}
+				initialCandles={compactPnlDataPointsForWire(insights.pnlCandles)}
 				initialAnnotations={insights.chartAnnotations}
 				initialExits={insights.chartExits}
 				initialRisk={pnlRisk}
@@ -348,7 +349,7 @@ async function TraderDnaSection({
 	const [pnlSummary, cumulativePnlUsd, categoryPage] = await Promise.all([
 		pnlSummaryPromise,
 		cumulativePnlUsdPromise,
-		getTraderCategoryPnl(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
+		getTraderCategoryPnl(address, { limit: 12, sort_by: "total_volume_usd", sort_direction: "desc" }),
 	]);
 	const categoryVolumes = categoryPage.data.map((entry) => entry.total_volume_usd ?? 0);
 	return (
@@ -568,6 +569,11 @@ async function TraderPageContent({
 								allowedComponents={SCOPED_VOLUME_COMPONENTS}
 								pathname={`/traders/${address}`}
 								source={{ kind: "trader", address }}
+								subject={{
+									type: "Trader",
+									label: displayName,
+									image: profile?.profile_image ?? null,
+								}}
 							/>
 					</SectionAnchor>
 				</div>

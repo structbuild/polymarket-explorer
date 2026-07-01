@@ -24,7 +24,7 @@ export const PNL_RISK_TIMEFRAMES: Record<PnlTimeframe, StructPnlPeriodTimeframe>
 	all: "lifetime",
 };
 
-const MAX_BUCKETS = 2500;
+const MAX_BUCKETS = 500;
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 60 * 60;
 const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;

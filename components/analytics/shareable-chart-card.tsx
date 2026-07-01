@@ -16,6 +16,7 @@ type ShareableChartCardProps = {
 	filename: string
 	children: ReactNode
 	footer?: ReactNode
+	shareHeader?: ReactNode
 	headerAction?: ReactNode
 	cardClassName?: string
 }
@@ -37,6 +38,7 @@ export function ShareableChartCard({
 	filename,
 	children,
 	footer,
+	shareHeader,
 	headerAction,
 	cardClassName,
 }: ShareableChartCardProps) {
@@ -95,7 +97,13 @@ export function ShareableChartCard({
 								height: `${SHARE_CARD_HEIGHT}px`,
 							}}
 						>
-							<ChartCard title={title} tooltip={tooltip} className="rounded-none" footer={footer}>
+							<ChartCard
+								title={shareHeader ? undefined : title}
+								header={shareHeader}
+								tooltip={tooltip}
+								className="rounded-none"
+								footer={footer}
+							>
 								{children}
 							</ChartCard>
 						</div>

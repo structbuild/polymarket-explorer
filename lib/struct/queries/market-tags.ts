@@ -241,6 +241,7 @@ export async function getMarketsByTag(
 	sortBy: string = "volume",
 	sortDir: string = "desc",
 	status: "open" | "closed" | "all" = "open",
+	includeMetrics: boolean = true,
 ): Promise<PaginatedResult<MarketResponse>> {
 	const client = getStructClient();
 
@@ -255,7 +256,7 @@ export async function getMarketsByTag(
 			sort_by: sortBy as MarketSortBy,
 			sort_dir: sortDir as SortDirection,
 			status,
-			include_metrics: true,
+			include_metrics: includeMetrics,
 			...(cursor ? { pagination_key: cursor } : {}),
 		});
 		const hasMore = response.pagination?.has_more ?? false;

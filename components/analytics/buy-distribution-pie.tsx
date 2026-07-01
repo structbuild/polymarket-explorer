@@ -10,7 +10,7 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart";
-import { StructLogo } from "@/components/ui/svgs/struct-logo";
+import { ChartWatermark } from "@/components/analytics/chart-watermark";
 import { formatNumber } from "@/lib/format";
 import {
 	BUY_DIST_KEYS,
@@ -52,7 +52,7 @@ function aggregate(points: AnalyticsPoint[]): BucketDatum[] {
 		buyDistOver50k: 0,
 	};
 	for (const p of points) {
-		for (const k of BUY_DIST_KEYS) totals[k] += p[k];
+		for (const k of BUY_DIST_KEYS) totals[k] += p[k] ?? 0;
 	}
 	return BUY_DIST_KEYS.map((key) => ({
 		key,
@@ -104,11 +104,8 @@ export function BuyDistributionPie({ points }: BuyDistributionPieProps) {
 	return (
 		<div className="flex flex-col gap-3 group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0">
 			<div className={`relative ${PIE_AREA_CLASS}`}>
-				<StructLogo
-					aria-hidden
-					className="pointer-events-none absolute left-1/2 top-1/2 h-10 -translate-x-1/2 -translate-y-1/2 text-foreground opacity-[0.06] sm:h-12"
-				/>
-				<ChartContainer config={chartConfig} className="h-full w-full">
+				<ChartWatermark />
+				<ChartContainer config={chartConfig} className="absolute inset-0 h-full w-full">
 					<PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
 						<ChartTooltip
 							isAnimationActive={false}

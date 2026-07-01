@@ -252,7 +252,7 @@ async function TagPageContent({
 							basePath={`/tags/${canonicalSlug}`}
 							baseParams={paginationBaseParams}
 							tagLabel={tag.label}
-							initialMarkets={markets.map(marketResponseToRow)}
+							initialMarkets={markets.map((market) => marketResponseToRow(market))}
 							initialTab={marketTab}
 							initialCursor={cursor ?? null}
 							initialHasMore={marketsHasMore}
@@ -295,6 +295,7 @@ async function TagPageContent({
 							allowedComponents={SCOPED_VOLUME_COMPONENTS}
 							pathname={`/tags/${canonicalSlug}`}
 							source={{ kind: "tag", tag: tagKey }}
+							subject={{ type: "Tag", label: tagDisplay }}
 						/>
 				</SectionAnchor>
 

@@ -19,7 +19,7 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from "@/components/ui/chart";
-import { StructLogo } from "@/components/ui/svgs/struct-logo";
+import { ChartWatermark } from "@/components/analytics/chart-watermark";
 import {
 	formatDateCompact,
 	formatDateFull,
@@ -290,12 +290,7 @@ export function AnalyticsChart({
 		</>
 	);
 
-	const watermark = (
-		<StructLogo
-			aria-hidden
-			className="pointer-events-none absolute left-1/2 top-1/2 h-10 -translate-x-1/2 -translate-y-1/2 text-foreground opacity-[0.06] sm:h-12"
-		/>
-	);
+	const watermark = <ChartWatermark />;
 
 	const legend =
 		interactiveLegend && series.length > 1 ? (
@@ -331,7 +326,7 @@ export function AnalyticsChart({
 
 	const chartInner =
 		variant === "bar" ? (
-			<ChartContainer config={chartConfig} className="h-full w-full">
+			<ChartContainer config={chartConfig} className="absolute inset-0 h-full w-full">
 				<BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 					{showShimmer ? (
 						<defs>
@@ -390,7 +385,7 @@ export function AnalyticsChart({
 				</BarChart>
 			</ChartContainer>
 		) : (
-			<ChartContainer config={chartConfig} className="h-full w-full">
+			<ChartContainer config={chartConfig} className="absolute inset-0 h-full w-full">
 				<AreaChart data={areaData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 					<defs>
 						{visibleSeries.map((s) => {
@@ -458,6 +453,7 @@ export function AnalyticsChart({
 		<div
 			className={cn(
 				className,
+				"min-w-0",
 				"group-data-[share-mode=image]/share-card:flex group-data-[share-mode=image]/share-card:h-full group-data-[share-mode=image]/share-card:min-h-0 group-data-[share-mode=image]/share-card:flex-col",
 			)}
 		>

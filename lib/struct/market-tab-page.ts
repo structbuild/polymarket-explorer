@@ -16,11 +16,17 @@ import {
 	type MarketDetailTab,
 } from "@/lib/market-detail-search-params-shared";
 
+export type MarketTabOutcomeRef = {
+	position_id: string;
+	name: string;
+};
+
 export type MarketTabPageParams = {
 	slug: string;
 	conditionId: string;
 	tab: MarketDetailTab;
 	search: string;
+	marketOutcomes?: MarketTabOutcomeRef[];
 };
 
 function parseMarketDetailTab(value: MarketDetailTab) {
@@ -41,6 +47,7 @@ export async function loadMarketTabPage({
 	conditionId,
 	tab,
 	search,
+	marketOutcomes,
 }: MarketTabPageParams) {
 	const params = new URLSearchParams(search);
 	const safeTab = parseMarketDetailTab(tab);
@@ -78,13 +85,15 @@ export async function loadMarketTabPage({
 			};
 		}
 		case "top-traders": {
-			const [market, topTraders] = await Promise.all([
-				getMarketBySlug(slug),
-				getMarketTopTraders({ market_slug: slug, limit: 20 }),
-			]);
-			const outcomes = (market?.outcomes ?? [])
-				.filter((o): o is { name: string; position_id: string } & typeof o => Boolean(o.position_id))
-				.map((o) => ({ position_id: o.position_id as string, name: o.name }));
+			const outcomes =
+				marketOutcomes ??
+				(await getMarketBySlug(slug))?.outcomes
+					?.filter((outcome): outcome is { name: string; position_id: string } & typeof outcome =>
+						Boolean(outcome.position_id),
+					)
+					.map((outcome) => ({ position_id: outcome.position_id as string, name: outcome.name })) ??
+				[];
+			const topTraders = await getMarketTopTraders({ market_slug: slug, limit: 20 });
 			return {
 				kind: "top-traders" as const,
 				slug,

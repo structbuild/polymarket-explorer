@@ -27,6 +27,7 @@ async function fetchTopMarkets(
 	sortDir: SortDirection = "desc",
 	timeframe: MetricsTimeframe = "24h",
 	excludeTags?: string,
+	includeMetrics: boolean = true,
 ): Promise<PaginatedResult<MarketResponse>> {
 	const client = getStructClient();
 
@@ -41,7 +42,7 @@ async function fetchTopMarkets(
 			sort_by: sortBy,
 			sort_dir: sortDir,
 			timeframe,
-			include_metrics: true,
+			include_metrics: includeMetrics,
 			...(cursor ? { pagination_key: cursor } : {}),
 			...(excludeTags ? { exclude_tags: excludeTags } : {}),
 		});
@@ -87,8 +88,9 @@ export async function getTopMarkets(
 	sortDir: SortDirection = "desc",
 	timeframe: MetricsTimeframe = "24h",
 	excludeTags?: string,
+	includeMetrics: boolean = true,
 ): Promise<PaginatedResult<MarketResponse>> {
-	return fetchTopMarkets(limit, status, cursor, sortBy, sortDir, timeframe, excludeTags);
+	return fetchTopMarkets(limit, status, cursor, sortBy, sortDir, timeframe, excludeTags, includeMetrics);
 }
 
 export const getHomeTopMarkets = getTopMarkets;

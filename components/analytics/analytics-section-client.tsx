@@ -23,12 +23,14 @@ import {
 	type AnalyticsMetricId,
 	type AnalyticsQuerySource,
 	type AnalyticsRange,
+	type AnalyticsSubject,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 type Props = {
 	initialData: AnalyticsSectionData;
 	source: AnalyticsQuerySource;
+	subject?: AnalyticsSubject;
 	title?: string;
 	description?: string;
 	defaultRange: AnalyticsRange;
@@ -53,6 +55,7 @@ function replaceUrl(href: Route) {
 export function AnalyticsSectionClient({
 	initialData,
 	source,
+	subject,
 	title,
 	description,
 	defaultRange,
@@ -99,6 +102,9 @@ export function AnalyticsSectionClient({
 					view: next.view,
 					defaultRange,
 					showKpis,
+					excludeMetrics,
+					appendMetrics,
+					allowedComponents,
 				});
 				if (requestIdRef.current !== requestId) return;
 				replaceUrl(href);
@@ -113,7 +119,7 @@ export function AnalyticsSectionClient({
 				console.error("Failed to load analytics section data", error);
 			}
 		});
-	}, [defaultCap, defaultRange, initialData, showKpis, source]);
+	}, [allowedComponents, appendMetrics, defaultCap, defaultRange, excludeMetrics, initialData, showKpis, source]);
 
 	const chartPoints = restrictAnalyticsComponents(
 		applyAnalyticsCap(data.chartPoints, endTime, current.cap),
@@ -193,6 +199,7 @@ export function AnalyticsSectionClient({
 				pathname={pathname}
 				refreshedAt={new Date(current.refreshedAt)}
 				allowedComponents={allowedComponents}
+				subject={subject}
 			/>
 		</div>
 	);

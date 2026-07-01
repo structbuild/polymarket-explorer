@@ -36,9 +36,11 @@ import { maxBuilderTradesPageNumber } from "@/lib/builder-search-params-shared";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 import {
 	parseAnalyticsParams,
+	type AnalyticsMetricId,
 	type AnalyticsQuerySource,
 	type AnalyticsRange,
 	type AnalyticsView,
+	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 import { loadAnalyticsSectionData } from "@/lib/struct/analytics-section-data";
 import { HOME_ACTIVITY_TABS, type HomeActivityTab } from "@/lib/home-activity";
@@ -250,7 +252,7 @@ export async function getMarketsStatusPageAction({
 		sortBy: safeSortBy,
 		sortDirection: safeSortDirection,
 		timeframe: safeTimeframe,
-		markets: result.data.map(marketResponseToRow),
+		markets: result.data.map((market) => marketResponseToRow(market)),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};
@@ -269,7 +271,7 @@ export async function getTagMarketsStatusPageAction({
 
 	return {
 		tab: safeTab,
-		markets: result.data.map(marketResponseToRow),
+		markets: result.data.map((market) => marketResponseToRow(market)),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};
@@ -627,6 +629,9 @@ export async function getAnalyticsSectionDataAction({
 	view,
 	defaultRange,
 	showKpis,
+	excludeMetrics,
+	appendMetrics,
+	allowedComponents,
 }: {
 	source: AnalyticsQuerySource;
 	range: AnalyticsRange;
@@ -634,6 +639,9 @@ export async function getAnalyticsSectionDataAction({
 	view: AnalyticsView;
 	defaultRange: AnalyticsRange;
 	showKpis: boolean;
+	excludeMetrics?: readonly AnalyticsMetricId[];
+	appendMetrics?: readonly AnalyticsMetricId[];
+	allowedComponents?: readonly VolumeComponentId[];
 }) {
 	await assertHumanRequest();
 	const scope = source.kind === "global" || source.kind === "builderGlobal" ? "global" : "scoped";
@@ -645,6 +653,12 @@ export async function getAnalyticsSectionDataAction({
 		resolution: safe.resolution,
 		view: safe.view,
 		showKpis,
+		projection: {
+			excludeMetrics,
+			appendMetrics,
+			showKpis,
+			allowedComponents,
+		},
 	});
 }
 
