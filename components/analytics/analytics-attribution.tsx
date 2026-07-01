@@ -30,10 +30,10 @@ export function AnalyticsAttribution({
 	const displayUrl = buildAttributionUrl(pathname);
 	const refreshedLabel = `${TIMESTAMP_FORMATTER.format(refreshedAt)} UTC`;
 	return (
-		<div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3 text-[11px] text-muted-foreground/80">
-			<div className="flex min-w-0 items-center gap-2">
-				<StructLogoMark className="size-5 shrink-0" />
-				<span className="truncate tabular-nums">{displayUrl}</span>
+		<div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3 text-[11px] text-muted-foreground/80 group-data-[share-mode=image]/share-card:mt-5 group-data-[share-mode=image]/share-card:pt-4 group-data-[share-mode=image]/share-card:text-sm">
+			<div className="flex min-w-0 flex-1 items-center gap-2">
+				<StructLogoMark className="size-5 shrink-0 group-data-[share-mode=image]/share-card:size-6" />
+				<span className="min-w-0 truncate tabular-nums">{displayUrl}</span>
 			</div>
 			<span className="shrink-0 tabular-nums">{refreshedLabel}</span>
 		</div>

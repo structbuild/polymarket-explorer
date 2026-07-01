@@ -295,6 +295,7 @@ async function TagPageContent({
 							allowedComponents={SCOPED_VOLUME_COMPONENTS}
 							pathname={`/tags/${canonicalSlug}`}
 							source={{ kind: "tag", tag: tagKey }}
+							subject={{ type: "Tag", label: tagDisplay }}
 						/>
 				</SectionAnchor>
 

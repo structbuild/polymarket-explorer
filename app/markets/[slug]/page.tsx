@@ -222,6 +222,11 @@ async function MarketPageContent({
 									allowedComponents={SCOPED_VOLUME_COMPONENTS}
 									pathname={`/markets/${slug}`}
 									source={{ kind: "market", conditionId }}
+									subject={{
+										type: "Market",
+										label: (market.question ?? market.title ?? "Market").trim(),
+										image: market.image_url ?? null,
+									}}
 								/>
 							</SectionAnchor>
 						</>

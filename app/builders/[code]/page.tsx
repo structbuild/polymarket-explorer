@@ -212,6 +212,11 @@ async function BuilderPageContent({
 						allowedComponents={["buy", "sell"]}
 						showKpis={false}
 						source={{ kind: "builder", code: builderCode }}
+						subject={{
+							type: "Builder",
+							label: getBuilderDisplayName(builderCode, builder.metadata),
+							image: builder.metadata?.icon_url ?? null,
+						}}
 						appendMetrics={BUILDER_ANALYTICS_APPEND_METRICS}
 						metricPlacements={BUILDER_ANALYTICS_METRIC_PLACEMENTS}
 					/>

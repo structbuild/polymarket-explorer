@@ -14,6 +14,7 @@ import {
 	BuyDistributionPie,
 	BuyDistributionPieFallback,
 } from "@/components/analytics/buy-distribution-pie";
+import { ShareCardHeader } from "@/components/analytics/share-card-header";
 import { VolumeAnalyticsChart } from "@/components/analytics/volume-analytics-chart";
 import { VolumeModeLabel } from "@/components/analytics/volume-mode-label";
 import { useVolumeMode } from "@/lib/hooks/use-volume-mode";
@@ -22,11 +23,13 @@ import {
 	type AnalyticsMetricId,
 	type AnalyticsPoint,
 	type AnalyticsResolution,
+	type AnalyticsSubject,
 	type AnalyticsView,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
-const EQUAL_HEIGHT_CARD_CLASS = "grid h-full grid-rows-[auto_minmax(0,1fr)_auto]";
+const EQUAL_HEIGHT_CARD_CLASS =
+	"grid h-full grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto]";
 
 function slugForFilename(value: string): string {
 	return value
@@ -284,7 +287,7 @@ const CHART_SPECS: ChartSpec[] = [
 	{
 		kind: "timeSeries",
 		id: "shares",
-		title: "Shares traded",
+		title: "Notional volume",
 		tooltip:
 			"Total $1-payout shares filled in the bucket — Polymarket's headline volume metric. Switch the global volume display to Notional to make this the primary view.",
 		variant: "bar",
@@ -556,6 +559,7 @@ type AnalyticsChartsGridProps = {
 	allowedComponents?: readonly VolumeComponentId[];
 	pathname: string;
 	refreshedAt: Date;
+	subject?: AnalyticsSubject;
 };
 
 export function AnalyticsChartsGrid({
@@ -568,6 +572,7 @@ export function AnalyticsChartsGrid({
 	allowedComponents = VOLUME_COMPONENT_IDS,
 	pathname,
 	refreshedAt,
+	subject,
 }: AnalyticsChartsGridProps) {
 	const { mode } = useVolumeMode();
 	const data = toChartData(points);
@@ -587,15 +592,25 @@ export function AnalyticsChartsGrid({
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => {
 				const isVolumeChart = spec.kind === "timeSeries" && spec.id === "volume";
+				const headerTitle = isVolumeChart ? (
+					<VolumeModeLabel usd="Volume (USD)" notional="Volume (notional)" />
+				) : (
+					spec.title
+				);
 				return (
-					<div key={spec.id} className={spec.wide ? "lg:col-span-2" : "h-full"}>
+					<div key={spec.id} className={spec.wide ? "min-w-0 lg:col-span-2" : "h-full min-w-0"}>
 						<ShareableChartCard
 							cardClassName={EQUAL_HEIGHT_CARD_CLASS}
 							title={spec.title}
-							titleNode={
-								isVolumeChart ? (
-									<VolumeModeLabel usd="Volume (USD)" notional="Volume (notional)" />
-								) : undefined
+							titleNode={isVolumeChart ? headerTitle : undefined}
+							shareHeader={
+								<ShareCardHeader
+									title={headerTitle}
+									subject={subject}
+									view={view}
+									resolution={resolution}
+									points={points}
+								/>
 							}
 							tooltip={spec.tooltip}
 							filename={buildChartFilename(pathname, spec.title)}
@@ -680,7 +695,7 @@ export function AnalyticsChartsGridFallback({
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			{specs.map((spec) => (
-				<div key={spec.id} className={spec.wide ? "lg:col-span-2" : "h-full"}>
+				<div key={spec.id} className={spec.wide ? "min-w-0 lg:col-span-2" : "h-full min-w-0"}>
 					<ChartCard
 						className={EQUAL_HEIGHT_CARD_CLASS}
 						title={spec.title}

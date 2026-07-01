@@ -595,6 +595,11 @@ async function TraderPageContent({
 								allowedComponents={SCOPED_VOLUME_COMPONENTS}
 								pathname={`/traders/${address}`}
 								source={{ kind: "trader", address }}
+								subject={{
+									type: "Trader",
+									label: displayName,
+									image: profile?.profile_image ?? null,
+								}}
 							/>
 					</SectionAnchor>
 				</div>

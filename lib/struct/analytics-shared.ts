@@ -72,6 +72,12 @@ export const RESOLUTION_OPTIONS_BY_RANGE: Record<AnalyticsRange, readonly Analyt
 	all: ["D", "W", "M"],
 };
 
+export type AnalyticsSubject = {
+	type: string;
+	label: string;
+	image?: string | null;
+};
+
 export type AnalyticsScope = "global" | "scoped";
 
 export type AnalyticsQuerySource =

@@ -23,12 +23,14 @@ import {
 	type AnalyticsMetricId,
 	type AnalyticsQuerySource,
 	type AnalyticsRange,
+	type AnalyticsSubject,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 type Props = {
 	initialData: AnalyticsSectionData;
 	source: AnalyticsQuerySource;
+	subject?: AnalyticsSubject;
 	title?: string;
 	description?: string;
 	defaultRange: AnalyticsRange;
@@ -53,6 +55,7 @@ function replaceUrl(href: Route) {
 export function AnalyticsSectionClient({
 	initialData,
 	source,
+	subject,
 	title,
 	description,
 	defaultRange,
@@ -196,6 +199,7 @@ export function AnalyticsSectionClient({
 				pathname={pathname}
 				refreshedAt={new Date(current.refreshedAt)}
 				allowedComponents={allowedComponents}
+				subject={subject}
 			/>
 		</div>
 	);

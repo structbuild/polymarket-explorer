@@ -114,6 +114,7 @@ async function AnalyticsPageContent({ searchParams }: Props) {
 			headingLevel="h1"
 			pathname="/analytics"
 			source={{ kind: "global" }}
+			subject={{ type: "Overview", label: "Polymarket" }}
 			appendMetrics={["incentives", "yesNoShares"]}
 		/>
 	);

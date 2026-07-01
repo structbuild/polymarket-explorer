@@ -10,12 +10,14 @@ import {
 	type AnalyticsQuerySource,
 	type AnalyticsRange,
 	type AnalyticsResolution,
+	type AnalyticsSubject,
 	type AnalyticsView,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
 type AnalyticsSectionProps = {
 	title?: string;
+	subject?: AnalyticsSubject;
 	description?: string;
 	range: AnalyticsRange;
 	view: AnalyticsView;
@@ -38,6 +40,7 @@ type AnalyticsSectionProps = {
 
 async function AnalyticsSectionLoader({
 	title,
+	subject,
 	description,
 	range,
 	view,
@@ -74,6 +77,7 @@ async function AnalyticsSectionLoader({
 		<AnalyticsSectionClient
 			initialData={initialData}
 			source={source}
+			subject={subject}
 			title={title}
 			description={description}
 			defaultRange={defaultRange}

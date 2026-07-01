@@ -224,6 +224,7 @@ async function BuildersIndexContent({ searchParams }: Props) {
 				<SectionAnchor id="builders-activity">
 					<AnalyticsSection
 						title="Builder activity"
+						subject={{ type: "Overview", label: "All builders" }}
 						range={analytics.range}
 						view={analytics.view}
 						resolution={analytics.resolution}
