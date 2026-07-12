@@ -8,6 +8,8 @@ import { useCallback, useState, useTransition } from "react";
 import { getBestTradesAction } from "@/app/actions";
 import { TraderTableCell } from "@/components/trader/trader-table-cell";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { ComboTypeBadge } from "@/components/ui/combo";
+import { rowComboType } from "@/lib/combo";
 import {
 	Table,
 	TableBody,
@@ -215,6 +217,7 @@ function MarketCell({ row, title }: { row: MarketEntry; title: string | null }) 
 			<span className="min-w-0 max-w-[24rem] truncate font-medium text-foreground">
 				{title ?? <span className="italic text-muted-foreground">Untitled market</span>}
 			</span>
+			<ComboTypeBadge comboType={rowComboType(row)} className="shrink-0" />
 		</div>
 	);
 

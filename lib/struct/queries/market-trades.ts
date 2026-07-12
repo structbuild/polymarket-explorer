@@ -6,6 +6,7 @@ import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
 import { emptyOffsetPage } from "@/lib/struct/queries/_shared";
 import type { PaginatedResource } from "@/lib/struct/types";
+import { FILL_TRADE_TYPES } from "@/lib/trade-utils";
 
 export const defaultMarketTradesPageSize = 25;
 
@@ -33,7 +34,7 @@ export async function getMarketTradesPage(
 			limit: limit + 1,
 			offset,
 			sort_desc: sort_desc ?? true,
-			trade_types: trade_types ?? "OrderFilled,OrdersMatched",
+			trade_types: trade_types ?? FILL_TRADE_TYPES,
 		});
 		const data = response.data.slice(0, limit);
 		const hasMore = response.data.length > limit;
@@ -73,7 +74,7 @@ export async function getEventTrades(
 			condition_ids: filtered.join(","),
 			limit,
 			sort_desc: true,
-			trade_types: "OrderFilled,OrdersMatched",
+			trade_types: FILL_TRADE_TYPES,
 		});
 		return response.data;
 	} catch (error) {
@@ -97,7 +98,7 @@ export async function getRecentTrades(limit: number = 10): Promise<Trade[]> {
 		const response = await client.markets.getTrades({
 			limit,
 			sort_desc: true,
-			trade_types: "OrderFilled,OrdersMatched",
+			trade_types: FILL_TRADE_TYPES,
 		});
 		return response.data;
 	} catch (error) {

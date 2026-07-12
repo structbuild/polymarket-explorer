@@ -2,11 +2,13 @@ import type { PolymarketCategory } from "@structbuild/sdk"
 
 import type {
 	TraderCategorySortBy,
+	TraderComboFilter,
 	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
 } from "@/lib/trader-search-params-shared"
+import { comboFilterToParam } from "@/lib/trader-search-params-shared"
 import {
 	defaultTraderTablePageSize,
 	getTraderCategoriesPage,
@@ -27,6 +29,7 @@ type TraderTabPanelData =
 			sortBy: TraderPositionSortBy
 			sortDirection: TraderSortDirection
 			category?: PolymarketCategory
+			combo?: TraderComboFilter
 			page: Awaited<ReturnType<typeof getTraderPositionsPage>>
 	  }
 	| {
@@ -69,6 +72,7 @@ type LoadTraderTabPanelDataProps = {
 	marketsSortBy: TraderMarketSortBy
 	marketsSortDirection: TraderSortDirection
 	category?: PolymarketCategory
+	combo?: TraderComboFilter
 }
 
 export function loadTraderTabPanelData({
@@ -88,9 +92,12 @@ export function loadTraderTabPanelData({
 	marketsSortBy,
 	marketsSortDirection,
 	category,
+	combo,
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
 	const pageSize = defaultTraderTablePageSize
 	const categoryOption = category ? { category } : {}
+	const comboParam = comboFilterToParam(combo)
+	const comboOption = comboParam !== undefined ? { combo: comboParam } : {}
 
 	switch (currentTab) {
 		case "closed":
@@ -100,6 +107,7 @@ export function loadTraderTabPanelData({
 				sort_by: closedSortBy,
 				sort_direction: closedSortDirection,
 				...categoryOption,
+				...comboOption,
 			}).then((page) => ({
 				kind: "positions" as const,
 				address,
@@ -108,6 +116,7 @@ export function loadTraderTabPanelData({
 				sortBy: closedSortBy,
 				sortDirection: closedSortDirection,
 				category,
+				combo,
 				page,
 			}))
 		case "activity":
@@ -157,6 +166,7 @@ export function loadTraderTabPanelData({
 				sort_by: openSortBy,
 				sort_direction: openSortDirection,
 				...categoryOption,
+				...comboOption,
 			}).then((page) => ({
 				kind: "positions" as const,
 				address,
@@ -165,6 +175,7 @@ export function loadTraderTabPanelData({
 				sortBy: openSortBy,
 				sortDirection: openSortDirection,
 				category,
+				combo,
 				page,
 			}))
 	}

@@ -8,6 +8,7 @@ import { getTraderTabPageAction } from "@/app/actions"
 import { useTabBridge } from "@/components/layout/tab-bridge"
 import type {
 	TraderCategorySortBy,
+	TraderComboFilter,
 	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
@@ -30,6 +31,7 @@ type TraderTabPanelClientProps =
 			sortBy: TraderPositionSortBy
 			sortDirection: TraderSortDirection
 			category?: PolymarketCategory
+			combo?: TraderComboFilter
 			page: PaginatedResource<PositionEntry, number>
 	  }
 	| {
@@ -196,6 +198,7 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				sortBy={currentData.sortBy}
 				sortDirection={currentData.sortDirection}
 				category={currentData.category}
+				combo={currentData.combo}
 				tabs={tabs}
 				onRefresh={handleRefresh}
 			/>

@@ -6,6 +6,7 @@ import { PeriodRows } from "@/components/trader/period-rows";
 import { Separator } from "@/components/ui/separator";
 import { TruncateTooltip } from "@/components/ui/truncate-tooltip";
 import type { PnlPeriods, PnlStreaks } from "@/lib/struct/pnl";
+import { readComboTradeCount } from "@/lib/combo";
 import { formatDuration, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn } from "@/lib/utils";
@@ -84,15 +85,20 @@ function RiskValue({
 }
 
 function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
-	const stats = [
+	const comboTradeCount = readComboTradeCount(pnlSummary);
+	const stats: { label: string; value: number | string; className?: string }[] = [
 		{ label: "Markets", value: pnlSummary?.markets_traded ?? 0 },
 		{ label: "Won", value: pnlSummary?.markets_won ?? 0, className: "text-emerald-500" },
 		{ label: "Lost", value: pnlSummary?.markets_lost ?? 0, className: "text-red-500" },
 	];
 
+	if (comboTradeCount !== null) {
+		stats.push({ label: "Combos", value: formatNumber(comboTradeCount, { decimals: 0 }) });
+	}
+
 	return (
 		<div>
-			<div className="grid grid-cols-3 gap-2">
+			<div className={cn("grid gap-2", comboTradeCount !== null ? "grid-cols-4" : "grid-cols-3")}>
 				{stats.map((stat) => (
 					<div key={stat.label} className="min-w-0">
 						<p className="truncate text-xs text-muted-foreground sm:text-sm">{stat.label}</p>

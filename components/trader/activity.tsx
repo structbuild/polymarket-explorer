@@ -26,7 +26,9 @@ import { cn } from "@/lib/utils";
 import { formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
+import { isFillTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
+import { getComboLegs } from "@/lib/combo";
+import { ComboLegsBadge } from "../ui/combo";
 import type { TradeRow } from "./types";
 
 type StandaloneTradeType = "Reward" | "Yield" | "MakerRebate";
@@ -72,6 +74,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			const marketSlug = "slug" in trade ? trade.slug : null;
 			const title = question ?? "Unknown Market";
 			const href = marketSlug ? (`/markets/${marketSlug}` as Route) : null;
+			const legs = getComboLegs(trade);
 			return (
 				<div className="flex max-w-[480px] items-center gap-3">
 					{imageUrl ? (
@@ -99,6 +102,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							{title}
 						</p>
 					)}
+					<ComboLegsBadge legs={legs} className="shrink-0" />
 				</div>
 			);
 		},
@@ -109,7 +113,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 180,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				const label = `${trade.outcome ?? "—"} / ${formatPriceCents(trade.price)}`;
 				return (
 					<p className="truncate" title={label}>
@@ -131,7 +135,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				const isBuy = isBuyTrade(trade);
 				return (
 					<p className={cn(isBuy ? "text-emerald-500" : "text-red-500")}>
@@ -150,7 +154,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 120,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				return <p>{formatNumber(trade.usd_amount, { currency: true, compact: true })}</p>;
 			}
 			const usdAmount = "usd_amount" in trade ? trade.usd_amount : null;

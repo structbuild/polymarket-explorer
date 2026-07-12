@@ -5,15 +5,31 @@ export function hasTradeTrader(trade: Trade): trade is Trade & { trader: TraderI
 }
 
 export type OrderFilledTradeEvent = Extract<Trade, { trade_type: "OrderFilled" | "OrdersMatched" }>
+export type ComboExecutionTradeEvent = Extract<Trade, { trade_type: "ComboExecution" }>
+export type FillTradeEvent = OrderFilledTradeEvent | ComboExecutionTradeEvent
 
 export function isOrderFilledTrade(trade: Trade): trade is OrderFilledTradeEvent {
 	return trade.trade_type === "OrderFilled" || trade.trade_type === "OrdersMatched"
 }
 
-export function isBuyTrade(trade: OrderFilledTradeEvent): boolean {
+export function isComboTrade(trade: Trade): boolean {
+	return trade.trade_type.startsWith("Combo")
+}
+
+export function isComboFillTrade(trade: Trade): trade is ComboExecutionTradeEvent {
+	return trade.trade_type === "ComboExecution"
+}
+
+export function isFillTrade(trade: Trade): trade is FillTradeEvent {
+	return isOrderFilledTrade(trade) || isComboFillTrade(trade)
+}
+
+export function isBuyTrade(trade: FillTradeEvent): boolean {
 	const side = trade.side?.toString().trim().toLowerCase() ?? ""
 	return side === "buy" || side === "0"
 }
+
+export const FILL_TRADE_TYPES = "OrderFilled,OrdersMatched,ComboExecution"
 
 const activityLabels: Record<Trade["trade_type"], string> = {
 	OrderFilled: "Order Filled",

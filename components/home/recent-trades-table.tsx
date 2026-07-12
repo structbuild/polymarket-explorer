@@ -15,7 +15,9 @@ import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { hasTradeTrader, isBuyTrade, isOrderFilledTrade } from "@/lib/trade-utils";
+import { hasTradeTrader, isBuyTrade, isFillTrade } from "@/lib/trade-utils";
+import { getComboLegs } from "@/lib/combo";
+import { ComboLegsBadge } from "@/components/ui/combo";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
 const columns: ColumnDef<Trade, unknown>[] = [
@@ -74,7 +76,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 520,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (!isOrderFilledTrade(trade)) return <p className="text-muted-foreground">—</p>;
+			if (!isFillTrade(trade)) return <p className="text-muted-foreground">—</p>;
 			const label = trade.question ?? "—";
 			const rawImageUrl = "image_url" in trade ? trade.image_url : null;
 			const imageUrl = rawImageUrl != null ? normalizePolymarketS3ImageUrl(rawImageUrl) : null;
@@ -86,6 +88,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 						</Avatar>
 					)}
 					<span className="min-w-0 flex-1 truncate text-sm">{label}</span>
+					<ComboLegsBadge legs={getComboLegs(trade)} />
 				</div>
 			);
 			if (trade.slug) {
@@ -113,7 +116,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 140,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (!isOrderFilledTrade(trade)) return null;
+			if (!isFillTrade(trade)) return null;
 			return (
 				<p className="truncate">
 					{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
@@ -127,7 +130,7 @@ const columns: ColumnDef<Trade, unknown>[] = [
 		size: 100,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (!isOrderFilledTrade(trade)) return null;
+			if (!isFillTrade(trade)) return null;
 			const isBuy = isBuyTrade(trade);
 			return (
 				<p className={cn("tabular-nums", isBuy ? "text-emerald-500" : "text-red-500")}>

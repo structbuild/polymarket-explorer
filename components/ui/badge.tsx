@@ -24,6 +24,7 @@ const badgeVariants = cva(
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
         redeemable: "bg-orange-500/20 text-orange-500",
+        combo: "bg-violet-500/20 text-violet-500",
       },
     },
     defaultVariants: {

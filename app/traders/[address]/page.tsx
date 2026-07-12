@@ -461,6 +461,7 @@ async function TraderPageContent({
 			marketsSortBy,
 			marketsSortDirection,
 			positionsCategory,
+			positionsCombo,
 		},
 		resolvedSearchParams,
 		serverTimezone,
@@ -496,6 +497,7 @@ async function TraderPageContent({
 		marketsSortBy,
 		marketsSortDirection,
 		category: positionsCategory ?? undefined,
+		combo: positionsCombo,
 	});
 
 	const highlightsPageNumber = highlights === "wins" ? winsPage : lossesPage;

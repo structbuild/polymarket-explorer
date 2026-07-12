@@ -96,12 +96,15 @@ import {
 	defaultTraderCategorySortBy,
 	defaultTraderMarketSortBy,
 	type TraderCategorySortBy,
+	type TraderComboFilter,
 	type TraderExitMode,
 	type TraderMarketSortBy,
 	type TraderPositionSortBy,
 	type TraderSortDirection,
 	type TraderTab,
+	comboFilterToParam,
 	traderCategorySortByValues,
+	traderComboFilterValues,
 	traderMarketSortByValues,
 	traderPositionSortByValues,
 	traderSortDirectionValues,
@@ -212,6 +215,12 @@ function parseTraderTab(value: TraderTab) {
 	return traderTabValues.includes(value) ? value : "active";
 }
 
+function parseTraderComboFilter(value: string | undefined): TraderComboFilter {
+	return traderComboFilterValues.includes(value as TraderComboFilter)
+		? (value as TraderComboFilter)
+		: "all";
+}
+
 function parseMarketStatus(value: MarketStatusTab) {
 	return marketStatusTabValues.includes(value) ? value : DEFAULT_MARKET_STATUS_TAB;
 }
@@ -302,6 +311,7 @@ export async function getTraderPositionsPageAction({
 	sortBy,
 	sortDirection,
 	category,
+	combo,
 }: {
 	address: string;
 	status: "open" | "closed";
@@ -309,15 +319,18 @@ export async function getTraderPositionsPageAction({
 	sortBy: TraderPositionSortBy;
 	sortDirection: TraderSortDirection;
 	category?: PolymarketCategory | null;
+	combo?: TraderComboFilter;
 }) {
 	await assertHumanRequest();
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const comboParam = comboFilterToParam(combo);
 	const page = await getTraderPositionsPage(address, status, {
 		limit: defaultTraderTablePageSize,
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
 		sort_by: sortBy,
 		sort_direction: sortDirection,
 		...(category ? { category } : {}),
+		...(comboParam !== undefined ? { combo: comboParam } : {}),
 	});
 
 	return { page, pageNumber: safePageNumber };
@@ -402,12 +415,15 @@ export async function getTraderTabPageAction({
 	const sortBy = parseTraderSortByParam(params, sortByKey, defaultTraderPositionSortBy[status]);
 	const sortDirection = parseTraderSortDirectionParam(params, sortDirectionKey);
 	const category = parsePolymarketCategory(params.get("positionsCategory") ?? undefined) ?? undefined;
+	const combo = parseTraderComboFilter(params.get("positionsCombo") ?? undefined);
+	const comboParam = comboFilterToParam(combo);
 	const page = await getTraderPositionsPage(address, status, {
 		limit: defaultTraderTablePageSize,
 		offset: (pageNumber - 1) * defaultTraderTablePageSize,
 		sort_by: sortBy,
 		sort_direction: sortDirection,
 		...(category ? { category } : {}),
+		...(comboParam !== undefined ? { combo: comboParam } : {}),
 	});
 
 	return {
@@ -418,6 +434,7 @@ export async function getTraderTabPageAction({
 		sortBy,
 		sortDirection,
 		category,
+		combo,
 		page,
 	};
 }

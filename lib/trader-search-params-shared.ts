@@ -5,6 +5,15 @@ export type TraderTab = (typeof traderTabValues)[number];
 export const traderExitModeValues = ["wins", "losses"] as const;
 export type TraderExitMode = (typeof traderExitModeValues)[number];
 
+export const traderComboFilterValues = ["all", "combos", "standard"] as const;
+export type TraderComboFilter = (typeof traderComboFilterValues)[number];
+
+export function comboFilterToParam(filter: TraderComboFilter | undefined): boolean | undefined {
+	if (filter === "combos") return true;
+	if (filter === "standard") return false;
+	return undefined;
+}
+
 export const traderPositionSortByValues = [
 	"title",
 	"avg_entry_price",

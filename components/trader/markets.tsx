@@ -13,6 +13,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { dateCol, numericCol } from "@/components/ui/table-columns";
 import { Volume } from "@/components/ui/volume";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
+import { rowComboType } from "@/lib/combo";
+import { ComboTypeBadge } from "@/components/ui/combo";
 import type { PaginatedResource } from "@/lib/struct/types";
 import type { TraderMarketSortBy, TraderSortDirection } from "@/lib/trader-search-params-shared";
 import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
@@ -109,6 +111,7 @@ function buildColumns(ctx: SortCtx): ColumnDef<MarketEntry, unknown>[] {
 								{title}
 							</p>
 						)}
+						<ComboTypeBadge comboType={rowComboType(market)} className="shrink-0" />
 					</div>
 				);
 			},

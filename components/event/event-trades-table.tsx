@@ -18,7 +18,9 @@ import { TooltipWrapper } from "@/components/ui/tooltip";
 import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, formatPriceCents } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { getActivityLabel, hasTradeTrader, isBuyTrade, isOrderFilledTrade } from "@/lib/trade-utils";
+import { getActivityLabel, hasTradeTrader, isBuyTrade, isFillTrade } from "@/lib/trade-utils";
+import { getComboLegs } from "@/lib/combo";
+import { ComboLegsBadge } from "@/components/ui/combo";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
 type TradeRow = Trade;
@@ -76,6 +78,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 					<span className="line-clamp-2 min-w-0 text-sm font-medium leading-snug" title={question}>
 						{question}
 					</span>
+					<ComboLegsBadge legs={getComboLegs(trade)} />
 				</div>
 			);
 
@@ -140,7 +143,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 160,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				return (
 					<p className="truncate text-sm">
 						{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
@@ -161,7 +164,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				const isBuy = isBuyTrade(trade);
 				return (
 					<p className={cn("text-sm tabular-nums", isBuy ? "text-emerald-500" : "text-red-500")}>
@@ -184,7 +187,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 120,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				return (
 					<p className="text-sm tabular-nums">
 						{formatNumber(trade.usd_amount, { currency: true, compact: true })}
