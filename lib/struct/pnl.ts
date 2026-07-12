@@ -204,52 +204,50 @@ function emptyExitsPage(limit: number): PaginatedResource<PnlExitMarker, number>
 	return { data: [], hasMore: false, nextCursor: null, pageSize: limit };
 }
 
-const getTraderExitsPageCached = cache(
-	async (
-		address: string,
-		mode: TraderExitMode,
-		offset: number,
-		limit: number,
-		from: number | undefined,
-		to: number | undefined,
-	): Promise<PaginatedResource<PnlExitMarker, number>> => {
-		const client = getStructClient();
+const traderExitsFetchLimit = 1000;
 
-		if (!client) {
-			return emptyExitsPage(limit);
+const getAllTraderExitsCached = cache(async (address: string): Promise<PnlExitMarker[]> => {
+	const client = getStructClient();
+
+	if (!client) return [];
+
+	try {
+		const response = await client.trader.getTraderPnlExits({
+			address,
+			limit: traderExitsFetchLimit,
+		});
+		return response.data ?? [];
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return [];
 		}
 
-		try {
-			const response = await client.trader.getTraderPnlExits({
-				address,
-				sort_by: "pnl_usd",
-				sort_direction: mode === "wins" ? "desc" : "asc",
-				...(mode === "wins" ? { min_pnl_usd: 0 } : { max_pnl_usd: 0 }),
-				...(from === undefined ? {} : { from }),
-				...(to === undefined ? {} : { to }),
-				offset,
-				limit: limit + 1,
-			});
-			const all = response.data ?? [];
-			const data = all.slice(0, limit);
-			const hasMore = all.length > limit;
+		logStructError(`getTraderPnlExits:${address}`, error);
+		return [];
+	}
+});
 
-			return {
-				data,
-				hasMore,
-				nextCursor: hasMore ? offset + data.length : null,
-				pageSize: limit,
-			};
-		} catch (error) {
-			if (readStatus(error) === 404) {
-				return emptyExitsPage(limit);
-			}
+function selectTraderExits(
+	exits: PnlExitMarker[],
+	mode: TraderExitMode,
+	from: number | undefined,
+	to: number | undefined,
+): PnlExitMarker[] {
+	const filtered = exits.filter((exit) => {
+		if (from !== undefined && exit.t < from) return false;
+		if (to !== undefined && exit.t > to) return false;
+		const pnl = exit.pnl_usd ?? 0;
+		return mode === "wins" ? pnl >= 0 : pnl <= 0;
+	});
 
-			logStructError(`getTraderPnlExits:${address}:${mode}:${offset}:${from ?? ""}:${to ?? ""}`, error);
-			return emptyExitsPage(limit);
-		}
-	},
-);
+	filtered.sort((a, b) => {
+		const pnlA = a.pnl_usd ?? 0;
+		const pnlB = b.pnl_usd ?? 0;
+		return mode === "wins" ? pnlB - pnlA : pnlA - pnlB;
+	});
+
+	return filtered;
+}
 
 export async function getTraderExitsPage(
 	address: string,
@@ -257,11 +255,23 @@ export async function getTraderExitsPage(
 	options: { offset?: number; limit?: number; from?: number; to?: number } = {},
 ): Promise<PaginatedResource<PnlExitMarker, number>> {
 	const limit = options.limit ?? defaultTraderExitsPageSize;
+	const offset = options.offset ?? 0;
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) return emptyExitsPage(limit);
 
-	return getTraderExitsPageCached(normalizedAddress, mode, options.offset ?? 0, limit, options.from, options.to);
+	const all = await getAllTraderExitsCached(normalizedAddress);
+	const selected = selectTraderExits(all, mode, options.from, options.to);
+	const data = selected.slice(offset, offset + limit);
+	const end = offset + data.length;
+	const hasMore = selected.length > end;
+
+	return {
+		data,
+		hasMore,
+		nextCursor: hasMore ? end : null,
+		pageSize: limit,
+	};
 }
 
 export type PnlChartExit = {
