@@ -5,10 +5,10 @@ import { ExternalLink } from "@/components/ui/external-link";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 const NOTIFICATION = {
-	version: "3",
-	message: "Struct v0.6 is live - The Most Accurate & Comprehensive PnL for Polymarket",
-	cta: "Learn more",
-	href: "https://www.struct.to/blog/v0.6-release",
+	version: "4",
+	message: "Struct Trades WS is 2.6s faster than Polymarket's RTDS feed",
+	cta: "Read the benchmark",
+	href: "https://www.struct.to/blog/polymarket-rtds-vs-struct-trades-ws",
 } as const;
 
 
