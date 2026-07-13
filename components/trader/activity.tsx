@@ -22,7 +22,7 @@ import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle";
 import { ExternalLink } from "../ui/external-link";
 import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 import { formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
@@ -73,6 +73,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			const question = "question" in trade ? trade.question : null;
 			const marketSlug = "slug" in trade ? trade.slug : null;
 			const title = question ?? "Unknown Market";
+			const displayTitle = truncateMarketTitle(title);
 			const href = marketSlug ? (`/markets/${marketSlug}` as Route) : null;
 			const legs = getComboLegs(trade);
 			return (
@@ -95,11 +96,11 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							className="min-w-0 flex-1 truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 							title={title}
 						>
-							{title}
+							{displayTitle}
 						</Link>
 					) : (
 						<p className="min-w-0 flex-1 truncate text-base font-medium" title={title}>
-							{title}
+							{displayTitle}
 						</p>
 					)}
 					<ComboLegsBadge legs={legs} className="shrink-0" />

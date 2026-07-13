@@ -11,6 +11,14 @@ export function truncateAddress(address?: string | null, length: number = 6) {
 	return `${address.slice(0, length)}...${address.slice(-length)}`;
 }
 
+export const MARKET_TITLE_MAX_LENGTH = 72;
+
+export function truncateMarketTitle(title: string, maxLength: number = MARKET_TITLE_MAX_LENGTH) {
+	const trimmed = title.trim();
+	if (trimmed.length <= maxLength) return trimmed;
+	return `${trimmed.slice(0, maxLength).trimEnd()}…`;
+}
+
 function realTraderName(value: string | null | undefined) {
 	const trimmed = value?.trim();
 	if (!trimmed) return null;

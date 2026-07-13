@@ -41,7 +41,7 @@ import { ExternalLink } from "../ui/external-link"
 import { TraderTabs } from "./trader-tabs"
 import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass, readTotalPnlUsd, readTotalPnlPct } from "@/lib/format"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
-import { cn } from "@/lib/utils"
+import { cn, truncateMarketTitle } from "@/lib/utils"
 
 const defaultColumnVisibility: VisibilityState = {
 	current_value: false,
@@ -113,6 +113,7 @@ function buildColumns(
 				const entry = row.original
 				const isUnknownMarket = !entry.question
 				const question = entry.question || "Unknown Market"
+				const displayTitle = truncateMarketTitle(question)
 				const href = entry.market_slug ? (`/markets/${entry.market_slug}` as Route) : null
 				return (
 					<div className="flex items-center gap-3">
@@ -130,7 +131,7 @@ function buildColumns(
 								<p className="truncate text-base font-medium" title={question}>
 									<TooltipWrapper content="Polymarket Gamma has no data on this market/position">
 										<span className="cursor-help border-b border-dotted border-muted-foreground/50">
-											{question}
+											{displayTitle}
 										</span>
 									</TooltipWrapper>
 								</p>
@@ -141,11 +142,11 @@ function buildColumns(
 									className="block truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 									title={question}
 								>
-									{question}
+									{displayTitle}
 								</Link>
 							) : (
 								<p className="truncate text-base font-medium" title={question}>
-									{question}
+									{displayTitle}
 								</p>
 							)}
 							<div className="flex flex-wrap items-center gap-1.5">

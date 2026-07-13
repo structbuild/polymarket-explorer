@@ -22,7 +22,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Volume } from "@/components/ui/volume";
 import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 
 export const BEST_TRADES_TIMEFRAMES = ["1d", "7d", "30d", "lifetime"] as const satisfies readonly PnlTimeframe[];
 
@@ -214,8 +214,8 @@ function MarketCell({ row, title }: { row: MarketEntry; title: string | null }) 
 			) : (
 				<div className="size-8 shrink-0 rounded-sm bg-muted" />
 			)}
-			<span className="min-w-0 max-w-[24rem] truncate font-medium text-foreground">
-				{title ?? <span className="italic text-muted-foreground">Untitled market</span>}
+			<span className="min-w-0 max-w-[24rem] truncate font-medium text-foreground" title={title ?? undefined}>
+				{title ? truncateMarketTitle(title) : <span className="italic text-muted-foreground">Untitled market</span>}
 			</span>
 			<ComboTypeBadge comboType={rowComboType(row)} className="shrink-0" />
 		</div>

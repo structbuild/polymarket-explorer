@@ -15,14 +15,14 @@ import { getSiteUrl } from "@/lib/env";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getEventBySlug } from "@/lib/struct/queries/events";
+import { truncateMarketTitle } from "@/lib/utils";
 
 type Props = {
 	params: Promise<{ slug: string }>;
 };
 
 function truncateTitle(title: string, maxLength: number = 60) {
-	if (title.length <= maxLength) return title;
-	return `${title.slice(0, maxLength)}…`;
+	return truncateMarketTitle(title, maxLength);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

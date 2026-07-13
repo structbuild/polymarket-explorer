@@ -20,6 +20,7 @@ import { parseAnalyticsCap, parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } fro
 import { getMarketBySlug, getMarketsByTag } from "@/lib/struct/market-queries";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import type { MarketResponse } from "@structbuild/sdk";
+import { truncateMarketTitle } from "@/lib/utils";
 
 type Props = {
 	params: Promise<{ slug: string }>;
@@ -99,8 +100,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function truncateQuestion(question: string, maxLength: number = 60) {
-	if (question.length <= maxLength) return question;
-	return `${question.slice(0, maxLength)}…`;
+	return truncateMarketTitle(question, maxLength);
 }
 
 export default function MarketPage({ params, searchParams }: Props) {

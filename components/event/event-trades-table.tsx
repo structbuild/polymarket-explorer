@@ -21,7 +21,7 @@ import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { getActivityLabel, hasTradeTrader, isBuyTrade, isFillTrade } from "@/lib/trade-utils";
 import { getComboLegs } from "@/lib/combo";
 import { ComboLegsBadge } from "@/components/ui/combo";
-import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
+import { cn, getTraderDisplayName, normalizeWalletAddress, truncateMarketTitle } from "@/lib/utils";
 
 type TradeRow = Trade;
 
@@ -60,6 +60,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			const trade = row.original;
 			const slug = getTradeMarketSlug(trade);
 			const question = getTradeMarketQuestion(trade) ?? slug ?? "—";
+			const displayTitle = truncateMarketTitle(question);
 			const imageUrl = normalizePolymarketS3ImageUrl(getTradeMarketImage(trade)) ?? null;
 
 			const inner = (
@@ -76,7 +77,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 						<div className="size-8 shrink-0 rounded-md bg-muted" />
 					)}
 					<span className="line-clamp-2 min-w-0 text-sm font-medium leading-snug" title={question}>
-						{question}
+						{displayTitle}
 					</span>
 					<ComboLegsBadge legs={getComboLegs(trade)} />
 				</div>

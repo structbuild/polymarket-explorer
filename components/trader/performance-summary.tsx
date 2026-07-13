@@ -9,7 +9,7 @@ import type { PnlPeriods, PnlStreaks } from "@/lib/struct/pnl";
 import { readComboTradeCount } from "@/lib/combo";
 import { formatDuration, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 import type { PnlChangesResponse, PnlRiskResponse, GlobalEntry } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {
@@ -151,6 +151,7 @@ function TradeHighlightRow({
 	const questionText = hasTrade && (metadata?.question || metadata?.title)
 		? (metadata?.question ?? metadata?.title)
 		: null;
+	const displayQuestion = questionText ? truncateMarketTitle(questionText) : null;
 
 	return (
 		<div>
@@ -166,16 +167,19 @@ function TradeHighlightRow({
 					tradeDetails
 				)}
 			</div>
-			{questionText && (
+			{displayQuestion && (
 				href ? (
 					<Link
 						href={href}
 						className="mt-1 block text-sm text-muted-foreground break-words hover:text-foreground hover:underline sm:truncate"
+						title={questionText ?? undefined}
 					>
-						{questionText}
+						{displayQuestion}
 					</Link>
 				) : (
-					<p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{questionText}</p>
+					<p className="mt-1 text-sm text-muted-foreground break-words sm:truncate" title={questionText ?? undefined}>
+						{displayQuestion}
+					</p>
 				)
 			)}
 			<Separator className="my-2" />

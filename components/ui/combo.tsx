@@ -8,7 +8,7 @@ import { LayersIcon } from "lucide-react"
 
 import { comboTypeDescription, comboTypeLabel, readComboType } from "@/lib/combo"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
-import { cn } from "@/lib/utils"
+import { cn, truncateMarketTitle } from "@/lib/utils"
 
 import { Badge } from "./badge"
 import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from "./popover"
@@ -52,6 +52,7 @@ export function ComboLegsBadge({ legs, className }: { legs: ComboLeg[]; classNam
 				<ul className="flex flex-col gap-2">
 					{legs.map((leg, index) => {
 						const question = leg.question || leg.title || "Unknown market"
+						const displayTitle = truncateMarketTitle(question)
 						const imageUrl = leg.image_url ? normalizePolymarketS3ImageUrl(leg.image_url) : null
 						const href = leg.slug ? (`/markets/${leg.slug}` as Route) : null
 						const content = (
@@ -69,7 +70,7 @@ export function ComboLegsBadge({ legs, className }: { legs: ComboLeg[]; classNam
 								)}
 								<div className="min-w-0 flex-1 space-y-0.5">
 									<p className="truncate text-sm font-medium text-foreground" title={question}>
-										{question}
+										{displayTitle}
 									</p>
 									{leg.outcome ? (
 										<Badge variant={legOutcomeVariant(leg.outcome_index)}>{leg.outcome}</Badge>

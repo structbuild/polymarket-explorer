@@ -6,6 +6,7 @@ import type { MarketResponse } from "@structbuild/sdk";
 import { Volume } from "@/components/ui/volume";
 import { RelatedMarketsViewAllLink } from "@/components/market/related-markets-view-all-link";
 import { formatCapitalizeWords, slugify } from "@/lib/format";
+import { truncateMarketTitle } from "@/lib/utils";
 
 type RelatedMarketsProps = {
 	markets: MarketResponse[];
@@ -34,6 +35,7 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 			<ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				{items.map((m) => {
 					const question = m.question ?? m.title ?? "Untitled market";
+					const displayTitle = truncateMarketTitle(question);
 					const outcomes = m.outcomes ?? [];
 					const leading = outcomes.reduce<(typeof outcomes)[number] | null>(
 						(best, o) => (best == null || (o.price ?? 0) > (best.price ?? 0) ? o : best),
@@ -63,8 +65,8 @@ export function RelatedMarkets({ markets, tag, currentSlug }: RelatedMarketsProp
 									<div className="size-12 shrink-0 rounded-md bg-muted" />
 								)}
 								<div className="min-w-0 flex-1">
-									<p className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground">
-										{question}
+									<p className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground" title={question}>
+										{displayTitle}
 									</p>
 									<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
 										{lead ? (

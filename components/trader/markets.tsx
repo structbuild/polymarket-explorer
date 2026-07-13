@@ -18,7 +18,7 @@ import { ComboTypeBadge } from "@/components/ui/combo";
 import type { PaginatedResource } from "@/lib/struct/types";
 import type { TraderMarketSortBy, TraderSortDirection } from "@/lib/trader-search-params-shared";
 import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 
 import { Button } from "../ui/button";
 import {
@@ -83,6 +83,7 @@ function buildColumns(ctx: SortCtx): ColumnDef<MarketEntry, unknown>[] {
 				const market = row.original;
 				const imageUrl = market.image_url != null ? normalizePolymarketS3ImageUrl(market.image_url) : null;
 				const title = market.question ?? market.title ?? market.market_slug ?? "Unknown Market";
+				const displayTitle = truncateMarketTitle(title);
 				const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
 				return (
 					<div className="flex max-w-[420px] items-center gap-3">
@@ -104,11 +105,11 @@ function buildColumns(ctx: SortCtx): ColumnDef<MarketEntry, unknown>[] {
 								className="min-w-0 flex-1 truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 								title={title}
 							>
-								{title}
+								{displayTitle}
 							</Link>
 						) : (
 							<p className="min-w-0 flex-1 truncate text-base font-medium" title={title}>
-								{title}
+								{displayTitle}
 							</p>
 						)}
 						<ComboTypeBadge comboType={rowComboType(market)} className="shrink-0" />

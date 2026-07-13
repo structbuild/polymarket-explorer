@@ -13,6 +13,7 @@ import { ExternalLink } from "@/components/ui/external-link";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
+import { truncateMarketTitle } from "@/lib/utils";
 import { REWARDS_TABLE_COLUMN_SIZES } from "./rewards-table-columns";
 
 function sumRewardField(
@@ -38,13 +39,15 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		meta: { cellClassName: "whitespace-normal" },
 		cell: ({ row }) => {
 			const market = row.original;
+			const question = market.question ?? "";
+			const displayTitle = truncateMarketTitle(question || "Untitled market");
 			const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
 			return (
 				<div className="flex items-center gap-3">
 					{market.image_url ? (
 						<Image
 							className="size-10 shrink-0 rounded-md object-cover"
-							alt={market.question ?? ""}
+							alt={question}
 							src={market.image_url}
 							width={40}
 							height={40}
@@ -58,13 +61,13 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 								href={href}
 								prefetch={false}
 								className="line-clamp-2 text-base font-medium break-words text-foreground underline-offset-4 hover:underline"
-								title={market.question ?? ""}
+								title={question}
 							>
-								{market.question}
+								{displayTitle}
 							</Link>
 						) : (
-							<p className="line-clamp-2 text-base font-medium break-words" title={market.question ?? ""}>
-								{market.question}
+							<p className="line-clamp-2 text-base font-medium break-words" title={question}>
+								{displayTitle}
 							</p>
 						)}
 					</div>

@@ -31,7 +31,7 @@ import { formatDateCompact, formatDateFull, formatDateTimeFull, pnlColorClass } 
 import { formatNumber } from "@/lib/format"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
 import type { PnlTimeframe } from "@/lib/struct/pnl-timeframes"
-import { cn } from "@/lib/utils"
+import { cn, truncateMarketTitle } from "@/lib/utils"
 
 export type PnlChartMode = "area" | "candles"
 
@@ -254,7 +254,9 @@ function ExitClusterRow({ exit, timezone }: { exit: PnlChartExit; timezone?: str
 				/>
 			)}
 			<div className="min-w-0 flex-1">
-				<p className="truncate text-xs font-medium leading-snug">{exit.question}</p>
+				<p className="truncate text-xs font-medium leading-snug" title={exit.question}>
+					{truncateMarketTitle(exit.question)}
+				</p>
 				<div className="mt-1 flex flex-wrap items-center gap-1.5">
 					{exit.outcome ? (
 						<Badge

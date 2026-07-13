@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Volume } from "@/components/ui/volume";
-import { cn, formatBuilderCodeDisplay, getTraderDisplayName, isBytes32Hex, normalizeWalletAddress } from "@/lib/utils";
+import { cn, formatBuilderCodeDisplay, getTraderDisplayName, isBytes32Hex, normalizeWalletAddress, truncateMarketTitle } from "@/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { BarChart3Icon, BlocksIcon, CalendarIcon, LoaderIcon, SearchIcon, UserIcon } from "lucide-react";
 import type { Route } from "next";
@@ -74,7 +74,7 @@ function SearchRow({
 			</Avatar>
 			<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 				<span className="truncate text-sm" title={title}>
-					{title}
+					{truncateMarketTitle(title)}
 				</span>
 				{meta && (
 					<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
