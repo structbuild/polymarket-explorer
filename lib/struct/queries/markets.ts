@@ -66,9 +66,13 @@ export async function getMarketBySlug(slug: string): Promise<MarketResponse | nu
 	}
 
 	try {
-		const response = await client.markets.getMarketBySlug({ marketSlug: slug });
-		const data = response.data;
-		return data ? normalizeMarketResponseImages(data) : null;
+		const response = await client.markets.getMarkets({
+			market_slugs: slug,
+			status: "all",
+			include_metrics: true,
+		});
+		const match = response.data.find((market) => market.market_slug === slug);
+		return match ? normalizeMarketResponseImages(match) : null;
 	} catch (error) {
 		if (readStatus(error) === 404) {
 			return null;
