@@ -24,6 +24,7 @@ import { POLYMARKET_CATEGORIES } from "@/lib/tag-category"
 
 import { Badge } from "../ui/badge"
 import { ComboTypeBadge } from "../ui/combo"
+import { TraderComboLegs } from "./trader-combo-legs"
 import { rowComboType } from "@/lib/combo"
 import { DataTable } from "../ui/data-table"
 import { SortableHeader } from "../ui/sortable-header"
@@ -80,6 +81,7 @@ function getSortOptions(status: "open" | "closed") {
 }
 
 function buildColumns(
+	address: string,
 	status: "open" | "closed",
 	currentSortBy: TraderPositionSortBy,
 	currentSortDirection: TraderSortDirection,
@@ -151,6 +153,13 @@ function buildColumns(
 							)}
 							<div className="flex flex-wrap items-center gap-1.5">
 								<ComboTypeBadge comboType={rowComboType(entry)} />
+								{rowComboType(entry) ? (
+									<TraderComboLegs
+										address={address}
+										positionId={entry.position_id}
+										conditionId={entry.condition_id}
+									/>
+								) : null}
 								{status === "closed" && entry.won != null ? (
 									<Badge variant={entry.won ? "positive" : "negative"}>
 										{entry.won ? "Won" : "Lost"}
@@ -597,8 +606,8 @@ export default function TraderPositions({
 		: null
 
 	const columns = useMemo(
-		() => buildColumns(status, currentSortBy, currentSortDirection, handleSortChange, !ranked),
-		[handleSortChange, currentSortBy, currentSortDirection, status, ranked],
+		() => buildColumns(address, status, currentSortBy, currentSortDirection, handleSortChange, !ranked),
+		[address, handleSortChange, currentSortBy, currentSortDirection, status, ranked],
 	)
 
 	const data = useMemo(() => {

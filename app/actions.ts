@@ -24,6 +24,7 @@ import {
 	toVolumePoints,
 } from "@/lib/struct/market-queries";
 import { getEventsByTag } from "@/lib/struct/queries/events";
+import { getTraderComboPnl } from "@/lib/struct/queries/combos";
 import { eventResponseToRow } from "@/lib/event-table-map";
 import { parseEventStatusTab, type EventStatusTab } from "@/lib/event-search-params-shared";
 import {
@@ -334,6 +335,19 @@ export async function getTraderPositionsPageAction({
 	});
 
 	return { page, pageNumber: safePageNumber };
+}
+
+export async function getTraderComboLegsAction({
+	address,
+	positionId,
+	conditionId,
+}: {
+	address: string;
+	positionId?: string | null;
+	conditionId?: string | null;
+}) {
+	await assertHumanRequest();
+	return getTraderComboPnl(address, { positionId, conditionId });
 }
 
 export async function getTraderTabPageAction({
