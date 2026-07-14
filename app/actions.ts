@@ -1,7 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { BuilderSortBy, BuilderTimeframe, MarketEntry, PnlTimeframe, PolymarketCategory } from "@structbuild/sdk";
+import type {
+	BuilderSortBy,
+	BuilderTimeframe,
+	ComboMarketSortBy,
+	ComboMarketStatusFilter,
+	ComboMarketTimeframe,
+	MarketEntry,
+	PnlTimeframe,
+	PolymarketCategory,
+	SortDirection,
+} from "@structbuild/sdk";
 import { checkBotId } from "botid/server";
 
 import {
@@ -24,7 +34,13 @@ import {
 	toVolumePoints,
 } from "@/lib/struct/market-queries";
 import { getEventsByTag } from "@/lib/struct/queries/events";
-import { getTraderComboPnl } from "@/lib/struct/queries/combos";
+import { getComboMarkets, getTraderComboPnl } from "@/lib/struct/queries/combos";
+import { comboMarketToRow } from "@/lib/combo-market-table-map";
+import {
+	isComboMarketSortBy,
+	isComboMarketStatusFilter,
+	isComboMarketTimeframe,
+} from "@/lib/combo";
 import { eventResponseToRow } from "@/lib/event-table-map";
 import { parseEventStatusTab, type EventStatusTab } from "@/lib/event-search-params-shared";
 import {
@@ -262,6 +278,40 @@ export async function getMarketsStatusPageAction({
 		sortDirection: safeSortDirection,
 		timeframe: safeTimeframe,
 		markets: result.data.map(marketResponseToRow),
+		hasMore: result.hasMore,
+		nextCursor: result.nextCursor,
+	};
+}
+
+export async function getComboMarketsPageAction({
+	status,
+	timeframe,
+	sortBy,
+	sortDirection,
+}: {
+	status: ComboMarketStatusFilter | null;
+	timeframe: ComboMarketTimeframe;
+	sortBy: ComboMarketSortBy;
+	sortDirection: SortDirection;
+}) {
+	await assertHumanRequest();
+	const safeStatus = isComboMarketStatusFilter(status) ? status : null;
+	const safeTimeframe = isComboMarketTimeframe(timeframe) ? timeframe : "lifetime";
+	const safeSortBy = isComboMarketSortBy(sortBy) ? sortBy : "usd_volume";
+	const safeSortDirection: SortDirection = sortDirection === "asc" ? "asc" : "desc";
+	const result = await getComboMarkets({
+		timeframe: safeTimeframe,
+		sortBy: safeSortBy,
+		sortDir: safeSortDirection,
+		status: safeStatus,
+	});
+
+	return {
+		status: safeStatus,
+		timeframe: safeTimeframe,
+		sortBy: safeSortBy,
+		sortDirection: safeSortDirection,
+		rows: result.data.map(comboMarketToRow),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};

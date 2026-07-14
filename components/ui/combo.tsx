@@ -8,10 +8,13 @@ import { LayersIcon } from "lucide-react"
 
 import {
 	comboLegStatusLabel,
+	comboMarketStatusLabel,
+	comboMarketStatusTone,
 	comboStatusLabel,
 	comboTypeDescription,
 	comboTypeLabel,
 	normalizeComboLegs,
+	readComboMarketStatus,
 	readComboStatus,
 	readComboType,
 	type ComboLegStatus,
@@ -52,6 +55,19 @@ export function ComboStatusBadge({ status, className }: { status: unknown; class
 	return (
 		<Badge variant={variant} className={className}>
 			{comboStatusLabel(value)}
+		</Badge>
+	)
+}
+
+export function ComboMarketStatusBadge({ status, className }: { status: unknown; className?: string }) {
+	const value = readComboMarketStatus(status)
+	if (!value) return null
+	const tone = comboMarketStatusTone(value)
+	const variant =
+		tone === "positive" ? "positive" : tone === "negative" ? "negative" : "secondary"
+	return (
+		<Badge variant={variant} className={className}>
+			{comboMarketStatusLabel(value)}
 		</Badge>
 	)
 }

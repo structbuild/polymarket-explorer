@@ -75,6 +75,7 @@ async function buildStaticAndTagsShard(
 		{ url: siteUrl, changeFrequency: "hourly", priority: 1 },
 		{ url: `${siteUrl}/events`, changeFrequency: "hourly", priority: 0.9 },
 		{ url: `${siteUrl}/markets`, changeFrequency: "hourly", priority: 0.9 },
+		{ url: `${siteUrl}/combos`, changeFrequency: "hourly", priority: 0.8 },
 		{ url: `${siteUrl}/traders`, changeFrequency: "hourly", priority: 0.9 },
 		{ url: `${siteUrl}/builders`, changeFrequency: "daily", priority: 0.7 },
 		{ url: `${siteUrl}/rewards`, changeFrequency: "daily", priority: 0.7 },
