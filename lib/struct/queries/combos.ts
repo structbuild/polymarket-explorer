@@ -230,8 +230,11 @@ export async function getTraderComboPnl(
 	try {
 		const response = await client.trader.getTraderComboPnl({
 			address: normalizedAddress,
-			...(positionId ? { position_id: positionId } : {}),
-			...(conditionId ? { condition_id: conditionId } : {}),
+			...(conditionId
+				? { condition_id: conditionId }
+				: positionId
+					? { position_id: positionId }
+					: {}),
 		});
 		return response.data ?? null;
 	} catch (error) {

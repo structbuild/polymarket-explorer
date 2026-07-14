@@ -23,7 +23,6 @@ import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 import { POLYMARKET_CATEGORIES } from "@/lib/tag-category"
 
 import { Badge } from "../ui/badge"
-import { ComboTypeBadge } from "../ui/combo"
 import { TraderComboLegs } from "./trader-combo-legs"
 import { rowComboType } from "@/lib/combo"
 import { DataTable } from "../ui/data-table"
@@ -116,7 +115,12 @@ function buildColumns(
 				const isUnknownMarket = !entry.question
 				const question = entry.question || "Unknown Market"
 				const displayTitle = truncateMarketTitle(question)
-				const href = entry.market_slug ? (`/markets/${entry.market_slug}` as Route) : null
+				const isCombo = rowComboType(entry) != null && entry.condition_id != null
+					const href = isCombo
+						? (`/combos/${entry.condition_id}` as Route)
+						: entry.market_slug
+							? (`/markets/${entry.market_slug}` as Route)
+							: null
 				return (
 					<div className="flex items-center gap-3">
 						{entry.image_url ? (
@@ -152,12 +156,12 @@ function buildColumns(
 								</p>
 							)}
 							<div className="flex flex-wrap items-center gap-1.5">
-								<ComboTypeBadge comboType={rowComboType(entry)} />
 								{rowComboType(entry) ? (
 									<TraderComboLegs
 										address={address}
 										positionId={entry.position_id}
 										conditionId={entry.condition_id}
+										comboType={rowComboType(entry)}
 									/>
 								) : null}
 								{status === "closed" && entry.won != null ? (

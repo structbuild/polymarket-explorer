@@ -5,7 +5,7 @@ import { LayersIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useState } from "react"
 
 import { getTraderComboLegsAction } from "@/app/actions"
-import { normalizeComboLegs } from "@/lib/combo"
+import { comboTypeLabel, normalizeComboLegs, readComboType } from "@/lib/combo"
 import { formatNumber } from "@/lib/format"
 
 import { Badge } from "../ui/badge"
@@ -21,14 +21,18 @@ export function TraderComboLegs({
 	address,
 	positionId,
 	conditionId,
+	comboType,
 	className,
 }: {
 	address: string
 	positionId?: string | null
 	conditionId?: string | null
+	comboType?: unknown
 	className?: string
 }) {
 	const [state, setState] = useState<LoadState>({ status: "idle" })
+	const type = readComboType(comboType)
+	const label = type ? comboTypeLabel(type) : "Legs"
 
 	const load = useCallback(async () => {
 		setState({ status: "loading" })
@@ -55,7 +59,7 @@ export function TraderComboLegs({
 				render={
 					<Badge variant="combo" className={className} style={{ cursor: "pointer" }}>
 						<LayersIcon data-icon="inline-start" />
-						Legs
+						{label}
 					</Badge>
 				}
 			/>
