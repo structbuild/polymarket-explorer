@@ -158,6 +158,7 @@ export function ComboLegsBadge({
 	return (
 		<Popover>
 			<PopoverTrigger
+				nativeButton={false}
 				render={
 					<Badge variant="combo" className={cn("cursor-pointer", className)}>
 						<LayersIcon data-icon="inline-start" />

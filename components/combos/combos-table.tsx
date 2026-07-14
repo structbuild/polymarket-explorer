@@ -89,6 +89,7 @@ function ComboCell({ row }: { row: ComboMarketRow }) {
 					{row.legs.length > 0 ? (
 						<Popover>
 							<PopoverTrigger
+								nativeButton={false}
 								render={
 									<Badge variant="secondary" className="cursor-pointer">
 										<LayersIcon data-icon="inline-start" />

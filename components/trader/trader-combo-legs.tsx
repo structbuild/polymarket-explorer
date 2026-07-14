@@ -56,6 +56,7 @@ export function TraderComboLegs({
 	return (
 		<Popover onOpenChange={handleOpenChange}>
 			<PopoverTrigger
+				nativeButton={false}
 				render={
 					<Badge variant="combo" className={className} style={{ cursor: "pointer" }}>
 						<LayersIcon data-icon="inline-start" />
