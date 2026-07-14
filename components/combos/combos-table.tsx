@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import type { ComboMarketSortBy, SortDirection } from "@structbuild/sdk";
 import Image from "next/image";
 import { LayersIcon } from "lucide-react";
@@ -17,18 +17,10 @@ import {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	ComboLegsList,
-	ComboMarketStatusBadge,
-	ComboTypeBadge,
-} from "@/components/ui/combo";
+import { ComboLegsList, ComboTypeBadge } from "@/components/ui/combo";
 import { formatNumber, formatDateShort } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { truncateMarketTitle } from "@/lib/utils";
-
-const defaultColumnVisibility: VisibilityState = {
-	fees: false,
-};
 
 const COLUMN_SORT_MAP: Partial<Record<string, ComboMarketSortBy>> = {
 	volume: "usd_volume",
@@ -48,47 +40,15 @@ function isSortableColumn(columnId: string): columnId is string {
 	return key !== undefined && COMBO_MARKET_SORT_KEYS.includes(key);
 }
 
-function ComboLegsCell({ row }: { row: ComboMarketRow }) {
+function ComboCell({ row }: { row: ComboMarketRow }) {
+	const displayTitle = truncateMarketTitle(row.title);
+	const primaryImage = normalizePolymarketS3ImageUrl(row.legs[0]?.imageUrl) ?? null;
+	const secondaryImage = normalizePolymarketS3ImageUrl(row.legs[1]?.imageUrl) ?? null;
 	const legLabel = `${row.legCount} ${row.legCount === 1 ? "leg" : "legs"}`;
 	const summary =
 		row.legsWon > 0 || row.legsLost > 0
 			? `${row.legsWon}/${row.legCount} won`
 			: null;
-
-	return (
-		<div className="flex flex-col items-start gap-1.5">
-			<ComboMarketStatusBadge status={row.status} />
-			{row.legs.length > 0 ? (
-				<Popover>
-					<PopoverTrigger
-						render={
-							<Badge variant="combo" className="cursor-pointer">
-								<LayersIcon data-icon="inline-start" />
-								{legLabel}
-							</Badge>
-						}
-					/>
-					<PopoverContent align="start" className="w-80">
-						<PopoverHeader>
-							<PopoverTitle>Combo legs</PopoverTitle>
-						</PopoverHeader>
-						<ComboLegsList legs={row.legs} />
-					</PopoverContent>
-				</Popover>
-			) : (
-				<span className="text-sm text-muted-foreground">{legLabel}</span>
-			)}
-			{summary ? (
-				<span className="text-xs text-muted-foreground tabular-nums">{summary}</span>
-			) : null}
-		</div>
-	);
-}
-
-function ComboCell({ row }: { row: ComboMarketRow }) {
-	const displayTitle = truncateMarketTitle(row.title);
-	const primaryImage = normalizePolymarketS3ImageUrl(row.legs[0]?.imageUrl) ?? null;
-	const secondaryImage = normalizePolymarketS3ImageUrl(row.legs[1]?.imageUrl) ?? null;
 
 	return (
 		<div className="flex min-w-0 items-center gap-3">
@@ -124,8 +84,31 @@ function ComboCell({ row }: { row: ComboMarketRow }) {
 				<p className="line-clamp-2 text-left text-base font-medium text-foreground" title={row.title}>
 					{displayTitle}
 				</p>
-				<div>
+				<div className="flex flex-wrap items-center gap-1.5">
 					<ComboTypeBadge comboType={row.comboType} />
+					{row.legs.length > 0 ? (
+						<Popover>
+							<PopoverTrigger
+								render={
+									<Badge variant="secondary" className="cursor-pointer">
+										<LayersIcon data-icon="inline-start" />
+										{legLabel}
+									</Badge>
+								}
+							/>
+							<PopoverContent align="start" className="w-80">
+								<PopoverHeader>
+									<PopoverTitle>Combo legs</PopoverTitle>
+								</PopoverHeader>
+								<ComboLegsList legs={row.legs} />
+							</PopoverContent>
+						</Popover>
+					) : (
+						<span className="text-sm text-muted-foreground">{legLabel}</span>
+					)}
+					{summary ? (
+						<span className="text-xs text-muted-foreground tabular-nums">{summary}</span>
+					) : null}
 				</div>
 			</div>
 		</div>
@@ -164,13 +147,6 @@ function buildColumns(sort: SortState): ColumnDef<ComboMarketRow, unknown>[] {
 			header: "Combo",
 			size: COMBO_TABLE_COLUMN_SIZES.combo,
 			cell: ({ row }) => <ComboCell row={row.original} />,
-		},
-		{
-			id: "legs",
-			meta: { title: "Legs", cellClassName: "whitespace-normal align-middle" },
-			header: "Legs",
-			size: COMBO_TABLE_COLUMN_SIZES.legs,
-			cell: ({ row }) => <ComboLegsCell row={row.original} />,
 		},
 		{
 			id: "volume",
@@ -264,8 +240,7 @@ export function CombosTable({
 			columns={columns}
 			data={rows}
 			getRowHref={(row) => `/combos/${row.conditionId}`}
-			storageKey="combos-table"
-			defaultColumnVisibility={defaultColumnVisibility}
+			storageKey="combos-table-v2"
 			emptyMessage="No combos to show."
 			columnLayout="fixed"
 			toolbarLeft={toolbarLeft}

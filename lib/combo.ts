@@ -168,6 +168,21 @@ export function comboMarketStatusTone(status: ComboMarketStatus): ComboMarketSta
 	return comboMarketStatusTones[status]
 }
 
+export type ComboMarketStatusVariant = "combo" | "positive" | "negative" | "secondary"
+
+export function comboMarketStatusBadgeVariant(status: unknown): ComboMarketStatusVariant {
+	const value = readComboMarketStatus(status)
+	if (!value) return "combo"
+	const tone = comboMarketStatusTones[value]
+	return tone === "positive"
+		? "positive"
+		: tone === "negative"
+			? "negative"
+			: tone === "open"
+				? "combo"
+				: "secondary"
+}
+
 export const COMBO_MARKET_STATUS_FILTERS: ReadonlyArray<ComboMarketStatusFilter> = [
 	"open",
 	"resolved_yes",

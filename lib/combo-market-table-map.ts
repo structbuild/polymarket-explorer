@@ -4,7 +4,6 @@ import { normalizeComboLegs, type NormalizedComboLeg } from "@/lib/combo";
 
 export const COMBO_TABLE_COLUMN_SIZES = {
 	combo: 560,
-	legs: 200,
 	volume: 120,
 	trades: 96,
 	traders: 96,

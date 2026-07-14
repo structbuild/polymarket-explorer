@@ -8,6 +8,7 @@ import type {
 	ComboGlobalAnalyticsBucketRow,
 	ComboGlobalAnalyticsChanges,
 	ComboGlobalAnalyticsCountsResponse,
+	ComboGlobalAnalyticsDeltaBucketRow,
 	ComboMarket,
 	ComboMarketSortBy,
 	ComboMarketStatusFilter,
@@ -210,6 +211,25 @@ export async function getComboAnalyticsTimeseries(
 		return response.data ?? [];
 	} catch (error) {
 		logStructError(`getComboAnalyticsTimeseries:${resolution}`, error);
+		return [];
+	}
+}
+
+export async function getComboAnalyticsDeltas(
+	resolution: AnalyticsResolution = "D",
+	countBack = 90,
+): Promise<ComboGlobalAnalyticsDeltaBucketRow[]> {
+	const client = getStructClient();
+
+	if (!client) {
+		return [];
+	}
+
+	try {
+		const response = await client.combos.getAnalyticsDeltas({ resolution, count_back: countBack });
+		return response.data ?? [];
+	} catch (error) {
+		logStructError(`getComboAnalyticsDeltas:${resolution}`, error);
 		return [];
 	}
 }

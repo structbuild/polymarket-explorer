@@ -1,70 +1,55 @@
+import { ComboMetricsClient } from "@/components/combos/combo-metrics-client";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatNumber } from "@/lib/format";
 import { getComboMetrics } from "@/lib/struct/queries/combos";
-import type { ComboTimeframeMetrics } from "@structbuild/sdk";
 
-function MetricsCard({ title, children }: { title: string; children: React.ReactNode }) {
+function MetricsCard({ children }: { children: React.ReactNode }) {
 	return (
 		<section className="bg-card rounded-lg p-4 sm:p-6">
-			<h2 className="mb-4 text-sm font-medium text-muted-foreground">{title}</h2>
+			<p className="text-sm text-foreground sm:text-base">Metrics</p>
+			<Separator className="my-3 sm:my-4" />
 			{children}
 		</section>
 	);
 }
 
-function buildItems(timeframe: ComboTimeframeMetrics) {
-	return [
-		{ label: "Volume", value: formatNumber(timeframe.usd_volume, { compact: true, currency: true }) },
-		{ label: "Buy volume", value: formatNumber(timeframe.usd_buy_volume, { compact: true, currency: true }) },
-		{ label: "Sell volume", value: formatNumber(timeframe.usd_sell_volume, { compact: true, currency: true }) },
-		{ label: "Fees", value: formatNumber(timeframe.fees, { currency: true, decimals: 0 }) },
-		{ label: "Trades", value: formatNumber(timeframe.txns, { decimals: 0 }) },
-		{ label: "Unique traders", value: formatNumber(timeframe.unique_traders, { decimals: 0 }) },
-		{ label: "Makers", value: formatNumber(timeframe.unique_makers, { decimals: 0 }) },
-		{ label: "Takers", value: formatNumber(timeframe.unique_takers, { decimals: 0 }) },
-	];
-}
-
 export async function ComboMetrics({ conditionId }: { conditionId: string }) {
 	const metrics = await getComboMetrics(conditionId);
 	const timeframes = metrics?.timeframes ?? [];
-	const lifetime = timeframes.find((t) => t.timeframe === "lifetime") ?? timeframes[0] ?? null;
 
-	if (!lifetime) {
+	if (timeframes.length === 0) {
 		return (
-			<MetricsCard title="Metrics">
+			<MetricsCard>
 				<p className="text-sm text-muted-foreground">No metrics available yet.</p>
 			</MetricsCard>
 		);
 	}
 
-	const items = buildItems(lifetime);
-
-	return (
-		<MetricsCard title="Lifetime metrics">
-			<dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
-				{items.map((item) => (
-					<div key={item.label}>
-						<dt className="text-xs text-muted-foreground">{item.label}</dt>
-						<dd className="mt-1 text-lg font-medium tabular-nums">{item.value}</dd>
-					</div>
-				))}
-			</dl>
-		</MetricsCard>
-	);
+	return <ComboMetricsClient timeframes={timeframes} />;
 }
 
 export function ComboMetricsFallback() {
 	return (
-		<MetricsCard title="Metrics">
-			<div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
-				{Array.from({ length: 8 }, (_, i) => (
-					<div key={i} className="space-y-2">
-						<Skeleton className="h-3 w-16" />
-						<Skeleton className="h-5 w-20" />
-					</div>
-				))}
+		<section className="bg-card rounded-lg p-4 sm:p-6">
+			<div className="flex items-center justify-between gap-3">
+				<p className="text-sm text-foreground sm:text-base">Metrics</p>
+				<Skeleton className="h-7 w-64 max-w-[60%]" />
 			</div>
-		</MetricsCard>
+			<Separator className="my-3 sm:my-4" />
+			{Array.from({ length: 2 }, (_, group) => (
+				<div key={group}>
+					{group > 0 ? <Separator className="my-3 sm:my-4" /> : null}
+					<Skeleton className="mb-2 h-5 w-16 sm:mb-3" />
+					<div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-3">
+						{Array.from({ length: 6 }, (_, i) => (
+							<div key={i} className="min-w-0 space-y-0.5">
+								<Skeleton className="h-4 w-16 sm:h-5" />
+								<Skeleton className="h-5 w-20 sm:h-6" />
+							</div>
+						))}
+					</div>
+				</div>
+			))}
+		</section>
 	);
 }

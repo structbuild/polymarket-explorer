@@ -21,11 +21,13 @@ export function buildComboTitle(combo: Pick<ComboMarket, "legs" | "leg_count">):
 	return remaining > 0 ? `${joined} +${remaining} more` : joined;
 }
 
-function StatCard({ label, value }: { label: string; value: ReactNode }) {
+function StatItem({ label, value }: { label: string; value: ReactNode }) {
 	return (
-		<div className="min-w-[140px] flex-1 rounded-lg bg-secondary px-4 py-3 sm:min-w-[160px] sm:flex-none">
-			<p className="text-xs text-muted-foreground">{label}</p>
-			<p className="mt-1 text-lg font-medium tabular-nums">{value}</p>
+		<div className="min-w-0 space-y-1 sm:shrink-0">
+			<p className="text-xs leading-4 text-muted-foreground sm:whitespace-nowrap sm:text-sm">{label}</p>
+			<p className="text-base font-medium tabular-nums break-words sm:text-lg sm:break-normal sm:whitespace-nowrap">
+				{value}
+			</p>
 		</div>
 	);
 }
@@ -55,14 +57,14 @@ export function ComboDetailHeader({ combo }: { combo: ComboMarket }) {
 				</div>
 			</div>
 
-			<div className="flex flex-wrap gap-2 sm:gap-3">
-				<StatCard label="Implied odds (Yes)" value={impliedYesLabel} />
-				<StatCard label="Price" value={formatPriceCents(combo.price ?? null)} />
-				<StatCard label="Volume" value={formatNumber(combo.usd_volume ?? 0, { compact: true, currency: true })} />
-				<StatCard label="Trades" value={formatNumber(combo.txns ?? 0, { decimals: 0 })} />
-				<StatCard label="Traders" value={formatNumber(combo.unique_traders ?? 0, { decimals: 0 })} />
-				<StatCard label="Fees" value={formatNumber(combo.fees ?? 0, { currency: true, decimals: 0 })} />
-				<StatCard label="Created" value={formatDateShort(combo.created_at)} />
+			<div className="grid grid-cols-2 gap-4 sm:flex sm:flex-nowrap sm:items-center sm:gap-x-8 sm:overflow-x-auto sm:[scrollbar-width:none] sm:[&::-webkit-scrollbar]:hidden">
+				<StatItem label="Implied odds (Yes)" value={impliedYesLabel} />
+				<StatItem label="Price" value={formatPriceCents(combo.price ?? null)} />
+				<StatItem label="Volume" value={formatNumber(combo.usd_volume ?? 0, { compact: true, currency: true })} />
+				<StatItem label="Trades" value={formatNumber(combo.txns ?? 0, { decimals: 0 })} />
+				<StatItem label="Traders" value={formatNumber(combo.unique_traders ?? 0, { decimals: 0 })} />
+				<StatItem label="Fees" value={formatNumber(combo.fees ?? 0, { currency: true, decimals: 0 })} />
+				<StatItem label="Created" value={formatDateShort(combo.created_at)} />
 			</div>
 
 			{creator && (

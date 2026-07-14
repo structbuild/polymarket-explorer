@@ -6,6 +6,9 @@ import { Suspense } from "react";
 import { ComboDetailHeader, buildComboTitle } from "@/components/combos/combo-detail-header";
 import { ComboMetrics, ComboMetricsFallback } from "@/components/combos/combo-metrics";
 import { ComboPriceChart, ComboPriceChartFallback } from "@/components/combos/combo-price-chart";
+import { normalizeComboResolution } from "@/components/combos/combo-resolution";
+import { AnchorSectionNav } from "@/components/layout/anchor-section-nav";
+import { SectionAnchor } from "@/components/layout/section-anchor";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ComboLegsList } from "@/components/ui/combo";
@@ -15,6 +18,12 @@ import { formatNumber } from "@/lib/format";
 import { buildEntityPageTitle, buildPageMetadata } from "@/lib/site-metadata";
 import { getComboMarketByConditionId } from "@/lib/struct/queries/combos";
 import { truncateMarketTitle } from "@/lib/utils";
+
+const COMBO_NAV_ITEMS = [
+	{ id: "combo-overview", label: "Overview" },
+	{ id: "combo-chart", label: "Chart" },
+	{ id: "combo-metrics", label: "Metrics" },
+];
 
 type Props = {
 	params: Promise<{ conditionId: string }>;
@@ -50,10 +59,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	});
 }
 
-export default async function ComboDetailPage({ params }: Props) {
+export default async function ComboDetailPage({ params, searchParams }: Props) {
 	await connection();
 
 	const { conditionId } = await params;
+	const resolvedSearchParams = (await searchParams) ?? {};
+	const resolution = normalizeComboResolution(resolvedSearchParams.resolution);
 	const combo = await getComboMarketByConditionId(conditionId);
 
 	if (!combo) {
@@ -71,36 +82,45 @@ export default async function ComboDetailPage({ params }: Props) {
 	};
 
 	return (
-		<div className="flex w-full justify-center">
-			<div className="flex w-full max-w-7xl flex-col gap-4 px-4 pt-4 pb-10 sm:gap-6 sm:px-6 sm:pt-6 sm:pb-12">
-				<Breadcrumbs
-					items={[
-						{ label: "Home", href: "/" },
-						{ label: "Combos", href: "/combos" },
-						{ label: truncateMarketTitle(title), href: `/combos/${conditionId}` },
-					]}
-				/>
+		<>
+			<AnchorSectionNav items={COMBO_NAV_ITEMS} />
+			<div className="flex w-full justify-center">
+				<div className="flex w-full max-w-7xl flex-col gap-4 px-4 pt-4 pb-10 sm:gap-6 sm:px-6 sm:pt-6 sm:pb-12">
+					<Breadcrumbs
+						items={[
+							{ label: "Home", href: "/" },
+							{ label: "Combos", href: "/combos" },
+							{ label: truncateMarketTitle(title), href: `/combos/${conditionId}` },
+						]}
+					/>
 
-				<JsonLd data={comboJsonLd} />
+					<JsonLd data={comboJsonLd} />
 
-				<ComboDetailHeader combo={combo} />
+					<SectionAnchor id="combo-overview">
+						<ComboDetailHeader combo={combo} />
+					</SectionAnchor>
 
-				<div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-					<div className="lg:col-span-2">
-						<Suspense fallback={<ComboPriceChartFallback />}>
-							<ComboPriceChart conditionId={conditionId} />
+					<SectionAnchor id="combo-chart">
+						<div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+							<div className="lg:col-span-2">
+								<Suspense key={resolution} fallback={<ComboPriceChartFallback />}>
+									<ComboPriceChart conditionId={conditionId} resolution={resolution} />
+								</Suspense>
+							</div>
+							<section className="bg-card rounded-lg p-4 sm:p-6">
+								<h2 className="mb-4 text-sm font-medium text-muted-foreground">Legs</h2>
+								<ComboLegsList legs={legs} />
+							</section>
+						</div>
+					</SectionAnchor>
+
+					<SectionAnchor id="combo-metrics">
+						<Suspense fallback={<ComboMetricsFallback />}>
+							<ComboMetrics conditionId={conditionId} />
 						</Suspense>
-					</div>
-					<section className="bg-card rounded-lg p-4 sm:p-6">
-						<h2 className="mb-4 text-sm font-medium text-muted-foreground">Legs</h2>
-						<ComboLegsList legs={legs} />
-					</section>
+					</SectionAnchor>
 				</div>
-
-				<Suspense fallback={<ComboMetricsFallback />}>
-					<ComboMetrics conditionId={conditionId} />
-				</Suspense>
 			</div>
-		</div>
+		</>
 	);
 }

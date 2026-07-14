@@ -24,8 +24,8 @@ importers:
         specifier: ^9.5.0
         version: 9.5.0(@types/react@19.2.17)(immer@11.1.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(three@0.167.1)
       '@structbuild/sdk':
-        specifier: github:structbuild/struct-typescript-sdk#v0.6.8-staging.5
-        version: https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/ff1578072eb05375b58b4db5f97ba291c75a7745
+        specifier: github:structbuild/struct-typescript-sdk#v0.6.8-staging.6
+        version: https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/092a0e94cfefb784d82ab908cf90b1bee86f31be
       '@tanstack/react-hotkeys':
         specifier: ^0.4.2
         version: 0.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1083,9 +1083,9 @@ packages:
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
 
-  '@structbuild/sdk@https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/ff1578072eb05375b58b4db5f97ba291c75a7745':
-    resolution: {tarball: https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/ff1578072eb05375b58b4db5f97ba291c75a7745}
-    version: 0.6.8-staging.5
+  '@structbuild/sdk@https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/092a0e94cfefb784d82ab908cf90b1bee86f31be':
+    resolution: {tarball: https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/092a0e94cfefb784d82ab908cf90b1bee86f31be}
+    version: 0.6.8-staging.6
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -5003,7 +5003,7 @@ snapshots:
 
   '@standard-schema/utils@0.3.0': {}
 
-  '@structbuild/sdk@https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/ff1578072eb05375b58b4db5f97ba291c75a7745': {}
+  '@structbuild/sdk@https://codeload.github.com/structbuild/struct-typescript-sdk/tar.gz/092a0e94cfefb784d82ab908cf90b1bee86f31be': {}
 
   '@swc/helpers@0.5.15':
     dependencies:

@@ -1,65 +1,150 @@
-import { ComboAnalyticsChart } from "@/components/combos/combo-analytics-chart";
-import { ComboAnalyticsKpi } from "@/components/combos/combo-analytics-kpi";
+import { AnalyticsRangeToggle } from "@/components/analytics/range-toggle";
+import { AnalyticsResolutionToggle } from "@/components/analytics/resolution-toggle";
+import { AnalyticsViewToggle } from "@/components/analytics/view-toggle";
+import { ComboAnalyticsGrid } from "@/components/combos/combo-analytics-grid";
+import {
+	ComboAnalyticsKpi,
+	ComboAnalyticsKpiFallback,
+} from "@/components/combos/combo-analytics-kpi";
+import {
+	ComboAnalyticsTotals,
+	ComboAnalyticsTotalsFallback,
+} from "@/components/combos/combo-analytics-totals";
 import { ChartCard } from "@/components/market/chart-card";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-	getComboAnalyticsChanges,
-	getComboAnalyticsCounts,
-	getComboAnalyticsTimeseries,
-} from "@/lib/struct/queries/combos";
+	DEFAULT_ANALYTICS_RANGE,
+	getDefaultResolution,
+	type AnalyticsRange,
+	type AnalyticsResolution,
+	type AnalyticsView,
+} from "@/lib/struct/analytics-shared";
+import { loadComboAnalyticsSectionData } from "@/lib/struct/combo-analytics-section-data";
+import { COMBO_CHART_METRICS } from "@/lib/struct/combo-analytics-shared";
 
-const KPI_COUNT = 5;
+type ComboAnalyticsSectionProps = {
+	view: AnalyticsView;
+	range: AnalyticsRange;
+	resolution: AnalyticsResolution;
+};
 
-export async function ComboAnalyticsSection() {
-	const [counts, changes, timeseries] = await Promise.all([
-		getComboAnalyticsCounts(),
-		getComboAnalyticsChanges("24h"),
-		getComboAnalyticsTimeseries("D", 90),
-	]);
+export function ComboAnalyticsControls({
+	view,
+	range,
+	resolution,
+}: ComboAnalyticsSectionProps) {
+	return (
+		<div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+			<div className="flex flex-wrap items-center gap-2">
+				{view === "deltas" ? (
+					<AnalyticsRangeToggle range={range} defaultRange={DEFAULT_ANALYTICS_RANGE} />
+				) : null}
+				<AnalyticsResolutionToggle
+					range={range}
+					resolution={resolution}
+					defaultResolution={getDefaultResolution(range, "global")}
+				/>
+			</div>
+			<div className="hidden h-5 w-px bg-border sm:block" />
+			<AnalyticsViewToggle view={view} />
+		</div>
+	);
+}
+
+export function ComboAnalyticsControlsFallback() {
+	return (
+		<div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+			<div className="flex flex-wrap items-center gap-2">
+				<Skeleton className="h-7 w-36" />
+				<Skeleton className="h-7 w-28" />
+			</div>
+			<div className="hidden h-5 w-px bg-border sm:block" />
+			<Skeleton className="h-7 w-28" />
+		</div>
+	);
+}
+
+export async function ComboAnalyticsKpiSection({
+	view,
+	range,
+	resolution,
+}: ComboAnalyticsSectionProps) {
+	const { counts, changes } = await loadComboAnalyticsSectionData({
+		view,
+		range,
+		resolution,
+	});
+
+	if (!counts) {
+		return null;
+	}
+
+	return <ComboAnalyticsKpi counts={counts} changes={changes} />;
+}
+
+export function ComboAnalyticsKpiSectionFallback() {
+	return <ComboAnalyticsKpiFallback />;
+}
+
+export async function ComboAnalyticsChartsSection({
+	view,
+	range,
+	resolution,
+}: ComboAnalyticsSectionProps) {
+	const { counts, deltas, timeseries } = await loadComboAnalyticsSectionData({
+		view,
+		range,
+		resolution,
+	});
 
 	if (!counts) {
 		return null;
 	}
 
 	return (
-		<section className="space-y-4">
-			<div className="space-y-1">
-				<h2 className="text-lg font-semibold">Combo activity</h2>
-				<p className="text-sm text-muted-foreground">
-					Lifetime totals and daily volume across all combo markets.
-				</p>
-			</div>
-			<ComboAnalyticsKpi counts={counts} changes={changes} />
-			<ChartCard title="Daily combo volume">
-				<ComboAnalyticsChart rows={timeseries} />
-			</ChartCard>
-		</section>
+		<ComboAnalyticsGrid
+			view={view}
+			deltas={deltas}
+			timeseries={timeseries}
+			resolution={resolution}
+		/>
 	);
 }
 
-export function ComboAnalyticsSectionFallback() {
+export function ComboAnalyticsChartsSectionFallback() {
 	return (
-		<section className="space-y-4">
-			<div className="space-y-1">
-				<Skeleton className="h-6 w-32" />
-				<Skeleton className="h-4 w-64" />
-			</div>
-			<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-				{Array.from({ length: KPI_COUNT }).map((_, index) => (
-					<Card key={index} size="sm" className="rounded-lg px-2 ring-0">
-						<CardContent className="flex flex-col gap-0.5">
-							<Skeleton className="h-4 w-20" />
-							<Skeleton className="h-7 w-24" />
-							<Skeleton className="h-3 w-12" />
-						</CardContent>
-					</Card>
-				))}
-			</div>
-			<div className="rounded-lg bg-card p-4 sm:p-6">
-				<Skeleton className="mb-4 h-5 w-40" />
-				<Skeleton className="h-[240px] w-full" />
-			</div>
-		</section>
+		<div className="grid gap-4 lg:grid-cols-2">
+			{COMBO_CHART_METRICS.map((metric, index) => (
+				<ChartCard
+					key={metric.id}
+					title={<Skeleton className="h-5 w-40" />}
+					className={index === 0 ? "lg:col-span-2" : undefined}
+				>
+					<div className="h-[240px] min-h-[240px] w-full animate-pulse rounded-md bg-muted/60 sm:h-[300px]" />
+				</ChartCard>
+			))}
+		</div>
 	);
+}
+
+export async function ComboAnalyticsTotalsSection({
+	view,
+	range,
+	resolution,
+}: ComboAnalyticsSectionProps) {
+	const { counts } = await loadComboAnalyticsSectionData({
+		view,
+		range,
+		resolution,
+	});
+
+	if (!counts) {
+		return null;
+	}
+
+	return <ComboAnalyticsTotals counts={counts} />;
+}
+
+export function ComboAnalyticsTotalsSectionFallback() {
+	return <ComboAnalyticsTotalsFallback />;
 }

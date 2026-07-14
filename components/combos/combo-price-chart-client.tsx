@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, ComposedChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { computeProbabilityYDomain } from "@/lib/chart-domain";
@@ -9,27 +9,66 @@ import { formatDateCompact, formatDateFull, formatTime } from "@/lib/format";
 
 const COMBO_PRICE_COLOR = "#8b5cf6";
 
-const CHART_CONFIG: ChartConfig = {
-	price: {
-		label: "Combo price",
-		color: COMBO_PRICE_COLOR,
-	},
-};
+const LEG_COLORS = [
+	"var(--chart-2)",
+	"var(--chart-3)",
+	"var(--chart-4)",
+	"var(--chart-5)",
+	"var(--chart-1)",
+	"var(--muted-foreground)",
+];
 
-export function ComboPriceChartClient({ data }: { data: { t: number; price: number }[] }) {
-	const chartData = useMemo(
-		() => data.map((point) => ({ t: Math.floor(point.t / 1000), price: point.price * 100 })),
-		[data],
-	);
+type ComboPricePoint = { t: number; price: number };
+
+export type ComboLegSeries = { key: string; label: string; points: ComboPricePoint[] };
+
+export function ComboPriceChartClient({
+	data,
+	legs = [],
+}: {
+	data: ComboPricePoint[];
+	legs?: ComboLegSeries[];
+}) {
+	const chartData = useMemo(() => {
+		const rows = new Map<number, Record<string, number>>();
+		const rowFor = (t: number) => {
+			const existing = rows.get(t);
+			if (existing) return existing;
+			const created: Record<string, number> = { t };
+			rows.set(t, created);
+			return created;
+		};
+
+		for (const point of data) {
+			rowFor(Math.floor(point.t / 1000)).price = point.price * 100;
+		}
+		for (const leg of legs) {
+			for (const point of leg.points) {
+				rowFor(Math.floor(point.t / 1000))[leg.key] = point.price * 100;
+			}
+		}
+
+		return Array.from(rows.values()).sort((a, b) => a.t - b.t);
+	}, [data, legs]);
 
 	const yDomain = useMemo<[number, number]>(
-		() => computeProbabilityYDomain(chartData, ["price"]),
-		[chartData],
+		() => computeProbabilityYDomain(chartData, ["price", ...legs.map((leg) => leg.key)]),
+		[chartData, legs],
 	);
 
+	const chartConfig = useMemo<ChartConfig>(() => {
+		const config: ChartConfig = {
+			price: { label: "Combo price", color: COMBO_PRICE_COLOR },
+		};
+		legs.forEach((leg, index) => {
+			config[leg.key] = { label: leg.label, color: LEG_COLORS[index % LEG_COLORS.length] };
+		});
+		return config;
+	}, [legs]);
+
 	return (
-		<ChartContainer config={CHART_CONFIG} className="h-[260px] min-h-[260px] w-full sm:h-[320px]">
-			<AreaChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+		<ChartContainer config={chartConfig} className="h-[260px] min-h-[260px] w-full sm:h-[320px]">
+			<ComposedChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 				<defs>
 					<linearGradient id="gradient-combo-price" x1="0" y1="0" x2="0" y2="1">
 						<stop offset="0%" stopColor={COMBO_PRICE_COLOR} stopOpacity={0.25} />
@@ -77,6 +116,21 @@ export function ComboPriceChartClient({ data }: { data: { t: number; price: numb
 						/>
 					}
 				/>
+				{legs.map((leg) => (
+					<Line
+						key={leg.key}
+						dataKey={leg.key}
+						name={leg.label}
+						type="monotone"
+						stroke={`var(--color-${leg.key})`}
+						strokeWidth={1}
+						strokeOpacity={0.4}
+						dot={false}
+						activeDot={false}
+						connectNulls
+						isAnimationActive={false}
+					/>
+				))}
 				<Area
 					key="price"
 					dataKey="price"
@@ -88,7 +142,7 @@ export function ComboPriceChartClient({ data }: { data: { t: number; price: numb
 					connectNulls
 					isAnimationActive={false}
 				/>
-			</AreaChart>
+			</ComposedChart>
 		</ChartContainer>
 	);
 }

@@ -129,7 +129,11 @@ export function ComboLegsList({ legs }: { legs: NormalizedComboLeg[] }) {
 				return (
 					<li key={leg.positionId || `${index}`}>
 						{href ? (
-							<Link href={href} prefetch={false} className="block rounded-md hover:bg-muted/50">
+							<Link
+								href={href}
+								prefetch={false}
+								className="-mx-2 block rounded-lg px-2 py-2 transition-colors hover:bg-muted/50"
+							>
 								{content}
 							</Link>
 						) : (
