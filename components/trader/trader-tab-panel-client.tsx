@@ -9,15 +9,19 @@ import { useTabBridge } from "@/components/layout/tab-bridge"
 import type {
 	TraderCategorySortBy,
 	TraderComboFilter,
+	TraderComboSortBy,
+	TraderComboStatusFilter,
 	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
 } from "@/lib/trader-search-params-shared"
+import type { TraderComboEntry } from "@/lib/struct/queries/combos"
 import type { PaginatedResource } from "@/lib/struct/types"
 import type { TradeRow } from "./types"
 import TraderActivity from "./activity"
 import TraderCategories from "./categories"
+import TraderCombos from "./combos"
 import TraderMarkets from "./markets"
 import TraderPositions from "./positions"
 import { TraderTabs } from "./trader-tabs"
@@ -56,11 +60,21 @@ type TraderTabPanelClientProps =
 			sortDirection: TraderSortDirection
 			page: PaginatedResource<MarketEntry, number>
 	  }
+	| {
+			kind: "combos"
+			address: string
+			pageNumber: number
+			sortBy: TraderComboSortBy
+			sortDirection: TraderSortDirection
+			status: TraderComboStatusFilter
+			page: PaginatedResource<TraderComboEntry, number>
+	  }
 
 function tabForPanelData(props: TraderTabPanelClientProps): TraderTab {
 	if (props.kind === "activity") return "activity"
 	if (props.kind === "categories") return "categories"
 	if (props.kind === "markets") return "markets"
+	if (props.kind === "combos") return "combos"
 
 	return props.status === "closed" ? "closed" : "active"
 }
@@ -184,6 +198,19 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				pageNumber={currentData.pageNumber}
 				sortBy={currentData.sortBy}
 				sortDirection={currentData.sortDirection}
+				tabs={tabs}
+				onRefresh={handleRefresh}
+			/>
+		)
+	} else if (currentData.kind === "combos") {
+		content = (
+			<TraderCombos
+				address={currentData.address}
+				page={currentData.page}
+				pageNumber={currentData.pageNumber}
+				sortBy={currentData.sortBy}
+				sortDirection={currentData.sortDirection}
+				status={currentData.status}
 				tabs={tabs}
 				onRefresh={handleRefresh}
 			/>

@@ -64,6 +64,7 @@ const TRADER_SUBHEADER_ITEMS = [
 	{ value: "activity", label: "Activity" },
 	{ value: "categories", label: "Categories" },
 	{ value: "markets", label: "Markets" },
+	{ value: "combos", label: "Combos" },
 ] as const;
 
 type TraderInsightsData = {
@@ -444,6 +445,7 @@ async function TraderPageContent({
 			activityPage,
 			categoriesPage,
 			marketsPage,
+			combosPage,
 			winsPage,
 			lossesPage,
 			highlights,
@@ -460,6 +462,9 @@ async function TraderPageContent({
 			categoriesSortDirection,
 			marketsSortBy,
 			marketsSortDirection,
+			combosSortBy,
+			combosSortDirection,
+			combosStatus,
 			positionsCategory,
 			positionsCombo,
 		},
@@ -488,6 +493,7 @@ async function TraderPageContent({
 		activityPage,
 		categoriesPage,
 		marketsPage,
+		combosPage,
 		openSortBy,
 		openSortDirection,
 		closedSortBy,
@@ -496,6 +502,9 @@ async function TraderPageContent({
 		categoriesSortDirection,
 		marketsSortBy,
 		marketsSortDirection,
+		combosSortBy,
+		combosSortDirection,
+		combosStatus,
 		category: positionsCategory ?? undefined,
 		combo: positionsCombo,
 	});

@@ -623,7 +623,7 @@ export default function TraderPositions({
 	}, [currentPage.data, showUnknown])
 
 	const toolbarRight = (
-		<div className="flex items-center gap-3">
+		<div className="flex w-full min-w-0 flex-wrap items-center gap-3">
 			{hasUnknownMarkets ? (
 				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
 			) : null}
@@ -632,7 +632,7 @@ export default function TraderPositions({
 					value={currentCategory ?? ALL_CATEGORIES_VALUE}
 					onValueChange={handleCategoryChange}
 				>
-					<SelectTrigger size="sm" aria-label="Filter by category">
+					<SelectTrigger size="sm" className="max-w-full" aria-label="Filter by category">
 						<span className="text-muted-foreground">Category:</span>
 						<SelectValue placeholder="All">
 							{(value) => (value && value !== ALL_CATEGORIES_VALUE ? value : "All")}
@@ -650,7 +650,7 @@ export default function TraderPositions({
 			) : null}
 			{!ranked ? (
 				<Select value={currentCombo} onValueChange={handleComboChange}>
-					<SelectTrigger size="sm" aria-label="Filter by market type">
+					<SelectTrigger size="sm" className="max-w-full" aria-label="Filter by market type">
 						<span className="text-muted-foreground">Type:</span>
 						<SelectValue placeholder="All">
 							{(value) => comboFilterOptions.find((option) => option.value === value)?.label ?? "All"}
@@ -666,14 +666,14 @@ export default function TraderPositions({
 				</Select>
 			) : null}
 			{!ranked ? (
-				<div className="flex items-center gap-1">
+				<div className="flex max-w-full flex-wrap items-center gap-1">
 					<Select
 						value={selectSortValue}
 						onValueChange={(value) => {
 							if (value) handleSelectSortChange(value as TraderPositionSortBy)
 						}}
 					>
-						<SelectTrigger size="sm" aria-label="Sort by">
+						<SelectTrigger size="sm" className="max-w-full" aria-label="Sort by">
 							<span className="text-muted-foreground">Sort:</span>
 							<SelectValue placeholder="Custom">
 								{(value) => sortOptions.find((option) => option.value === value)?.label ?? "Custom"}
@@ -691,7 +691,7 @@ export default function TraderPositions({
 						<Button
 							variant="outline"
 							size="icon"
-							className="size-7"
+							className="size-7 shrink-0"
 							onClick={handleDirectionToggle}
 							aria-label={`Toggle sort direction (currently ${currentSortDirection})`}
 						>
@@ -708,6 +708,7 @@ export default function TraderPositions({
 				<Button
 					variant="outline"
 					size="sm"
+					className="shrink-0"
 					onClick={() => {
 						startTransition(async () => {
 							await onRefresh()

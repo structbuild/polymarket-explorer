@@ -1,4 +1,4 @@
-export const traderTabValues = ["active", "closed", "activity", "categories", "markets"] as const;
+export const traderTabValues = ["active", "closed", "activity", "categories", "markets", "combos"] as const;
 export const maxTraderPageNumber = 1000;
 export type TraderTab = (typeof traderTabValues)[number];
 
@@ -13,6 +13,41 @@ export function comboFilterToParam(filter: TraderComboFilter | undefined): boole
 	if (filter === "standard") return false;
 	return undefined;
 }
+
+export const traderComboStatusFilterValues = [
+	"all",
+	"open",
+	"closed",
+	"resolved",
+	"resolved_win",
+	"resolved_loss",
+	"redeemable",
+	"redeemed",
+] as const;
+export type TraderComboStatusFilter = (typeof traderComboStatusFilterValues)[number];
+
+export function comboStatusFilterToParam(
+	status: TraderComboStatusFilter | undefined,
+): Exclude<TraderComboStatusFilter, "all"> | undefined {
+	if (!status || status === "all") return undefined;
+	return status;
+}
+
+export const traderComboSortByValues = [
+	"total_pnl_usd",
+	"realized_pnl_usd",
+	"unrealized_pnl_usd",
+	"total_buy_usd",
+	"first_trade_at",
+	"last_trade_at",
+	"title",
+	"end_date",
+	"redeemable",
+] as const;
+export type TraderComboSortBy = (typeof traderComboSortByValues)[number];
+
+export const defaultTraderComboSortBy: TraderComboSortBy = "last_trade_at";
+export const defaultTraderComboStatusFilter: TraderComboStatusFilter = "all";
 
 export const traderPositionSortByValues = [
 	"title",

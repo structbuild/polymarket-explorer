@@ -79,6 +79,12 @@ export function TraderTabs({
 					</TabsTrigger>
 					<TabsTrigger
 						className="text-base! sm:text-xl!"
+						value="combos"
+					>
+						Combos
+					</TabsTrigger>
+					<TabsTrigger
+						className="text-base! sm:text-xl!"
 						value="categories"
 					>
 						Categories

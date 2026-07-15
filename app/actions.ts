@@ -34,7 +34,7 @@ import {
 	toVolumePoints,
 } from "@/lib/struct/market-queries";
 import { getEventsByTag } from "@/lib/struct/queries/events";
-import { getComboMarkets, getTraderComboPnl } from "@/lib/struct/queries/combos";
+import { getComboMarkets, getTraderComboPnl, getTraderCombosPage } from "@/lib/struct/queries/combos";
 import { comboMarketToRow } from "@/lib/combo-market-table-map";
 import {
 	isComboMarketSortBy,
@@ -108,20 +108,27 @@ import { normalizeWalletAddress } from "@/lib/utils";
 import {
 	maxTraderPageNumber,
 	defaultTraderPositionSortBy,
+	defaultTraderComboSortBy,
+	defaultTraderComboStatusFilter,
 	rankedPositionSortBy,
 	rankedPositionSortDirection,
 	defaultTraderCategorySortBy,
 	defaultTraderMarketSortBy,
 	type TraderCategorySortBy,
 	type TraderComboFilter,
+	type TraderComboSortBy,
+	type TraderComboStatusFilter,
 	type TraderExitMode,
 	type TraderMarketSortBy,
 	type TraderPositionSortBy,
 	type TraderSortDirection,
 	type TraderTab,
 	comboFilterToParam,
+	comboStatusFilterToParam,
 	traderCategorySortByValues,
 	traderComboFilterValues,
+	traderComboSortByValues,
+	traderComboStatusFilterValues,
 	traderMarketSortByValues,
 	traderPositionSortByValues,
 	traderSortDirectionValues,
@@ -226,6 +233,19 @@ function parseTraderMarketSortByParam(params: URLSearchParams) {
 	return traderMarketSortByValues.includes(raw as TraderMarketSortBy)
 		? (raw as TraderMarketSortBy)
 		: defaultTraderMarketSortBy;
+}
+
+function parseTraderComboSortByParam(params: URLSearchParams) {
+	const raw = params.get("combosSortBy");
+	return traderComboSortByValues.includes(raw as TraderComboSortBy)
+		? (raw as TraderComboSortBy)
+		: defaultTraderComboSortBy;
+}
+
+function parseTraderComboStatusFilter(value: string | undefined): TraderComboStatusFilter {
+	return traderComboStatusFilterValues.includes(value as TraderComboStatusFilter)
+		? (value as TraderComboStatusFilter)
+		: defaultTraderComboStatusFilter;
 }
 
 function parseTraderTab(value: TraderTab) {
@@ -400,6 +420,33 @@ export async function getTraderComboLegsAction({
 	return getTraderComboPnl(address, { positionId, conditionId });
 }
 
+export async function getTraderCombosPageAction({
+	address,
+	pageNumber,
+	sortBy,
+	sortDirection,
+	status,
+}: {
+	address: string;
+	pageNumber: number;
+	sortBy: TraderComboSortBy;
+	sortDirection: TraderSortDirection;
+	status?: TraderComboStatusFilter;
+}) {
+	await assertHumanRequest();
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const statusParam = comboStatusFilterToParam(status);
+	const page = await getTraderCombosPage(address, {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_by: sortBy,
+		sort_direction: sortDirection,
+		...(statusParam ? { status: statusParam } : {}),
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
 export async function getTraderTabPageAction({
 	address,
 	tab,
@@ -467,6 +514,31 @@ export async function getTraderTabPageAction({
 			pageNumber,
 			sortBy,
 			sortDirection,
+			page,
+		};
+	}
+
+	if (safeTab === "combos") {
+		const pageNumber = parseTraderPageSearchParam(params, "combosPage");
+		const sortBy = parseTraderComboSortByParam(params);
+		const sortDirection = parseTraderSortDirectionParam(params, "combosSortDirection");
+		const status = parseTraderComboStatusFilter(params.get("combosStatus") ?? undefined);
+		const statusParam = comboStatusFilterToParam(status);
+		const page = await getTraderCombosPage(address, {
+			limit: defaultTraderTablePageSize,
+			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+			sort_by: sortBy,
+			sort_direction: sortDirection,
+			...(statusParam ? { status: statusParam } : {}),
+		});
+
+		return {
+			kind: "combos" as const,
+			address,
+			pageNumber,
+			sortBy,
+			sortDirection,
+			status,
 			page,
 		};
 	}

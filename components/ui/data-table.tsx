@@ -208,14 +208,14 @@ function DataTableView<TData>({
 					className={
 						homeToolbarGrid
 							? "flex w-full flex-col gap-3 justify-self-end sm:col-start-2 sm:row-start-1 sm:w-auto sm:items-end"
-							: "flex min-h-8 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+							: "flex min-h-8 w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
 					}
 				>
 					{(!homeToolbarGrid || toolbarLeft) ? (
 						<div className={cn("min-w-0", !homeToolbarGrid && "flex-1")}>{toolbarLeft}</div>
 					) : null}
 					{(toolbarRight || toolbarAfterTimeframe || toolbar || timeframeToggle) ? (
-						<div className="flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end">
+						<div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:justify-end">
 							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
 							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
 							{homeTimeframePlaceholder && <Fragment key="timeframe-placeholder">{homeTimeframePlaceholder}</Fragment>}

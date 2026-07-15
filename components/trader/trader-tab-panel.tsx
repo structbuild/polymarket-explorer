@@ -3,12 +3,14 @@ import type { PolymarketCategory } from "@structbuild/sdk"
 import type {
 	TraderCategorySortBy,
 	TraderComboFilter,
+	TraderComboSortBy,
+	TraderComboStatusFilter,
 	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
 } from "@/lib/trader-search-params-shared"
-import { comboFilterToParam } from "@/lib/trader-search-params-shared"
+import { comboFilterToParam, comboStatusFilterToParam } from "@/lib/trader-search-params-shared"
 import {
 	defaultTraderTablePageSize,
 	getTraderCategoriesPage,
@@ -16,6 +18,7 @@ import {
 	getTraderPositionsPage,
 	getTraderTradesPage,
 } from "@/lib/struct/queries"
+import { getTraderCombosPage } from "@/lib/struct/queries/combos"
 
 import { TraderTabPanelClient } from "./trader-tab-panel-client"
 import { TraderTabs } from "./trader-tabs"
@@ -54,6 +57,15 @@ type TraderTabPanelData =
 			sortDirection: TraderSortDirection
 			page: Awaited<ReturnType<typeof getTraderMarketsPage>>
 	  }
+	| {
+			kind: "combos"
+			address: string
+			pageNumber: number
+			sortBy: TraderComboSortBy
+			sortDirection: TraderSortDirection
+			status: TraderComboStatusFilter
+			page: Awaited<ReturnType<typeof getTraderCombosPage>>
+	  }
 
 type LoadTraderTabPanelDataProps = {
 	address: string
@@ -63,6 +75,7 @@ type LoadTraderTabPanelDataProps = {
 	activityPage: number
 	categoriesPage: number
 	marketsPage: number
+	combosPage: number
 	openSortBy: TraderPositionSortBy
 	openSortDirection: TraderSortDirection
 	closedSortBy: TraderPositionSortBy
@@ -71,6 +84,9 @@ type LoadTraderTabPanelDataProps = {
 	categoriesSortDirection: TraderSortDirection
 	marketsSortBy: TraderMarketSortBy
 	marketsSortDirection: TraderSortDirection
+	combosSortBy: TraderComboSortBy
+	combosSortDirection: TraderSortDirection
+	combosStatus: TraderComboStatusFilter
 	category?: PolymarketCategory
 	combo?: TraderComboFilter
 }
@@ -83,6 +99,7 @@ export function loadTraderTabPanelData({
 	activityPage,
 	categoriesPage,
 	marketsPage,
+	combosPage,
 	openSortBy,
 	openSortDirection,
 	closedSortBy,
@@ -91,6 +108,9 @@ export function loadTraderTabPanelData({
 	categoriesSortDirection,
 	marketsSortBy,
 	marketsSortDirection,
+	combosSortBy,
+	combosSortDirection,
+	combosStatus,
 	category,
 	combo,
 }: LoadTraderTabPanelDataProps): Promise<TraderTabPanelData> {
@@ -98,6 +118,7 @@ export function loadTraderTabPanelData({
 	const categoryOption = category ? { category } : {}
 	const comboParam = comboFilterToParam(combo)
 	const comboOption = comboParam !== undefined ? { combo: comboParam } : {}
+	const comboStatusParam = comboStatusFilterToParam(combosStatus)
 
 	switch (currentTab) {
 		case "closed":
@@ -158,6 +179,22 @@ export function loadTraderTabPanelData({
 				sortDirection: marketsSortDirection,
 				page,
 			}))
+		case "combos":
+			return getTraderCombosPage(address, {
+				limit: pageSize,
+				offset: (combosPage - 1) * pageSize,
+				sort_by: combosSortBy,
+				sort_direction: combosSortDirection,
+				...(comboStatusParam ? { status: comboStatusParam } : {}),
+			}).then((page) => ({
+				kind: "combos" as const,
+				address,
+				pageNumber: combosPage,
+				sortBy: combosSortBy,
+				sortDirection: combosSortDirection,
+				status: combosStatus,
+				page,
+			}))
 		case "active":
 		default:
 			return getTraderPositionsPage(address, "open", {
@@ -202,9 +239,11 @@ export function TraderTabPanelFallback({
 				? "Loading categories"
 				: currentTab === "markets"
 					? "Loading markets"
-					: currentTab === "closed"
-						? "Loading closed positions"
-						: "Loading open positions"
+					: currentTab === "combos"
+						? "Loading combos"
+						: currentTab === "closed"
+							? "Loading closed positions"
+							: "Loading open positions"
 
 	return (
 		<div className="space-y-3">

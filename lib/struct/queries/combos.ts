@@ -14,14 +14,33 @@ import type {
 	ComboMarketStatusFilter,
 	ComboMarketTimeframe,
 	ComboMetricsResponse,
+	PositionEntry,
 	SortDirection,
 	V31ComboPnlResponse,
+	V31ComboPnlSortBy,
+	V31ComboStatusFilter,
 } from "@structbuild/sdk";
 
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
-import type { PaginatedResult } from "@/lib/struct/queries/_shared";
+import { emptyOffsetPage, type PaginatedResult } from "@/lib/struct/queries/_shared";
+import type { PaginatedResource } from "@/lib/struct/types";
 import { normalizeWalletAddress } from "@/lib/utils";
+
+const defaultCombosLimit = 25;
+
+export type TraderComboEntry = Omit<V31ComboPnlResponse, "position"> & {
+	position?: PositionEntry | null;
+};
+
+export type TraderCombosPageOptions = {
+	limit?: number;
+	offset?: number;
+	status?: V31ComboStatusFilter;
+	sort_by?: V31ComboPnlSortBy;
+	sort_direction?: SortDirection;
+	search?: string;
+};
 
 export type ComboMarketsFilters = {
 	limit?: number;
@@ -265,5 +284,56 @@ export async function getTraderComboPnl(
 
 		logStructError(`getTraderComboPnl:${normalizedAddress}`, error);
 		return null;
+	}
+}
+
+function normalizeTraderComboEntry(entry: V31ComboPnlResponse): TraderComboEntry {
+	return {
+		...entry,
+		position: (entry.position as PositionEntry | undefined) ?? null,
+	};
+}
+
+export async function getTraderCombosPage(
+	address: string,
+	options?: TraderCombosPageOptions,
+): Promise<PaginatedResource<TraderComboEntry, number>> {
+	const client = getStructClient();
+	const normalizedAddress = normalizeWalletAddress(address);
+	const limit = options?.limit ?? defaultCombosLimit;
+
+	if (!client || !normalizedAddress) {
+		return emptyOffsetPage<TraderComboEntry>(limit);
+	}
+
+	const offset = options?.offset ?? 0;
+
+	try {
+		const requestLimit = limit + 1;
+		const response = await client.trader.getTraderCombosPnl({
+			address: normalizedAddress,
+			offset,
+			limit: requestLimit,
+			sort_by: options?.sort_by ?? "last_trade_at",
+			sort_direction: options?.sort_direction ?? "desc",
+			...(options?.status ? { status: options.status } : {}),
+			...(options?.search ? { search: options.search } : {}),
+		});
+		const rows = (response.data ?? []).map(normalizeTraderComboEntry);
+		const data = rows.slice(0, limit);
+		const hasMore = rows.length > limit;
+		return {
+			data,
+			hasMore,
+			nextCursor: hasMore ? offset + data.length : null,
+			pageSize: limit,
+		};
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return emptyOffsetPage<TraderComboEntry>(limit);
+		}
+
+		logStructError(`getTraderCombosPage:${normalizedAddress}`, error);
+		return emptyOffsetPage<TraderComboEntry>(limit);
 	}
 }
