@@ -60,14 +60,10 @@ const ACTIVITY_KPIS: ComboKpiSpec[] = [
 	},
 	{
 		key: "builderVolume",
-		label: "Builder vol/share",
+		label: "Builder volume",
 		value: (c) => c.builder.builder_usd_volume,
 		pctKey: "builder_usd_volume",
 		currency: true,
-		secondary: {
-			value: (c) => c.derived.builder_share_of_volume,
-			format: formatPercent,
-		},
 	},
 	{
 		key: "redemptionPayout",
@@ -132,6 +128,14 @@ type ComboGaugeSpec = {
 };
 
 const GAUGES: ComboGaugeSpec[] = [
+	{
+		key: "builderShare",
+		label: "Builder share",
+		value: (c) => c.derived.builder_share_of_volume,
+		nowKey: "builder_share_of_volume_now",
+		prevKey: "builder_share_of_volume_prev",
+		format: formatPercent,
+	},
 	{
 		key: "avgOdds",
 		label: "Avg parlay odds",
@@ -252,7 +256,7 @@ type ComboAnalyticsKpiProps = {
 export const COMBO_KPI_GRID_CLASS =
 	"grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
-export const COMBO_KPI_FALLBACK_COUNT = 15;
+export const COMBO_KPI_FALLBACK_COUNT = 16;
 
 export function ComboAnalyticsKpi({ counts, changes }: ComboAnalyticsKpiProps) {
 	const tiles = buildTiles(counts, changes);

@@ -3,7 +3,9 @@ import { ComboResolutionToggle } from "@/components/combos/combo-resolution-togg
 import { DEFAULT_COMBO_RESOLUTION, type ComboResolution } from "@/components/combos/combo-resolution";
 import { ChartCard } from "@/components/market/chart-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { NormalizedComboLeg } from "@/lib/combo";
 import { getComboCandlesticks } from "@/lib/struct/queries/combos";
+import { truncateMarketTitle } from "@/lib/utils";
 
 type ComboPricePoint = { t: number; price: number };
 
@@ -22,20 +24,31 @@ function toPoints(bars: ReadonlyArray<{ t: number; c?: number | null; m?: number
 export async function ComboPriceChart({
 	conditionId,
 	resolution = DEFAULT_COMBO_RESOLUTION,
+	comboLegs = [],
 }: {
 	conditionId: string;
 	resolution?: ComboResolution;
+	comboLegs?: NormalizedComboLeg[];
 }) {
 	const candlesticks = await getComboCandlesticks(conditionId, resolution);
 	const data = toPoints(candlesticks?.combo ?? []);
 
+	const legMetaByPositionId = new Map(
+		comboLegs.filter((leg) => leg.positionId).map((leg) => [leg.positionId, leg]),
+	);
+
 	const legs: ComboLegSeries[] = (candlesticks?.legs ?? [])
 		.slice(0, MAX_LEG_OVERLAYS)
-		.map((leg, index) => ({
-			key: `leg${index}`,
-			label: `Leg ${index + 1}`,
-			points: toPoints(leg.candles ?? []),
-		}))
+		.map((leg, index) => {
+			const meta = leg.position_id ? legMetaByPositionId.get(leg.position_id) : undefined;
+			const question = meta?.question || meta?.title || null;
+			return {
+				key: `leg${index}`,
+				label: question ? truncateMarketTitle(question) : `Leg ${index + 1}`,
+				outcome: meta?.outcome ?? null,
+				points: toPoints(leg.candles ?? []),
+			};
+		})
 		.filter((leg) => leg.points.length >= 2);
 
 	const action = <ComboResolutionToggle resolution={resolution} />;

@@ -54,15 +54,6 @@ const GROUPS: TotalsGroup[] = [
 		],
 	},
 	{
-		key: "modules",
-		title: "Modules",
-		items: [
-			{ label: "Binary", value: (c) => c.modules.binary_usd_volume, currency: true },
-			{ label: "Neg-risk", value: (c) => c.modules.negrisk_usd_volume, currency: true },
-			{ label: "Combinatorial", value: (c) => c.modules.combinatorial_usd_volume, currency: true },
-		],
-	},
-	{
 		key: "sides",
 		title: "Sides",
 		items: [
@@ -124,7 +115,6 @@ const GROUPS: TotalsGroup[] = [
 			{ label: "Executions", value: (c) => c.lifecycle.executions },
 			{ label: "Redeemed", value: (c) => c.lifecycle.redeemed },
 			{ label: "Redemption payout", value: (c) => c.lifecycle.redemption_payout_usd, currency: true },
-			{ label: "Redemption shares", value: (c) => c.lifecycle.redemption_shares },
 			{ label: "Split collateral", value: (c) => c.lifecycle.split_collateral_usd, currency: true },
 			{ label: "Merge collateral", value: (c) => c.lifecycle.merge_collateral_usd, currency: true },
 			{ label: "Compress collateral", value: (c) => c.lifecycle.compress_collateral_usd, currency: true },

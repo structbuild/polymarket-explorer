@@ -379,8 +379,9 @@ function buildColumns(
 			size: 64,
 			enableHiding: false,
 			cell: ({ row }) => {
-				const slug = row.original.market_slug
-				if (!slug) return null
+				const entry = row.original
+				const slug = entry.market_slug
+				if (!slug || rowComboType(entry) != null) return null
 				return (
 					<div className="flex justify-end">
 						<TooltipWrapper content="View on Polymarket">

@@ -26,7 +26,7 @@ import { cn, truncateMarketTitle } from "@/lib/utils";
 import { formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { isFillTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
+import { isFillTrade, isBuyTrade, getActivityLabel, isComboTrade } from "@/lib/trade-utils";
 import { getComboLegs } from "@/lib/combo";
 import { ComboLegsBadge } from "../ui/combo";
 import type { TradeRow } from "./types";
@@ -187,6 +187,8 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		cell: ({ row }) => {
 			const trade = row.original;
 			const slug = "event_slug" in trade ? trade.event_slug : null;
+			const polymarketHref =
+				slug && !isComboTrade(trade) ? `https://polymarket.com/${slug}` : null;
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polygonscan">
@@ -196,9 +198,9 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							</Button>
 						</ExternalLink>
 					</TooltipWrapper>
-					{slug ? (
+					{polymarketHref ? (
 						<TooltipWrapper content="View on Polymarket">
-							<ExternalLink href={`https://polymarket.com/${slug}`} linkType="polymarket_market">
+							<ExternalLink href={polymarketHref} linkType="polymarket_market">
 								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 									<ExternalLinkIcon className="size-4" />
 								</Button>

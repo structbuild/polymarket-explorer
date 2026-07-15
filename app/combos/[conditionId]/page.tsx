@@ -104,7 +104,7 @@ export default async function ComboDetailPage({ params, searchParams }: Props) {
 						<div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
 							<div className="lg:col-span-2">
 								<Suspense key={resolution} fallback={<ComboPriceChartFallback />}>
-									<ComboPriceChart conditionId={conditionId} resolution={resolution} />
+									<ComboPriceChart conditionId={conditionId} resolution={resolution} comboLegs={legs} />
 								</Suspense>
 							</div>
 							<section className="bg-card rounded-lg p-4 sm:p-6">
