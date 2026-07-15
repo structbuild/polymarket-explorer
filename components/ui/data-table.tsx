@@ -215,7 +215,7 @@ function DataTableView<TData>({
 						<div className={cn("min-w-0", !homeToolbarGrid && "flex-1")}>{toolbarLeft}</div>
 					) : null}
 					{(toolbarRight || toolbarAfterTimeframe || toolbar || timeframeToggle) ? (
-						<div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:justify-end">
+						<div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto sm:max-w-full sm:shrink-0 sm:justify-end">
 							{toolbarRight && <Fragment key="toolbar-right">{toolbarRight}</Fragment>}
 							{timeframeToggle && <Fragment key="timeframe-toggle">{timeframeToggle}</Fragment>}
 							{homeTimeframePlaceholder && <Fragment key="timeframe-placeholder">{homeTimeframePlaceholder}</Fragment>}

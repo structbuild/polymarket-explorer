@@ -623,7 +623,7 @@ export default function TraderPositions({
 	}, [currentPage.data, showUnknown])
 
 	const toolbarRight = (
-		<div className="flex w-full min-w-0 flex-wrap items-center gap-3">
+		<div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto">
 			{hasUnknownMarkets ? (
 				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
 			) : null}

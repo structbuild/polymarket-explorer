@@ -526,7 +526,7 @@ export default function TraderCombos({
 			: defaultTraderComboSortBy
 
 	const toolbarRight = (
-		<div className="flex w-full min-w-0 flex-wrap items-center gap-3">
+		<div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto">
 			<Select value={currentStatus} onValueChange={handleStatusChange}>
 				<SelectTrigger size="sm" aria-label="Filter by combo status">
 					<span className="text-muted-foreground">Status:</span>
