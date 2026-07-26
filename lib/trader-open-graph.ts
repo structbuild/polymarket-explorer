@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { GlobalEntry, UserProfile } from "@structbuild/sdk";
+import type { TraderPnl, UserProfile } from "@structbuild/sdk";
 import { cache } from "react";
 
 import {
@@ -27,7 +27,7 @@ export type TraderOpenGraphData = {
 	address: string;
 	displayName: string;
 	profile: UserProfile | null;
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	pnlCandles: PnlDataPoint[];
 	streaks: PnlStreaks;
 	periods: PnlPeriods;
@@ -56,7 +56,7 @@ export function getTraderPageDescription(
 	displayName: string,
 	address: string,
 	cumulativePnlUsd: number,
-	pnlSummary?: GlobalEntry | null,
+	pnlSummary?: TraderPnl | null,
 ) {
 	const volume = pnlSummary?.total_volume_usd;
 	const winRate = pnlSummary?.market_win_rate_pct;

@@ -1,6 +1,6 @@
 import type {
-	CategoryEntry,
-	MarketEntry,
+	CategoryPnl,
+	MarketPnl,
 } from "@structbuild/sdk";
 import type { ReactNode } from "react";
 import type { Route } from "next";
@@ -134,14 +134,14 @@ export function TraderMarketsTable({
 	basePath,
 	baseParams,
 }: {
-	page: CursorPage<MarketEntry>;
+	page: CursorPage<MarketPnl>;
 	pageNumber: number;
 	basePath: string;
 	baseParams: Record<string, string>;
 }) {
 	return (
 		<div className="space-y-4">
-			<BreakdownTable<MarketEntry>
+			<BreakdownTable<MarketPnl>
 				rows={page.data}
 				emptyMessage="No market PnL yet."
 				identityHeader="Market"
@@ -183,14 +183,14 @@ export function TraderCategoriesTable({
 	basePath,
 	baseParams,
 }: {
-	page: CursorPage<CategoryEntry>;
+	page: CursorPage<CategoryPnl>;
 	pageNumber: number;
 	basePath: string;
 	baseParams: Record<string, string>;
 }) {
 	return (
 		<div className="space-y-4">
-			<BreakdownTable<CategoryEntry>
+			<BreakdownTable<CategoryPnl>
 				rows={page.data}
 				emptyMessage="No category PnL yet."
 				identityHeader="Category"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import type { GlobalEntry } from "@structbuild/sdk";
+import type { TraderPnl } from "@structbuild/sdk";
 
 import { DnaShareDialog } from "@/components/trader/dna-share-dialog";
 import { ShareIdentityHeader } from "@/components/trader/share-identity-header";
@@ -15,7 +15,7 @@ import {
 } from "@/lib/polymarket/trader-archetype";
 
 type TraderDnaCardProps = {
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	cumulativePnlUsd: number;
 	categoryVolumes?: number[];
 	address: string;

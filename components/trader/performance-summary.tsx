@@ -10,10 +10,10 @@ import { readComboTradeCount } from "@/lib/combo";
 import { formatDuration, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn, truncateMarketTitle } from "@/lib/utils";
-import type { PnlChangesResponse, PnlRiskResponse, GlobalEntry } from "@structbuild/sdk";
+import type { PnlChangesResponse, PnlRiskResponse, TraderPnl } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	pnlRisk?: PnlRiskResponse | null;
 	pnlChanges?: PnlChangesResponse | null;
 	streaks: PnlStreaks;
@@ -84,7 +84,7 @@ function RiskValue({
 	);
 }
 
-function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+function TradingStatsGrid({ pnlSummary }: { pnlSummary: TraderPnl | null }) {
 	const comboTradeCount = readComboTradeCount(pnlSummary);
 	const stats: { label: string; value: number | string; className?: string }[] = [
 		{ label: "Markets", value: pnlSummary?.markets_traded ?? 0 },
@@ -113,7 +113,7 @@ function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
 	);
 }
 
-type TradeHighlight = NonNullable<GlobalEntry["best_trade_metadata"]>;
+type TradeHighlight = NonNullable<TraderPnl["best_trade_metadata"]>;
 
 function TradeHighlightRow({
 	label,
@@ -187,7 +187,7 @@ function TradeHighlightRow({
 	);
 }
 
-function PnlStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+function PnlStatsGrid({ pnlSummary }: { pnlSummary: TraderPnl | null }) {
 	const winRate = pnlSummary?.market_win_rate_pct ?? null;
 	const profitFactor = pnlSummary?.profit_factor ?? null;
 	const avgWin = pnlSummary?.avg_win_usd ?? null;
@@ -301,7 +301,7 @@ function RiskGrid({ totalPnlRisk }: { totalPnlRisk: PnlRiskResponse["total_pnl"]
 	);
 }
 
-function EarningsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+function EarningsGrid({ pnlSummary }: { pnlSummary: TraderPnl | null }) {
 	const entries = [
 		{ label: "Rebates", usd: pnlSummary?.maker_rebate_usd, count: pnlSummary?.maker_rebate_count },
 		{ label: "Rewards", usd: pnlSummary?.reward_usd, count: pnlSummary?.reward_count },

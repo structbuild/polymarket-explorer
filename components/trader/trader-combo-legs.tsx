@@ -1,6 +1,6 @@
 "use client"
 
-import type { V31ComboPnlResponse } from "@structbuild/sdk"
+import type { ComboPnlResponse } from "@structbuild/sdk"
 import { LayersIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useState } from "react"
 
@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } 
 type LoadState =
 	| { status: "idle" }
 	| { status: "loading" }
-	| { status: "loaded"; combo: V31ComboPnlResponse | null }
+	| { status: "loaded"; combo: ComboPnlResponse | null }
 
 export function TraderComboLegs({
 	address,
@@ -83,7 +83,7 @@ export function TraderComboLegs({
 	)
 }
 
-function ComboLegsSummary({ combo }: { combo: V31ComboPnlResponse }) {
+function ComboLegsSummary({ combo }: { combo: ComboPnlResponse }) {
 	const impliedProbability = combo.implied_probability
 	const potentialPayout = combo.potential_payout
 

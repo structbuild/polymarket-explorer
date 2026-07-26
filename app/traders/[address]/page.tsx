@@ -46,7 +46,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { readTotalPnlUsd } from "@/lib/format";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type { GlobalEntry, PolymarketCategory } from "@structbuild/sdk";
+import type { TraderPnl, PolymarketCategory } from "@structbuild/sdk";
 import { parsePolymarketCategory } from "@/lib/tag-category";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -236,7 +236,7 @@ async function TraderOverviewSection({
 	pnlRange: ResolvedPnlRange;
 	pnlFillGaps: boolean;
 	profilePromise: Promise<TraderProfileIdentity | null>;
-	pnlSummaryPromise: Promise<GlobalEntry | null>;
+	pnlSummaryPromise: Promise<TraderPnl | null>;
 	insightsPromise: Promise<TraderInsightsData>;
 	cumulativePnlUsdPromise: Promise<number>;
 }) {
@@ -353,7 +353,7 @@ async function TraderDnaSection({
 	displayName,
 	profileImage,
 }: {
-	pnlSummaryPromise: Promise<GlobalEntry | null>;
+	pnlSummaryPromise: Promise<TraderPnl | null>;
 	cumulativePnlUsdPromise: Promise<number>;
 	address: string;
 	displayName: string;

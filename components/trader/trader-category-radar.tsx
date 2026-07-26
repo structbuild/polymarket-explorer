@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoryEntry, PolymarketCategory } from "@structbuild/sdk";
+import type { CategoryPnl, PolymarketCategory } from "@structbuild/sdk";
 import {
 	PolarAngleAxis,
 	PolarGrid,
@@ -32,13 +32,13 @@ type RadarRow = {
 };
 
 type TraderCategoryRadarProps = {
-	rows: CategoryEntry[];
+	rows: CategoryPnl[];
 };
 
 const RADAR_INITIAL_DIMENSION = { width: 320, height: 320 } as const;
 
-function buildData(rows: CategoryEntry[]): RadarRow[] {
-	const lookup = new Map<string, CategoryEntry>(
+function buildData(rows: CategoryPnl[]): RadarRow[] {
+	const lookup = new Map<string, CategoryPnl>(
 		rows.map((row) => [String(row.category ?? "").toLowerCase(), row]),
 	);
 

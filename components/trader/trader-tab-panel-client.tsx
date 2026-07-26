@@ -1,6 +1,6 @@
 "use client"
 
-import type { CategoryEntry, MarketEntry, PolymarketCategory, PositionEntry } from "@structbuild/sdk"
+import type { CategoryPnl, MarketPnl, PolymarketCategory, PositionPnl } from "@structbuild/sdk"
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 
@@ -36,7 +36,7 @@ type TraderTabPanelClientProps =
 			sortDirection: TraderSortDirection
 			category?: PolymarketCategory
 			combo?: TraderComboFilter
-			page: PaginatedResource<PositionEntry, number>
+			page: PaginatedResource<PositionPnl, number>
 	  }
 	| {
 			kind: "activity"
@@ -50,7 +50,7 @@ type TraderTabPanelClientProps =
 			pageNumber: number
 			sortBy: TraderCategorySortBy
 			sortDirection: TraderSortDirection
-			page: PaginatedResource<CategoryEntry, number>
+			page: PaginatedResource<CategoryPnl, number>
 	  }
 	| {
 			kind: "markets"
@@ -58,7 +58,7 @@ type TraderTabPanelClientProps =
 			pageNumber: number
 			sortBy: TraderMarketSortBy
 			sortDirection: TraderSortDirection
-			page: PaginatedResource<MarketEntry, number>
+			page: PaginatedResource<MarketPnl, number>
 	  }
 	| {
 			kind: "combos"

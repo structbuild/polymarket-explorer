@@ -1,6 +1,6 @@
 "use client";
 
-import type { MarketEntry, PnlTimeframe } from "@structbuild/sdk";
+import type { MarketPnl, PnlTimeframe } from "@structbuild/sdk";
 import type { Route } from "next";
 import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
@@ -55,7 +55,7 @@ function looksLikeOpaqueId(value: string): boolean {
 	return false;
 }
 
-function readableMarketTitle(row: MarketEntry): string | null {
+function readableMarketTitle(row: MarketPnl): string | null {
 	const candidates = [row.question, row.title];
 	for (const candidate of candidates) {
 		if (candidate && !looksLikeOpaqueId(candidate)) return candidate;
@@ -66,7 +66,7 @@ function readableMarketTitle(row: MarketEntry): string | null {
 }
 
 type BestTradesListClientProps = {
-	initialTrades: MarketEntry[];
+	initialTrades: MarketPnl[];
 	initialTimeframe: BestTradesTimeframe;
 	limit: number;
 };
@@ -77,7 +77,7 @@ export function BestTradesListClient({
 	limit,
 }: BestTradesListClientProps) {
 	const [timeframe, setTimeframe] = useState<BestTradesTimeframe>(initialTimeframe);
-	const [rows, setRows] = useState<MarketEntry[]>(initialTrades);
+	const [rows, setRows] = useState<MarketPnl[]>(initialTrades);
 	const [isPending, startTransition] = useTransition();
 
 	const handleTimeframeChange = useCallback(
@@ -196,7 +196,7 @@ export function BestTradesListClient({
 	);
 }
 
-function MarketCell({ row, title }: { row: MarketEntry; title: string | null }) {
+function MarketCell({ row, title }: { row: MarketPnl; title: string | null }) {
 	const href = row.market_slug
 		? (`/markets/${row.market_slug}` as Route)
 		: row.event_slug

@@ -14,11 +14,11 @@ import type {
 	ComboMarketStatusFilter,
 	ComboMarketTimeframe,
 	ComboMetricsResponse,
-	PositionEntry,
+	PositionPnl,
 	SortDirection,
-	V31ComboPnlResponse,
-	V31ComboPnlSortBy,
-	V31ComboStatusFilter,
+	ComboPnlResponse,
+	ComboPnlSortBy,
+	ComboStatusFilter,
 } from "@structbuild/sdk";
 
 import { getStructClient } from "@/lib/struct/client";
@@ -29,15 +29,15 @@ import { normalizeWalletAddress } from "@/lib/utils";
 
 const defaultCombosLimit = 25;
 
-export type TraderComboEntry = Omit<V31ComboPnlResponse, "position"> & {
-	position?: PositionEntry | null;
+export type TraderComboEntry = Omit<ComboPnlResponse, "position"> & {
+	position?: PositionPnl | null;
 };
 
 export type TraderCombosPageOptions = {
 	limit?: number;
 	offset?: number;
-	status?: V31ComboStatusFilter;
-	sort_by?: V31ComboPnlSortBy;
+	status?: ComboStatusFilter;
+	sort_by?: ComboPnlSortBy;
 	sort_direction?: SortDirection;
 	search?: string;
 };
@@ -256,7 +256,7 @@ export async function getComboAnalyticsDeltas(
 export async function getTraderComboPnl(
 	address: string,
 	params: { positionId?: string | null; conditionId?: string | null },
-): Promise<V31ComboPnlResponse | null> {
+): Promise<ComboPnlResponse | null> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 	const positionId = params.positionId ?? undefined;
@@ -287,10 +287,10 @@ export async function getTraderComboPnl(
 	}
 }
 
-function normalizeTraderComboEntry(entry: V31ComboPnlResponse): TraderComboEntry {
+function normalizeTraderComboEntry(entry: ComboPnlResponse): TraderComboEntry {
 	return {
 		...entry,
-		position: (entry.position as PositionEntry | undefined) ?? null,
+		position: (entry.position as PositionPnl | undefined) ?? null,
 	};
 }
 

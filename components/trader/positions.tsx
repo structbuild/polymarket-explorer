@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
-import type { PolymarketCategory, PositionEntry } from "@structbuild/sdk"
+import type { PolymarketCategory, PositionPnl } from "@structbuild/sdk"
 import type { Route } from "next"
 import Link from "next/link"
 import { ArrowDownIcon, ArrowUpIcon, ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
@@ -86,7 +86,7 @@ function buildColumns(
 	currentSortDirection: TraderSortDirection,
 	onSortChange: (sortBy: TraderPositionSortBy) => void,
 	sortable: boolean,
-): ColumnDef<PositionEntry, unknown>[] {
+): ColumnDef<PositionPnl, unknown>[] {
 	const entryCurrentSortBy = status === "closed" ? "avg_exit_price" : "avg_entry_price"
 
 	const columnHeader = (sortBy: TraderPositionSortBy, label: string) =>
@@ -261,7 +261,7 @@ function buildColumns(
 								</div>
 							)
 						},
-					} satisfies ColumnDef<PositionEntry, unknown>,
+					} satisfies ColumnDef<PositionPnl, unknown>,
 				]
 			: []),
 		{
@@ -352,7 +352,7 @@ function buildColumns(
 							const val = row.original.redemption_usd ?? 0
 							return <p>{formatNumber(val, { currency: true, compact: true })}</p>
 						},
-					} satisfies ColumnDef<PositionEntry, unknown>,
+					} satisfies ColumnDef<PositionPnl, unknown>,
 				]
 			: []),
 		{
@@ -403,7 +403,7 @@ function buildColumns(
 
 type Props = {
 	address: string
-	page: PaginatedResource<PositionEntry, number>
+	page: PaginatedResource<PositionPnl, number>
 	pageNumber: number
 	status: "open" | "closed"
 	sortBy: TraderPositionSortBy

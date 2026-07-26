@@ -1,4 +1,4 @@
-import type { GlobalEntry } from "@structbuild/sdk";
+import type { TraderPnl } from "@structbuild/sdk";
 
 import { formatDuration, formatNumber } from "@/lib/format";
 import { POLYMARKET_CATEGORIES } from "@/lib/tag-category";
@@ -45,7 +45,7 @@ export type TraderDna = {
 };
 
 export type TraderDnaInputs = {
-	summary: GlobalEntry;
+	summary: TraderPnl;
 	cumulativePnlUsd: number;
 	categoryVolumes?: number[];
 };
@@ -85,7 +85,7 @@ function pickNum(value: number | null | undefined): number {
 	return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function txnCount(summary: GlobalEntry): number {
+function txnCount(summary: TraderPnl): number {
 	return (
 		pickNum(summary.total_buys) +
 		pickNum(summary.total_sells) +
@@ -94,7 +94,7 @@ function txnCount(summary: GlobalEntry): number {
 	);
 }
 
-function avgTradeSize(summary: GlobalEntry): number {
+function avgTradeSize(summary: TraderPnl): number {
 	const count = txnCount(summary);
 	if (count <= 0) return 0;
 	return pickNum(summary.total_volume_usd) / count;
@@ -216,7 +216,7 @@ function toScores(axes: TraderAxis[]): Scores {
 	}, {} as Scores);
 }
 
-function classify(scores: Scores, summary: GlobalEntry): TraderArchetype {
+function classify(scores: Scores, summary: TraderPnl): TraderArchetype {
 	const totalTrades = txnCount(summary);
 
 	if (totalTrades < 5) {

@@ -7,7 +7,7 @@ import type {
 	ComboMarketSortBy,
 	ComboMarketStatusFilter,
 	ComboMarketTimeframe,
-	MarketEntry,
+	MarketPnl,
 	PnlTimeframe,
 	PolymarketCategory,
 	SortDirection,
@@ -721,7 +721,7 @@ export async function getBestTradesAction({
 }: {
 	timeframe: PnlTimeframe;
 	limit: number;
-}): Promise<{ timeframe: PnlTimeframe; rows: MarketEntry[] }> {
+}): Promise<{ timeframe: PnlTimeframe; rows: MarketPnl[] }> {
 	await assertHumanRequest();
 	const safeTimeframe = BEST_TRADES_TIMEFRAME_SET.has(timeframe) ? timeframe : "1d";
 	const { data } = await getTopTradesMarkets({

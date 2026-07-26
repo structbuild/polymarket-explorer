@@ -2,17 +2,17 @@ import "server-only";
 
 import type {
 	BuilderMetadata,
-	CategoryEntry,
+	CategoryPnl,
 	Event,
-	GlobalEntry,
-	MarketEntry,
+	TraderPnl,
+	MarketPnl,
 	MarketResponse,
 	PnlCandlestickBar,
 	PnlChangesResponse,
 	PnlPeriodsResponse,
 	PnlRiskResponse,
 	PolymarketCategory,
-	PositionEntry,
+	PositionPnl,
 	StructClient,
 	Trade,
 	Trader,
@@ -169,7 +169,7 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 	}
 }
 
-async function fetchTraderPnlSummary(address: string): Promise<GlobalEntry> {
+async function fetchTraderPnlSummary(address: string): Promise<TraderPnl> {
 	const client = getStructClient();
 
 	if (!client) {
@@ -193,7 +193,7 @@ async function fetchTraderPnlSummary(address: string): Promise<GlobalEntry> {
 	}
 }
 
-export async function getTraderPnlSummary(address: string): Promise<GlobalEntry | null> {
+export async function getTraderPnlSummary(address: string): Promise<TraderPnl | null> {
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) {
@@ -241,12 +241,12 @@ async function fetchTraderPositionsPage(
 	address: string,
 	status: "open" | "closed",
 	options?: TraderPositionsOptions,
-): Promise<PaginatedResource<PositionEntry, number>> {
+): Promise<PaginatedResource<PositionPnl, number>> {
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultPositionsLimit;
 
 	if (!client) {
-		return emptyPage<PositionEntry>(limit);
+		return emptyPage<PositionPnl>(limit);
 	}
 
 	const offset = options?.offset ?? 0;
@@ -283,11 +283,11 @@ async function fetchTraderPositionsPage(
 		};
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyPage<PositionEntry>(limit);
+			return emptyPage<PositionPnl>(limit);
 		}
 
 		logStructError(`getTraderPositionsPage:${address}:${status}`, error);
-		return emptyPage<PositionEntry>(limit);
+		return emptyPage<PositionPnl>(limit);
 	}
 }
 
@@ -295,12 +295,12 @@ export async function getTraderPositionsPage(
 	address: string,
 	status: "open" | "closed",
 	options?: TraderPositionsOptions,
-): Promise<PaginatedResource<PositionEntry, number>> {
+): Promise<PaginatedResource<PositionPnl, number>> {
 	const normalizedAddress = normalizeWalletAddress(address);
 	const limit = options?.limit ?? defaultPositionsLimit;
 
 	if (!normalizedAddress) {
-		return emptyPage<PositionEntry>(limit);
+		return emptyPage<PositionPnl>(limit);
 	}
 
 	return fetchTraderPositionsPage(normalizedAddress, status, options);
@@ -410,7 +410,7 @@ function readCursorPage<T>(response: { data?: T[] | null; pagination?: { has_mor
 export async function getTraderPnl(
 	address: string,
 	options?: GetTraderPnlOptions,
-): Promise<GlobalEntry | null> {
+): Promise<TraderPnl | null> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
@@ -538,12 +538,12 @@ export async function getTraderPnlRisk(
 export async function getTraderMarketPnl(
 	address: string,
 	options?: Omit<GetTraderMarketPnlOptions, "address">,
-): Promise<CursorPage<MarketEntry>> {
+): Promise<CursorPage<MarketPnl>> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!client || !normalizedAddress) {
-		return emptyCursorPage<MarketEntry>();
+		return emptyCursorPage<MarketPnl>();
 	}
 
 	try {
@@ -551,22 +551,22 @@ export async function getTraderMarketPnl(
 			address: normalizedAddress,
 			...(options ?? {}),
 		});
-		return readCursorPage<MarketEntry>(response);
+		return readCursorPage<MarketPnl>(response);
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyCursorPage<MarketEntry>();
+			return emptyCursorPage<MarketPnl>();
 		}
 		logStructError(`getTraderMarketPnl:${normalizedAddress}`, error);
-		return emptyCursorPage<MarketEntry>();
+		return emptyCursorPage<MarketPnl>();
 	}
 }
 
 const getTraderCategoryPnlCached = cache(
-	async (normalizedAddress: string, optionsJson: string): Promise<CursorPage<CategoryEntry>> => {
+	async (normalizedAddress: string, optionsJson: string): Promise<CursorPage<CategoryPnl>> => {
 		const client = getStructClient();
 
 		if (!client) {
-			return emptyCursorPage<CategoryEntry>();
+			return emptyCursorPage<CategoryPnl>();
 		}
 
 		const options = optionsJson ? (JSON.parse(optionsJson) as Omit<GetTraderCategoryPnlOptions, "address">) : undefined;
@@ -576,13 +576,13 @@ const getTraderCategoryPnlCached = cache(
 				address: normalizedAddress,
 				...(options ?? {}),
 			});
-			return readCursorPage<CategoryEntry>(response);
+			return readCursorPage<CategoryPnl>(response);
 		} catch (error) {
 			if (readStatus(error) === 404) {
-				return emptyCursorPage<CategoryEntry>();
+				return emptyCursorPage<CategoryPnl>();
 			}
 			logStructError(`getTraderCategoryPnl:${normalizedAddress}`, error);
-			return emptyCursorPage<CategoryEntry>();
+			return emptyCursorPage<CategoryPnl>();
 		}
 	},
 );
@@ -590,11 +590,11 @@ const getTraderCategoryPnlCached = cache(
 export async function getTraderCategoryPnl(
 	address: string,
 	options?: Omit<GetTraderCategoryPnlOptions, "address">,
-): Promise<CursorPage<CategoryEntry>> {
+): Promise<CursorPage<CategoryPnl>> {
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) {
-		return emptyCursorPage<CategoryEntry>();
+		return emptyCursorPage<CategoryPnl>();
 	}
 
 	return getTraderCategoryPnlCached(normalizedAddress, options ? JSON.stringify(options) : "");
@@ -605,12 +605,12 @@ export type TraderCategoriesPageOptions = Omit<GetTraderCategoryPnlOptions, "add
 async function fetchTraderCategoriesPage(
 	address: string,
 	options?: TraderCategoriesPageOptions,
-): Promise<PaginatedResource<CategoryEntry, number>> {
+): Promise<PaginatedResource<CategoryPnl, number>> {
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultCategoriesLimit;
 
 	if (!client) {
-		return emptyPage<CategoryEntry>(limit);
+		return emptyPage<CategoryPnl>(limit);
 	}
 
 	const offset = options?.offset ?? 0;
@@ -642,23 +642,23 @@ async function fetchTraderCategoriesPage(
 		};
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyPage<CategoryEntry>(limit);
+			return emptyPage<CategoryPnl>(limit);
 		}
 
 		logStructError(`getTraderCategoriesPage:${address}`, error);
-		return emptyPage<CategoryEntry>(limit);
+		return emptyPage<CategoryPnl>(limit);
 	}
 }
 
 export async function getTraderCategoriesPage(
 	address: string,
 	options?: TraderCategoriesPageOptions,
-): Promise<PaginatedResource<CategoryEntry, number>> {
+): Promise<PaginatedResource<CategoryPnl, number>> {
 	const normalizedAddress = normalizeWalletAddress(address);
 	const limit = options?.limit ?? defaultCategoriesLimit;
 
 	if (!normalizedAddress) {
-		return emptyPage<CategoryEntry>(limit);
+		return emptyPage<CategoryPnl>(limit);
 	}
 
 	return fetchTraderCategoriesPage(normalizedAddress, options);
@@ -669,12 +669,12 @@ export type TraderMarketsPageOptions = Omit<GetTraderMarketPnlOptions, "address"
 async function fetchTraderMarketsPage(
 	address: string,
 	options?: TraderMarketsPageOptions,
-): Promise<PaginatedResource<MarketEntry, number>> {
+): Promise<PaginatedResource<MarketPnl, number>> {
 	const client = getStructClient();
 	const limit = options?.limit ?? defaultMarketsLimit;
 
 	if (!client) {
-		return emptyPage<MarketEntry>(limit);
+		return emptyPage<MarketPnl>(limit);
 	}
 
 	const offset = options?.offset ?? 0;
@@ -706,23 +706,23 @@ async function fetchTraderMarketsPage(
 		};
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyPage<MarketEntry>(limit);
+			return emptyPage<MarketPnl>(limit);
 		}
 
 		logStructError(`getTraderMarketsPage:${address}`, error);
-		return emptyPage<MarketEntry>(limit);
+		return emptyPage<MarketPnl>(limit);
 	}
 }
 
 export async function getTraderMarketsPage(
 	address: string,
 	options?: TraderMarketsPageOptions,
-): Promise<PaginatedResource<MarketEntry, number>> {
+): Promise<PaginatedResource<MarketPnl, number>> {
 	const normalizedAddress = normalizeWalletAddress(address);
 	const limit = options?.limit ?? defaultMarketsLimit;
 
 	if (!normalizedAddress) {
-		return emptyPage<MarketEntry>(limit);
+		return emptyPage<MarketPnl>(limit);
 	}
 
 	return fetchTraderMarketsPage(normalizedAddress, options);
@@ -731,12 +731,12 @@ export async function getTraderMarketsPage(
 export async function getTraderOutcomePnl(
 	address: string,
 	options: Omit<GetTraderPositionPnlOptions, "address">,
-): Promise<CursorPage<PositionEntry>> {
+): Promise<CursorPage<PositionPnl>> {
 	const client = getStructClient();
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!client || !normalizedAddress) {
-		return emptyCursorPage<PositionEntry>();
+		return emptyCursorPage<PositionPnl>();
 	}
 
 	try {
@@ -744,42 +744,42 @@ export async function getTraderOutcomePnl(
 			address: normalizedAddress,
 			...options,
 		});
-		return readCursorPage<PositionEntry>(response);
+		return readCursorPage<PositionPnl>(response);
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyCursorPage<PositionEntry>();
+			return emptyCursorPage<PositionPnl>();
 		}
 		logStructError(`getTraderOutcomePnl:${normalizedAddress}`, error);
-		return emptyCursorPage<PositionEntry>();
+		return emptyCursorPage<PositionPnl>();
 	}
 }
 
 export async function getTopTradesMarkets(
 	options?: GetTopTradesMarketsOptions,
-): Promise<CursorPage<MarketEntry>> {
+): Promise<CursorPage<MarketPnl>> {
 	const client = getStructClient();
 
 	if (!client) {
-		return emptyCursorPage<MarketEntry>();
+		return emptyCursorPage<MarketPnl>();
 	}
 
 	try {
 		const response = await client.trader.getTopTradesMarkets(options);
-		return readCursorPage<MarketEntry>(response);
+		return readCursorPage<MarketPnl>(response);
 	} catch (error) {
 		logStructError("getTopTradesMarkets", error);
-		return emptyCursorPage<MarketEntry>();
+		return emptyCursorPage<MarketPnl>();
 	}
 }
 
 export async function getCategoryTopTraders(
 	category: PolymarketCategory,
 	options?: Omit<GetCategoryTopTradersOptions, "category">,
-): Promise<CursorPage<CategoryEntry>> {
+): Promise<CursorPage<CategoryPnl>> {
 	const client = getStructClient();
 
 	if (!client) {
-		return emptyCursorPage<CategoryEntry>();
+		return emptyCursorPage<CategoryPnl>();
 	}
 
 	try {
@@ -787,42 +787,42 @@ export async function getCategoryTopTraders(
 			category,
 			...(options ?? {}),
 		});
-		return readCursorPage<CategoryEntry>(response);
+		return readCursorPage<CategoryPnl>(response);
 	} catch (error) {
 		logStructError(`getCategoryTopTraders:${category}`, error);
-		return emptyCursorPage<CategoryEntry>();
+		return emptyCursorPage<CategoryPnl>();
 	}
 }
 
 export async function getMarketTopTraders(
 	options?: GetMarketTopTradersOptions,
-): Promise<CursorPage<MarketEntry>> {
+): Promise<CursorPage<MarketPnl>> {
 	const client = getStructClient();
 
 	if (!client) {
-		return emptyCursorPage<MarketEntry>();
+		return emptyCursorPage<MarketPnl>();
 	}
 
 	try {
 		const response = await client.markets.getMarketTopTraders(options);
-		return readCursorPage<MarketEntry>(response);
+		return readCursorPage<MarketPnl>(response);
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyCursorPage<MarketEntry>();
+			return emptyCursorPage<MarketPnl>();
 		}
 		logStructError("getMarketTopTraders", error);
-		return emptyCursorPage<MarketEntry>();
+		return emptyCursorPage<MarketPnl>();
 	}
 }
 
 export async function getPositionTopTraders(
 	positionId: string,
 	options?: Omit<GetPositionTopTradersOptions, "position_id">,
-): Promise<CursorPage<PositionEntry>> {
+): Promise<CursorPage<PositionPnl>> {
 	const client = getStructClient();
 
 	if (!client || !positionId) {
-		return emptyCursorPage<PositionEntry>();
+		return emptyCursorPage<PositionPnl>();
 	}
 
 	try {
@@ -830,13 +830,13 @@ export async function getPositionTopTraders(
 			position_id: positionId,
 			...(options ?? {}),
 		});
-		return readCursorPage<PositionEntry>(response);
+		return readCursorPage<PositionPnl>(response);
 	} catch (error) {
 		if (readStatus(error) === 404) {
-			return emptyCursorPage<PositionEntry>();
+			return emptyCursorPage<PositionPnl>();
 		}
 		logStructError(`getPositionTopTraders:${positionId}`, error);
-		return emptyCursorPage<PositionEntry>();
+		return emptyCursorPage<PositionPnl>();
 	}
 }
 

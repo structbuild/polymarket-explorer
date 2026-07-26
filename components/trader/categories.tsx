@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoryEntry } from "@structbuild/sdk";
+import type { CategoryPnl } from "@structbuild/sdk";
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import { type ReactNode, useMemo } from "react";
 import { RefreshCwIcon } from "lucide-react";
@@ -30,7 +30,7 @@ const numericFormat = {
 	factor: { decimals: 2 } as Parameters<typeof formatNumber>[1],
 };
 
-type CategoryAccessor = (row: CategoryEntry) => number | null | undefined;
+type CategoryAccessor = (row: CategoryPnl) => number | null | undefined;
 type SortCtx = BreakdownSortContext<TraderCategorySortBy>;
 
 function usdWithCountColumn(
@@ -43,11 +43,11 @@ function usdWithCountColumn(
 		size: number;
 	},
 	ctx: SortCtx,
-): ColumnDef<CategoryEntry, unknown> {
+): ColumnDef<CategoryPnl, unknown> {
 	return {
 		id: spec.id,
 		meta: { title: spec.title },
-		header: sortableHeader<TraderCategorySortBy, CategoryEntry>(spec.title, spec.sortKey, ctx),
+		header: sortableHeader<TraderCategorySortBy, CategoryPnl>(spec.title, spec.sortKey, ctx),
 		size: spec.size,
 		cell: ({ row }) => {
 			const usd = spec.usd(row.original) ?? null;
@@ -64,9 +64,9 @@ function usdWithCountColumn(
 	};
 }
 
-function buildColumns(ctx: SortCtx): ColumnDef<CategoryEntry, unknown>[] {
+function buildColumns(ctx: SortCtx): ColumnDef<CategoryPnl, unknown>[] {
 	const h = (title: string, sortKey?: TraderCategorySortBy) =>
-		sortableHeader<TraderCategorySortBy, CategoryEntry>(title, sortKey, ctx);
+		sortableHeader<TraderCategorySortBy, CategoryPnl>(title, sortKey, ctx);
 
 	return [
 		{
@@ -108,8 +108,8 @@ function buildColumns(ctx: SortCtx): ColumnDef<CategoryEntry, unknown>[] {
 				<Volume usd={row.original.total_volume_usd ?? null} shares={null} className="text-foreground/90 tabular-nums" />
 			),
 		},
-		numericCol<CategoryEntry>({ id: "winRate", title: "Win Rate", accessor: (r) => r.market_win_rate_pct, size: 112, format: numericFormat.percent, header: h("Win Rate", "market_win_rate_pct") }),
-		numericCol<CategoryEntry>({ id: "markets", title: "Markets", accessor: (r) => r.markets_traded, size: 96, format: numericFormat.integer, header: h("Markets", "markets_traded") }),
+		numericCol<CategoryPnl>({ id: "winRate", title: "Win Rate", accessor: (r) => r.market_win_rate_pct, size: 112, format: numericFormat.percent, header: h("Win Rate", "market_win_rate_pct") }),
+		numericCol<CategoryPnl>({ id: "markets", title: "Markets", accessor: (r) => r.markets_traded, size: 96, format: numericFormat.integer, header: h("Markets", "markets_traded") }),
 		{
 			id: "trades",
 			meta: { title: "Trades" },
@@ -121,29 +121,29 @@ function buildColumns(ctx: SortCtx): ColumnDef<CategoryEntry, unknown>[] {
 				</p>
 			),
 		},
-		numericCol<CategoryEntry>({ id: "bestTradePnl", title: "Best Win", accessor: (r) => r.best_trade_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Best Win", "best_trade_pnl_usd") }),
-		numericCol<CategoryEntry>({ id: "profitFactor", title: "Profit Factor", accessor: (r) => r.profit_factor, size: 120, format: numericFormat.factor, header: h("Profit Factor", "profit_factor") }),
-		dateCol<CategoryEntry>({ id: "lastTradeAt", title: "Last Trade", accessor: (r) => r.last_trade_at, size: 128, header: h("Last Trade", "last_trade_at") }),
-		numericCol<CategoryEntry>({ id: "realizedPnl", title: "Realized PnL", accessor: (r) => r.realized_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Realized PnL", "realized_pnl_usd") }),
-		numericCol<CategoryEntry>({ id: "unrealizedPnl", title: "Unrealized PnL", accessor: (r) => r.unrealized_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Unrealized PnL", "unrealized_pnl_usd") }),
-		numericCol<CategoryEntry>({ id: "marketsWon", title: "Won", accessor: (r) => r.markets_won, size: 88, format: numericFormat.integer, header: h("Won", "markets_won") }),
-		numericCol<CategoryEntry>({ id: "marketsLost", title: "Lost", accessor: (r) => r.markets_lost, size: 88, format: numericFormat.integer, header: h("Lost", "markets_lost") }),
-		numericCol<CategoryEntry>({ id: "marketsResolved", title: "Resolved", accessor: (r) => r.markets_resolved, size: 104, format: numericFormat.integer, header: h("Resolved", "markets_resolved") }),
-		numericCol<CategoryEntry>({ id: "avgWin", title: "Avg Win", accessor: (r) => r.avg_win_usd, size: 112, format: numericFormat.currency, colorizePnl: true, header: h("Avg Win", "avg_win_usd") }),
-		numericCol<CategoryEntry>({ id: "avgLoss", title: "Avg Loss", accessor: (r) => r.avg_loss_usd, size: 112, format: numericFormat.currency, colorizePnl: true, header: h("Avg Loss", "avg_loss_usd") }),
-		numericCol<CategoryEntry>({ id: "totalWins", title: "Total Wins", accessor: (r) => r.total_wins_usd, size: 120, format: numericFormat.currency, colorizePnl: true, header: h("Total Wins", "total_wins_usd") }),
-		numericCol<CategoryEntry>({ id: "totalLosses", title: "Total Losses", accessor: (r) => r.total_losses_usd, size: 120, format: numericFormat.currency, colorizePnl: true, header: h("Total Losses", "total_losses_usd") }),
-		numericCol<CategoryEntry>({ id: "worstLoss", title: "Worst Loss", accessor: (r) => r.worst_trade_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Worst Loss", "worst_trade_pnl_usd") }),
+		numericCol<CategoryPnl>({ id: "bestTradePnl", title: "Best Win", accessor: (r) => r.best_trade_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Best Win", "best_trade_pnl_usd") }),
+		numericCol<CategoryPnl>({ id: "profitFactor", title: "Profit Factor", accessor: (r) => r.profit_factor, size: 120, format: numericFormat.factor, header: h("Profit Factor", "profit_factor") }),
+		dateCol<CategoryPnl>({ id: "lastTradeAt", title: "Last Trade", accessor: (r) => r.last_trade_at, size: 128, header: h("Last Trade", "last_trade_at") }),
+		numericCol<CategoryPnl>({ id: "realizedPnl", title: "Realized PnL", accessor: (r) => r.realized_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Realized PnL", "realized_pnl_usd") }),
+		numericCol<CategoryPnl>({ id: "unrealizedPnl", title: "Unrealized PnL", accessor: (r) => r.unrealized_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Unrealized PnL", "unrealized_pnl_usd") }),
+		numericCol<CategoryPnl>({ id: "marketsWon", title: "Won", accessor: (r) => r.markets_won, size: 88, format: numericFormat.integer, header: h("Won", "markets_won") }),
+		numericCol<CategoryPnl>({ id: "marketsLost", title: "Lost", accessor: (r) => r.markets_lost, size: 88, format: numericFormat.integer, header: h("Lost", "markets_lost") }),
+		numericCol<CategoryPnl>({ id: "marketsResolved", title: "Resolved", accessor: (r) => r.markets_resolved, size: 104, format: numericFormat.integer, header: h("Resolved", "markets_resolved") }),
+		numericCol<CategoryPnl>({ id: "avgWin", title: "Avg Win", accessor: (r) => r.avg_win_usd, size: 112, format: numericFormat.currency, colorizePnl: true, header: h("Avg Win", "avg_win_usd") }),
+		numericCol<CategoryPnl>({ id: "avgLoss", title: "Avg Loss", accessor: (r) => r.avg_loss_usd, size: 112, format: numericFormat.currency, colorizePnl: true, header: h("Avg Loss", "avg_loss_usd") }),
+		numericCol<CategoryPnl>({ id: "totalWins", title: "Total Wins", accessor: (r) => r.total_wins_usd, size: 120, format: numericFormat.currency, colorizePnl: true, header: h("Total Wins", "total_wins_usd") }),
+		numericCol<CategoryPnl>({ id: "totalLosses", title: "Total Losses", accessor: (r) => r.total_losses_usd, size: 120, format: numericFormat.currency, colorizePnl: true, header: h("Total Losses", "total_losses_usd") }),
+		numericCol<CategoryPnl>({ id: "worstLoss", title: "Worst Loss", accessor: (r) => r.worst_trade_pnl_usd, size: 128, format: numericFormat.currency, colorizePnl: true, header: h("Worst Loss", "worst_trade_pnl_usd") }),
 		usdWithCountColumn({ id: "buys", title: "Buys", usd: (r) => r.buy_volume_usd, count: (r) => r.total_buys, sortKey: "buy_volume_usd", size: 144 }, ctx),
 		usdWithCountColumn({ id: "sells", title: "Sells", usd: (r) => r.sell_volume_usd, count: (r) => r.total_sells, sortKey: "sell_volume_usd", size: 144 }, ctx),
 		usdWithCountColumn({ id: "redemptions", title: "Redemptions", usd: (r) => r.redemption_volume_usd, count: (r) => r.total_redemptions, sortKey: "redemption_volume_usd", size: 160 }, ctx),
 		usdWithCountColumn({ id: "merges", title: "Merges", usd: (r) => r.merge_volume_usd, count: (r) => r.total_merges, sortKey: "merge_volume_usd", size: 144 }, ctx),
 		usdWithCountColumn({ id: "splits", title: "Splits", usd: (r) => r.split_volume_usd, count: (r) => r.total_splits, sortKey: "split_volume_usd", size: 144 }, ctx),
-		numericCol<CategoryEntry>({ id: "fees", title: "Fees", accessor: (r) => r.total_fees, size: 112, format: numericFormat.currency, header: h("Fees", "total_fees") }),
-		numericCol<CategoryEntry>({ id: "outcomesTraded", title: "Outcomes", accessor: (r) => r.outcomes_traded, size: 104, format: numericFormat.integer, header: h("Outcomes", "outcomes_traded") }),
-		numericCol<CategoryEntry>({ id: "sharesBought", title: "Shares Bought", accessor: (r) => r.total_shares_bought, size: 132, format: numericFormat.count, header: h("Shares Bought", "total_shares_bought") }),
-		durationCol<CategoryEntry>({ id: "avgHoldTime", title: "Avg Hold", accessor: (r) => r.avg_hold_time_seconds, size: 128, header: h("Avg Hold", "avg_hold_time_seconds") }),
-		dateCol<CategoryEntry>({ id: "firstTradeAt", title: "First Trade", accessor: (r) => r.first_trade_at, size: 128, header: h("First Trade", "first_trade_at") }),
+		numericCol<CategoryPnl>({ id: "fees", title: "Fees", accessor: (r) => r.total_fees, size: 112, format: numericFormat.currency, header: h("Fees", "total_fees") }),
+		numericCol<CategoryPnl>({ id: "outcomesTraded", title: "Outcomes", accessor: (r) => r.outcomes_traded, size: 104, format: numericFormat.integer, header: h("Outcomes", "outcomes_traded") }),
+		numericCol<CategoryPnl>({ id: "sharesBought", title: "Shares Bought", accessor: (r) => r.total_shares_bought, size: 132, format: numericFormat.count, header: h("Shares Bought", "total_shares_bought") }),
+		durationCol<CategoryPnl>({ id: "avgHoldTime", title: "Avg Hold", accessor: (r) => r.avg_hold_time_seconds, size: 128, header: h("Avg Hold", "avg_hold_time_seconds") }),
+		dateCol<CategoryPnl>({ id: "firstTradeAt", title: "First Trade", accessor: (r) => r.first_trade_at, size: 128, header: h("First Trade", "first_trade_at") }),
 	];
 }
 
@@ -167,7 +167,7 @@ const PARAM_KEYS = {
 
 type Props = {
 	address: string;
-	page: PaginatedResource<CategoryEntry, number>;
+	page: PaginatedResource<CategoryPnl, number>;
 	pageNumber: number;
 	sortBy: TraderCategorySortBy;
 	sortDirection: TraderSortDirection;
@@ -185,7 +185,7 @@ export default function TraderCategories({ address, page, pageNumber, sortBy, so
 		currentSortDirection,
 		handleSortChange,
 		onPageIndexChange,
-	} = useTraderBreakdownTable<TraderCategorySortBy, CategoryEntry>({
+	} = useTraderBreakdownTable<TraderCategorySortBy, CategoryPnl>({
 		address,
 		page,
 		pageNumber,

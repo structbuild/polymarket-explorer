@@ -1,8 +1,8 @@
-import type { CategoryEntry, GlobalEntry, GlobalPnlTrader, TraderInfo } from "@structbuild/sdk";
+import type { CategoryPnl, TraderPnl, GlobalPnlTrader, TraderInfo } from "@structbuild/sdk";
 
 type NullableValues<T> = { [K in keyof T]: T[K] | null };
-type GlobalLeaderboardFields = NullableValues<Omit<GlobalEntry, "trader">>;
-type CategoryLeaderboardFields = NullableValues<Omit<CategoryEntry, "category" | "trader">>;
+type GlobalLeaderboardFields = NullableValues<Omit<TraderPnl, "trader">>;
+type CategoryLeaderboardFields = NullableValues<Omit<CategoryPnl, "category" | "trader">>;
 
 export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 	Partial<CategoryLeaderboardFields> & {
@@ -18,7 +18,7 @@ export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 		combo_trade_count?: number;
 	};
 
-export type TraderLeaderboardApiEntry = (GlobalEntry | GlobalPnlTrader | CategoryEntry) & {
+export type TraderLeaderboardApiEntry = (TraderPnl | GlobalPnlTrader | CategoryPnl) & {
 	trader?: TraderInfo | null;
 	buy_count?: number | null;
 	sell_count?: number | null;

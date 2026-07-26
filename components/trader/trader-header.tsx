@@ -5,7 +5,7 @@ import { ViewProfileButton } from "@/components/trader/view-profile-button";
 import { Volume } from "@/components/ui/volume";
 import { formatDateShort } from "@/lib/format";
 import { formatNumber } from "@/lib/format";
-import type { GlobalEntry } from "@structbuild/sdk";
+import type { TraderPnl } from "@structbuild/sdk";
 
 type StatItemProps = {
 	label: string;
@@ -25,7 +25,7 @@ type TraderHeaderProps = {
 	address: string;
 	displayName: string;
 	profileImage?: string | null;
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 };
 
 export function TraderHeader({

@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlobalEntry, PnlChangesResponse, PnlRiskResponse, PolymarketCategory } from "@structbuild/sdk";
+import type { TraderPnl, PnlChangesResponse, PnlRiskResponse, PolymarketCategory } from "@structbuild/sdk";
 import {
 	createContext,
 	useCallback,
@@ -176,7 +176,7 @@ export function TraderPerformanceSummaryLive({
 	streaks,
 	periods,
 }: {
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	pnlChanges: PnlChangesResponse | null;
 	streaks: PnlStreaks;
 	periods: PnlPeriods;

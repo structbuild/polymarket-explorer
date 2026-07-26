@@ -1,4 +1,4 @@
-import type { MarketEntry, Trade } from "@structbuild/sdk";
+import type { MarketPnl, Trade } from "@structbuild/sdk";
 
 import type { MarketTableRow } from "@/lib/market-table-map";
 
@@ -9,5 +9,5 @@ export type HomeActivityTab = (typeof HOME_ACTIVITY_TABS)[number];
 export type HomeActivityData =
 	| { kind: "trades"; trades: Trade[] }
 	| { kind: "trending"; markets: MarketTableRow[] }
-	| { kind: "bestTrades"; trades: MarketEntry[] }
+	| { kind: "bestTrades"; trades: MarketPnl[] }
 	| { kind: "markets"; markets: MarketTableRow[] };
