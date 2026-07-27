@@ -307,6 +307,7 @@ async function TraderOverviewSection({
 				initialExits={insights.chartExits}
 				initialRisk={pnlRisk}
 				periods={insights.periods}
+				firstTradeAt={pnlSummary?.first_trade_at ?? null}
 			>
 				<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
 					<div className="min-w-0 space-y-6 lg:w-2/3">
@@ -479,6 +480,7 @@ async function TraderPageContent({
 		from: pnlFrom,
 		to: pnlTo,
 		tz: serverTimezone,
+		firstTradeAt: pnlSummary?.first_trade_at,
 	});
 
 	const profilePromise = Promise.resolve(profile);

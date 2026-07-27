@@ -3,8 +3,6 @@ import { startOfDay, startOfMonth, startOfWeek, startOfYear } from "date-fns";
 
 import {
 	PNL_TIMEFRAMES,
-	pickPnlResolutionForSpan,
-	pickPnlResolutionForTz,
 	type PnlAnchor,
 	type PnlTimeframe,
 	type StructPnlCandleResolution,
@@ -13,12 +11,15 @@ import {
 
 const DEFAULT_TIMEZONE = "UTC";
 
+const AUTO_RESOLUTION: StructPnlCandleResolution = "auto";
+
 export type PnlRangeInput = {
 	timeframe: PnlTimeframe;
 	anchor: PnlAnchor | null;
 	from: number | null;
 	to: number | null;
 	tz: string | null;
+	firstTradeAt?: number | null;
 };
 
 export type PnlRangeMode = "preset" | "anchor" | "custom";
@@ -49,14 +50,18 @@ function anchorStartSeconds(anchor: PnlAnchor, now: Date, timezone: string): num
 	}
 }
 
+export function normalizeFirstTradeAt(value: number | null | undefined, nowSeconds: number): number | undefined {
+	if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+	const seconds = Math.trunc(value);
+	if (seconds <= 0 || seconds >= nowSeconds) return undefined;
+	return seconds;
+}
+
 export function resolvePnlRange(input: PnlRangeInput, nowSeconds = Math.floor(Date.now() / 1000)): ResolvedPnlRange {
 	const timezone = input.tz ?? DEFAULT_TIMEZONE;
 	const now = new Date(nowSeconds * 1000);
 
 	if (input.from !== null && input.to !== null && input.from < input.to) {
-		const span = input.to - input.from;
-		const baseResolution = pickPnlResolutionForSpan(span);
-		const resolution = pickPnlResolutionForTz(baseResolution, timezone, span);
 		return {
 			mode: "custom",
 			timeframe: input.timeframe,
@@ -65,36 +70,33 @@ export function resolvePnlRange(input: PnlRangeInput, nowSeconds = Math.floor(Da
 			to: input.to,
 			timezone,
 			apiTimeframe: "lifetime",
-			resolution,
+			resolution: AUTO_RESOLUTION,
 		};
 	}
 
 	if (input.anchor) {
-		const from = anchorStartSeconds(input.anchor, now, timezone);
-		const span = Math.max(nowSeconds - from, 1);
-		const baseResolution = pickPnlResolutionForSpan(span);
-		const resolution = pickPnlResolutionForTz(baseResolution, timezone, span);
 		return {
 			mode: "anchor",
 			timeframe: input.timeframe,
 			anchor: input.anchor,
-			from,
+			from: anchorStartSeconds(input.anchor, now, timezone),
 			to: nowSeconds,
 			timezone,
 			apiTimeframe: "lifetime",
-			resolution,
+			resolution: AUTO_RESOLUTION,
 		};
 	}
 
-	const { timeframe: apiTimeframe, resolution } = PNL_TIMEFRAMES[input.timeframe];
+	const { timeframe: apiTimeframe } = PNL_TIMEFRAMES[input.timeframe];
+
 	return {
 		mode: "preset",
 		timeframe: input.timeframe,
 		anchor: null,
-		from: undefined,
+		from: apiTimeframe === "lifetime" ? normalizeFirstTradeAt(input.firstTradeAt, nowSeconds) : undefined,
 		to: undefined,
 		timezone,
 		apiTimeframe,
-		resolution,
+		resolution: AUTO_RESOLUTION,
 	};
 }

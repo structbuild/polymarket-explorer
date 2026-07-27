@@ -39,6 +39,7 @@ type TraderPnlQuery = {
 	fillGaps: boolean;
 	timezone: string;
 	category: PolymarketCategory | null;
+	firstTradeAt: number | null;
 };
 
 type TraderPnlView = {
@@ -71,6 +72,7 @@ export function TraderPnlProvider({
 	initialExits,
 	initialRisk,
 	periods,
+	firstTradeAt = null,
 	children,
 }: {
 	address: string;
@@ -82,6 +84,7 @@ export function TraderPnlProvider({
 	initialExits: PnlChartExit[];
 	initialRisk: PnlRiskResponse | null;
 	periods: PnlPeriods;
+	firstTradeAt?: number | null;
 	children: ReactNode;
 }) {
 	const [isPending, startTransition] = useTransition();
@@ -94,6 +97,7 @@ export function TraderPnlProvider({
 		fillGaps: initialFillGaps,
 		timezone: initialRange.timezone,
 		category: initialCategory,
+		firstTradeAt,
 	});
 	const [state, setState] = useState({
 		range: initialRange,

@@ -25,8 +25,56 @@ export function getRecentChangelogIds(nowMs: number): string[] {
 }
 
 const TRADER_PROFILE_HREF = "/traders/0x2005d16a84ceefa912d4e380cd32e7ff827875ea";
+const COMBO_TRADER_HREF = "/traders/0xab444cf90149a8128eb510099e5917f521547ffe";
+const COMBO_DETAIL_HREF =
+	"/combos/0x037484f03e44221830e5f930e6b6b1905f000000000000000000000000000000";
 
 export const CHANGELOG: ChangelogEntry[] = [
+	{
+		id: "combos-hub",
+		date: "2026-07-27",
+		title: "Combos & parlays",
+		description:
+			"Every Polymarket combo and parlay in one place — ranked by volume, filtered by status, with each leg visible on the row.",
+		tag: "new",
+		href: "/combos",
+	},
+	{
+		id: "combo-detail",
+		date: "2026-07-27",
+		title: "Combo market pages",
+		description:
+			"Open any combo for its price charted against every leg, live implied odds, and a full volume and settlement breakdown.",
+		tag: "new",
+		href: COMBO_DETAIL_HREF,
+	},
+	{
+		id: "combo-analytics",
+		date: "2026-07-27",
+		title: "Combo analytics",
+		description:
+			"Combo activity market-wide: volume by leg count, YES vs NO, builder share and lifecycle, with 16 headline metrics.",
+		tag: "new",
+		href: "/combos#combos-analytics",
+	},
+	{
+		id: "trader-combos",
+		date: "2026-07-27",
+		title: "Combos on trader profiles",
+		description:
+			"A new Combos tab on every trader: PnL per parlay, payout if won, and expandable legs you can filter by status.",
+		tag: "new",
+		href: `${COMBO_TRADER_HREF}?tab=combos`,
+	},
+	{
+		id: "trader-pnl-by-category",
+		date: "2026-07-27",
+		title: "PnL by category",
+		description:
+			"Break any trader's PnL down by category — Politics, Sports, Crypto and more — across both area and candle charts.",
+		tag: "improved",
+		href: TRADER_PROFILE_HREF,
+	},
 	{
 		id: "builder-compare",
 		date: "2026-06-18",

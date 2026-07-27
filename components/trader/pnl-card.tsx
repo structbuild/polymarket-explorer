@@ -89,7 +89,7 @@ export function PnlCard({ displayName, address, profileImage, firstTradeAt, avai
 
 	const annotationsEligible = pnlRange.mode === "preset" && pnlRange.timeframe === "all" && !category
 	const showChartAnnotations = annotationsEligible && showAnnotations
-	const showTooltipTime = data.length > 1 ? data[1].t - data[0].t < 86_400 : pnlRange.resolution !== "1d"
+	const showTooltipTime = data.length > 1 ? data[1].t - data[0].t < 86_400 : true
 	const highlightsAvailable = hasAnnotations && annotationsEligible
 
 	const handleHighlightsChange = useCallback(

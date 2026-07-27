@@ -834,6 +834,7 @@ export async function getTraderPnlViewAction({
 	fillGaps,
 	timezone,
 	category,
+	firstTradeAt,
 }: {
 	address: string;
 	timeframe: TraderPnlTimeframe;
@@ -843,6 +844,7 @@ export async function getTraderPnlViewAction({
 	fillGaps: boolean;
 	timezone: string;
 	category: PolymarketCategory | null;
+	firstTradeAt: number | null;
 }) {
 	await assertHumanRequest();
 	const normalizedAddress = normalizeWalletAddress(address);
@@ -868,6 +870,7 @@ export async function getTraderPnlViewAction({
 		from: safeFrom,
 		to: safeTo,
 		tz: safeTimezone,
+		firstTradeAt,
 	});
 	const [candles, exits, risk] = await Promise.all([
 		getTraderPnlCandles(normalizedAddress, range.apiTimeframe, range.resolution, {
