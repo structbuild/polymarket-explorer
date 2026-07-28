@@ -1,5 +1,4 @@
 "use client"
-/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import Link from "next/link"
@@ -21,6 +20,7 @@ import {
 	ChartTooltip,
 	type ChartConfig,
 } from "@/components/ui/chart"
+import { AdaptiveImage } from "@/components/ui/adaptive-image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -29,7 +29,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { PnlChartAnnotation, PnlChartExit, PnlDataPoint } from "@/lib/struct/pnl"
 import { formatDateCompact, formatDateFull, formatDateTimeFull, pnlColorClass } from "@/lib/format"
 import { formatNumber } from "@/lib/format"
-import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
 import type { PnlTimeframe } from "@/lib/struct/pnl-timeframes"
 import { cn, truncateMarketTitle } from "@/lib/utils"
 
@@ -231,28 +230,16 @@ function ExitClusterList({ exits, timezone }: { exits: PnlChartExit[]; timezone?
 function ExitClusterRow({ exit, timezone }: { exit: PnlChartExit; timezone?: string }) {
 	const isWin = exit.pnlUsd >= 0
 	const href = exit.marketSlug ? (`/markets/${exit.marketSlug}` as Route) : null
-	const image = exit.imageUrl ? normalizePolymarketS3ImageUrl(exit.imageUrl) : null
 	const className = "flex items-start gap-2.5 px-3 py-2.5"
 
 	const content = (
 		<>
-			{image ? (
-				<img
-					className={cn(
-						"size-9 shrink-0 rounded-md border-2 object-cover",
-						isWin ? "border-emerald-500" : "border-red-500",
-					)}
-					alt=""
-					src={image}
-				/>
-			) : (
-				<div
-					className={cn(
-						"size-9 shrink-0 rounded-md border-2 bg-muted",
-						isWin ? "border-emerald-500" : "border-red-500",
-					)}
-				/>
-			)}
+			<AdaptiveImage
+				src={exit.imageUrl}
+				className={cn("size-9 shrink-0 rounded-md border-2", isWin ? "border-emerald-500" : "border-red-500")}
+				plateClassName="bg-muted"
+				fallback={<span className="block size-full bg-muted" />}
+			/>
 			<div className="min-w-0 flex-1">
 				<p className="truncate text-xs font-medium leading-snug" title={exit.question}>
 					{truncateMarketTitle(exit.question)}
@@ -410,22 +397,17 @@ function ExitScaleProbe({
 
 function ExitPreviewBubble({ exit, style }: { exit: PnlChartExit; style?: CSSProperties }) {
 	const isWin = exit.pnlUsd >= 0
-	const image = exit.imageUrl ? normalizePolymarketS3ImageUrl(exit.imageUrl) : null
 
 	return (
-		<span
+		<AdaptiveImage
+			src={exit.imageUrl}
 			className={cn(
-				"block overflow-hidden rounded-full border-2 bg-card shadow-md",
+				"rounded-full border-2 shadow-md",
 				isWin ? "border-emerald-500" : "border-red-500",
 			)}
 			style={{ width: EXIT_BUBBLE_SIZE, height: EXIT_BUBBLE_SIZE, ...style }}
-		>
-			{image ? (
-				<img src={image} alt="" className="size-full object-cover" />
-			) : (
-				<span className={cn("block size-full", isWin ? "bg-emerald-500/20" : "bg-red-500/20")} />
-			)}
-		</span>
+			fallback={<span className={cn("block size-full", isWin ? "bg-emerald-500/20" : "bg-red-500/20")} />}
+		/>
 	)
 }
 
