@@ -19,6 +19,7 @@ function formatPercent(value: number): string {
 type ComboSecondarySpec = {
 	value: (counts: ComboGlobalAnalyticsCountsResponse) => number | null | undefined;
 	format: (value: number) => string;
+	pctKey?: keyof ComboGlobalAnalyticsChanges;
 };
 
 type ComboKpiSpec = {
@@ -89,16 +90,15 @@ const STATE_KPIS: ComboKpiSpec[] = [
 			"Approximate open combos: created minus resolved. Expired-but-unresolved markets still count as open; the value can go negative when resolutions land for combos created before indexing coverage.",
 	},
 	{
-		key: "resolvedYes",
-		label: "Resolved YES",
+		key: "resolved",
+		label: "Resolved YES/NO",
 		value: (c) => c.combos.combos_resolved_yes,
 		pctKey: "combos_resolved_yes",
-	},
-	{
-		key: "resolvedNo",
-		label: "Resolved NO",
-		value: (c) => c.combos.combos_resolved_no,
-		pctKey: "combos_resolved_no",
+		secondary: {
+			value: (c) => c.combos.combos_resolved_no,
+			format: (value) => formatNumber(value, { compact: true }),
+			pctKey: "combos_resolved_no",
+		},
 	},
 ];
 
@@ -183,7 +183,7 @@ type ComboTile = {
 	key: string;
 	label: string;
 	value: string;
-	pct: number | null;
+	pcts: (number | null)[];
 	tooltip?: string;
 };
 
@@ -196,6 +196,16 @@ function formatWithSecondary(
 	const raw = readNumber(spec.value(counts));
 	if (raw === null) return primary;
 	return `${primary} · ${spec.format(raw)}`;
+}
+
+function secondaryPct(
+	spec: ComboSecondarySpec | undefined,
+	counts: ComboGlobalAnalyticsCountsResponse,
+	changes: ComboGlobalAnalyticsChanges | null,
+): (number | null)[] {
+	if (!spec?.pctKey || !changes) return [];
+	if (readNumber(spec.value(counts)) === null) return [];
+	return [pctOf(changes[spec.pctKey])];
 }
 
 function buildKpiTiles(
@@ -215,7 +225,10 @@ function buildKpiTiles(
 				kpi.secondary,
 				counts,
 			),
-			pct: changes && kpi.pctKey ? pctOf(changes[kpi.pctKey]) : null,
+			pcts: [
+				changes && kpi.pctKey ? pctOf(changes[kpi.pctKey]) : null,
+				...secondaryPct(kpi.secondary, counts, changes),
+			],
 			tooltip: kpi.tooltip,
 		});
 	}
@@ -241,7 +254,7 @@ function buildTiles(
 			key: gauge.key,
 			label: gauge.label,
 			value: formatWithSecondary(gauge.format(absolute), gauge.secondary, counts),
-			pct: gaugeChange(now, prev),
+			pcts: [gaugeChange(now, prev)],
 		});
 	}
 
@@ -256,7 +269,7 @@ type ComboAnalyticsKpiProps = {
 export const COMBO_KPI_GRID_CLASS =
 	"grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
-export const COMBO_KPI_FALLBACK_COUNT = 16;
+export const COMBO_KPI_FALLBACK_COUNT = 15;
 
 export function ComboAnalyticsKpi({ counts, changes }: ComboAnalyticsKpiProps) {
 	const tiles = buildTiles(counts, changes);
@@ -264,7 +277,9 @@ export function ComboAnalyticsKpi({ counts, changes }: ComboAnalyticsKpiProps) {
 	return (
 		<div className={COMBO_KPI_GRID_CLASS}>
 			{tiles.map((tile) => {
-				const pctLabel = formatPctChange(tile.pct);
+				const pctLabels = tile.pcts
+					.map((pct) => ({ pct, label: formatPctChange(pct) }))
+					.filter((entry) => entry.label !== null);
 				return (
 					<Card key={tile.key} size="sm" className="rounded-lg px-2 ring-0">
 						<CardContent className="flex flex-col gap-0.5">
@@ -273,9 +288,17 @@ export function ComboAnalyticsKpi({ counts, changes }: ComboAnalyticsKpiProps) {
 									<p className="truncate text-sm text-muted-foreground">{tile.label}</p>
 									{tile.tooltip ? <InfoTooltip content={tile.tooltip} /> : null}
 								</div>
-								{pctLabel ? (
-									<p className={`shrink-0 text-xs font-medium tabular-nums ${pctToneClass(tile.pct)}`}>
-										{pctLabel}
+								{pctLabels.length ? (
+									<p className="shrink-0 text-xs font-medium tabular-nums">
+										{pctLabels.map((entry, index) => (
+											<span
+											key={index}
+											className={`${index > 0 ? "hidden sm:inline" : ""} ${pctToneClass(entry.pct)}`}
+										>
+												{index > 0 ? <span className="text-muted-foreground"> · </span> : null}
+												{entry.label}
+											</span>
+										))}
 									</p>
 								) : null}
 							</div>
