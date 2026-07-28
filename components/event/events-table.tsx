@@ -16,6 +16,7 @@ import { Volume } from "@/components/ui/volume";
 import { formatNumber, formatDateShort } from "@/lib/format";
 import { METRICS_TIMEFRAMES, type MetricsTimeframeChoice } from "@/lib/timeframes";
 import { EVENT_TABLE_COLUMN_SIZES } from "./events-table-columns";
+import { truncateMarketTitle } from "@/lib/utils";
 
 export type { EventTableRow } from "@/lib/event-table-map";
 
@@ -126,6 +127,7 @@ function buildColumns(sort: SortState | null, flags: { anyLiquidity: boolean; an
 			cell: ({ row }) => {
 				const e = row.original;
 				const title = e.title ?? "Untitled Event";
+				const displayTitle = truncateMarketTitle(title);
 				const href = e.slug != null ? (`/events/${e.slug}` as Route) : null;
 				return (
 					<div className="flex min-w-0 items-center gap-3">
@@ -146,11 +148,14 @@ function buildColumns(sort: SortState | null, flags: { anyLiquidity: boolean; an
 									href={href}
 									prefetch={false}
 									className="line-clamp-2 text-left text-base font-medium text-foreground underline-offset-4 hover:underline"
+									title={title}
 								>
-									{title}
+									{displayTitle}
 								</Link>
 							) : (
-								<p className="line-clamp-2 text-base font-medium">{title}</p>
+								<p className="line-clamp-2 text-base font-medium" title={title}>
+									{displayTitle}
+								</p>
 							)}
 						</div>
 					</div>

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Volume } from "@/components/ui/volume";
 import { formatDateShort, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 
 const SHOW_LESS_THRESHOLD = 12;
 
@@ -103,6 +103,7 @@ function ProbabilityCell({ market }: { market: EventMarket }) {
 
 function MarketCell({ market }: { market: EventMarket }) {
 	const title = getMarketDisplayTitle(market);
+	const displayTitle = truncateMarketTitle(title);
 	const imageUrl = normalizePolymarketS3ImageUrl(market.image_url) ?? null;
 	const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
 
@@ -119,8 +120,8 @@ function MarketCell({ market }: { market: EventMarket }) {
 			) : (
 				<div className="size-10 shrink-0 rounded-md bg-muted" />
 			)}
-			<span className="line-clamp-2 min-w-0 text-sm font-medium leading-snug underline-offset-4 group-hover:underline">
-				{title}
+			<span className="line-clamp-2 min-w-0 text-sm font-medium leading-snug underline-offset-4 group-hover:underline" title={title}>
+				{displayTitle}
 			</span>
 		</div>
 	);

@@ -1,7 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { BuilderSortBy, BuilderTimeframe, MarketEntry, PnlTimeframe, PolymarketCategory } from "@structbuild/sdk";
+import type {
+	BuilderSortBy,
+	BuilderTimeframe,
+	ComboMarketSortBy,
+	ComboMarketStatusFilter,
+	ComboMarketTimeframe,
+	MarketPnl,
+	PnlTimeframe,
+	PolymarketCategory,
+	SortDirection,
+} from "@structbuild/sdk";
+
 import {
 	defaultTraderTablePageSize,
 	getPositionTopTraders,
@@ -22,6 +33,13 @@ import {
 	toVolumePoints,
 } from "@/lib/struct/market-queries";
 import { getEventsByTag } from "@/lib/struct/queries/events";
+import { getComboMarkets, getTraderComboPnl, getTraderCombosPage } from "@/lib/struct/queries/combos";
+import { comboMarketToRow } from "@/lib/combo-market-table-map";
+import {
+	isComboMarketSortBy,
+	isComboMarketStatusFilter,
+	isComboMarketTimeframe,
+} from "@/lib/combo";
 import { eventResponseToRow } from "@/lib/event-table-map";
 import { parseEventStatusTab, type EventStatusTab } from "@/lib/event-search-params-shared";
 import {
@@ -47,6 +65,7 @@ import {
 	getTraderChartExits,
 	getTraderPnlCandles,
 	getTraderPnlRisk,
+	type PnlChartExit,
 } from "@/lib/struct/pnl";
 import { resolvePnlRange } from "@/lib/struct/pnl-range";
 import {
@@ -90,17 +109,27 @@ import { normalizeWalletAddress } from "@/lib/utils";
 import {
 	maxTraderPageNumber,
 	defaultTraderPositionSortBy,
+	defaultTraderComboSortBy,
+	defaultTraderComboStatusFilter,
 	rankedPositionSortBy,
 	rankedPositionSortDirection,
 	defaultTraderCategorySortBy,
 	defaultTraderMarketSortBy,
 	type TraderCategorySortBy,
+	type TraderComboFilter,
+	type TraderComboSortBy,
+	type TraderComboStatusFilter,
 	type TraderExitMode,
 	type TraderMarketSortBy,
 	type TraderPositionSortBy,
 	type TraderSortDirection,
 	type TraderTab,
+	comboFilterToParam,
+	comboStatusFilterToParam,
 	traderCategorySortByValues,
+	traderComboFilterValues,
+	traderComboSortByValues,
+	traderComboStatusFilterValues,
 	traderMarketSortByValues,
 	traderPositionSortByValues,
 	traderSortDirectionValues,
@@ -202,8 +231,27 @@ function parseTraderMarketSortByParam(params: URLSearchParams) {
 		: defaultTraderMarketSortBy;
 }
 
+function parseTraderComboSortByParam(params: URLSearchParams) {
+	const raw = params.get("combosSortBy");
+	return traderComboSortByValues.includes(raw as TraderComboSortBy)
+		? (raw as TraderComboSortBy)
+		: defaultTraderComboSortBy;
+}
+
+function parseTraderComboStatusFilter(value: string | undefined): TraderComboStatusFilter {
+	return traderComboStatusFilterValues.includes(value as TraderComboStatusFilter)
+		? (value as TraderComboStatusFilter)
+		: defaultTraderComboStatusFilter;
+}
+
 function parseTraderTab(value: TraderTab) {
 	return traderTabValues.includes(value) ? value : "active";
+}
+
+function parseTraderComboFilter(value: string | undefined): TraderComboFilter {
+	return traderComboFilterValues.includes(value as TraderComboFilter)
+		? (value as TraderComboFilter)
+		: "all";
 }
 
 function parseMarketStatus(value: MarketStatusTab) {
@@ -246,6 +294,40 @@ export async function getMarketsStatusPageAction({
 		sortDirection: safeSortDirection,
 		timeframe: safeTimeframe,
 		markets: result.data.map((market) => marketResponseToRow(market)),
+		hasMore: result.hasMore,
+		nextCursor: result.nextCursor,
+	};
+}
+
+export async function getComboMarketsPageAction({
+	status,
+	timeframe,
+	sortBy,
+	sortDirection,
+}: {
+	status: ComboMarketStatusFilter | null;
+	timeframe: ComboMarketTimeframe;
+	sortBy: ComboMarketSortBy;
+	sortDirection: SortDirection;
+}) {
+	await assertHumanRequest();
+	const safeStatus = isComboMarketStatusFilter(status) ? status : null;
+	const safeTimeframe = isComboMarketTimeframe(timeframe) ? timeframe : "lifetime";
+	const safeSortBy = isComboMarketSortBy(sortBy) ? sortBy : "usd_volume";
+	const safeSortDirection: SortDirection = sortDirection === "asc" ? "asc" : "desc";
+	const result = await getComboMarkets({
+		timeframe: safeTimeframe,
+		sortBy: safeSortBy,
+		sortDir: safeSortDirection,
+		status: safeStatus,
+	});
+
+	return {
+		status: safeStatus,
+		timeframe: safeTimeframe,
+		sortBy: safeSortBy,
+		sortDirection: safeSortDirection,
+		rows: result.data.map(comboMarketToRow),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};
@@ -296,6 +378,7 @@ export async function getTraderPositionsPageAction({
 	sortBy,
 	sortDirection,
 	category,
+	combo,
 }: {
 	address: string;
 	status: "open" | "closed";
@@ -303,15 +386,58 @@ export async function getTraderPositionsPageAction({
 	sortBy: TraderPositionSortBy;
 	sortDirection: TraderSortDirection;
 	category?: PolymarketCategory | null;
+	combo?: TraderComboFilter;
 }) {
 	await assertHumanRequest();
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const comboParam = comboFilterToParam(combo);
 	const page = await getTraderPositionsPage(address, status, {
 		limit: defaultTraderTablePageSize,
 		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
 		sort_by: sortBy,
 		sort_direction: sortDirection,
 		...(category ? { category } : {}),
+		...(comboParam !== undefined ? { combo: comboParam } : {}),
+	});
+
+	return { page, pageNumber: safePageNumber };
+}
+
+export async function getTraderComboLegsAction({
+	address,
+	positionId,
+	conditionId,
+}: {
+	address: string;
+	positionId?: string | null;
+	conditionId?: string | null;
+}) {
+	await assertHumanRequest();
+	return getTraderComboPnl(address, { positionId, conditionId });
+}
+
+export async function getTraderCombosPageAction({
+	address,
+	pageNumber,
+	sortBy,
+	sortDirection,
+	status,
+}: {
+	address: string;
+	pageNumber: number;
+	sortBy: TraderComboSortBy;
+	sortDirection: TraderSortDirection;
+	status?: TraderComboStatusFilter;
+}) {
+	await assertHumanRequest();
+	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
+	const statusParam = comboStatusFilterToParam(status);
+	const page = await getTraderCombosPage(address, {
+		limit: defaultTraderTablePageSize,
+		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
+		sort_by: sortBy,
+		sort_direction: sortDirection,
+		...(statusParam ? { status: statusParam } : {}),
 	});
 
 	return { page, pageNumber: safePageNumber };
@@ -388,6 +514,31 @@ export async function getTraderTabPageAction({
 		};
 	}
 
+	if (safeTab === "combos") {
+		const pageNumber = parseTraderPageSearchParam(params, "combosPage");
+		const sortBy = parseTraderComboSortByParam(params);
+		const sortDirection = parseTraderSortDirectionParam(params, "combosSortDirection");
+		const status = parseTraderComboStatusFilter(params.get("combosStatus") ?? undefined);
+		const statusParam = comboStatusFilterToParam(status);
+		const page = await getTraderCombosPage(address, {
+			limit: defaultTraderTablePageSize,
+			offset: (pageNumber - 1) * defaultTraderTablePageSize,
+			sort_by: sortBy,
+			sort_direction: sortDirection,
+			...(statusParam ? { status: statusParam } : {}),
+		});
+
+		return {
+			kind: "combos" as const,
+			address,
+			pageNumber,
+			sortBy,
+			sortDirection,
+			status,
+			page,
+		};
+	}
+
 	const status: "open" | "closed" = safeTab === "closed" ? "closed" : "open";
 	const pageKey = status === "closed" ? "closedPage" : "openPage";
 	const sortByKey = status === "closed" ? "closedSortBy" : "openSortBy";
@@ -396,12 +547,15 @@ export async function getTraderTabPageAction({
 	const sortBy = parseTraderSortByParam(params, sortByKey, defaultTraderPositionSortBy[status]);
 	const sortDirection = parseTraderSortDirectionParam(params, sortDirectionKey);
 	const category = parsePolymarketCategory(params.get("positionsCategory") ?? undefined) ?? undefined;
+	const combo = parseTraderComboFilter(params.get("positionsCombo") ?? undefined);
+	const comboParam = comboFilterToParam(combo);
 	const page = await getTraderPositionsPage(address, status, {
 		limit: defaultTraderTablePageSize,
 		offset: (pageNumber - 1) * defaultTraderTablePageSize,
 		sort_by: sortBy,
 		sort_direction: sortDirection,
 		...(category ? { category } : {}),
+		...(comboParam !== undefined ? { combo: comboParam } : {}),
 	});
 
 	return {
@@ -412,6 +566,7 @@ export async function getTraderTabPageAction({
 		sortBy,
 		sortDirection,
 		category,
+		combo,
 		page,
 	};
 }
@@ -562,7 +717,7 @@ export async function getBestTradesAction({
 }: {
 	timeframe: PnlTimeframe;
 	limit: number;
-}): Promise<{ timeframe: PnlTimeframe; rows: MarketEntry[] }> {
+}): Promise<{ timeframe: PnlTimeframe; rows: MarketPnl[] }> {
 	await assertHumanRequest();
 	const safeTimeframe = BEST_TRADES_TIMEFRAME_SET.has(timeframe) ? timeframe : "1d";
 	const { data } = await getTopTradesMarkets({
@@ -686,6 +841,8 @@ export async function getTraderPnlViewAction({
 	to,
 	fillGaps,
 	timezone,
+	category,
+	firstTradeAt,
 }: {
 	address: string;
 	timeframe: TraderPnlTimeframe;
@@ -694,11 +851,14 @@ export async function getTraderPnlViewAction({
 	to: number | null;
 	fillGaps: boolean;
 	timezone: string;
+	category: PolymarketCategory | null;
+	firstTradeAt: number | null;
 }) {
 	await assertHumanRequest();
 	const normalizedAddress = normalizeWalletAddress(address);
 	if (!normalizedAddress) throw new Error("Invalid trader address");
 
+	const safeCategory = category ? parsePolymarketCategory(category) : null;
 	const safeTimeframe = pnlTimeframeValues.includes(timeframe) ? timeframe : "all";
 	const safeAnchor = anchor && pnlAnchorValues.includes(anchor) ? anchor : null;
 	const safeFrom = typeof from === "number" && Number.isFinite(from) ? Math.trunc(from) : null;
@@ -718,18 +878,22 @@ export async function getTraderPnlViewAction({
 		from: safeFrom,
 		to: safeTo,
 		tz: safeTimezone,
+		firstTradeAt,
 	});
 	const [candles, exits, risk] = await Promise.all([
 		getTraderPnlCandles(normalizedAddress, range.apiTimeframe, range.resolution, {
 			from: range.from,
 			to: range.to,
 			fillGaps: safeFillGaps,
+			...(safeCategory ? { category: safeCategory } : {}),
 		}),
-		getTraderChartExits(normalizedAddress, { from: range.from, to: range.to }),
+		safeCategory
+			? Promise.resolve<PnlChartExit[]>([])
+			: getTraderChartExits(normalizedAddress, { from: range.from, to: range.to }),
 		getTraderPnlRisk(normalizedAddress, PNL_RISK_TIMEFRAMES[range.timeframe]),
 	]);
 
-	return { range, fillGaps: safeFillGaps, candles, exits, risk };
+	return { range, fillGaps: safeFillGaps, category: safeCategory, candles, exits, risk };
 }
 
 export async function searchTradersAction(query: string) {

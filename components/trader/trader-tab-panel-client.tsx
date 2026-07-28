@@ -1,6 +1,6 @@
 "use client"
 
-import type { CategoryEntry, MarketEntry, PolymarketCategory, PositionEntry } from "@structbuild/sdk"
+import type { CategoryPnl, MarketPnl, PolymarketCategory, PositionPnl } from "@structbuild/sdk"
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 
@@ -8,15 +8,20 @@ import { getTraderTabPageAction } from "@/app/actions"
 import { useTabBridge } from "@/components/layout/tab-bridge"
 import type {
 	TraderCategorySortBy,
+	TraderComboFilter,
+	TraderComboSortBy,
+	TraderComboStatusFilter,
 	TraderMarketSortBy,
 	TraderPositionSortBy,
 	TraderSortDirection,
 	TraderTab,
 } from "@/lib/trader-search-params-shared"
+import type { TraderComboEntry } from "@/lib/struct/queries/combos"
 import type { PaginatedResource } from "@/lib/struct/types"
 import type { TradeRow } from "./types"
 import TraderActivity from "./activity"
 import TraderCategories from "./categories"
+import TraderCombos from "./combos"
 import TraderMarkets from "./markets"
 import TraderPositions from "./positions"
 import { TraderTabs } from "./trader-tabs"
@@ -30,7 +35,8 @@ type TraderTabPanelClientProps =
 			sortBy: TraderPositionSortBy
 			sortDirection: TraderSortDirection
 			category?: PolymarketCategory
-			page: PaginatedResource<PositionEntry, number>
+			combo?: TraderComboFilter
+			page: PaginatedResource<PositionPnl, number>
 	  }
 	| {
 			kind: "activity"
@@ -44,7 +50,7 @@ type TraderTabPanelClientProps =
 			pageNumber: number
 			sortBy: TraderCategorySortBy
 			sortDirection: TraderSortDirection
-			page: PaginatedResource<CategoryEntry, number>
+			page: PaginatedResource<CategoryPnl, number>
 	  }
 	| {
 			kind: "markets"
@@ -52,13 +58,23 @@ type TraderTabPanelClientProps =
 			pageNumber: number
 			sortBy: TraderMarketSortBy
 			sortDirection: TraderSortDirection
-			page: PaginatedResource<MarketEntry, number>
+			page: PaginatedResource<MarketPnl, number>
+	  }
+	| {
+			kind: "combos"
+			address: string
+			pageNumber: number
+			sortBy: TraderComboSortBy
+			sortDirection: TraderSortDirection
+			status: TraderComboStatusFilter
+			page: PaginatedResource<TraderComboEntry, number>
 	  }
 
 function tabForPanelData(props: TraderTabPanelClientProps): TraderTab {
 	if (props.kind === "activity") return "activity"
 	if (props.kind === "categories") return "categories"
 	if (props.kind === "markets") return "markets"
+	if (props.kind === "combos") return "combos"
 
 	return props.status === "closed" ? "closed" : "active"
 }
@@ -186,6 +202,19 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				onRefresh={handleRefresh}
 			/>
 		)
+	} else if (currentData.kind === "combos") {
+		content = (
+			<TraderCombos
+				address={currentData.address}
+				page={currentData.page}
+				pageNumber={currentData.pageNumber}
+				sortBy={currentData.sortBy}
+				sortDirection={currentData.sortDirection}
+				status={currentData.status}
+				tabs={tabs}
+				onRefresh={handleRefresh}
+			/>
+		)
 	} else {
 		content = (
 			<TraderPositions
@@ -196,6 +225,7 @@ export function TraderTabPanelClient(props: TraderTabPanelClientProps) {
 				sortBy={currentData.sortBy}
 				sortDirection={currentData.sortDirection}
 				category={currentData.category}
+				combo={currentData.combo}
 				tabs={tabs}
 				onRefresh={handleRefresh}
 			/>

@@ -24,8 +24,10 @@ import { facehashColorClasses } from "@/lib/facehash";
 import { formatNumber, formatPriceCents } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import type { PaginatedResource } from "@/lib/struct/types";
-import { hasTradeTrader, isBuyTrade, isOrderFilledTrade } from "@/lib/trade-utils";
-import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
+import { hasTradeTrader, isBuyTrade, isFillTrade } from "@/lib/trade-utils";
+import { getComboLegs } from "@/lib/combo";
+import { ComboLegsBadge } from "@/components/ui/combo";
+import { cn, getTraderDisplayName, normalizeWalletAddress, truncateMarketTitle } from "@/lib/utils";
 
 type TradeRow = Trade;
 
@@ -91,8 +93,9 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 520,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (!isOrderFilledTrade(trade)) return <p className="text-muted-foreground">—</p>;
+			if (!isFillTrade(trade)) return <p className="text-muted-foreground">—</p>;
 			const label = trade.question ?? "—";
+			const displayLabel = truncateMarketTitle(label);
 			const rawImageUrl = "image_url" in trade ? trade.image_url : null;
 			const imageUrl = rawImageUrl != null ? normalizePolymarketS3ImageUrl(rawImageUrl) : null;
 			const content = (
@@ -102,7 +105,8 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							<AvatarImage src={imageUrl} className="rounded-sm" />
 						</Avatar>
 					)}
-					<span className="min-w-0 flex-1 truncate text-sm">{label}</span>
+					<span className="min-w-0 flex-1 truncate text-sm">{displayLabel}</span>
+					<ComboLegsBadge legs={getComboLegs(trade)} />
 				</div>
 			);
 			if (trade.slug) {
@@ -130,7 +134,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 140,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (!isOrderFilledTrade(trade)) return null;
+			if (!isFillTrade(trade)) return null;
 			return (
 				<p className="truncate">
 					{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
@@ -144,7 +148,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 100,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (!isOrderFilledTrade(trade)) return null;
+			if (!isFillTrade(trade)) return null;
 			const isBuy = isBuyTrade(trade);
 			return (
 				<p className={cn("tabular-nums", isBuy ? "text-emerald-500" : "text-red-500")}>

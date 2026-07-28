@@ -22,11 +22,13 @@ import { ShowUnknownMarketsToggle } from "../ui/show-unknown-markets-toggle";
 import { ExternalLink } from "../ui/external-link";
 import { TraderTabs } from "./trader-tabs";
 import { formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 import { formatPriceCents } from "@/lib/format";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { isOrderFilledTrade, isBuyTrade, getActivityLabel } from "@/lib/trade-utils";
+import { isFillTrade, isBuyTrade, getActivityLabel, isComboTrade } from "@/lib/trade-utils";
+import { getComboLegs } from "@/lib/combo";
+import { ComboLegsBadge } from "../ui/combo";
 import type { TradeRow } from "./types";
 
 type StandaloneTradeType = "Reward" | "Yield" | "MakerRebate";
@@ -71,7 +73,9 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 			const question = "question" in trade ? trade.question : null;
 			const marketSlug = "slug" in trade ? trade.slug : null;
 			const title = question ?? "Unknown Market";
+			const displayTitle = truncateMarketTitle(title);
 			const href = marketSlug ? (`/markets/${marketSlug}` as Route) : null;
+			const legs = getComboLegs(trade);
 			return (
 				<div className="flex max-w-[480px] items-center gap-3">
 					{imageUrl ? (
@@ -92,13 +96,14 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							className="min-w-0 flex-1 truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 							title={title}
 						>
-							{title}
+							{displayTitle}
 						</Link>
 					) : (
 						<p className="min-w-0 flex-1 truncate text-base font-medium" title={title}>
-							{title}
+							{displayTitle}
 						</p>
 					)}
+					<ComboLegsBadge legs={legs} className="shrink-0" />
 				</div>
 			);
 		},
@@ -109,7 +114,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 180,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				const label = `${trade.outcome ?? "—"} / ${formatPriceCents(trade.price)}`;
 				return (
 					<p className="truncate" title={label}>
@@ -131,7 +136,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				const isBuy = isBuyTrade(trade);
 				return (
 					<p className={cn(isBuy ? "text-emerald-500" : "text-red-500")}>
@@ -150,7 +155,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 120,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				return <p>{formatNumber(trade.usd_amount, { currency: true, compact: true })}</p>;
 			}
 			const usdAmount = "usd_amount" in trade ? trade.usd_amount : null;
@@ -182,6 +187,8 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		cell: ({ row }) => {
 			const trade = row.original;
 			const slug = "event_slug" in trade ? trade.event_slug : null;
+			const polymarketHref =
+				slug && !isComboTrade(trade) ? `https://polymarket.com/${slug}` : null;
 			return (
 				<div className="flex justify-end">
 					<TooltipWrapper content="View on Polygonscan">
@@ -191,9 +198,9 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 							</Button>
 						</ExternalLink>
 					</TooltipWrapper>
-					{slug ? (
+					{polymarketHref ? (
 						<TooltipWrapper content="View on Polymarket">
-							<ExternalLink href={`https://polymarket.com/${slug}`} linkType="polymarket_market">
+							<ExternalLink href={polymarketHref} linkType="polymarket_market">
 								<Button variant="ghost" size="icon" aria-label="View on Polymarket">
 									<ExternalLinkIcon className="size-4" />
 								</Button>

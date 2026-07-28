@@ -1,6 +1,6 @@
 "use client"
 
-import type { PositionEntry } from "@structbuild/sdk"
+import type { PositionPnl } from "@structbuild/sdk"
 import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useQueryStates } from "nuqs"
 import posthog from "posthog-js"
@@ -33,7 +33,7 @@ export function TraderHighlightsClient({
 }: {
 	address: string
 	initialMode: TraderExitMode
-	initialPage: PaginatedResource<PositionEntry, number>
+	initialPage: PaginatedResource<PositionPnl, number>
 	initialPageNumber: number
 }) {
 	const [isPending, startTransition] = useTransition()

@@ -17,6 +17,7 @@ export const TRADER_LEADERBOARD_SORT_KEYS = [
 	"total_sells",
 	"total_redemptions",
 	"total_merges",
+	"combo_trade_count",
 	"events_traded",
 	"markets_traded",
 	"markets_won",
@@ -70,6 +71,7 @@ const CATEGORY_SORT_OVERRIDES: Partial<Record<TraderLeaderboardSortKey, string>>
 
 const CATEGORY_UNSUPPORTED_SORTS = new Set<TraderLeaderboardSortKey>([
 	"usd_balance",
+	"combo_trade_count",
 	"events_traded",
 	"open_positions_value",
 	"open_position_count",
@@ -129,6 +131,7 @@ const SORT_LABELS: Record<TraderLeaderboardSortKey, string> = {
 	total_sells: "number of sells",
 	total_redemptions: "number of redemptions",
 	total_merges: "number of merges",
+	combo_trade_count: "combo trades",
 	events_traded: "events traded",
 	markets_traded: "markets traded",
 	markets_won: "markets won",

@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlobalEntry, PnlChangesResponse, PnlRiskResponse } from "@structbuild/sdk";
+import type { TraderPnl, PnlChangesResponse, PnlRiskResponse, PolymarketCategory } from "@structbuild/sdk";
 import {
 	createContext,
 	useCallback,
@@ -39,11 +39,14 @@ type TraderPnlQuery = {
 	to: number | null;
 	fillGaps: boolean;
 	timezone: string;
+	category: PolymarketCategory | null;
+	firstTradeAt: number | null;
 };
 
 type TraderPnlView = {
 	range: ResolvedPnlRange;
 	fillGaps: boolean;
+	category: PolymarketCategory | null;
 	candles: PnlDataPoint[];
 	annotations: PnlChartAnnotation[];
 	exits: PnlChartExit[];
@@ -64,21 +67,25 @@ export function TraderPnlProvider({
 	address,
 	initialRange,
 	initialFillGaps,
+	initialCategory = null,
 	initialCandles,
 	initialAnnotations,
 	initialExits,
 	initialRisk,
 	periods,
+	firstTradeAt = null,
 	children,
 }: {
 	address: string;
 	initialRange: ResolvedPnlRange;
 	initialFillGaps: boolean;
+	initialCategory?: PolymarketCategory | null;
 	initialCandles: WirePnlPoint[];
 	initialAnnotations: PnlChartAnnotation[];
 	initialExits: PnlChartExit[];
 	initialRisk: PnlRiskResponse | null;
 	periods: PnlPeriods;
+	firstTradeAt?: number | null;
 	children: ReactNode;
 }) {
 	const [isPending, startTransition] = useTransition();
@@ -90,10 +97,13 @@ export function TraderPnlProvider({
 		to: initialRange.to ?? null,
 		fillGaps: initialFillGaps,
 		timezone: initialRange.timezone,
+		category: initialCategory,
+		firstTradeAt,
 	});
 	const [state, setState] = useState({
 		range: initialRange,
 		fillGaps: initialFillGaps,
+		category: initialCategory,
 		candles: expandPnlDataPointsFromWire(initialCandles),
 		annotations: initialAnnotations,
 		exits: initialExits,
@@ -113,9 +123,10 @@ export function TraderPnlProvider({
 				setState({
 					range: result.range,
 					fillGaps: result.fillGaps,
+					category: result.category,
 					candles: result.candles,
 					annotations:
-						result.range.mode === "preset" && result.range.timeframe === "all"
+						result.range.mode === "preset" && result.range.timeframe === "all" && !result.category
 							? getPnlChartAnnotations(result.candles, periods)
 							: [],
 					exits: result.exits,
@@ -170,7 +181,7 @@ export function TraderPerformanceSummaryLive({
 	streaks,
 	periods,
 }: {
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	pnlChanges: PnlChangesResponse | null;
 	streaks: PnlStreaks;
 	periods: PnlPeriods;

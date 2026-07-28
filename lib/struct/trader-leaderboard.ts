@@ -1,8 +1,8 @@
-import type { CategoryEntry, GlobalEntry, GlobalPnlTrader, TraderInfo } from "@structbuild/sdk";
+import type { CategoryPnl, TraderPnl, GlobalPnlTrader, TraderInfo } from "@structbuild/sdk";
 
 type NullableValues<T> = { [K in keyof T]: T[K] | null };
-type GlobalLeaderboardFields = NullableValues<Omit<GlobalEntry, "trader">>;
-type CategoryLeaderboardFields = NullableValues<Omit<CategoryEntry, "category" | "trader">>;
+type GlobalLeaderboardFields = NullableValues<Omit<TraderPnl, "trader">>;
+type CategoryLeaderboardFields = NullableValues<Omit<CategoryPnl, "category" | "trader">>;
 
 export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 	Partial<CategoryLeaderboardFields> & {
@@ -15,9 +15,10 @@ export type TraderLeaderboardEntry = Partial<GlobalLeaderboardFields> &
 		total_redemptions: number;
 		total_merges: number;
 		total_trades: number;
+		combo_trade_count?: number;
 	};
 
-export type TraderLeaderboardApiEntry = (GlobalEntry | GlobalPnlTrader | CategoryEntry) & {
+export type TraderLeaderboardApiEntry = (TraderPnl | GlobalPnlTrader | CategoryPnl) & {
 	trader?: TraderInfo | null;
 	buy_count?: number | null;
 	sell_count?: number | null;
@@ -29,6 +30,7 @@ export type TraderLeaderboardApiEntry = (GlobalEntry | GlobalPnlTrader | Categor
 	total_merges?: number | null;
 	open_positions_value?: number | null;
 	open_position_count?: number | null;
+	combo_trade_count?: number | null;
 };
 
 function numberOrZero(value: number | null | undefined): number {
@@ -102,5 +104,6 @@ export function normalizeTraderLeaderboardEntry(
 		redemption_volume_usd: volumeUnavailable ? undefined : (entry.redemption_volume_usd ?? undefined),
 		merge_volume_usd: volumeUnavailable ? undefined : (entry.merge_volume_usd ?? undefined),
 		total_trades: totalTrades,
+		combo_trade_count: entry.combo_trade_count ?? undefined,
 	};
 }

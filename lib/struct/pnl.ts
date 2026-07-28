@@ -9,7 +9,7 @@ import type { StructPnlCandleResolution, StructPnlCandleTimeframe, StructPnlPeri
 import type { PaginatedResource } from "@/lib/struct/types";
 import type { TraderExitMode } from "@/lib/trader-search-params-shared";
 import { normalizeWalletAddress } from "@/lib/utils";
-import type { PnlExitMarker, PnlExitReason, PnlRiskResponse } from "@structbuild/sdk";
+import type { PnlCandlestickBar, PnlExitMarker, PnlExitReason, PnlRiskResponse, PolymarketCategory } from "@structbuild/sdk";
 
 export type PnlDataPoint = {
 	t: number;
@@ -54,7 +54,50 @@ type TraderPnlCandlesOptions = {
 	fillGaps?: boolean;
 	from?: number;
 	to?: number;
+	category?: PolymarketCategory;
 };
+
+function mapPnlCandle(candle: PnlCandlestickBar): PnlDataPoint {
+	const portfolioClose = candle.pc ?? candle.ub + candle.pb;
+	const portfolioOpen = candle.po ?? portfolioClose;
+	const portfolioHigh = candle.ph ?? Math.max(portfolioOpen, portfolioClose);
+	const portfolioLow = candle.pl ?? Math.min(portfolioOpen, portfolioClose);
+	const realizedClose = candle.rc ?? 0;
+	const realizedOpen = candle.ro ?? realizedClose;
+	const realizedHigh = candle.rh ?? Math.max(realizedOpen, realizedClose);
+	const realizedLow = candle.rl ?? Math.min(realizedOpen, realizedClose);
+	const unrealizedClose = candle.uc ?? 0;
+	const unrealizedOpen = candle.uo ?? unrealizedClose;
+	const unrealizedHigh = candle.uh ?? Math.max(unrealizedOpen, unrealizedClose);
+	const unrealizedLow = candle.ul ?? Math.min(unrealizedOpen, unrealizedClose);
+	const close = candle.c ?? realizedClose + unrealizedClose;
+	const open = candle.o ?? close;
+	const high = candle.h ?? Math.max(open, close);
+	const low = candle.l ?? Math.min(open, close);
+
+	return {
+		t: candle.t,
+		open,
+		high,
+		low,
+		close,
+		p: close,
+		realizedOpen,
+		realizedHigh,
+		realizedLow,
+		realizedClose,
+		unrealizedOpen,
+		unrealizedHigh,
+		unrealizedLow,
+		unrealizedClose,
+		portfolioOpen,
+		portfolioHigh,
+		portfolioLow,
+		portfolioClose,
+		numOpenPositions: candle.nop,
+		usdBalance: candle.ub + candle.pb,
+	};
+}
 
 const getTraderPnlCandlesCached = cache(
 	async (
@@ -64,6 +107,7 @@ const getTraderPnlCandlesCached = cache(
 		fillGaps?: boolean,
 		from?: number,
 		to?: number,
+		category?: PolymarketCategory,
 	): Promise<PnlDataPoint[]> => {
 		const client = getStructClient();
 
@@ -72,65 +116,25 @@ const getTraderPnlCandlesCached = cache(
 		}
 
 		try {
-			const response = await client.trader.getTraderPnlCandles({
-				address,
+			const query = {
 				timeframe,
 				resolution,
 				...(fillGaps === undefined ? {} : { fill_gaps: fillGaps }),
 				...(from === undefined ? {} : { from }),
 				...(to === undefined ? {} : { to }),
-			});
+			};
+			const response = category
+				? await client.trader.getTraderCategoryPnlCandles({ address, category, ...query })
+				: await client.trader.getTraderPnlCandles({ address, ...query });
 
-			return response.data
-				.map((candle) => {
-					const portfolioClose = candle.pc ?? candle.ub + candle.pb;
-					const portfolioOpen = candle.po ?? portfolioClose;
-					const portfolioHigh = candle.ph ?? Math.max(portfolioOpen, portfolioClose);
-					const portfolioLow = candle.pl ?? Math.min(portfolioOpen, portfolioClose);
-					const realizedClose = candle.rc ?? 0;
-					const realizedOpen = candle.ro ?? realizedClose;
-					const realizedHigh = candle.rh ?? Math.max(realizedOpen, realizedClose);
-					const realizedLow = candle.rl ?? Math.min(realizedOpen, realizedClose);
-					const unrealizedClose = candle.uc ?? 0;
-					const unrealizedOpen = candle.uo ?? unrealizedClose;
-					const unrealizedHigh = candle.uh ?? Math.max(unrealizedOpen, unrealizedClose);
-					const unrealizedLow = candle.ul ?? Math.min(unrealizedOpen, unrealizedClose);
-					const close = candle.c ?? realizedClose + unrealizedClose;
-					const open = candle.o ?? close;
-					const high = candle.h ?? Math.max(open, close);
-					const low = candle.l ?? Math.min(open, close);
-
-					return {
-						t: candle.t,
-						open,
-						high,
-						low,
-						close,
-						p: close,
-						realizedOpen,
-						realizedHigh,
-						realizedLow,
-						realizedClose,
-						unrealizedOpen,
-						unrealizedHigh,
-						unrealizedLow,
-						unrealizedClose,
-						portfolioOpen,
-						portfolioHigh,
-						portfolioLow,
-						portfolioClose,
-						numOpenPositions: candle.nop,
-						usdBalance: candle.ub + candle.pb,
-					};
-				})
-				.sort((a, b) => a.t - b.t);
+			return response.data.map(mapPnlCandle).sort((a, b) => a.t - b.t);
 		} catch (error) {
 			if (readStatus(error) === 404) {
 				return [];
 			}
 
 			const rangeKey = `${from ?? ""}:${to ?? ""}`;
-			logStructError(`getTraderPnlCandles:${address}:${timeframe}:${resolution}:${rangeKey}`, error);
+			logStructError(`getTraderPnlCandles:${address}:${category ?? "all"}:${timeframe}:${resolution}:${rangeKey}`, error);
 			return [];
 		}
 	},
@@ -146,7 +150,15 @@ export async function getTraderPnlCandles(
 
 	if (!normalizedAddress) return [];
 
-	return getTraderPnlCandlesCached(normalizedAddress, timeframe, resolution, options.fillGaps, options.from, options.to);
+	return getTraderPnlCandlesCached(
+		normalizedAddress,
+		timeframe,
+		resolution,
+		options.fillGaps,
+		options.from,
+		options.to,
+		options.category,
+	);
 }
 
 export async function getTraderCumulativePnlUsd(address: string): Promise<number> {
@@ -192,52 +204,50 @@ function emptyExitsPage(limit: number): PaginatedResource<PnlExitMarker, number>
 	return { data: [], hasMore: false, nextCursor: null, pageSize: limit };
 }
 
-const getTraderExitsPageCached = cache(
-	async (
-		address: string,
-		mode: TraderExitMode,
-		offset: number,
-		limit: number,
-		from: number | undefined,
-		to: number | undefined,
-	): Promise<PaginatedResource<PnlExitMarker, number>> => {
-		const client = getStructClient();
+const traderExitsFetchLimit = 1000;
 
-		if (!client) {
-			return emptyExitsPage(limit);
+const getAllTraderExitsCached = cache(async (address: string): Promise<PnlExitMarker[]> => {
+	const client = getStructClient();
+
+	if (!client) return [];
+
+	try {
+		const response = await client.trader.getTraderPnlExits({
+			address,
+			limit: traderExitsFetchLimit,
+		});
+		return response.data ?? [];
+	} catch (error) {
+		if (readStatus(error) === 404) {
+			return [];
 		}
 
-		try {
-			const response = await client.trader.getTraderPnlExits({
-				address,
-				sort_by: "pnl_usd",
-				sort_direction: mode === "wins" ? "desc" : "asc",
-				...(mode === "wins" ? { min_pnl_usd: 0 } : { max_pnl_usd: 0 }),
-				...(from === undefined ? {} : { from }),
-				...(to === undefined ? {} : { to }),
-				offset,
-				limit: limit + 1,
-			});
-			const all = response.data ?? [];
-			const data = all.slice(0, limit);
-			const hasMore = all.length > limit;
+		logStructError(`getTraderPnlExits:${address}`, error);
+		return [];
+	}
+});
 
-			return {
-				data,
-				hasMore,
-				nextCursor: hasMore ? offset + data.length : null,
-				pageSize: limit,
-			};
-		} catch (error) {
-			if (readStatus(error) === 404) {
-				return emptyExitsPage(limit);
-			}
+function selectTraderExits(
+	exits: PnlExitMarker[],
+	mode: TraderExitMode,
+	from: number | undefined,
+	to: number | undefined,
+): PnlExitMarker[] {
+	const filtered = exits.filter((exit) => {
+		if (from !== undefined && exit.t < from) return false;
+		if (to !== undefined && exit.t > to) return false;
+		const pnl = exit.pnl_usd ?? 0;
+		return mode === "wins" ? pnl >= 0 : pnl <= 0;
+	});
 
-			logStructError(`getTraderPnlExits:${address}:${mode}:${offset}:${from ?? ""}:${to ?? ""}`, error);
-			return emptyExitsPage(limit);
-		}
-	},
-);
+	filtered.sort((a, b) => {
+		const pnlA = a.pnl_usd ?? 0;
+		const pnlB = b.pnl_usd ?? 0;
+		return mode === "wins" ? pnlB - pnlA : pnlA - pnlB;
+	});
+
+	return filtered;
+}
 
 export async function getTraderExitsPage(
 	address: string,
@@ -245,11 +255,23 @@ export async function getTraderExitsPage(
 	options: { offset?: number; limit?: number; from?: number; to?: number } = {},
 ): Promise<PaginatedResource<PnlExitMarker, number>> {
 	const limit = options.limit ?? defaultTraderExitsPageSize;
+	const offset = options.offset ?? 0;
 	const normalizedAddress = normalizeWalletAddress(address);
 
 	if (!normalizedAddress) return emptyExitsPage(limit);
 
-	return getTraderExitsPageCached(normalizedAddress, mode, options.offset ?? 0, limit, options.from, options.to);
+	const all = await getAllTraderExitsCached(normalizedAddress);
+	const selected = selectTraderExits(all, mode, options.from, options.to);
+	const data = selected.slice(offset, offset + limit);
+	const end = offset + data.length;
+	const hasMore = selected.length > end;
+
+	return {
+		data,
+		hasMore,
+		nextCursor: hasMore ? end : null,
+		pageSize: limit,
+	};
 }
 
 export type PnlChartExit = {

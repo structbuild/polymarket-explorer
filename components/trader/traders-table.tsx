@@ -49,6 +49,7 @@ type NumericField = Extract<
 	| "total_sells"
 	| "total_redemptions"
 	| "total_merges"
+	| "combo_trade_count"
 	| "total_trades"
 	| "total_fees"
 	| "avg_win_usd"
@@ -349,6 +350,7 @@ function buildColumns(
 		numericColumn({ id: "totalLosses", title: "Total Losses", field: "total_losses_usd", sortKey: "total_losses_usd", size: 120, format: numericFormat.currency, colorizePnl: true }, sortCtx),
 		numericColumn({ id: "profitFactor", title: "Profit Factor", field: "profit_factor", sortKey: "profit_factor", size: 120, format: numericFormat.factor }, sortCtx),
 		numericColumn({ id: "trades", title: "Trades", field: "total_trades", size: TRADER_TABLE_COLUMN_SIZES.trades, format: numericFormat.count }, sortCtx),
+		numericColumn({ id: "comboTrades", title: "Combo Trades", field: "combo_trade_count", sortKey: "combo_trade_count", size: 128, format: numericFormat.count }, sortCtx),
 		usdWithCountColumn({ id: "buys", title: "Buys", usdField: "buy_volume_usd", countField: "total_buys", sortKey: "buy_volume_usd", size: 144 }, sortCtx),
 		usdWithCountColumn({ id: "sells", title: "Sells", usdField: "sell_volume_usd", countField: "total_sells", sortKey: "sell_volume_usd", size: 144 }, sortCtx),
 		usdWithCountColumn({ id: "redemptions", title: "Redemptions", usdField: "redemption_volume_usd", countField: "total_redemptions", sortKey: "redemption_volume_usd", size: 160 }, sortCtx),
@@ -369,6 +371,7 @@ const CATEGORY_UNAVAILABLE_COLUMN_IDS = new Set([
 	"events",
 	"openPositions",
 	"usdBalance",
+	"comboTrades",
 	"makerRebates",
 	"rewards",
 	"yields",

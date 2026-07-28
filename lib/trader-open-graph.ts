@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { GlobalEntry, UserProfile } from "@structbuild/sdk";
+import type { TraderPnl, UserProfile } from "@structbuild/sdk";
 import { cache } from "react";
 
 import {
@@ -12,6 +12,7 @@ import {
 	type PnlPeriods,
 	type PnlStreaks,
 } from "@/lib/struct/pnl";
+import { normalizeFirstTradeAt } from "@/lib/struct/pnl-range";
 import { getSiteUrl } from "@/lib/env";
 import { formatNumber } from "@/lib/format";
 import { buildEntityPageTitle } from "@/lib/site-metadata";
@@ -27,7 +28,7 @@ export type TraderOpenGraphData = {
 	address: string;
 	displayName: string;
 	profile: UserProfile | null;
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	pnlCandles: PnlDataPoint[];
 	streaks: PnlStreaks;
 	periods: PnlPeriods;
@@ -56,7 +57,7 @@ export function getTraderPageDescription(
 	displayName: string,
 	address: string,
 	cumulativePnlUsd: number,
-	pnlSummary?: GlobalEntry | null,
+	pnlSummary?: TraderPnl | null,
 ) {
 	const volume = pnlSummary?.total_volume_usd;
 	const winRate = pnlSummary?.market_win_rate_pct;
@@ -126,10 +127,12 @@ export async function loadTraderOpenGraphIdentity(address: string): Promise<Trad
 }
 
 const loadTraderOpenGraphDataCached = cache(async (address: string): Promise<TraderOpenGraphData> => {
-	const [identity, pnlSummary, pnlCandles, dailyPnl, periods] = await Promise.all([
+	const pnlSummary = await getTraderPnlSummary(address);
+	const [identity, pnlCandles, dailyPnl, periods] = await Promise.all([
 		loadTraderOpenGraphIdentityCached(address),
-		getTraderPnlSummary(address),
-		getTraderPnlCandles(address, "lifetime", "1h"),
+		getTraderPnlCandles(address, "lifetime", "auto", {
+			from: normalizeFirstTradeAt(pnlSummary?.first_trade_at, Math.floor(Date.now() / 1000)),
+		}),
 		getTraderDailyPnl(address),
 		getTraderPnlPeriods(address),
 	]);

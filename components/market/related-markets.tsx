@@ -6,6 +6,7 @@ import { Volume } from "@/components/ui/volume";
 import { RelatedMarketsViewAllLink } from "@/components/market/related-markets-view-all-link";
 import { formatCapitalizeWords, slugify } from "@/lib/format";
 import type { RelatedMarketItem } from "@/lib/market-related";
+import { truncateMarketTitle } from "@/lib/utils";
 
 type RelatedMarketsProps = {
 	markets: RelatedMarketItem[];
@@ -32,6 +33,7 @@ export function RelatedMarkets({ markets, tag }: RelatedMarketsProps) {
 						market.probability && market.leadingOutcome
 							? `${market.leadingOutcome} ${market.probability}`
 							: null;
+					const displayTitle = truncateMarketTitle(market.question);
 
 					return (
 						<li key={market.conditionId}>
@@ -52,8 +54,11 @@ export function RelatedMarkets({ markets, tag }: RelatedMarketsProps) {
 									<div className="size-12 shrink-0 rounded-md bg-muted" />
 								)}
 								<div className="min-w-0 flex-1">
-									<p className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground">
-										{market.question}
+									<p
+										className="line-clamp-2 text-sm font-medium leading-snug text-foreground/90 group-hover:text-foreground"
+										title={market.question}
+									>
+										{displayTitle}
 									</p>
 									<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
 										{lead ? (

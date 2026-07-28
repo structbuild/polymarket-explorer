@@ -22,7 +22,9 @@ import { TimeAgo } from "@/components/ui/time-ago";
 import { marketDetailSearchParamParsers } from "@/lib/market-detail-search-params";
 import { maxMarketTradesPageNumber } from "@/lib/market-detail-search-params-shared";
 import type { PaginatedResource } from "@/lib/struct/types";
-import { hasTradeTrader, isBuyTrade, isOrderFilledTrade, getActivityLabel } from "@/lib/trade-utils";
+import { hasTradeTrader, isBuyTrade, isFillTrade, getActivityLabel } from "@/lib/trade-utils";
+import { getComboLegs } from "@/lib/combo";
+import { ComboLegsBadge } from "@/components/ui/combo";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn, getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
 
@@ -88,11 +90,14 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 180,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				return (
-					<p className="truncate">
-						{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
-					</p>
+					<div className="flex min-w-0 items-center gap-1.5">
+						<p className="truncate">
+							{trade.outcome ?? "—"} <span className="text-muted-foreground">/</span> {formatPriceCents(trade.price)}
+						</p>
+						<ComboLegsBadge legs={getComboLegs(trade)} />
+					</div>
 				);
 			}
 			const label = getActivityLabel(trade);
@@ -109,7 +114,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 110,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				const isBuy = isBuyTrade(trade);
 				return (
 					<p className={cn(isBuy ? "text-emerald-500" : "text-red-500")}>
@@ -128,7 +133,7 @@ const columns: ColumnDef<TradeRow, unknown>[] = [
 		size: 120,
 		cell: ({ row }) => {
 			const trade = row.original;
-			if (isOrderFilledTrade(trade)) {
+			if (isFillTrade(trade)) {
 				return <p>{formatNumber(trade.usd_amount, { currency: true, compact: true })}</p>;
 			}
 			const usdAmount = "usd_amount" in trade ? trade.usd_amount : null;

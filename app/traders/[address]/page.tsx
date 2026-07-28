@@ -47,7 +47,8 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { readTotalPnlUsd } from "@/lib/format";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type { GlobalEntry } from "@structbuild/sdk";
+import type { TraderPnl, PolymarketCategory } from "@structbuild/sdk";
+import { parsePolymarketCategory } from "@/lib/tag-category";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -64,6 +65,7 @@ const TRADER_SUBHEADER_ITEMS = [
 	{ value: "activity", label: "Activity" },
 	{ value: "categories", label: "Categories" },
 	{ value: "markets", label: "Markets" },
+	{ value: "combos", label: "Combos" },
 ] as const;
 
 type TraderInsightsData = {
@@ -235,18 +237,29 @@ async function TraderOverviewSection({
 	pnlRange: ResolvedPnlRange;
 	pnlFillGaps: boolean;
 	profilePromise: Promise<TraderProfileIdentity | null>;
-	pnlSummaryPromise: Promise<GlobalEntry | null>;
+	pnlSummaryPromise: Promise<TraderPnl | null>;
 	insightsPromise: Promise<TraderInsightsData>;
 	cumulativePnlUsdPromise: Promise<number>;
 }) {
 	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
 	const pnlRiskPromise = getTraderPnlRisk(address, PNL_RISK_TIMEFRAMES[pnlRange.timeframe]);
 	const pnlChangesPromise = getTraderPnlChanges(address);
-	const [insights, pnlRisk, pnlChanges] = await Promise.all([
+	const [insights, pnlRisk, pnlChanges, categoryPage] = await Promise.all([
 		insightsPromise,
 		pnlRiskPromise,
 		pnlChangesPromise,
+		getTraderCategoryPnl(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
 	]);
+
+	const seenCategories = new Set<PolymarketCategory>();
+	const availableCategories: PolymarketCategory[] = [];
+	for (const entry of categoryPage.data) {
+		const parsed = parsePolymarketCategory(entry.category ?? undefined);
+		if (parsed && !seenCategories.has(parsed)) {
+			seenCategories.add(parsed);
+			availableCategories.push(parsed);
+		}
+	}
 
 	const displayName = getTraderDisplayName({
 		address,
@@ -295,6 +308,7 @@ async function TraderOverviewSection({
 				initialExits={insights.chartExits}
 				initialRisk={pnlRisk}
 				periods={insights.periods}
+				firstTradeAt={pnlSummary?.first_trade_at ?? null}
 			>
 				<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
 					<div className="min-w-0 space-y-6 lg:w-2/3">
@@ -303,6 +317,7 @@ async function TraderOverviewSection({
 							displayName={displayName}
 							profileImage={profile?.profile_image}
 							firstTradeAt={pnlSummary?.first_trade_at ?? undefined}
+							availableCategories={availableCategories}
 						/>
 						<div className="rounded-lg bg-card p-4 sm:p-6">
 							<PnlCalendar data={insights.dailyPnl} periods={insights.periods} />
@@ -340,7 +355,7 @@ async function TraderDnaSection({
 	displayName,
 	profileImage,
 }: {
-	pnlSummaryPromise: Promise<GlobalEntry | null>;
+	pnlSummaryPromise: Promise<TraderPnl | null>;
 	cumulativePnlUsdPromise: Promise<number>;
 	address: string;
 	displayName: string;
@@ -432,6 +447,7 @@ async function TraderPageContent({
 			activityPage,
 			categoriesPage,
 			marketsPage,
+			combosPage,
 			winsPage,
 			lossesPage,
 			highlights,
@@ -448,7 +464,11 @@ async function TraderPageContent({
 			categoriesSortDirection,
 			marketsSortBy,
 			marketsSortDirection,
+			combosSortBy,
+			combosSortDirection,
+			combosStatus,
 			positionsCategory,
+			positionsCombo,
 		},
 		resolvedSearchParams,
 		serverTimezone,
@@ -461,6 +481,7 @@ async function TraderPageContent({
 		from: pnlFrom,
 		to: pnlTo,
 		tz: serverTimezone,
+		firstTradeAt: pnlSummary?.first_trade_at,
 	});
 
 	const profilePromise = Promise.resolve(profile);
@@ -475,6 +496,7 @@ async function TraderPageContent({
 		activityPage,
 		categoriesPage,
 		marketsPage,
+		combosPage,
 		openSortBy,
 		openSortDirection,
 		closedSortBy,
@@ -483,7 +505,11 @@ async function TraderPageContent({
 		categoriesSortDirection,
 		marketsSortBy,
 		marketsSortDirection,
+		combosSortBy,
+		combosSortDirection,
+		combosStatus,
 		category: positionsCategory ?? undefined,
+		combo: positionsCombo,
 	});
 
 	const highlightsPageNumber = highlights === "wins" ? winsPage : lossesPage;

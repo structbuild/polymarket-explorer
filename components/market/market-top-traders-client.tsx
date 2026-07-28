@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { MarketEntry, PositionEntry, TraderInfo } from "@structbuild/sdk";
+import type { MarketPnl, PositionPnl, TraderInfo } from "@structbuild/sdk";
 import Link from "next/link";
 import type { Route } from "next";
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
@@ -19,7 +19,7 @@ type OutcomeOption = { position_id: string; name: string };
 
 type RawTrader = string | (Partial<TraderInfo> & { address?: string | null }) | null | undefined;
 
-type RawRow = (MarketEntry | PositionEntry) & {
+type RawRow = (MarketPnl | PositionPnl) & {
 	trader?: RawTrader;
 };
 
@@ -379,7 +379,7 @@ export function MarketTopTradersClient({
 	initialTraders,
 }: {
 	outcomes: OutcomeOption[];
-	initialTraders: MarketEntry[];
+	initialTraders: MarketPnl[];
 }) {
 	const [activeValue, setActiveValue] = useState<string>(ALL_VALUE);
 	const [rawRows, setRawRows] = useState<RawRow[]>(initialTraders as unknown as RawRow[]);

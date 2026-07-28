@@ -1,6 +1,6 @@
 "use client";
 
-import type { MarketEntry, PnlTimeframe } from "@structbuild/sdk";
+import type { MarketPnl, PnlTimeframe } from "@structbuild/sdk";
 import type { Route } from "next";
 import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
@@ -8,6 +8,8 @@ import { useCallback, useState, useTransition } from "react";
 import { getBestTradesAction } from "@/app/actions";
 import { TraderTableCell } from "@/components/trader/trader-table-cell";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { ComboTypeBadge } from "@/components/ui/combo";
+import { rowComboType } from "@/lib/combo";
 import {
 	Table,
 	TableBody,
@@ -20,7 +22,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Volume } from "@/components/ui/volume";
 import { formatNumber, pnlColorClass, readTotalPnlUsd } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { cn } from "@/lib/utils";
+import { cn, truncateMarketTitle } from "@/lib/utils";
 
 export const BEST_TRADES_TIMEFRAMES = ["1d", "7d", "30d", "lifetime"] as const satisfies readonly PnlTimeframe[];
 
@@ -53,7 +55,7 @@ function looksLikeOpaqueId(value: string): boolean {
 	return false;
 }
 
-function readableMarketTitle(row: MarketEntry): string | null {
+function readableMarketTitle(row: MarketPnl): string | null {
 	const candidates = [row.question, row.title];
 	for (const candidate of candidates) {
 		if (candidate && !looksLikeOpaqueId(candidate)) return candidate;
@@ -64,7 +66,7 @@ function readableMarketTitle(row: MarketEntry): string | null {
 }
 
 type BestTradesListClientProps = {
-	initialTrades: MarketEntry[];
+	initialTrades: MarketPnl[];
 	initialTimeframe: BestTradesTimeframe;
 	limit: number;
 };
@@ -75,7 +77,7 @@ export function BestTradesListClient({
 	limit,
 }: BestTradesListClientProps) {
 	const [timeframe, setTimeframe] = useState<BestTradesTimeframe>(initialTimeframe);
-	const [rows, setRows] = useState<MarketEntry[]>(initialTrades);
+	const [rows, setRows] = useState<MarketPnl[]>(initialTrades);
 	const [isPending, startTransition] = useTransition();
 
 	const handleTimeframeChange = useCallback(
@@ -194,7 +196,7 @@ export function BestTradesListClient({
 	);
 }
 
-function MarketCell({ row, title }: { row: MarketEntry; title: string | null }) {
+function MarketCell({ row, title }: { row: MarketPnl; title: string | null }) {
 	const href = row.market_slug
 		? (`/markets/${row.market_slug}` as Route)
 		: row.event_slug
@@ -212,9 +214,10 @@ function MarketCell({ row, title }: { row: MarketEntry; title: string | null }) 
 			) : (
 				<div className="size-8 shrink-0 rounded-sm bg-muted" />
 			)}
-			<span className="min-w-0 max-w-[24rem] truncate font-medium text-foreground">
-				{title ?? <span className="italic text-muted-foreground">Untitled market</span>}
+			<span className="min-w-0 max-w-[24rem] truncate font-medium text-foreground" title={title ?? undefined}>
+				{title ? truncateMarketTitle(title) : <span className="italic text-muted-foreground">Untitled market</span>}
 			</span>
+			<ComboTypeBadge comboType={rowComboType(row)} className="shrink-0" />
 		</div>
 	);
 

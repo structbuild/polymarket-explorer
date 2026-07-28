@@ -22,6 +22,7 @@ import { Volume } from "@/components/ui/volume";
 import { formatNumber, formatDateShort } from "@/lib/format";
 import { METRICS_TIMEFRAMES, type MetricsTimeframeChoice } from "@/lib/timeframes";
 import { MARKET_TABLE_COLUMN_SIZES } from "./markets-table-columns";
+import { truncateMarketTitle } from "@/lib/utils";
 
 export type { MarketTableRow } from "@/lib/market-table-map";
 
@@ -147,6 +148,7 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 			cell: ({ row }) => {
 				const m = row.original;
 				const title = m.question ?? "Untitled Market";
+				const displayTitle = truncateMarketTitle(title);
 				const href = m.slug != null ? (`/markets/${m.slug}` as Route) : null;
 				return (
 					<div className="flex min-w-0 items-center gap-3">
@@ -167,11 +169,14 @@ function buildColumns(flags: ColumnFlags, sort: SortState | null): ColumnDef<Mar
 									href={href}
 									prefetch={false}
 									className="line-clamp-2 text-left text-base font-medium text-foreground underline-offset-4 hover:underline"
+									title={title}
 								>
-									{title}
+									{displayTitle}
 								</Link>
 							) : (
-								<p className="line-clamp-2 text-base font-medium">{title}</p>
+								<p className="line-clamp-2 text-base font-medium" title={title}>
+									{displayTitle}
+								</p>
 							)}
 						</div>
 					</div>

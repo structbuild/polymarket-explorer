@@ -11,6 +11,16 @@ function readPositiveInteger(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function readBoolean(value: string | undefined): boolean {
+  return /^(1|true|yes|on)$/i.test(value?.trim() ?? "");
+}
+
+export function getSitePasswordGate() {
+  const password = readString(process.env.SITE_PASSWORD);
+  const enabled = readBoolean(process.env.SITE_PASSWORD_ENABLED) && password !== null;
+  return { enabled, password };
+}
+
 export function hasStructConfig() {
   return Boolean(readString(process.env.STRUCTBUILD_API_KEY));
 }

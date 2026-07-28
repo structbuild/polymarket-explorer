@@ -6,13 +6,14 @@ import { PeriodRows } from "@/components/trader/period-rows";
 import { Separator } from "@/components/ui/separator";
 import { TruncateTooltip } from "@/components/ui/truncate-tooltip";
 import type { PnlPeriods, PnlStreaks } from "@/lib/struct/pnl";
+import { readComboTradeCount } from "@/lib/combo";
 import { formatDuration, formatNumber } from "@/lib/format";
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
-import { cn } from "@/lib/utils";
-import type { PnlChangesResponse, PnlRiskResponse, GlobalEntry } from "@structbuild/sdk";
+import { cn, truncateMarketTitle } from "@/lib/utils";
+import type { PnlChangesResponse, PnlRiskResponse, TraderPnl } from "@structbuild/sdk";
 
 type PerformanceSummaryProps = {
-	pnlSummary: GlobalEntry | null;
+	pnlSummary: TraderPnl | null;
 	pnlRisk?: PnlRiskResponse | null;
 	pnlChanges?: PnlChangesResponse | null;
 	streaks: PnlStreaks;
@@ -83,16 +84,21 @@ function RiskValue({
 	);
 }
 
-function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
-	const stats = [
+function TradingStatsGrid({ pnlSummary }: { pnlSummary: TraderPnl | null }) {
+	const comboTradeCount = readComboTradeCount(pnlSummary);
+	const stats: { label: string; value: number | string; className?: string }[] = [
 		{ label: "Markets", value: pnlSummary?.markets_traded ?? 0 },
 		{ label: "Won", value: pnlSummary?.markets_won ?? 0, className: "text-emerald-500" },
 		{ label: "Lost", value: pnlSummary?.markets_lost ?? 0, className: "text-red-500" },
 	];
 
+	if (comboTradeCount !== null) {
+		stats.push({ label: "Combos", value: formatNumber(comboTradeCount, { decimals: 0 }) });
+	}
+
 	return (
 		<div>
-			<div className="grid grid-cols-3 gap-2">
+			<div className={cn("grid gap-2", comboTradeCount !== null ? "grid-cols-4" : "grid-cols-3")}>
 				{stats.map((stat) => (
 					<div key={stat.label} className="min-w-0">
 						<p className="truncate text-xs text-muted-foreground sm:text-sm">{stat.label}</p>
@@ -107,7 +113,7 @@ function TradingStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
 	);
 }
 
-type TradeHighlight = NonNullable<GlobalEntry["best_trade_metadata"]>;
+type TradeHighlight = NonNullable<TraderPnl["best_trade_metadata"]>;
 
 function TradeHighlightRow({
 	label,
@@ -145,6 +151,7 @@ function TradeHighlightRow({
 	const questionText = hasTrade && (metadata?.question || metadata?.title)
 		? (metadata?.question ?? metadata?.title)
 		: null;
+	const displayQuestion = questionText ? truncateMarketTitle(questionText) : null;
 
 	return (
 		<div>
@@ -160,16 +167,19 @@ function TradeHighlightRow({
 					tradeDetails
 				)}
 			</div>
-			{questionText && (
+			{displayQuestion && (
 				href ? (
 					<Link
 						href={href}
 						className="mt-1 block text-sm text-muted-foreground break-words hover:text-foreground hover:underline sm:truncate"
+						title={questionText ?? undefined}
 					>
-						{questionText}
+						{displayQuestion}
 					</Link>
 				) : (
-					<p className="mt-1 text-sm text-muted-foreground break-words sm:truncate">{questionText}</p>
+					<p className="mt-1 text-sm text-muted-foreground break-words sm:truncate" title={questionText ?? undefined}>
+						{displayQuestion}
+					</p>
 				)
 			)}
 			<Separator className="my-2" />
@@ -177,7 +187,7 @@ function TradeHighlightRow({
 	);
 }
 
-function PnlStatsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+function PnlStatsGrid({ pnlSummary }: { pnlSummary: TraderPnl | null }) {
 	const winRate = pnlSummary?.market_win_rate_pct ?? null;
 	const profitFactor = pnlSummary?.profit_factor ?? null;
 	const avgWin = pnlSummary?.avg_win_usd ?? null;
@@ -291,7 +301,7 @@ function RiskGrid({ totalPnlRisk }: { totalPnlRisk: PnlRiskResponse["total_pnl"]
 	);
 }
 
-function EarningsGrid({ pnlSummary }: { pnlSummary: GlobalEntry | null }) {
+function EarningsGrid({ pnlSummary }: { pnlSummary: TraderPnl | null }) {
 	const entries = [
 		{ label: "Rebates", usd: pnlSummary?.maker_rebate_usd, count: pnlSummary?.maker_rebate_count },
 		{ label: "Rewards", usd: pnlSummary?.reward_usd, count: pnlSummary?.reward_count },

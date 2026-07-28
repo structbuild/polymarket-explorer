@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table"
-import type { PolymarketCategory, PositionEntry } from "@structbuild/sdk"
+import type { PolymarketCategory, PositionPnl } from "@structbuild/sdk"
 import type { Route } from "next"
 import Link from "next/link"
 import { ArrowDownIcon, ArrowUpIcon, ExternalLinkIcon, RefreshCwIcon } from "lucide-react"
@@ -12,6 +12,7 @@ import posthog from "posthog-js"
 
 import { getTraderPositionsPageAction, getTraderRankedPositionsPageAction } from "@/app/actions"
 import type {
+	TraderComboFilter,
 	TraderExitMode,
 	TraderPositionSortBy,
 	TraderSortDirection,
@@ -22,6 +23,8 @@ import { maxTraderPageNumber } from "@/lib/trader-search-params-shared"
 import { POLYMARKET_CATEGORIES } from "@/lib/tag-category"
 
 import { Badge } from "../ui/badge"
+import { TraderComboLegs } from "./trader-combo-legs"
+import { rowComboType } from "@/lib/combo"
 import { DataTable } from "../ui/data-table"
 import { SortableHeader } from "../ui/sortable-header"
 import { TooltipWrapper } from "../ui/tooltip"
@@ -38,7 +41,7 @@ import { ExternalLink } from "../ui/external-link"
 import { TraderTabs } from "./trader-tabs"
 import { formatNumber, formatPriceCents, formatDateShort, formatTime, pnlColorClass, readTotalPnlUsd, readTotalPnlPct } from "@/lib/format"
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url"
-import { cn } from "@/lib/utils"
+import { cn, truncateMarketTitle } from "@/lib/utils"
 
 const defaultColumnVisibility: VisibilityState = {
 	current_value: false,
@@ -77,12 +80,13 @@ function getSortOptions(status: "open" | "closed") {
 }
 
 function buildColumns(
+	address: string,
 	status: "open" | "closed",
 	currentSortBy: TraderPositionSortBy,
 	currentSortDirection: TraderSortDirection,
 	onSortChange: (sortBy: TraderPositionSortBy) => void,
 	sortable: boolean,
-): ColumnDef<PositionEntry, unknown>[] {
+): ColumnDef<PositionPnl, unknown>[] {
 	const entryCurrentSortBy = status === "closed" ? "avg_exit_price" : "avg_entry_price"
 
 	const columnHeader = (sortBy: TraderPositionSortBy, label: string) =>
@@ -110,7 +114,13 @@ function buildColumns(
 				const entry = row.original
 				const isUnknownMarket = !entry.question
 				const question = entry.question || "Unknown Market"
-				const href = entry.market_slug ? (`/markets/${entry.market_slug}` as Route) : null
+				const displayTitle = truncateMarketTitle(question)
+				const isCombo = rowComboType(entry) != null && entry.condition_id != null
+					const href = isCombo
+						? (`/combos/${entry.condition_id}` as Route)
+						: entry.market_slug
+							? (`/markets/${entry.market_slug}` as Route)
+							: null
 				return (
 					<div className="flex items-center gap-3">
 						{entry.image_url ? (
@@ -127,7 +137,7 @@ function buildColumns(
 								<p className="truncate text-base font-medium" title={question}>
 									<TooltipWrapper content="Polymarket Gamma has no data on this market/position">
 										<span className="cursor-help border-b border-dotted border-muted-foreground/50">
-											{question}
+											{displayTitle}
 										</span>
 									</TooltipWrapper>
 								</p>
@@ -138,14 +148,22 @@ function buildColumns(
 									className="block truncate text-base font-medium text-foreground underline-offset-4 hover:underline"
 									title={question}
 								>
-									{question}
+									{displayTitle}
 								</Link>
 							) : (
 								<p className="truncate text-base font-medium" title={question}>
-									{question}
+									{displayTitle}
 								</p>
 							)}
 							<div className="flex flex-wrap items-center gap-1.5">
+								{rowComboType(entry) ? (
+									<TraderComboLegs
+										address={address}
+										positionId={entry.position_id}
+										conditionId={entry.condition_id}
+										comboType={rowComboType(entry)}
+									/>
+								) : null}
 								{status === "closed" && entry.won != null ? (
 									<Badge variant={entry.won ? "positive" : "negative"}>
 										{entry.won ? "Won" : "Lost"}
@@ -243,7 +261,7 @@ function buildColumns(
 								</div>
 							)
 						},
-					} satisfies ColumnDef<PositionEntry, unknown>,
+					} satisfies ColumnDef<PositionPnl, unknown>,
 				]
 			: []),
 		{
@@ -334,7 +352,7 @@ function buildColumns(
 							const val = row.original.redemption_usd ?? 0
 							return <p>{formatNumber(val, { currency: true, compact: true })}</p>
 						},
-					} satisfies ColumnDef<PositionEntry, unknown>,
+					} satisfies ColumnDef<PositionPnl, unknown>,
 				]
 			: []),
 		{
@@ -361,8 +379,9 @@ function buildColumns(
 			size: 64,
 			enableHiding: false,
 			cell: ({ row }) => {
-				const slug = row.original.market_slug
-				if (!slug) return null
+				const entry = row.original
+				const slug = entry.market_slug
+				if (!slug || rowComboType(entry) != null) return null
 				return (
 					<div className="flex justify-end">
 						<TooltipWrapper content="View on Polymarket">
@@ -384,18 +403,25 @@ function buildColumns(
 
 type Props = {
 	address: string
-	page: PaginatedResource<PositionEntry, number>
+	page: PaginatedResource<PositionPnl, number>
 	pageNumber: number
 	status: "open" | "closed"
 	sortBy: TraderPositionSortBy
 	sortDirection: TraderSortDirection
 	category?: PolymarketCategory
+	combo?: TraderComboFilter
 	ranked?: TraderExitMode
 	tabs?: ReactNode
 	onRefresh?: () => Promise<void>
 }
 
 const ALL_CATEGORIES_VALUE = "__all__"
+
+const comboFilterOptions: { value: TraderComboFilter; label: string }[] = [
+	{ value: "all", label: "All" },
+	{ value: "combos", label: "Combos" },
+	{ value: "standard", label: "Standard" },
+]
 
 export default function TraderPositions({
 	address,
@@ -405,6 +431,7 @@ export default function TraderPositions({
 	sortBy,
 	sortDirection,
 	category,
+	combo = "all",
 	ranked,
 	tabs,
 	onRefresh,
@@ -416,11 +443,13 @@ export default function TraderPositions({
 		sourceSortBy: sortBy,
 		sourceSortDirection: sortDirection,
 		sourceCategory: category,
+		sourceCombo: combo,
 		page,
 		pageNumber,
 		sortBy,
 		sortDirection,
 		category,
+		combo,
 	}))
 	const [, setSearchParams] = useQueryStates(traderSearchParamParsers, {
 		history: "push",
@@ -436,16 +465,18 @@ export default function TraderPositions({
 		tableState.sourcePageNumber === pageNumber &&
 		tableState.sourceSortBy === sortBy &&
 		tableState.sourceSortDirection === sortDirection &&
-		tableState.sourceCategory === category
+		tableState.sourceCategory === category &&
+		tableState.sourceCombo === combo
 	const currentPage = hasLocalTableState ? tableState.page : page
 	const currentPageNumber = hasLocalTableState ? tableState.pageNumber : pageNumber
 	const currentSortBy = hasLocalTableState ? tableState.sortBy : sortBy
 	const currentSortDirection = hasLocalTableState ? tableState.sortDirection : sortDirection
 	const currentCategory = hasLocalTableState ? tableState.category : category
+	const currentCombo = hasLocalTableState ? tableState.combo : combo
 
 	const hasUnknownMarkets = currentPage.data.some((entry) => !entry.question)
 
-	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection, nextCategory: PolymarketCategory | undefined) => {
+	const loadPage = useCallback((nextPageNumber: number, nextSortBy: TraderPositionSortBy, nextSortDirection: TraderSortDirection, nextCategory: PolymarketCategory | undefined, nextCombo: TraderComboFilter) => {
 		startTransition(async () => {
 			if (ranked) {
 				void setSearchParams(
@@ -464,11 +495,13 @@ export default function TraderPositions({
 					sourceSortBy: sortBy,
 					sourceSortDirection: sortDirection,
 					sourceCategory: category,
+					sourceCombo: combo,
 					page: result.page,
 					pageNumber: result.pageNumber,
 					sortBy,
 					sortDirection,
 					category,
+					combo,
 				})
 				return
 			}
@@ -479,6 +512,7 @@ export default function TraderPositions({
 					openSortDirection: nextSortDirection,
 					openPage: nextPageNumber,
 					positionsCategory: nextCategory ?? null,
+					positionsCombo: nextCombo,
 				})
 			} else {
 				void setSearchParams({
@@ -486,6 +520,7 @@ export default function TraderPositions({
 					closedSortDirection: nextSortDirection,
 					closedPage: nextPageNumber,
 					positionsCategory: nextCategory ?? null,
+					positionsCombo: nextCombo,
 				})
 			}
 
@@ -496,6 +531,7 @@ export default function TraderPositions({
 				sortBy: nextSortBy,
 				sortDirection: nextSortDirection,
 				category: nextCategory,
+				combo: nextCombo,
 			})
 
 			setTableState({
@@ -504,21 +540,23 @@ export default function TraderPositions({
 				sourceSortBy: sortBy,
 				sourceSortDirection: sortDirection,
 				sourceCategory: category,
+				sourceCombo: combo,
 				page: result.page,
 				pageNumber: result.pageNumber,
 				sortBy: nextSortBy,
 				sortDirection: nextSortDirection,
 				category: nextCategory,
+				combo: nextCombo,
 			})
 		})
-	}, [address, category, page, pageNumber, ranked, setSearchParams, sortBy, sortDirection, startTransition, status])
+	}, [address, category, combo, page, pageNumber, ranked, setSearchParams, sortBy, sortDirection, startTransition, status])
 
 	const handleSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		const nextSortDirection: TraderSortDirection =
 			nextSortBy === currentSortBy && currentSortDirection === "desc" ? "asc" : "desc"
 
-		loadPage(1, nextSortBy, nextSortDirection, currentCategory)
-	}, [currentCategory, currentSortBy, currentSortDirection, loadPage])
+		loadPage(1, nextSortBy, nextSortDirection, currentCategory, currentCombo)
+	}, [currentCategory, currentCombo, currentSortBy, currentSortDirection, loadPage])
 
 	const handleSelectSortChange = useCallback((nextSortBy: TraderPositionSortBy) => {
 		if (nextSortBy === currentSortBy) return
@@ -527,8 +565,8 @@ export default function TraderPositions({
 			sort_direction: "desc",
 			status,
 		})
-		loadPage(1, nextSortBy, "desc", currentCategory)
-	}, [currentCategory, currentSortBy, loadPage, status])
+		loadPage(1, nextSortBy, "desc", currentCategory, currentCombo)
+	}, [currentCategory, currentCombo, currentSortBy, loadPage, status])
 
 	const handleDirectionToggle = useCallback(() => {
 		const nextDirection: TraderSortDirection = currentSortDirection === "desc" ? "asc" : "desc"
@@ -537,8 +575,8 @@ export default function TraderPositions({
 			sort_direction: nextDirection,
 			status,
 		})
-		loadPage(1, currentSortBy, nextDirection, currentCategory)
-	}, [currentCategory, currentSortBy, currentSortDirection, loadPage, status])
+		loadPage(1, currentSortBy, nextDirection, currentCategory, currentCombo)
+	}, [currentCategory, currentCombo, currentSortBy, currentSortDirection, loadPage, status])
 
 	const handleCategoryChange = useCallback((value: string | null) => {
 		const nextCategory = !value || value === ALL_CATEGORIES_VALUE
@@ -549,8 +587,18 @@ export default function TraderPositions({
 			category: nextCategory ?? "all",
 			status,
 		})
-		loadPage(1, currentSortBy, currentSortDirection, nextCategory)
-	}, [currentCategory, currentSortBy, currentSortDirection, loadPage, status])
+		loadPage(1, currentSortBy, currentSortDirection, nextCategory, currentCombo)
+	}, [currentCategory, currentCombo, currentSortBy, currentSortDirection, loadPage, status])
+
+	const handleComboChange = useCallback((value: string | null) => {
+		const nextCombo = comboFilterOptions.find((option) => option.value === value)?.value ?? "all"
+		if (nextCombo === currentCombo) return
+		posthog.capture("trader_positions_combo_filtered", {
+			combo: nextCombo,
+			status,
+		})
+		loadPage(1, currentSortBy, currentSortDirection, currentCategory, nextCombo)
+	}, [currentCategory, currentCombo, currentSortBy, currentSortDirection, loadPage, status])
 
 	const sortOptions = useMemo(() => getSortOptions(status), [status])
 	const sortOptionValues = useMemo(
@@ -563,8 +611,8 @@ export default function TraderPositions({
 		: null
 
 	const columns = useMemo(
-		() => buildColumns(status, currentSortBy, currentSortDirection, handleSortChange, !ranked),
-		[handleSortChange, currentSortBy, currentSortDirection, status, ranked],
+		() => buildColumns(address, status, currentSortBy, currentSortDirection, handleSortChange, !ranked),
+		[address, handleSortChange, currentSortBy, currentSortDirection, status, ranked],
 	)
 
 	const data = useMemo(() => {
@@ -575,7 +623,7 @@ export default function TraderPositions({
 	}, [currentPage.data, showUnknown])
 
 	const toolbarRight = (
-		<div className="flex items-center gap-3">
+		<div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto">
 			{hasUnknownMarkets ? (
 				<ShowUnknownMarketsToggle show={showUnknown} onToggle={setShowUnknown} />
 			) : null}
@@ -584,7 +632,7 @@ export default function TraderPositions({
 					value={currentCategory ?? ALL_CATEGORIES_VALUE}
 					onValueChange={handleCategoryChange}
 				>
-					<SelectTrigger size="sm" aria-label="Filter by category">
+					<SelectTrigger size="sm" className="max-w-full" aria-label="Filter by category">
 						<span className="text-muted-foreground">Category:</span>
 						<SelectValue placeholder="All">
 							{(value) => (value && value !== ALL_CATEGORIES_VALUE ? value : "All")}
@@ -601,14 +649,31 @@ export default function TraderPositions({
 				</Select>
 			) : null}
 			{!ranked ? (
-				<div className="flex items-center gap-1">
+				<Select value={currentCombo} onValueChange={handleComboChange}>
+					<SelectTrigger size="sm" className="max-w-full" aria-label="Filter by market type">
+						<span className="text-muted-foreground">Type:</span>
+						<SelectValue placeholder="All">
+							{(value) => comboFilterOptions.find((option) => option.value === value)?.label ?? "All"}
+						</SelectValue>
+					</SelectTrigger>
+					<SelectContent>
+						{comboFilterOptions.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			) : null}
+			{!ranked ? (
+				<div className="flex max-w-full flex-wrap items-center gap-1">
 					<Select
 						value={selectSortValue}
 						onValueChange={(value) => {
 							if (value) handleSelectSortChange(value as TraderPositionSortBy)
 						}}
 					>
-						<SelectTrigger size="sm" aria-label="Sort by">
+						<SelectTrigger size="sm" className="max-w-full" aria-label="Sort by">
 							<span className="text-muted-foreground">Sort:</span>
 							<SelectValue placeholder="Custom">
 								{(value) => sortOptions.find((option) => option.value === value)?.label ?? "Custom"}
@@ -626,7 +691,7 @@ export default function TraderPositions({
 						<Button
 							variant="outline"
 							size="icon"
-							className="size-7"
+							className="size-7 shrink-0"
 							onClick={handleDirectionToggle}
 							aria-label={`Toggle sort direction (currently ${currentSortDirection})`}
 						>
@@ -643,6 +708,7 @@ export default function TraderPositions({
 				<Button
 					variant="outline"
 					size="sm"
+					className="shrink-0"
 					onClick={() => {
 						startTransition(async () => {
 							await onRefresh()
@@ -687,7 +753,7 @@ export default function TraderPositions({
 					return
 				}
 
-				loadPage(nextPageNumber, currentSortBy, currentSortDirection, currentCategory)
+				loadPage(nextPageNumber, currentSortBy, currentSortDirection, currentCategory, currentCombo)
 			}}
 		/>
 	)

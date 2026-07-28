@@ -36,6 +36,7 @@ import {
 	type PaginatedResult,
 } from "@/lib/struct/queries/_shared";
 import type { PaginatedResource } from "@/lib/struct/types";
+import { FILL_TRADE_TYPES } from "@/lib/trade-utils";
 
 export const defaultBuilderTradesPageSize = 25;
 
@@ -298,7 +299,7 @@ export async function getBuilderTradesPage(
 			limit: limit + 1,
 			offset,
 			sort_desc: sort_desc ?? true,
-			trade_types: trade_types ?? "OrderFilled,OrdersMatched",
+			trade_types: trade_types ?? FILL_TRADE_TYPES,
 		});
 		const normalizedBuilderCode = builderCode.toLowerCase();
 		const matchingRows = response.data.filter(
