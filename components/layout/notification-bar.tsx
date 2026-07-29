@@ -5,10 +5,10 @@ import { ExternalLink } from "@/components/ui/external-link";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 const NOTIFICATION = {
-	version: "4",
-	message: "Struct Trades WS is 2.6s faster than Polymarket's RTDS feed",
-	cta: "Read the benchmark",
-	href: "https://www.struct.to/blog/polymarket-rtds-vs-struct-trades-ws",
+	version: "5",
+	message: "How We Built Realtime Precomputed PnL for Polymarket",
+	cta: "Read the post",
+	href: "https://www.struct.to/blog/realtime-precomputed-pnl",
 } as const;
 
 
