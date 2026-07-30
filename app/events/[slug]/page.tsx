@@ -12,6 +12,7 @@ import { SectionAnchor } from "@/components/layout/section-anchor";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getSiteUrl } from "@/lib/env";
+import { eventMarketToRow } from "@/lib/event-markets-table-map";
 import { formatCapitalizeWords, formatNumber, slugify } from "@/lib/format";
 import { buildEntityPageTitle, buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
 import { getEventBySlug } from "@/lib/struct/queries/events";
@@ -152,7 +153,7 @@ async function EventPageContent({ params }: { params: Props["params"] }) {
 					)}
 
 					<SectionAnchor id="event-markets">
-						<EventMarketsTable markets={childMarkets} />
+						<EventMarketsTable markets={childMarkets.map(eventMarketToRow)} />
 					</SectionAnchor>
 
 					{childMarkets.length > 0 && (

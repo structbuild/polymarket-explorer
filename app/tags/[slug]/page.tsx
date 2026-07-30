@@ -240,7 +240,7 @@ async function TagPageContent({
 							basePath={`/tags/${canonicalSlug}`}
 							baseParams={paginationBaseParams}
 							tagSlug={canonicalSlug}
-							initialEvents={events.map(eventResponseToRow)}
+							initialEvents={events.map((event) => eventResponseToRow(event))}
 							initialTab={eventTab}
 							initialCursor={cursor ?? null}
 							initialHasMore={eventsHasMore}

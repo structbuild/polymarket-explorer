@@ -26,11 +26,11 @@ const securityHeaders = [
     key: "Content-Security-Policy-Report-Only",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://us-assets.i.posthog.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.s3.amazonaws.com https://*.s3.*.amazonaws.com https://struct-images.fra1.digitaloceanspaces.com",
       "font-src 'self' data:",
-      "connect-src 'self' https://struct.to https://vitals.vercel-insights.com https://va.vercel-scripts.com",
+      "connect-src 'self' https://struct.to https://vitals.vercel-insights.com https://va.vercel-scripts.com https://us.i.posthog.com https://us-assets.i.posthog.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -54,22 +54,6 @@ const nextConfig: NextConfig = {
     ];
   },
   skipTrailingSlashRedirect: true,
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/array/:path*",
-        destination: "https://us-assets.i.posthog.com/array/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-    ];
-  },
   async redirects() {
     return [
       {
@@ -95,7 +79,9 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    deviceSizes: [640, 828, 1200],
     imageSizes: [32, 40, 48, 64, 72, 96, 128, 256, 384],
+    minimumCacheTTL: 2592000,
     remotePatterns: [
       {
         protocol: "https",

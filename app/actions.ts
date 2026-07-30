@@ -68,6 +68,7 @@ import {
 	type PnlChartExit,
 } from "@/lib/struct/pnl";
 import { resolvePnlRange } from "@/lib/struct/pnl-range";
+import { compactPnlDataPointsForWire } from "@/lib/struct/pnl-wire";
 import {
 	PNL_RISK_TIMEFRAMES,
 	pnlAnchorValues,
@@ -111,8 +112,7 @@ import {
 	defaultTraderPositionSortBy,
 	defaultTraderComboSortBy,
 	defaultTraderComboStatusFilter,
-	rankedPositionSortBy,
-	rankedPositionSortDirection,
+	rankedPositionsQuery,
 	defaultTraderCategorySortBy,
 	defaultTraderMarketSortBy,
 	type TraderCategorySortBy,
@@ -293,7 +293,9 @@ export async function getMarketsStatusPageAction({
 		sortBy: safeSortBy,
 		sortDirection: safeSortDirection,
 		timeframe: safeTimeframe,
-		markets: result.data.map((market) => marketResponseToRow(market)),
+		markets: result.data.map((market) =>
+			marketResponseToRow(market, { metricsTimeframes: [safeTimeframe] }),
+		),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};
@@ -365,7 +367,7 @@ export async function getTagEventsStatusPageAction({
 
 	return {
 		tab: safeTab,
-		events: result.data.map(eventResponseToRow),
+		events: result.data.map((event) => eventResponseToRow(event)),
 		hasMore: result.hasMore,
 		nextCursor: result.nextCursor,
 	};
@@ -646,12 +648,11 @@ export async function getTraderRankedPositionsPageAction({
 }) {
 	await assertHumanRequest();
 	const safePageNumber = clampPageNumber(pageNumber, maxTraderPageNumber);
-	const page = await getTraderPositionsPage(address, "closed", {
-		limit: defaultTraderTablePageSize,
-		offset: (safePageNumber - 1) * defaultTraderTablePageSize,
-		sort_by: rankedPositionSortBy,
-		sort_direction: rankedPositionSortDirection[mode],
-	});
+	const page = await getTraderPositionsPage(
+		address,
+		"closed",
+		rankedPositionsQuery(mode, safePageNumber, defaultTraderTablePageSize),
+	);
 
 	return { page, pageNumber: safePageNumber };
 }
@@ -893,7 +894,14 @@ export async function getTraderPnlViewAction({
 		getTraderPnlRisk(normalizedAddress, PNL_RISK_TIMEFRAMES[range.timeframe]),
 	]);
 
-	return { range, fillGaps: safeFillGaps, category: safeCategory, candles, exits, risk };
+	return {
+		range,
+		fillGaps: safeFillGaps,
+		category: safeCategory,
+		candles: compactPnlDataPointsForWire(candles),
+		exits,
+		risk,
+	};
 }
 
 export async function searchTradersAction(query: string) {

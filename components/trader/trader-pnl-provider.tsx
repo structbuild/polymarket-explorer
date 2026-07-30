@@ -120,14 +120,15 @@ export function TraderPnlProvider({
 				const result = await getTraderPnlViewAction({ address, ...nextQuery });
 				if (requestIdRef.current !== requestId) return;
 				queryRef.current = nextQuery;
+				const candles = expandPnlDataPointsFromWire(result.candles);
 				setState({
 					range: result.range,
 					fillGaps: result.fillGaps,
 					category: result.category,
-					candles: result.candles,
+					candles,
 					annotations:
 						result.range.mode === "preset" && result.range.timeframe === "all" && !result.category
-							? getPnlChartAnnotations(result.candles, periods)
+							? getPnlChartAnnotations(candles, periods)
 							: [],
 					exits: result.exits,
 					risk: result.risk,

@@ -3,8 +3,7 @@ import {
 	getTraderPositionsPage,
 } from "@/lib/struct/queries"
 import {
-	rankedPositionSortBy,
-	rankedPositionSortDirection,
+	rankedPositionsQuery,
 	type TraderExitMode,
 } from "@/lib/trader-search-params-shared"
 
@@ -19,12 +18,11 @@ export function loadTraderHighlightsData({
 	mode: TraderExitMode
 	pageNumber: number
 }) {
-	return getTraderPositionsPage(address, "closed", {
-		limit: defaultTraderTablePageSize,
-		offset: (pageNumber - 1) * defaultTraderTablePageSize,
-		sort_by: rankedPositionSortBy,
-		sort_direction: rankedPositionSortDirection[mode],
-	})
+	return getTraderPositionsPage(
+		address,
+		"closed",
+		rankedPositionsQuery(mode, pageNumber, defaultTraderTablePageSize),
+	)
 }
 
 export async function TraderHighlightsSection({

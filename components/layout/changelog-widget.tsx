@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
@@ -17,7 +18,7 @@ import {
 import posthog from "posthog-js";
 
 import { ExternalLink } from "@/components/ui/external-link";
-import { CHANGELOG_ILLUSTRATIONS } from "@/components/layout/changelog-illustrations";
+import { hasChangelogIllustration } from "@/lib/changelog-illustration-ids";
 import {
 	CHANGELOG,
 	CHANGELOG_RECENT_WINDOW_DAYS,
@@ -28,6 +29,11 @@ import {
 } from "@/lib/changelog";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { cn } from "@/lib/utils";
+
+const ChangelogIllustration = dynamic(
+	() => import("@/components/layout/changelog-illustrations"),
+	{ ssr: false },
+);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const AUTOPLAY_DURATION = 7000;
@@ -317,7 +323,7 @@ function ChangelogCarousel({
 function ChangelogCard({ entry }: { entry: ChangelogEntry }) {
 	const tag = entry.tag ? TAG_META[entry.tag] : null;
 	const Icon = tag?.icon ?? SparklesIcon;
-	const Illustration = CHANGELOG_ILLUSTRATIONS[entry.id];
+	const illustrationId = hasChangelogIllustration(entry.id) ? entry.id : null;
 
 	return (
 		<div>
@@ -330,8 +336,8 @@ function ChangelogCard({ entry }: { entry: ChangelogEntry }) {
 						sizes="(max-width: 640px) 100vw, 384px"
 						className="object-cover"
 					/>
-				) : Illustration ? (
-					<Illustration />
+				) : illustrationId ? (
+					<ChangelogIllustration id={illustrationId} />
 				) : (
 					<div className={cn("flex h-full w-full items-center justify-center bg-linear-to-br", tag?.gradient ?? "from-primary/25 to-primary/3")}>
 						<Icon className="size-9 text-foreground/40" />

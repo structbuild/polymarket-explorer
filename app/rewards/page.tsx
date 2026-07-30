@@ -8,6 +8,7 @@ import { RewardsTable } from "@/components/rewards/rewards-table";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
+import { marketResponseToRewardsRow } from "@/lib/rewards-table-map";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSiteUrl } from "@/lib/env";
 import { buildPageMetadata, SITE_NAME } from "@/lib/site-metadata";
@@ -48,7 +49,7 @@ async function RewardsContent() {
 	return (
 		<>
 			<JsonLd data={jsonLd} />
-			<RewardsTable markets={markets} />
+			<RewardsTable markets={markets.map(marketResponseToRewardsRow)} />
 		</>
 	);
 }

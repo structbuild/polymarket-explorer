@@ -114,6 +114,7 @@ export function BuilderPageHeader({ builderCode, metadata }: BuilderPageHeaderPr
 						nativeButton={false}
 						render={
 							<Link
+								prefetch={false}
 								href={
 									`/builders/compare?codes=${encodeURIComponent(builderCode)}&timeframe=${DEFAULT_BUILDER_TIMEFRAME}` as Route
 								}

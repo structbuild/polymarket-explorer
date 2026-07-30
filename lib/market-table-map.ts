@@ -1,12 +1,9 @@
-import type {
-	MarketResponse,
-	MetricsTimeframe,
-	SimpleTimeframeMetrics,
-} from "@structbuild/sdk";
+import type { MarketResponse, MetricsTimeframe } from "@structbuild/sdk";
 
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
+import { pickMetrics, type TimeframeMetrics } from "@/lib/timeframe-metrics";
 
-export type TimeframeMetrics = Partial<Record<MetricsTimeframe, SimpleTimeframeMetrics>>;
+export type { TimeframeMetrics };
 
 export type MarketTableRow = {
 	id: string;
@@ -29,22 +26,8 @@ export type MarketTableRow = {
 };
 
 type MarketRowOptions = {
-	metricsTimeframes?: MetricsTimeframe[];
+	metricsTimeframes?: readonly MetricsTimeframe[];
 };
-
-function pickMetrics(
-	metrics: MarketResponse["metrics"],
-	timeframes?: MetricsTimeframe[],
-): TimeframeMetrics {
-	if (!metrics) return {};
-	if (!timeframes || timeframes.length === 0) return metrics;
-	const picked: TimeframeMetrics = {};
-	for (const timeframe of timeframes) {
-		const value = metrics[timeframe];
-		if (value) picked[timeframe] = value;
-	}
-	return picked;
-}
 
 export function marketResponseToRow(market: MarketResponse, options?: MarketRowOptions): MarketTableRow {
 	const metricsTimeframes = options?.metricsTimeframes;

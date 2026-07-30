@@ -38,6 +38,7 @@ export function MobileNav() {
 							<Link
 								key={item.href}	
 								href={item.href}
+								prefetch={false}
 								target={item.external ? "_blank" : undefined}
 								onClick={() => setOpen(false)}
 								aria-current={isActive ? "page" : undefined}

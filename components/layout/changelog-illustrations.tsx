@@ -4,6 +4,7 @@ import { ChevronDownIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils";
 import type { ChangelogTag } from "@/lib/changelog";
+import type { ChangelogIllustrationId } from "@/lib/changelog-illustration-ids";
 
 function meshBackground(color: string) {
 	return [
@@ -651,7 +652,7 @@ function PnlCategoryArt() {
 	);
 }
 
-export const CHANGELOG_ILLUSTRATIONS: Record<string, () => ReactNode> = {
+const CHANGELOG_ILLUSTRATIONS: Record<ChangelogIllustrationId, () => ReactNode> = {
 	"combos-hub": CombosHubArt,
 	"combo-detail": ComboDetailArt,
 	"combo-analytics": ComboAnalyticsArt,
@@ -665,3 +666,8 @@ export const CHANGELOG_ILLUSTRATIONS: Record<string, () => ReactNode> = {
 	"market-top-traders": MarketTopTradersArt,
 	"analytics-rewards-incentives": RewardsIncentivesArt,
 };
+
+export default function ChangelogIllustration({ id }: { id: ChangelogIllustrationId }) {
+	const Art = CHANGELOG_ILLUSTRATIONS[id];
+	return Art ? <Art /> : null;
+}

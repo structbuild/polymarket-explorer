@@ -160,7 +160,7 @@ function TradeHighlightRow({
 				{!hasTrade ? (
 					<span className="text-sm font-medium text-muted-foreground sm:text-base">—</span>
 				) : href ? (
-					<Link href={href} className="min-w-0 hover:opacity-80 sm:justify-end">
+					<Link href={href} prefetch={false} className="min-w-0 hover:opacity-80 sm:justify-end">
 						{tradeDetails}
 					</Link>
 				) : (
@@ -171,6 +171,7 @@ function TradeHighlightRow({
 				href ? (
 					<Link
 						href={href}
+						prefetch={false}
 						className="mt-1 block text-sm text-muted-foreground break-words hover:text-foreground hover:underline sm:truncate"
 						title={questionText ?? undefined}
 					>

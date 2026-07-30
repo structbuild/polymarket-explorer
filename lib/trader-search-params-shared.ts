@@ -147,6 +147,31 @@ export const rankedPositionSortDirection = {
 	losses: "asc",
 } as const satisfies Record<TraderExitMode, TraderSortDirection>;
 
+/**
+ * Sorting alone does not separate wins from losses: with few closed positions,
+ * "Best Wins" sorted desc still surfaces losses (and vice versa) because the
+ * whole closed set is returned. `won` restricts each mode to the right side —
+ * upstream treats zero or negative realized PnL as a loss.
+ */
+export const rankedPositionWon = {
+	wins: true,
+	losses: false,
+} as const satisfies Record<TraderExitMode, boolean>;
+
+export function rankedPositionsQuery(
+	mode: TraderExitMode,
+	pageNumber: number,
+	pageSize: number,
+) {
+	return {
+		limit: pageSize,
+		offset: (pageNumber - 1) * pageSize,
+		sort_by: rankedPositionSortBy,
+		sort_direction: rankedPositionSortDirection[mode],
+		won: rankedPositionWon[mode],
+	};
+}
+
 export { pnlTimeframeValues, pnlAnchorValues, type PnlTimeframe, type PnlAnchor } from "@/lib/struct/pnl-timeframes";
 
 export const positivePageParserDef = {

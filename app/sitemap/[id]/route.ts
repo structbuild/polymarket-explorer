@@ -59,7 +59,7 @@ export async function GET(
 	return new Response(serializeUrlset(entries), {
 		headers: {
 			"Content-Type": "application/xml",
-			"Cache-Control": "public, max-age=0, s-maxage=300, must-revalidate",
+			"Cache-Control": "public, max-age=0, s-maxage=3600, must-revalidate",
 		},
 	});
 }

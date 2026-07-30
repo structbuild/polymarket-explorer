@@ -35,7 +35,7 @@ export const ANALYTICS_RANGE_DESCRIPTIONS: Record<AnalyticsRange, string> = {
 	all: "All time",
 };
 
-export const DEFAULT_ANALYTICS_RANGE: AnalyticsRange = "all";
+export const DEFAULT_ANALYTICS_RANGE: AnalyticsRange = "30d";
 
 export function parseAnalyticsRange(
 	value: string | string[] | undefined,

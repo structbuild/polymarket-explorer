@@ -1,7 +1,6 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { MarketResponse } from "@structbuild/sdk";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,24 +12,11 @@ import { ExternalLink } from "@/components/ui/external-link";
 import { TooltipWrapper } from "@/components/ui/tooltip";
 import { Volume } from "@/components/ui/volume";
 import { formatNumber } from "@/lib/format";
+import type { RewardsTableRow } from "@/lib/rewards-table-map";
 import { truncateMarketTitle } from "@/lib/utils";
 import { REWARDS_TABLE_COLUMN_SIZES } from "./rewards-table-columns";
 
-function sumRewardField(
-	market: MarketResponse,
-	field:
-		| "rewards_daily_rate"
-		| "total_daily_rate"
-		| "native_daily_rate"
-		| "sponsored_daily_rate"
-		| "rewards_max_spread"
-		| "rewards_min_size"
-		| "sponsors_count",
-) {
-	return market.clob_rewards?.map((r) => r[field]).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? null;
-}
-
-const columns: ColumnDef<MarketResponse, unknown>[] = [
+const columns: ColumnDef<RewardsTableRow, unknown>[] = [
 	{
 		id: "market",
 		header: "Market",
@@ -39,16 +25,16 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		meta: { cellClassName: "whitespace-normal" },
 		cell: ({ row }) => {
 			const market = row.original;
-			const question = market.question ?? "";
+			const question = market.question;
 			const displayTitle = truncateMarketTitle(question || "Untitled market");
-			const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
+			const href = market.slug ? (`/markets/${market.slug}` as Route) : null;
 			return (
 				<div className="flex items-center gap-3">
-					{market.image_url ? (
+					{market.imageUrl ? (
 						<Image
 							className="size-10 shrink-0 rounded-md object-cover"
 							alt={question}
-							src={market.image_url}
+							src={market.imageUrl}
 							width={40}
 							height={40}
 						/>
@@ -80,7 +66,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		header: "Probability",
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.probability,
-		cell: ({ row }) => <p>{formatNumber((row.original.outcomes?.[0]?.price ?? 0) * 100, { percent: true })}</p>,
+		cell: ({ row }) => <p>{formatNumber((row.original.probability ?? 0) * 100, { percent: true })}</p>,
 	},
 	{
 		id: "volume",
@@ -88,8 +74,8 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.volume,
 		cell: ({ row }) => {
-			const usd = row.original.metrics?.["24h"]?.volume ?? null;
-			const shares = row.original.metrics?.["24h"]?.shares_volume ?? null;
+			const usd = row.original.volume24hUsd;
+			const shares = row.original.volume24hShares;
 			if (usd == null && shares == null) return <p className="text-muted-foreground">—</p>;
 			return <Volume usd={usd} shares={shares} />;
 		},
@@ -100,7 +86,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.liquidity,
 		cell: ({ row }) => {
-			const val = row.original.liquidity_usd;
+			const val = row.original.liquidityUsd;
 			if (val == null) return <p className="text-muted-foreground">—</p>;
 			return <p>{formatNumber(val, { currency: true, compact: true })}</p>;
 		},
@@ -119,9 +105,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.rewards,
 		cell: ({ row }) => {
-			const total = sumRewardField(row.original, "total_daily_rate");
-			const native = sumRewardField(row.original, "native_daily_rate");
-			const sponsored = sumRewardField(row.original, "sponsored_daily_rate");
+			const { totalDailyRate: total, nativeDailyRate: native, sponsoredDailyRate: sponsored } = row.original;
 			if (total == null) return <p className="text-muted-foreground">—</p>;
 			const n = native ?? 0;
 			const s = sponsored ?? 0;
@@ -156,7 +140,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.maxSpread,
 		cell: ({ row }) => {
-			const spread = sumRewardField(row.original, "rewards_max_spread");
+			const spread = row.original.maxSpread;
 			if (spread == null) return <p className="text-muted-foreground">—</p>;
 			return <p>{formatNumber(spread, { percent: true })}</p>;
 		},
@@ -175,7 +159,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.minSize,
 		cell: ({ row }) => {
-			const size = sumRewardField(row.original, "rewards_min_size");
+			const size = row.original.minSize;
 			if (size == null) return <p className="text-muted-foreground">—</p>;
 			return <p>{formatNumber(size, { decimals: 0 })}</p>;
 		},
@@ -194,7 +178,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		enableHiding: false,
 		size: REWARDS_TABLE_COLUMN_SIZES.sponsors,
 		cell: ({ row }) => {
-			const count = sumRewardField(row.original, "sponsors_count");
+			const count = row.original.sponsorsCount;
 			if (count == null) return <p className="text-muted-foreground">—</p>;
 			return <p>{count}</p>;
 		},
@@ -205,7 +189,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 		size: REWARDS_TABLE_COLUMN_SIZES.link,
 		enableHiding: false,
 		cell: ({ row }) => {
-			const eventSlug = row.original.event_slug;
+			const eventSlug = row.original.eventSlug;
 			if (!eventSlug) return null;
 			return (
 				<div className="flex justify-end">
@@ -223,7 +207,7 @@ const columns: ColumnDef<MarketResponse, unknown>[] = [
 ];
 
 type Props = {
-	markets: MarketResponse[];
+	markets: RewardsTableRow[];
 };
 
 export function RewardsTable({ markets }: Props) {
@@ -236,7 +220,7 @@ export function RewardsTable({ markets }: Props) {
 			emptyMessage="No reward markets found."
 			columnLayout="fixed"
 			defaultPageSize={25}
-			getRowHref={(row) => (row.market_slug ? `/markets/${row.market_slug}` : null)}
+			getRowHref={(row) => (row.slug ? `/markets/${row.slug}` : null)}
 		/>
 	);
 }

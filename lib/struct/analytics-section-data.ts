@@ -119,7 +119,11 @@ export async function loadAnalyticsSectionData({
 
 	const projectionOptions = projection ?? { showKpis };
 	const compactChartPoints = projectAnalyticsPoints(chartPoints, projectionOptions);
-	const compactKpiPoints = kpiPoints ? projectAnalyticsPoints(kpiPoints, projectionOptions) : null;
+	const compactKpiPoints = !kpiPoints
+		? null
+		: kpiPoints === chartPoints
+			? compactChartPoints
+			: projectAnalyticsPoints(kpiPoints, projectionOptions);
 
 	return {
 		view,

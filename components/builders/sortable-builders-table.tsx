@@ -222,6 +222,7 @@ export function SortableBuildersTable({
 							render={
 								<Link
 									href={compareHref}
+									prefetch={false}
 									onClick={() =>
 										posthog.capture("builders_compare_opened", {
 											source: "leaderboard",

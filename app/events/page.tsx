@@ -92,7 +92,9 @@ async function EventsPageContent({ searchParams }: Props) {
 					<EventTagsScroller />
 				</Suspense>
 				<EventsStatusListing
-					initialEvents={events.map(eventResponseToRow)}
+					initialEvents={events.map((event) =>
+						eventResponseToRow(event, { metricsTimeframes: [timeframe] }),
+					)}
 					initialTab={tab}
 					initialCursor={activeCursor ?? null}
 					initialHasMore={hasMore}

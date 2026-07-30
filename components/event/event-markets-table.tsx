@@ -6,59 +6,19 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import posthog from "posthog-js";
-import type { EventMarket, EventMarketOutcome } from "@structbuild/sdk";
 
 import { Button } from "@/components/ui/button";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Volume } from "@/components/ui/volume";
+import type { EventMarketRow } from "@/lib/event-markets-table-map";
 import { formatDateShort, formatNumber } from "@/lib/format";
-import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
 import { cn, truncateMarketTitle } from "@/lib/utils";
 
 const SHOW_LESS_THRESHOLD = 12;
 
 type SortKey = "probability" | "volume" | "liquidity";
 type SortDirection = "asc" | "desc";
-
-const RESOLVED_STATUSES = new Set(["closed", "resolved"]);
-
-function isMarketResolved(market: EventMarket): boolean {
-	return (
-		RESOLVED_STATUSES.has(market.status?.toLowerCase() ?? "") ||
-		market.winning_outcome != null
-	);
-}
-
-function getYesOutcome(market: EventMarket): EventMarketOutcome | null {
-	return market.outcomes?.[0] ?? null;
-}
-
-function getLeadingOutcome(market: EventMarket): EventMarketOutcome | null {
-	const outcomes = market.outcomes ?? [];
-	if (outcomes.length === 0) return null;
-	let best = outcomes[0];
-	for (const o of outcomes) {
-		if ((o.price ?? 0) > (best.price ?? 0)) best = o;
-	}
-	return best;
-}
-
-function getResolvedOutcome(market: EventMarket): EventMarketOutcome | null {
-	if (market.winning_outcome) return market.winning_outcome;
-	const outcomes = market.outcomes ?? [];
-	const top = outcomes.find((o) => (o.price ?? 0) >= 0.99);
-	if (top) return top;
-	return getLeadingOutcome(market);
-}
-
-function getMarketDisplayTitle(market: EventMarket): string {
-	const title = market.title?.trim();
-	if (title) return title;
-	const question = market.question?.trim();
-	if (question) return question;
-	return market.market_slug || "Untitled market";
-}
 
 function compareNullable(
 	a: number | null | undefined,
@@ -71,17 +31,14 @@ function compareNullable(
 	return direction === "asc" ? a - b : b - a;
 }
 
-function ProbabilityCell({ market }: { market: EventMarket }) {
-	const isResolved = isMarketResolved(market);
-
-	if (isResolved) {
-		const outcome = getResolvedOutcome(market);
-		if (!outcome) {
+function ProbabilityCell({ market }: { market: EventMarketRow }) {
+	if (market.isResolved) {
+		if (!market.resolvedOutcomeName) {
 			return <span className="text-muted-foreground tabular-nums">—</span>;
 		}
 		return (
 			<span className="inline-flex flex-col leading-tight">
-				<span className="text-sm font-medium text-foreground">{outcome.name}</span>
+				<span className="text-sm font-medium text-foreground">{market.resolvedOutcomeName}</span>
 				<span className="text-xs text-muted-foreground">
 					Resolved
 				</span>
@@ -89,23 +46,22 @@ function ProbabilityCell({ market }: { market: EventMarket }) {
 		);
 	}
 
-	const yes = getYesOutcome(market);
-	if (yes?.price == null) {
+	if (market.yesPrice == null) {
 		return <span className="text-muted-foreground tabular-nums">—</span>;
 	}
 
 	return (
 		<span className="text-base font-semibold tabular-nums">
-			{Math.round(yes.price * 100)}%
+			{Math.round(market.yesPrice * 100)}%
 		</span>
 	);
 }
 
-function MarketCell({ market }: { market: EventMarket }) {
-	const title = getMarketDisplayTitle(market);
+function MarketCell({ market }: { market: EventMarketRow }) {
+	const title = market.title;
 	const displayTitle = truncateMarketTitle(title);
-	const imageUrl = normalizePolymarketS3ImageUrl(market.image_url) ?? null;
-	const href = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
+	const imageUrl = market.imageUrl;
+	const href = market.slug ? (`/markets/${market.slug}` as Route) : null;
 
 	const inner = (
 		<div className="flex min-w-0 items-center gap-3">
@@ -135,7 +91,7 @@ function MarketCell({ market }: { market: EventMarket }) {
 	);
 }
 
-export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
+export function EventMarketsTable({ markets }: { markets: EventMarketRow[] }) {
 	const [sortKey, setSortKey] = useState<SortKey>("probability");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 	const [showAll, setShowAll] = useState(false);
@@ -150,22 +106,18 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 	};
 
 	const sorted = useMemo(() => {
-		const copy = markets.filter((m) => m.market_slug);
+		const copy = markets.filter((m) => m.slug);
 		switch (sortKey) {
 			case "volume":
-				copy.sort((a, b) => compareNullable(a.volume_24hr ?? null, b.volume_24hr ?? null, sortDirection));
+				copy.sort((a, b) => compareNullable(a.volume24hr, b.volume24hr, sortDirection));
 				break;
 			case "liquidity":
-				copy.sort((a, b) =>
-					compareNullable(a.liquidity_usd ?? null, b.liquidity_usd ?? null, sortDirection),
-				);
+				copy.sort((a, b) => compareNullable(a.liquidityUsd, b.liquidityUsd, sortDirection));
 				break;
 			case "probability":
 				copy.sort((a, b) => {
-					const aResolved = isMarketResolved(a);
-					const bResolved = isMarketResolved(b);
-					if (aResolved !== bResolved) return aResolved ? 1 : -1;
-					return compareNullable(getYesOutcome(a)?.price ?? null, getYesOutcome(b)?.price ?? null, sortDirection);
+					if (a.isResolved !== b.isResolved) return a.isResolved ? 1 : -1;
+					return compareNullable(a.yesPrice, b.yesPrice, sortDirection);
 				});
 				break;
 		}
@@ -183,8 +135,8 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 		);
 	}
 
-	const anyLiquidity = sorted.some((m) => (m.liquidity_usd ?? 0) > 0);
-	const anyEnd = sorted.some((m) => m.end_time != null);
+	const anyLiquidity = sorted.some((m) => (m.liquidityUsd ?? 0) > 0);
+	const anyEnd = sorted.some((m) => m.endTime != null);
 
 	return (
 		<div className="space-y-4">
@@ -235,10 +187,10 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 					</TableHeader>
 					<TableBody>
 						{visible.map((market) => {
-							const rowHref = market.market_slug ? (`/markets/${market.market_slug}` as Route) : null;
+							const rowHref = market.slug ? (`/markets/${market.slug}` as Route) : null;
 							return (
 							<TableRow
-								key={market.condition_id || market.market_slug || market.id || ""}
+								key={market.conditionId || market.slug || market.id || ""}
 								className={cn(
 									rowHref &&
 										"relative cursor-pointer [&_a:not([data-row-link])]:relative [&_a:not([data-row-link])]:z-10",
@@ -261,16 +213,16 @@ export function EventMarketsTable({ markets }: { markets: EventMarket[] }) {
 									<ProbabilityCell market={market} />
 								</TableCell>
 								<TableCell className="align-middle tabular-nums">
-									<Volume usd={market.volume_24hr ?? 0} shares={null} />
+									<Volume usd={market.volume24hr ?? 0} shares={null} />
 								</TableCell>
 								{anyLiquidity && (
 									<TableCell className="align-middle tabular-nums">
-										{formatNumber(market.liquidity_usd ?? 0, { compact: true, currency: true })}
+										{formatNumber(market.liquidityUsd ?? 0, { compact: true, currency: true })}
 									</TableCell>
 								)}
 								{anyEnd && (
 									<TableCell className="align-middle text-muted-foreground tabular-nums">
-										{market.end_time != null ? formatDateShort(market.end_time) : "—"}
+										{market.endTime != null ? formatDateShort(market.endTime) : "—"}
 									</TableCell>
 								)}
 							</TableRow>

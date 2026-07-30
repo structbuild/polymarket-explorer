@@ -1,8 +1,9 @@
-import type { Event, MetricsTimeframe, SimpleTimeframeMetrics } from "@structbuild/sdk";
+import type { Event, MetricsTimeframe } from "@structbuild/sdk";
 
 import { normalizePolymarketS3ImageUrl } from "@/lib/image-url";
+import { pickMetrics, type TimeframeMetrics } from "@/lib/timeframe-metrics";
 
-export type EventTimeframeMetrics = Partial<Record<MetricsTimeframe, SimpleTimeframeMetrics>>;
+export type EventTimeframeMetrics = TimeframeMetrics;
 
 export type EventTableRow = {
 	id: string;
@@ -34,7 +35,11 @@ function sumChildLiquidity(event: Event): number | null {
 	return any ? total : null;
 }
 
-export function eventResponseToRow(event: Event): EventTableRow {
+type EventRowOptions = {
+	metricsTimeframes?: readonly MetricsTimeframe[];
+};
+
+export function eventResponseToRow(event: Event, options?: EventRowOptions): EventTableRow {
 	return {
 		id: event.id,
 		slug: event.event_slug ?? null,
@@ -48,6 +53,6 @@ export function eventResponseToRow(event: Event): EventTableRow {
 		status: event.status ?? null,
 		tags: (event.tags ?? []).map((t) => t.label).filter((l): l is string => typeof l === "string" && l.length > 0),
 		liquidityUsd: sumChildLiquidity(event),
-		metrics: event.metrics ?? {},
+		metrics: pickMetrics(event.metrics, options?.metricsTimeframes),
 	};
 }

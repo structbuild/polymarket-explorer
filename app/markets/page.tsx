@@ -81,7 +81,9 @@ async function MarketsPageContent({ searchParams }: Props) {
 					</p>
 				</div>
 				<MarketsStatusListing
-					initialMarkets={markets.map((market) => marketResponseToRow(market))}
+					initialMarkets={markets.map((market) =>
+						marketResponseToRow(market, { metricsTimeframes: [timeframe] }),
+					)}
 					initialTab={tab}
 					initialCursor={activeCursor ?? null}
 					initialHasMore={hasMore}

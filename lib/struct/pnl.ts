@@ -161,13 +161,6 @@ export async function getTraderPnlCandles(
 	);
 }
 
-export async function getTraderCumulativePnlUsd(address: string): Promise<number> {
-	const points = await getTraderPnlCandles(address, "lifetime", "1d");
-	if (points.length === 0) return 0;
-	const latest = points.reduce((max, point) => (point.t > max.t ? point : max), points[0]);
-	return latest.p;
-}
-
 const getTraderPnlRiskCached = cache(
 	async (address: string, timeframe: StructPnlPeriodTimeframe = defaultPnlRiskTimeframe): Promise<PnlRiskResponse | null> => {
 		const client = getStructClient();
