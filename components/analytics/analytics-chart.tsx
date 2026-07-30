@@ -59,6 +59,7 @@ export type AnalyticsSeries = {
 	color: string;
 	stackId?: string;
 	isTotal?: boolean;
+	defaultHidden?: boolean;
 };
 
 export type AnalyticsValueFormat = "currency" | "count";
@@ -148,7 +149,7 @@ export function AnalyticsChart({
 	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => {
 		const hidden = new Set<string>();
 		for (const s of series) {
-			if (s.isTotal) hidden.add(s.key);
+			if (s.isTotal || s.defaultHidden) hidden.add(s.key);
 		}
 		return hidden;
 	});

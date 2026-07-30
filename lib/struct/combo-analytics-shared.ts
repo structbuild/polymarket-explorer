@@ -143,6 +143,7 @@ export type ComboChartSeries = {
 	color: string;
 	stackId?: string;
 	isTotal?: boolean;
+	defaultHidden?: boolean;
 };
 
 export type ComboChartMetric = {
@@ -190,6 +191,13 @@ export const COMBO_CHART_METRICS: ComboChartMetric[] = [
 		],
 	},
 	{
+		id: "fees",
+		title: "Fees",
+		description: "Total fees paid on combo fills, in USD.",
+		valueFormat: "currency",
+		series: [{ key: "fees", label: "Fees", color: "var(--chart-2)" }],
+	},
+	{
 		id: "sides",
 		title: "YES vs NO volume",
 		description: "USD volume on the YES and NO sides of combo markets.",
@@ -223,14 +231,11 @@ export const COMBO_CHART_METRICS: ComboChartMetric[] = [
 		],
 	},
 	{
-		id: "fees",
-		title: "Fees",
-		description: "Total and builder combo fees in USD.",
+		id: "builderFees",
+		title: "Builder fees",
+		description: "Builder-attributed fee revenue on combo fills, in USD.",
 		valueFormat: "currency",
-		series: [
-			{ key: "fees", label: "Fees", color: "var(--chart-2)", isTotal: true },
-			{ key: "builder_fees", label: "Builder fees", color: "var(--chart-4)" },
-		],
+		series: [{ key: "builder_fees", label: "Builder fees", color: "var(--chart-4)" }],
 	},
 	{
 		id: "lifecycle",
@@ -238,8 +243,8 @@ export const COMBO_CHART_METRICS: ComboChartMetric[] = [
 		description: "Combo market creations and executions.",
 		valueFormat: "count",
 		series: [
-			{ key: "creations", label: "Creations", color: "var(--chart-1)" },
-			{ key: "executions", label: "Executions", color: "var(--chart-2)" },
+			{ key: "creations", label: "Creations", color: "var(--chart-1)", stackId: STACK },
+			{ key: "executions", label: "Executions", color: "var(--chart-2)", stackId: STACK },
 		],
 	},
 	{
@@ -259,7 +264,12 @@ export const COMBO_CHART_METRICS: ComboChartMetric[] = [
 		valueFormat: "count",
 		series: [
 			{ key: "new_combo_traders", label: "New traders", color: "var(--chart-5)" },
-			{ key: "new_builder_combo_traders", label: "New builder traders", color: "var(--chart-4)" },
+			{
+				key: "new_builder_combo_traders",
+				label: "New builder traders",
+				color: "var(--chart-4)",
+				defaultHidden: true,
+			},
 		],
 	},
 ];
