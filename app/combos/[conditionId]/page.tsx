@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { ComboDetailHeader, buildComboTitle } from "@/components/combos/combo-detail-header";
+import { ComboHolders, ComboHoldersFallback } from "@/components/combos/combo-holders";
 import { ComboMetrics, ComboMetricsFallback } from "@/components/combos/combo-metrics";
 import { ComboPriceChart, ComboPriceChartFallback } from "@/components/combos/combo-price-chart";
 import { normalizeComboResolution } from "@/components/combos/combo-resolution";
@@ -23,6 +24,7 @@ const COMBO_NAV_ITEMS = [
 	{ id: "combo-overview", label: "Overview" },
 	{ id: "combo-chart", label: "Chart" },
 	{ id: "combo-metrics", label: "Metrics" },
+	{ id: "combo-holders", label: "Holders" },
 ];
 
 type Props = {
@@ -117,6 +119,13 @@ export default async function ComboDetailPage({ params, searchParams }: Props) {
 					<SectionAnchor id="combo-metrics">
 						<Suspense fallback={<ComboMetricsFallback />}>
 							<ComboMetrics conditionId={conditionId} />
+						</Suspense>
+					</SectionAnchor>
+
+					<SectionAnchor id="combo-holders" className="space-y-3">
+						<h2 className="text-sm font-medium text-muted-foreground">Holders</h2>
+						<Suspense fallback={<ComboHoldersFallback />}>
+							<ComboHolders conditionId={conditionId} />
 						</Suspense>
 					</SectionAnchor>
 				</div>

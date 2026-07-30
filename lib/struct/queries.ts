@@ -169,6 +169,49 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 	}
 }
 
+const maxTraderProfilesBatchSize = 20;
+
+export async function getTraderProfilesBatch(
+	addresses: readonly string[],
+): Promise<Map<string, UserProfile>> {
+	const client = getStructClient();
+	const profiles = new Map<string, UserProfile>();
+
+	const normalized = Array.from(
+		new Set(addresses.map((address) => normalizeWalletAddress(address)).filter(Boolean) as string[]),
+	);
+
+	if (!client || normalized.length === 0) {
+		return profiles;
+	}
+
+	const chunks: string[][] = [];
+	for (let i = 0; i < normalized.length; i += maxTraderProfilesBatchSize) {
+		chunks.push(normalized.slice(i, i + maxTraderProfilesBatchSize));
+	}
+
+	const responses = await Promise.all(
+		chunks.map(async (chunk) => {
+			try {
+				const response = await client.trader.getTraderProfilesBatch({ addresses: chunk.join(",") });
+				return response.data ?? [];
+			} catch (error) {
+				logStructError(`getTraderProfilesBatch:${chunk.length}`, error);
+				return [];
+			}
+		}),
+	);
+
+	for (const profile of responses.flat()) {
+		const key = normalizeWalletAddress(profile.proxy_wallet);
+		if (key) {
+			profiles.set(key, profile);
+		}
+	}
+
+	return profiles;
+}
+
 async function fetchTraderPnlSummary(address: string): Promise<TraderPnl> {
 	const client = getStructClient();
 

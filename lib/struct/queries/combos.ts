@@ -16,13 +16,16 @@ import type {
 	ComboMetricsResponse,
 	PositionPnl,
 	SortDirection,
+	ComboHolder,
 	ComboPnlResponse,
 	ComboPnlSortBy,
 	ComboStatusFilter,
+	UserProfile,
 } from "@structbuild/sdk";
 
 import { getStructClient } from "@/lib/struct/client";
 import { logStructError, readStatus } from "@/lib/struct/http";
+import { getTraderProfilesBatch } from "@/lib/struct/queries";
 import { emptyOffsetPage, type PaginatedResult } from "@/lib/struct/queries/_shared";
 import type { PaginatedResource } from "@/lib/struct/types";
 import { normalizeWalletAddress } from "@/lib/utils";
@@ -178,6 +181,67 @@ export async function getComboCandlesticks(
 
 		logStructError(`getComboCandlesticks:${conditionId}`, error);
 		return null;
+	}
+}
+
+export type ComboHolderEntry = ComboHolder & {
+	profile: UserProfile | null;
+};
+
+export type ComboHolderSide = {
+	positionId: string;
+	outcomeName: string;
+	outcomeIndex: number;
+	totalHolders: number;
+	holders: ComboHolderEntry[];
+};
+
+const defaultComboHoldersLimit = 25;
+
+export async function getComboConditionHolders(
+	conditionId: string,
+	limit: number = defaultComboHoldersLimit,
+): Promise<ComboHolderSide[]> {
+	const client = getStructClient();
+
+	if (!client || !conditionId) {
+		return [];
+	}
+
+	try {
+		const response = await client.combos.getConditionHolders({
+			condition_id: conditionId,
+			limit,
+			include_pnl: true,
+		});
+		const positions = response.data?.positions ?? [];
+
+		if (positions.length === 0) {
+			return [];
+		}
+
+		const profiles = await getTraderProfilesBatch(
+			positions.flatMap((position) => position.holders.map((holder) => holder.wallet)),
+		);
+
+		return positions.map((position, index) => ({
+			positionId: position.position_id,
+			outcomeName: position.outcome_name ?? (position.outcome_index === 1 ? "No" : "Yes"),
+			outcomeIndex: position.outcome_index ?? index,
+			totalHolders: position.total_holders,
+			holders: position.holders.map((holder) => ({
+				...holder,
+				profile: profiles.get(normalizeWalletAddress(holder.wallet) ?? holder.wallet) ?? null,
+			})),
+		}));
+	} catch (error) {
+		const status = readStatus(error);
+		if (status === 404 || status === 400) {
+			return [];
+		}
+
+		logStructError(`getComboConditionHolders:${conditionId}`, error);
+		return [];
 	}
 }
 
