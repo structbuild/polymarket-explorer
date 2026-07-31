@@ -13,11 +13,10 @@ import { normalizeWalletAddress } from "@/lib/utils";
 
 export const maxDuration = 60;
 
-// Per-shard caps keep each sitemap file well under the 50k URL limit; bump or shard further when datasets grow.
-const MARKET_CAP = 5000;
-const EVENT_CAP = 5000;
-const TAG_CAP = 5000;
-const TRADER_CAP = 500;
+const MARKET_CAP = 500;
+const EVENT_CAP = 500;
+const TAG_CAP = 200;
+const TRADER_CAP = 100;
 
 const STATIC_SHARD = "0";
 const TRADERS_SHARD = "1";
@@ -84,7 +83,7 @@ async function buildStaticAndTagsShard(
 
 	const tagEntries: SitemapEntry[] = tagsWithSlug.map((tag) => ({
 		url: `${siteUrl}/tags/${tag.slug}`,
-		changeFrequency: "daily",
+		changeFrequency: "weekly",
 		priority: 0.7,
 	}));
 
@@ -99,7 +98,7 @@ async function buildStaticAndTagsShard(
 
 	const builderEntries: SitemapEntry[] = builderCodes.map(({ code }) => ({
 		url: `${siteUrl}/builders/${encodeURIComponent(code)}`,
-		changeFrequency: "daily",
+		changeFrequency: "weekly",
 		priority: 0.6,
 	}));
 
@@ -115,7 +114,7 @@ async function buildTradersShard(siteUrl: string): Promise<SitemapEntry[]> {
 			if (!address) return null;
 			return {
 				url: `${siteUrl}/traders/${address}`,
-				changeFrequency: "daily",
+				changeFrequency: "weekly",
 				priority: 0.6,
 			};
 		})
@@ -127,7 +126,7 @@ async function buildMarketsShard(siteUrl: string): Promise<SitemapEntry[]> {
 
 	return marketSlugs.map((entry) => ({
 		url: `${siteUrl}/markets/${entry.slug}`,
-		changeFrequency: "daily",
+		changeFrequency: "weekly",
 		priority: 0.8,
 	}));
 }
@@ -137,7 +136,7 @@ async function buildEventsShard(siteUrl: string): Promise<SitemapEntry[]> {
 
 	return eventSlugs.map((entry) => ({
 		url: `${siteUrl}/events/${entry.slug}`,
-		changeFrequency: "daily",
+		changeFrequency: "weekly",
 		priority: 0.8,
 	}));
 }

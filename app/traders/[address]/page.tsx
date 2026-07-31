@@ -336,6 +336,7 @@ async function TraderOverviewSection({
 							<TraderDnaSection
 								pnlSummaryPromise={pnlSummaryPromise}
 								cumulativePnlUsdPromise={cumulativePnlUsdPromise}
+								categoryVolumes={categoryPage.data.slice(0, 12).map((entry) => entry.total_volume_usd ?? 0)}
 								address={address}
 								displayName={displayName}
 								profileImage={profile?.profile_image}
@@ -351,22 +352,22 @@ async function TraderOverviewSection({
 async function TraderDnaSection({
 	pnlSummaryPromise,
 	cumulativePnlUsdPromise,
+	categoryVolumes,
 	address,
 	displayName,
 	profileImage,
 }: {
 	pnlSummaryPromise: Promise<TraderPnl | null>;
 	cumulativePnlUsdPromise: Promise<number>;
+	categoryVolumes: number[];
 	address: string;
 	displayName: string;
 	profileImage?: string | null;
 }) {
-	const [pnlSummary, cumulativePnlUsd, categoryPage] = await Promise.all([
+	const [pnlSummary, cumulativePnlUsd] = await Promise.all([
 		pnlSummaryPromise,
 		cumulativePnlUsdPromise,
-		getTraderCategoryPnl(address, { limit: 12, sort_by: "total_volume_usd", sort_direction: "desc" }),
 	]);
-	const categoryVolumes = categoryPage.data.map((entry) => entry.total_volume_usd ?? 0);
 	return (
 		<TraderDnaCard
 			pnlSummary={pnlSummary}

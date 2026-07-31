@@ -151,13 +151,7 @@ async function fetchTraderProfile(address: string): Promise<UserProfile> {
 	}
 }
 
-export async function getTraderProfile(address: string): Promise<UserProfile | null> {
-	const normalizedAddress = normalizeWalletAddress(address);
-
-	if (!normalizedAddress) {
-		return null;
-	}
-
+const getTraderProfileCached = cache(async (normalizedAddress: string): Promise<UserProfile | null> => {
 	try {
 		return await fetchTraderProfile(normalizedAddress);
 	} catch (error) {
@@ -167,6 +161,16 @@ export async function getTraderProfile(address: string): Promise<UserProfile | n
 		logStructError(`getTraderProfile:${normalizedAddress}`, error);
 		throw error;
 	}
+});
+
+export async function getTraderProfile(address: string): Promise<UserProfile | null> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) {
+		return null;
+	}
+
+	return getTraderProfileCached(normalizedAddress);
 }
 
 const maxTraderProfilesBatchSize = 20;
@@ -236,13 +240,7 @@ async function fetchTraderPnlSummary(address: string): Promise<TraderPnl> {
 	}
 }
 
-export async function getTraderPnlSummary(address: string): Promise<TraderPnl | null> {
-	const normalizedAddress = normalizeWalletAddress(address);
-
-	if (!normalizedAddress) {
-		return null;
-	}
-
+const getTraderPnlSummaryCached = cache(async (normalizedAddress: string): Promise<TraderPnl | null> => {
 	try {
 		return await fetchTraderPnlSummary(normalizedAddress);
 	} catch (error) {
@@ -252,6 +250,16 @@ export async function getTraderPnlSummary(address: string): Promise<TraderPnl | 
 		logStructError(`getTraderPnlSummary:${normalizedAddress}`, error);
 		throw error;
 	}
+});
+
+export async function getTraderPnlSummary(address: string): Promise<TraderPnl | null> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) {
+		return null;
+	}
+
+	return getTraderPnlSummaryCached(normalizedAddress);
 }
 
 export async function getMarketsByConditionIds(conditionIds: string[]): Promise<MarketResponse[] | null> {
@@ -502,13 +510,10 @@ export async function getTraderPnlCandles(
 	}
 }
 
-export async function getTraderPnlChanges(
-	address: string,
-): Promise<PnlChangesResponse | null> {
+const getTraderPnlChangesCached = cache(async (normalizedAddress: string): Promise<PnlChangesResponse | null> => {
 	const client = getStructClient();
-	const normalizedAddress = normalizeWalletAddress(address);
 
-	if (!client || !normalizedAddress) {
+	if (!client) {
 		return null;
 	}
 
@@ -524,6 +529,18 @@ export async function getTraderPnlChanges(
 		logStructError(`getTraderPnlChanges:${normalizedAddress}`, error);
 		return null;
 	}
+});
+
+export async function getTraderPnlChanges(
+	address: string,
+): Promise<PnlChangesResponse | null> {
+	const normalizedAddress = normalizeWalletAddress(address);
+
+	if (!normalizedAddress) {
+		return null;
+	}
+
+	return getTraderPnlChangesCached(normalizedAddress);
 }
 
 export async function getTraderPnlPeriods(

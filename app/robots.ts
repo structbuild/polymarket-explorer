@@ -2,16 +2,51 @@ import type { MetadataRoute } from "next";
 
 import { getSiteUrl } from "@/lib/env";
 
-export default function robots(): MetadataRoute.Robots {
-  const siteUrl = getSiteUrl();
+const DISALLOWED_BOTS = [
+	"GPTBot",
+	"ChatGPT-User",
+	"ClaudeBot",
+	"anthropic-ai",
+	"Google-Extended",
+	"Applebot-Extended",
+	"Bytespider",
+	"Amazonbot",
+	"CCBot",
+	"Diffbot",
+	"meta-externalagent",
+	"FacebookBot",
+	"PerplexityBot",
+	"YouBot",
+	"cohere-ai",
+	"AhrefsBot",
+	"SemrushBot",
+	"DotBot",
+	"MJ12bot",
+	"DataForSeoBot",
+	"BLEXBot",
+	"PetalBot",
+	"ImagesiftBot",
+	"Omgilibot",
+	"Scrapy",
+	"magpie-crawler",
+];
 
-  return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/api/", "/actions/"],
-    },
-    sitemap: `${siteUrl.origin}/sitemap.xml`,
-    host: siteUrl.origin,
-  };
+export default function robots(): MetadataRoute.Robots {
+	const siteUrl = getSiteUrl();
+
+	return {
+		rules: [
+			{
+				userAgent: "*",
+				allow: "/",
+				disallow: ["/api/", "/actions/"],
+			},
+			{
+				userAgent: DISALLOWED_BOTS,
+				disallow: "/",
+			},
+		],
+		sitemap: `${siteUrl.origin}/sitemap.xml`,
+		host: siteUrl.origin,
+	};
 }

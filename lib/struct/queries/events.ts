@@ -8,6 +8,7 @@ import type {
 	MetricsTimeframe,
 	SortDirection,
 } from "@structbuild/sdk";
+import { cache } from "react";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
@@ -171,7 +172,7 @@ export async function getEventTagFrequencies(
 	}
 }
 
-export async function getEventBySlug(slug: string): Promise<Event | null> {
+const getEventBySlugCached = cache(async (slug: string): Promise<Event | null> => {
 	const client = getStructClient();
 
 	if (!client) {
@@ -190,6 +191,10 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
 		logStructError(`getEventBySlug:${slug}`, error);
 		throw error;
 	}
+});
+
+export async function getEventBySlug(slug: string): Promise<Event | null> {
+	return getEventBySlugCached(slug);
 }
 
 export async function getEventChart(

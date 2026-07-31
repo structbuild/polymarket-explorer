@@ -8,6 +8,7 @@ import type {
 	MetricsTimeframe,
 	SortDirection,
 } from "@structbuild/sdk";
+import { cache } from "react";
 
 import { normalizeMarketResponseImages } from "@/lib/image-url";
 import { getStructClient } from "@/lib/struct/client";
@@ -59,7 +60,7 @@ async function fetchTopMarkets(
 	}
 }
 
-export async function getMarketBySlug(slug: string): Promise<MarketResponse | null> {
+const getMarketBySlugCached = cache(async (slug: string): Promise<MarketResponse | null> => {
 	const client = getStructClient();
 
 	if (!client) {
@@ -82,6 +83,10 @@ export async function getMarketBySlug(slug: string): Promise<MarketResponse | nu
 		logStructError(`getMarketBySlug:${slug}`, error);
 		throw error;
 	}
+});
+
+export async function getMarketBySlug(slug: string): Promise<MarketResponse | null> {
+	return getMarketBySlugCached(slug);
 }
 
 export async function getTopMarkets(
