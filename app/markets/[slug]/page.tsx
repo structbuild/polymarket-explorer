@@ -87,16 +87,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		canonical: `/markets/${slug}`,
 		openGraph: {
 			type: "article",
-			images: [
-				{
-					url: `/markets/${slug}/opengraph-image`,
-					width: 1200,
-					height: 630,
-				},
-			],
+			images: [],
 		},
 		twitter: {
-			images: [`/markets/${slug}/opengraph-image`],
+			card: "summary",
+			images: [],
 		},
 	});
 }

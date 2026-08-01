@@ -221,3 +221,56 @@ export function ProgressiveAnalyticsSection(
 		</Suspense>
 	);
 }
+
+export function DeferredAnalyticsSection(
+	props: AnalyticsSectionProps & { preloadAnchorId?: string },
+) {
+	const {
+		title,
+		subject,
+		description,
+		range,
+		view,
+		resolution,
+		defaultRange = DEFAULT_ANALYTICS_RANGE,
+		source,
+		headingLevel = "h2",
+		excludeMetrics,
+		appendMetrics,
+		metricPlacements,
+		endTime,
+		cap = false,
+		defaultCap = false,
+		allowedComponents,
+		pathname,
+		showControls = true,
+		showKpis = true,
+		preloadAnchorId,
+	} = props;
+
+	return (
+		<ProgressiveAnalyticsSectionClient
+			fallback={<AnalyticsSectionFallback {...props} />}
+			title={title}
+			subject={subject}
+			description={description}
+			range={range}
+			view={view}
+			resolution={resolution}
+			defaultRange={defaultRange}
+			source={source}
+			headingLevel={headingLevel}
+			excludeMetrics={excludeMetrics}
+			appendMetrics={appendMetrics}
+			metricPlacements={metricPlacements}
+			endTime={endTime}
+			initialCap={cap}
+			defaultCap={defaultCap}
+			allowedComponents={allowedComponents}
+			pathname={pathname}
+			showControls={showControls}
+			showKpis={showKpis}
+			preloadAnchorId={preloadAnchorId}
+		/>
+	);
+}

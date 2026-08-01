@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 
 import {
 	getAnalyticsSectionChangesAction,
@@ -19,8 +19,9 @@ import {
 } from "@/lib/struct/analytics-shared";
 
 type Props = Omit<AnalyticsSectionClientProps, "initialData" | "refreshedAt"> & {
-	previewData: AnalyticsSectionData;
-	previewRefreshedAt: string;
+	previewData?: AnalyticsSectionData;
+	previewRefreshedAt?: string;
+	fallback?: ReactNode;
 	range: AnalyticsRange;
 	resolution: AnalyticsResolution;
 	view: AnalyticsView;
@@ -30,6 +31,7 @@ type Props = Omit<AnalyticsSectionClientProps, "initialData" | "refreshedAt"> & 
 export function ProgressiveAnalyticsSectionClient({
 	previewData,
 	previewRefreshedAt,
+	fallback,
 	range,
 	resolution,
 	view,
@@ -55,7 +57,7 @@ export function ProgressiveAnalyticsSectionClient({
 
 		startTransition(async () => {
 			try {
-				const canReusePreview = view === "deltas" && range === "30d" && resolution === "D";
+				const canReusePreview = previewData && view === "deltas" && range === "30d" && resolution === "D";
 				const result = canReusePreview
 					? {
 							...previewData,
@@ -135,7 +137,7 @@ export function ProgressiveAnalyticsSectionClient({
 					initialData={fullData}
 					refreshedAt={new Date().toISOString()}
 				/>
-			) : (
+			) : previewData && previewRefreshedAt ? (
 				<AnalyticsSectionClient
 					{...sectionProps}
 					initialData={previewData}
@@ -146,6 +148,8 @@ export function ProgressiveAnalyticsSectionClient({
 					showControls={false}
 					showKpis={false}
 				/>
+			) : (
+				fallback
 			)}
 		</div>
 	);

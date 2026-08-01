@@ -18,7 +18,9 @@ import {
 	getPositionTopTraders,
 	getTopTradesMarkets,
 	getTraderCategoriesPage,
+	getTraderCategoryPnl,
 	getTraderMarketsPage,
+	getTraderPnlChanges,
 	getTraderPositionsPage,
 	getTraderTradesPage,
 	searchAll,
@@ -65,8 +67,11 @@ import {
 import { HOME_ACTIVITY_TABS, type HomeActivityTab } from "@/lib/home-activity";
 import { loadHomeActivityData } from "@/lib/struct/home-activity.server";
 import {
+	computeStreaks,
 	getTraderChartExits,
+	getTraderDailyPnl,
 	getTraderPnlCandles,
+	getTraderPnlPeriods,
 	getTraderPnlRisk,
 	type PnlChartExit,
 } from "@/lib/struct/pnl";
@@ -920,6 +925,58 @@ export async function getTraderPnlViewAction({
 		candles: compactPnlDataPointsForWire(candles),
 		exits,
 		risk,
+	};
+}
+
+export async function getTraderOverviewDetailsAction({
+	address,
+	timeframe,
+	from,
+	to,
+}: {
+	address: string;
+	timeframe: TraderPnlTimeframe;
+	from: number | null;
+	to: number | null;
+}) {
+	await assertHumanRequest();
+	const normalizedAddress = normalizeWalletAddress(address);
+	if (!normalizedAddress) throw new Error("Invalid trader address");
+
+	const safeTimeframe = pnlTimeframeValues.includes(timeframe) ? timeframe : "all";
+	const safeFrom = typeof from === "number" && Number.isFinite(from) ? Math.trunc(from) : undefined;
+	const safeTo = typeof to === "number" && Number.isFinite(to) ? Math.trunc(to) : undefined;
+	const [dailyPnl, periods, exits, risk, changes, categoryPage] = await Promise.all([
+		getTraderDailyPnl(normalizedAddress),
+		getTraderPnlPeriods(normalizedAddress),
+		getTraderChartExits(normalizedAddress, { from: safeFrom, to: safeTo }),
+		getTraderPnlRisk(normalizedAddress, PNL_RISK_TIMEFRAMES[safeTimeframe]),
+		getTraderPnlChanges(normalizedAddress),
+		getTraderCategoryPnl(normalizedAddress, {
+			limit: 25,
+			sort_by: "total_volume_usd",
+			sort_direction: "desc",
+		}),
+	]);
+
+	const seenCategories = new Set<PolymarketCategory>();
+	const availableCategories: PolymarketCategory[] = [];
+	for (const entry of categoryPage.data) {
+		const category = parsePolymarketCategory(entry.category ?? undefined);
+		if (!category || seenCategories.has(category)) continue;
+		seenCategories.add(category);
+		availableCategories.push(category);
+	}
+
+	return {
+		dailyPnl,
+		periods,
+		exits,
+		risk,
+		changes,
+		streaks: computeStreaks(dailyPnl),
+		availableCategories,
+		categoryVolumes: categoryPage.data.slice(0, 12).map((entry) => entry.total_volume_usd ?? 0),
 	};
 }
 

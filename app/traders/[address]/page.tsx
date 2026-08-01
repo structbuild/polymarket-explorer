@@ -1,44 +1,23 @@
-import { ProgressiveAnalyticsSection } from "@/components/analytics/analytics-section";
-import { PnlCalendar } from "@/components/trader/pnl-calendar";
-import { PnlCard } from "@/components/trader/pnl-card";
-import {
-	TraderPerformanceSummaryLive,
-	TraderPnlProvider,
-} from "@/components/trader/trader-pnl-provider";
-import { TraderDnaCard } from "@/components/trader/trader-dna-card";
+import { DeferredAnalyticsSection } from "@/components/analytics/analytics-section";
+import { TraderOverviewPanels } from "@/components/trader/trader-overview-panels";
 import { TraderTabPanel, TraderTabPanelFallback, loadTraderTabPanelData } from "@/components/trader/trader-tab-panel";
-import { TraderHighlightsFallback, TraderHighlightsSection, loadTraderHighlightsData } from "@/components/trader/trader-highlights";
+import { DeferredTraderHighlights } from "@/components/trader/deferred-trader-highlights";
 import { TraderHeader } from "@/components/trader/trader-header";
 import {
-	computeStreaks,
-	getPnlChartAnnotations,
-	getTraderChartExits,
-	getTraderDailyPnl,
 	getTraderPnlCandles,
-	getTraderPnlPeriods,
-	getTraderPnlRisk,
-	type DailyPnlEntry,
-	type PnlChartAnnotation,
-	type PnlChartExit,
 	type PnlDataPoint,
-	type PnlPeriods,
-	type PnlStreaks,
 } from "@/lib/struct/pnl";
-import { PNL_RISK_TIMEFRAMES } from "@/lib/struct/pnl-timeframes";
 import { resolvePnlRange, type ResolvedPnlRange } from "@/lib/struct/pnl-range";
 import { compactPnlDataPointsForWire } from "@/lib/struct/pnl-wire";
 import {
-	getTraderOgImageAlt,
-	getTraderOgImageUrl,
 	getTraderPageDescription,
 	getTraderPageTitle,
 	getTraderSocialTitle,
-	traderOgImageSize,
 } from "@/lib/trader-open-graph";
 import { loadTraderSearchParams } from "@/lib/trader-search-params.server";
 import { getServerTimezone } from "@/lib/timezone.server";
 import { parseAnalyticsParams, SCOPED_VOLUME_COMPONENTS } from "@/lib/struct/analytics-shared";
-import { getTraderCategoryPnl, getTraderPnlSummary, getTraderPnlChanges, getTraderProfile } from "@/lib/struct/queries";
+import { getTraderPnlSummary, getTraderProfile } from "@/lib/struct/queries";
 import { SectionAnchor } from "@/components/layout/section-anchor";
 import type { SubheaderSlot } from "@/components/layout/section-subheader-bar";
 import { BridgeSectionSubheader, TabBridgeProvider } from "@/components/layout/tab-bridge";
@@ -47,8 +26,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { readTotalPnlUsd } from "@/lib/format";
 import { buildPageMetadata } from "@/lib/site-metadata";
 import { getTraderDisplayName, normalizeWalletAddress } from "@/lib/utils";
-import type { TraderPnl, PolymarketCategory } from "@structbuild/sdk";
-import { parsePolymarketCategory } from "@/lib/tag-category";
+import type { TraderPnl } from "@structbuild/sdk";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -67,15 +45,6 @@ const TRADER_SUBHEADER_ITEMS = [
 	{ value: "markets", label: "Markets" },
 	{ value: "combos", label: "Combos" },
 ] as const;
-
-type TraderInsightsData = {
-	pnlCandles: PnlDataPoint[];
-	dailyPnl: DailyPnlEntry[];
-	streaks: PnlStreaks;
-	periods: PnlPeriods;
-	chartAnnotations: PnlChartAnnotation[];
-	chartExits: PnlChartExit[];
-};
 
 type TraderProfileIdentity = {
 	name?: string | null;
@@ -102,8 +71,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const cumulativePnlUsd = readTotalPnlUsd(pnlSummary);
 	const description = getTraderPageDescription(displayName, address, cumulativePnlUsd, pnlSummary);
 	const socialTitle = getTraderSocialTitle(displayName, cumulativePnlUsd);
-	const ogImage = getTraderOgImageUrl(address);
-	const ogAlt = getTraderOgImageAlt(displayName);
 
 	return buildPageMetadata({
 		title: getTraderPageTitle(displayName, cumulativePnlUsd),
@@ -112,48 +79,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		openGraph: {
 			title: socialTitle,
 			type: "profile",
-			images: [
-				{
-					url: ogImage,
-					width: traderOgImageSize.width,
-					height: traderOgImageSize.height,
-					alt: ogAlt,
-				},
-			],
+			images: [],
 		},
 		twitter: {
 			title: socialTitle,
-			images: [ogImage],
+			card: "summary",
+			images: [],
 		},
 	});
 }
 
-function loadTraderInsights(address: string, range: ResolvedPnlRange, fillGaps: boolean): Promise<TraderInsightsData> {
-	const pnlCandlesPromise = getTraderPnlCandles(address, range.apiTimeframe, range.resolution, {
+function loadTraderPnlChart(address: string, range: ResolvedPnlRange, fillGaps: boolean): Promise<PnlDataPoint[]> {
+	return getTraderPnlCandles(address, range.apiTimeframe, range.resolution, {
 		from: range.from,
 		to: range.to,
 		fillGaps,
 	});
-	const dailyPnlPromise = getTraderDailyPnl(address);
-	const periodsPromise = getTraderPnlPeriods(address);
-	const chartExitsPromise = getTraderChartExits(address, { from: range.from, to: range.to });
-
-	return Promise.all([pnlCandlesPromise, dailyPnlPromise, periodsPromise, chartExitsPromise]).then(
-		([pnlCandles, dailyPnl, periods, chartExits]) => {
-			const streaks = computeStreaks(dailyPnl);
-			const showAnnotations = range.mode === "preset" && range.timeframe === "all";
-			const chartAnnotations = showAnnotations ? getPnlChartAnnotations(pnlCandles, periods) : [];
-
-			return {
-				pnlCandles,
-				dailyPnl,
-				streaks,
-				periods,
-				chartAnnotations,
-				chartExits,
-			};
-		},
-	);
 }
 
 function TraderInsightsFallback() {
@@ -228,38 +169,20 @@ async function TraderOverviewSection({
 	address,
 	pnlRange,
 	pnlFillGaps,
-	profilePromise,
-	pnlSummaryPromise,
-	insightsPromise,
-	cumulativePnlUsdPromise,
+	profile,
+	pnlSummary,
+	pnlCandlesPromise,
+	cumulativePnlUsd,
 }: {
 	address: string;
 	pnlRange: ResolvedPnlRange;
 	pnlFillGaps: boolean;
-	profilePromise: Promise<TraderProfileIdentity | null>;
-	pnlSummaryPromise: Promise<TraderPnl | null>;
-	insightsPromise: Promise<TraderInsightsData>;
-	cumulativePnlUsdPromise: Promise<number>;
+	profile: TraderProfileIdentity | null;
+	pnlSummary: TraderPnl | null;
+	pnlCandlesPromise: Promise<PnlDataPoint[]>;
+	cumulativePnlUsd: number;
 }) {
-	const [profile, pnlSummary] = await Promise.all([profilePromise, pnlSummaryPromise]);
-	const pnlRiskPromise = getTraderPnlRisk(address, PNL_RISK_TIMEFRAMES[pnlRange.timeframe]);
-	const pnlChangesPromise = getTraderPnlChanges(address);
-	const [insights, pnlRisk, pnlChanges, categoryPage] = await Promise.all([
-		insightsPromise,
-		pnlRiskPromise,
-		pnlChangesPromise,
-		getTraderCategoryPnl(address, { limit: 50, sort_by: "total_volume_usd", sort_direction: "desc" }),
-	]);
-
-	const seenCategories = new Set<PolymarketCategory>();
-	const availableCategories: PolymarketCategory[] = [];
-	for (const entry of categoryPage.data) {
-		const parsed = parsePolymarketCategory(entry.category ?? undefined);
-		if (parsed && !seenCategories.has(parsed)) {
-			seenCategories.add(parsed);
-			availableCategories.push(parsed);
-		}
-	}
+	const pnlCandles = await pnlCandlesPromise;
 
 	const displayName = getTraderDisplayName({
 		address,
@@ -299,84 +222,17 @@ async function TraderOverviewSection({
 				profileImage={profile?.profile_image}
 				pnlSummary={pnlSummary}
 			/>
-			<TraderPnlProvider
+			<TraderOverviewPanels
 				address={address}
+				displayName={displayName}
+				profileImage={profile?.profile_image}
+				pnlSummary={pnlSummary}
+				cumulativePnlUsd={cumulativePnlUsd}
 				initialRange={pnlRange}
 				initialFillGaps={pnlFillGaps}
-				initialCandles={compactPnlDataPointsForWire(insights.pnlCandles)}
-				initialAnnotations={insights.chartAnnotations}
-				initialExits={insights.chartExits}
-				initialRisk={pnlRisk}
-				periods={insights.periods}
-				firstTradeAt={pnlSummary?.first_trade_at ?? null}
-			>
-				<div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
-					<div className="min-w-0 space-y-6 lg:w-2/3">
-						<PnlCard
-							address={address}
-							displayName={displayName}
-							profileImage={profile?.profile_image}
-							firstTradeAt={pnlSummary?.first_trade_at ?? undefined}
-							availableCategories={availableCategories}
-						/>
-						<div className="rounded-lg bg-card p-4 sm:p-6">
-							<PnlCalendar data={insights.dailyPnl} periods={insights.periods} />
-						</div>
-						{/* <TraderInfo address={address} profile={profile} /> */}
-					</div>
-
-					<div className="min-w-0 space-y-6 lg:w-1/3">
-						<TraderPerformanceSummaryLive
-							pnlSummary={pnlSummary}
-							pnlChanges={pnlChanges}
-							streaks={insights.streaks}
-							periods={insights.periods}
-						/>
-						<Suspense fallback={<TraderDnaFallback />}>
-							<TraderDnaSection
-								pnlSummaryPromise={pnlSummaryPromise}
-								cumulativePnlUsdPromise={cumulativePnlUsdPromise}
-								categoryVolumes={categoryPage.data.slice(0, 12).map((entry) => entry.total_volume_usd ?? 0)}
-								address={address}
-								displayName={displayName}
-								profileImage={profile?.profile_image}
-							/>
-						</Suspense>
-					</div>
-				</div>
-			</TraderPnlProvider>
+				initialCandles={compactPnlDataPointsForWire(pnlCandles)}
+			/>
 		</div>
-	);
-}
-
-async function TraderDnaSection({
-	pnlSummaryPromise,
-	cumulativePnlUsdPromise,
-	categoryVolumes,
-	address,
-	displayName,
-	profileImage,
-}: {
-	pnlSummaryPromise: Promise<TraderPnl | null>;
-	cumulativePnlUsdPromise: Promise<number>;
-	categoryVolumes: number[];
-	address: string;
-	displayName: string;
-	profileImage?: string | null;
-}) {
-	const [pnlSummary, cumulativePnlUsd] = await Promise.all([
-		pnlSummaryPromise,
-		cumulativePnlUsdPromise,
-	]);
-	return (
-		<TraderDnaCard
-			pnlSummary={pnlSummary}
-			cumulativePnlUsd={cumulativePnlUsd}
-			categoryVolumes={categoryVolumes}
-			address={address}
-			displayName={displayName}
-			profileImage={profileImage}
-		/>
 	);
 }
 
@@ -485,10 +341,8 @@ async function TraderPageContent({
 		firstTradeAt: pnlSummary?.first_trade_at,
 	});
 
-	const profilePromise = Promise.resolve(profile);
-	const pnlSummaryPromise = Promise.resolve(pnlSummary);
-	const insightsPromise = loadTraderInsights(address, pnlRange, pnlFillGaps);
-	const cumulativePnlUsdPromise = Promise.resolve(readTotalPnlUsd(pnlSummary));
+	const pnlCandlesPromise = loadTraderPnlChart(address, pnlRange, pnlFillGaps);
+	const cumulativePnlUsd = readTotalPnlUsd(pnlSummary);
 	const tabDataPromise = loadTraderTabPanelData({
 		address,
 		currentTab: tab,
@@ -514,12 +368,6 @@ async function TraderPageContent({
 	});
 
 	const highlightsPageNumber = highlights === "wins" ? winsPage : lossesPage;
-	const highlightsPromise = loadTraderHighlightsData({
-		address,
-		mode: highlights,
-		pageNumber: highlightsPageNumber,
-	});
-
 	const displayName = getTraderDisplayName({
 		address,
 		name: profile?.name,
@@ -558,10 +406,10 @@ async function TraderPageContent({
 								address={address}
 								pnlRange={pnlRange}
 								pnlFillGaps={pnlFillGaps}
-								profilePromise={profilePromise}
-								pnlSummaryPromise={pnlSummaryPromise}
-								insightsPromise={insightsPromise}
-								cumulativePnlUsdPromise={cumulativePnlUsdPromise}
+								profile={profile}
+								pnlSummary={pnlSummary}
+								pnlCandlesPromise={pnlCandlesPromise}
+								cumulativePnlUsd={cumulativePnlUsd}
 							/>
 						</Suspense>
 					</SectionAnchor>
@@ -573,18 +421,15 @@ async function TraderPageContent({
 					</SectionAnchor>
 
 					<SectionAnchor id="trader-highlights" className="mt-8">
-						<Suspense fallback={<TraderHighlightsFallback />}>
-							<TraderHighlightsSection
-								address={address}
-								mode={highlights}
-								pageNumber={highlightsPageNumber}
-								dataPromise={highlightsPromise}
-							/>
-						</Suspense>
+						<DeferredTraderHighlights
+							address={address}
+							mode={highlights}
+							pageNumber={highlightsPageNumber}
+						/>
 					</SectionAnchor>
 
 					<SectionAnchor id="trader-analytics" className="mt-8">
-						<ProgressiveAnalyticsSection
+						<DeferredAnalyticsSection
 							title="Analytics"
 							range={range}
 							view={view}

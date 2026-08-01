@@ -53,6 +53,12 @@ type TraderPnlView = {
 	risk: PnlRiskResponse | null;
 	isPending: boolean;
 	update: (patch: Partial<TraderPnlQuery>) => void;
+	hydrateSupplemental: (value: {
+		annotations: PnlChartAnnotation[];
+		exits: PnlChartExit[];
+		risk: PnlRiskResponse | null;
+		periods: PnlPeriods;
+	}) => void;
 };
 
 const TraderPnlContext = createContext<TraderPnlView | null>(null);
@@ -90,6 +96,7 @@ export function TraderPnlProvider({
 }) {
 	const [isPending, startTransition] = useTransition();
 	const requestIdRef = useRef(0);
+	const periodsRef = useRef(periods);
 	const queryRef = useRef<TraderPnlQuery>({
 		timeframe: initialRange.timeframe,
 		anchor: initialRange.anchor,
@@ -110,6 +117,21 @@ export function TraderPnlProvider({
 		risk: initialRisk,
 	});
 
+	const hydrateSupplemental = useCallback((value: {
+		annotations: PnlChartAnnotation[];
+		exits: PnlChartExit[];
+		risk: PnlRiskResponse | null;
+		periods: PnlPeriods;
+	}) => {
+		periodsRef.current = value.periods;
+		setState((current) => ({
+			...current,
+			annotations: value.annotations,
+			exits: value.exits,
+			risk: value.risk,
+		}));
+	}, []);
+
 	const update = useCallback((patch: Partial<TraderPnlQuery>) => {
 		const nextQuery = { ...queryRef.current, ...patch };
 		const requestId = requestIdRef.current + 1;
@@ -128,7 +150,7 @@ export function TraderPnlProvider({
 					candles,
 					annotations:
 						result.range.mode === "preset" && result.range.timeframe === "all" && !result.category
-							? getPnlChartAnnotations(candles, periods)
+							? getPnlChartAnnotations(candles, periodsRef.current)
 							: [],
 					exits: result.exits,
 					risk: result.risk,
@@ -138,7 +160,7 @@ export function TraderPnlProvider({
 				console.error("Failed to load trader PnL data", error);
 			}
 		});
-	}, [address, periods]);
+	}, [address]);
 
 	useEffect(() => {
 		function handlePopState() {
@@ -163,8 +185,8 @@ export function TraderPnlProvider({
 	}, [update]);
 
 	const value = useMemo<TraderPnlView>(
-		() => ({ ...state, isPending, update }),
-		[isPending, state, update],
+		() => ({ ...state, isPending, update, hydrateSupplemental }),
+		[hydrateSupplemental, isPending, state, update],
 	);
 
 	return <TraderPnlContext value={value}>{children}</TraderPnlContext>;
