@@ -27,7 +27,7 @@ import {
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
-type Props = {
+export type AnalyticsSectionClientProps = {
 	initialData: AnalyticsSectionData;
 	source: AnalyticsQuerySource;
 	subject?: AnalyticsSubject;
@@ -71,7 +71,7 @@ export function AnalyticsSectionClient({
 	showControls,
 	showKpis,
 	refreshedAt: initialRefreshedAt,
-}: Props) {
+}: AnalyticsSectionClientProps) {
 	const Heading = headingLevel;
 	const [isPending, startTransition] = useTransition();
 	const requestIdRef = useRef(0);

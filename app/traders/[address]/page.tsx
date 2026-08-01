@@ -1,4 +1,4 @@
-import { AnalyticsSection } from "@/components/analytics/analytics-section";
+import { ProgressiveAnalyticsSection } from "@/components/analytics/analytics-section";
 import { PnlCalendar } from "@/components/trader/pnl-calendar";
 import { PnlCard } from "@/components/trader/pnl-card";
 import {
@@ -584,7 +584,7 @@ async function TraderPageContent({
 					</SectionAnchor>
 
 					<SectionAnchor id="trader-analytics" className="mt-8">
-						<AnalyticsSection
+						<ProgressiveAnalyticsSection
 							title="Analytics"
 							range={range}
 							view={view}
@@ -596,6 +596,7 @@ async function TraderPageContent({
 								allowedComponents={SCOPED_VOLUME_COMPONENTS}
 								pathname={`/traders/${address}`}
 								source={{ kind: "trader", address }}
+								preloadAnchorId="trader-analytics"
 								subject={{
 									type: "Trader",
 									label: displayName,

@@ -3,8 +3,10 @@ import { Suspense } from "react";
 import { AnalyticsChartsGridFallback, type AnalyticsMetricPlacement } from "@/components/analytics/analytics-charts-grid";
 import { AnalyticsKpiStripFallback } from "@/components/analytics/analytics-kpi-strip";
 import { AnalyticsSectionClient } from "@/components/analytics/analytics-section-client";
+import { ProgressiveAnalyticsSectionClient } from "@/components/analytics/progressive-analytics-section-client";
 import { loadAnalyticsSectionData } from "@/lib/struct/analytics-section-data";
 import {
+	ANALYTICS_PREVIEW_EXCLUDED_METRICS,
 	DEFAULT_ANALYTICS_RANGE,
 	type AnalyticsMetricId,
 	type AnalyticsQuerySource,
@@ -15,7 +17,7 @@ import {
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
 
-type AnalyticsSectionProps = {
+export type AnalyticsSectionProps = {
 	title?: string;
 	subject?: AnalyticsSubject;
 	description?: string;
@@ -129,6 +131,93 @@ export function AnalyticsSection(props: AnalyticsSectionProps) {
 	return (
 		<Suspense fallback={<AnalyticsSectionFallback {...props} />}>
 			<AnalyticsSectionLoader {...props} />
+		</Suspense>
+	);
+}
+
+async function ProgressiveAnalyticsSectionLoader(
+	props: AnalyticsSectionProps & { preloadAnchorId?: string },
+) {
+	const {
+		title,
+		subject,
+		description,
+		range,
+		view,
+		resolution,
+		defaultRange = DEFAULT_ANALYTICS_RANGE,
+		source,
+		headingLevel = "h2",
+		excludeMetrics,
+		appendMetrics,
+		metricPlacements,
+		endTime,
+		cap = false,
+		defaultCap = false,
+		allowedComponents,
+		pathname,
+		showControls = true,
+		showKpis = true,
+		preloadAnchorId,
+	} = props;
+	const previewData = await loadAnalyticsSectionData({
+		source,
+		range: DEFAULT_ANALYTICS_RANGE,
+		resolution: "D",
+		view: "deltas",
+		showKpis: false,
+		projection: {
+			excludeMetrics,
+			appendMetrics,
+			showKpis,
+			allowedComponents,
+		},
+	});
+
+	return (
+		<ProgressiveAnalyticsSectionClient
+			previewData={previewData}
+			previewRefreshedAt={new Date().toISOString()}
+			title={title}
+			subject={subject}
+			description={description}
+			range={range}
+			view={view}
+			resolution={resolution}
+			defaultRange={defaultRange}
+			source={source}
+			headingLevel={headingLevel}
+			excludeMetrics={excludeMetrics}
+			appendMetrics={appendMetrics}
+			metricPlacements={metricPlacements}
+			endTime={endTime}
+			initialCap={cap}
+			defaultCap={defaultCap}
+			allowedComponents={allowedComponents}
+			pathname={pathname}
+			showControls={showControls}
+			showKpis={showKpis}
+			preloadAnchorId={preloadAnchorId}
+		/>
+	);
+}
+
+export function ProgressiveAnalyticsSection(
+	props: AnalyticsSectionProps & { preloadAnchorId?: string },
+) {
+	return (
+		<Suspense
+			fallback={(
+				<AnalyticsSectionFallback
+					{...props}
+					excludeMetrics={ANALYTICS_PREVIEW_EXCLUDED_METRICS}
+					appendMetrics={undefined}
+					metricPlacements={undefined}
+					showKpis={false}
+				/>
+			)}
+		>
+			<ProgressiveAnalyticsSectionLoader {...props} />
 		</Suspense>
 	);
 }

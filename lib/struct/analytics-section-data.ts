@@ -134,3 +134,13 @@ export async function loadAnalyticsSectionData({
 		changes,
 	};
 }
+
+export function loadAnalyticsSectionChanges({
+	source,
+	range,
+}: {
+	source: AnalyticsQuerySource;
+	range: AnalyticsRange;
+}): Promise<AnalyticsMetricPctChange | null> {
+	return getAnalyticsLoaders(source, range, "D").changes();
+}

@@ -38,16 +38,19 @@ export function SectionSubheader({
 export function SubheaderNavButton({
 	active,
 	onSelect,
+	targetId,
 	children,
 }: {
 	active: boolean;
 	onSelect: () => void;
+	targetId?: string;
 	children: ReactNode;
 }) {
 	return (
 		<button
 			type="button"
 			data-active={active || undefined}
+			data-section-target={targetId}
 			onClick={onSelect}
 			className={cn(
 				"relative shrink-0 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground/80",

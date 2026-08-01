@@ -40,6 +40,7 @@ export function SectionSubheaderBar({
 						<SubheaderNavButton
 							key={slot.id}
 							active={activeId === slot.id}
+							targetId={slot.id}
 							onSelect={() => scrollToId(slot.id)}
 						>
 							{slot.label}
@@ -52,6 +53,7 @@ export function SectionSubheaderBar({
 					<SubheaderNavButton
 						key={`${slot.id}:${tab.value}`}
 						active={activeId === slot.id && controller?.active === tab.value}
+						targetId={slot.id}
 						onSelect={() => {
 							controller?.onSelect?.(tab.value);
 							scrollToId(slot.id);

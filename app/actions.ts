@@ -58,7 +58,10 @@ import {
 	type AnalyticsView,
 	type VolumeComponentId,
 } from "@/lib/struct/analytics-shared";
-import { loadAnalyticsSectionData } from "@/lib/struct/analytics-section-data";
+import {
+	loadAnalyticsSectionChanges,
+	loadAnalyticsSectionData,
+} from "@/lib/struct/analytics-section-data";
 import { HOME_ACTIVITY_TABS, type HomeActivityTab } from "@/lib/home-activity";
 import { loadHomeActivityData } from "@/lib/struct/home-activity.server";
 import {
@@ -809,6 +812,22 @@ export async function getAnalyticsSectionDataAction({
 			allowedComponents,
 		},
 	});
+}
+
+export async function getAnalyticsSectionChangesAction({
+	source,
+	range,
+	defaultRange,
+}: {
+	source: AnalyticsQuerySource;
+	range: AnalyticsRange;
+	defaultRange: AnalyticsRange;
+}) {
+	await assertHumanRequest();
+	const scope = source.kind === "global" || source.kind === "builderGlobal" ? "global" : "scoped";
+	const safe = parseAnalyticsParams({ range, view: "deltas" }, scope, defaultRange);
+
+	return loadAnalyticsSectionChanges({ source, range: safe.range });
 }
 
 export async function getHomeActivityDataAction(tab: HomeActivityTab) {

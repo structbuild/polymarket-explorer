@@ -19,6 +19,25 @@ export type AnalyticsMetricId =
 	| "incentives"
 	| "yesNoShares";
 
+export const ANALYTICS_PREVIEW_EXCLUDED_METRICS = [
+	"builderFees",
+	"fees",
+	"trades",
+	"tradeTypes",
+	"uniqueTraders",
+	"newUsers",
+	"makersTakers",
+	"avgTradeSize",
+	"avgRevenuePerUser",
+	"avgVolumePerUser",
+	"yesNo",
+	"yesNoCount",
+	"shares",
+	"buyDistribution",
+	"incentives",
+	"yesNoShares",
+] as const satisfies readonly AnalyticsMetricId[];
+
 export const ANALYTICS_RANGES: AnalyticsRange[] = ["1d", "7d", "30d", "all"];
 
 export const ANALYTICS_RANGE_LABELS: Record<AnalyticsRange, string> = {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { AnalyticsSection } from "@/components/analytics/analytics-section";
+import { ProgressiveAnalyticsSection } from "@/components/analytics/analytics-section";
 import { SectionAnchor } from "@/components/layout/section-anchor";
 import type { SubheaderSlot } from "@/components/layout/section-subheader-bar";
 import { BridgeSectionSubheader, TabBridgeProvider } from "@/components/layout/tab-bridge";
@@ -210,7 +210,7 @@ async function MarketPageContent({
 								</Suspense>
 							</SectionAnchor>
 							<SectionAnchor id="market-analytics" className="mt-8">
-								<AnalyticsSection
+								<ProgressiveAnalyticsSection
 									title="Analytics"
 									range={range}
 									view={view}
@@ -222,6 +222,7 @@ async function MarketPageContent({
 									allowedComponents={SCOPED_VOLUME_COMPONENTS}
 									pathname={`/markets/${slug}`}
 									source={{ kind: "market", conditionId }}
+									preloadAnchorId="market-analytics"
 									subject={{
 										type: "Market",
 										label: (market.question ?? market.title ?? "Market").trim(),
