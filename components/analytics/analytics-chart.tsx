@@ -28,6 +28,7 @@ import {
 	formatNumber,
 	formatTimeCompact,
 } from "@/lib/format";
+import { useProjectIncomplete } from "@/lib/hooks/use-project-incomplete";
 import { useShareMode } from "@/lib/hooks/use-share-mode";
 import type { AnalyticsResolution } from "@/lib/struct/analytics-shared";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,8 @@ const RESOLUTION_SECONDS: Partial<Record<AnalyticsResolution, number>> = {
 	W: 7 * SECONDS_PER_DAY,
 };
 const INCOMPLETE_BUCKET_NOTE = "Partial bucket; still in progress.";
+const PROJECTED_BUCKET_NOTE =
+	"Projected from current pace based on results so far. Not reliable for analysis.";
 
 function detectGranularity(data: { t: number }[]): "intraday-short" | "intraday" | "daily" {
 	let minDelta = Number.POSITIVE_INFINITY;
@@ -76,6 +79,7 @@ type AnalyticsChartProps = {
 	formatValue?: (value: number) => string;
 	interactiveLegend?: boolean;
 	showIncomplete?: boolean;
+	projectIncomplete?: boolean;
 	resolution?: AnalyticsResolution;
 	labelMode?: "bucket" | "point";
 	height?: AnalyticsChartHeight;
@@ -114,6 +118,30 @@ function getBucketEndSeconds(startSeconds: number, resolution: AnalyticsResoluti
 	return step ? startSeconds + step - 1 : startSeconds;
 }
 
+function getBucketDurationSeconds(
+	startSeconds: number,
+	resolution: AnalyticsResolution | undefined,
+	stepSeconds: number,
+): number {
+	if (resolution) {
+		return getBucketEndSeconds(startSeconds, resolution) - startSeconds + 1;
+	}
+	return stepSeconds;
+}
+
+function getIncompleteProjectionScale(
+	startSeconds: number,
+	nowSeconds: number,
+	resolution: AnalyticsResolution | undefined,
+	stepSeconds: number,
+): number {
+	const elapsed = nowSeconds - startSeconds;
+	if (elapsed <= 0) return 1;
+	const fullDuration = getBucketDurationSeconds(startSeconds, resolution, stepSeconds);
+	if (fullDuration <= 0 || elapsed >= fullDuration) return 1;
+	return fullDuration / elapsed;
+}
+
 function formatBucketLabel(startSeconds: number, resolution: AnalyticsResolution): string {
 	if (resolution === "D") return formatDateFull(startSeconds);
 
@@ -131,12 +159,15 @@ export function AnalyticsChart({
 	formatValue,
 	interactiveLegend = false,
 	showIncomplete = true,
+	projectIncomplete = true,
 	resolution,
 	labelMode = "bucket",
 	height = "default",
 	className,
 }: AnalyticsChartProps) {
 	const formatTick = formatValue ?? ((value: number) => valueFormatter(value, valueFormat));
+	const { enabled: projectIncompletePref } = useProjectIncomplete();
+	const allowProjectIncomplete = projectIncomplete && projectIncompletePref;
 	const heightClass = `${HEIGHT_CLASSES[height]} ${HEIGHT_BASE_CLASS}`;
 	const chartConfig = useMemo<ChartConfig>(() => {
 		const config: ChartConfig = {};
@@ -193,19 +224,57 @@ export function AnalyticsChart({
 	const [nowSeconds] = useState(() => Math.floor(Date.now() / 1000));
 
 	const granularity = useMemo(() => detectGranularity(data), [data]);
-	const lastIncompleteT = useMemo(() => {
+	const incompleteMeta = useMemo(() => {
 		if (!showIncomplete) return null;
 		if (data.length < 2) return null;
 		const last = data[data.length - 1];
 		const step = last.t - data[data.length - 2].t;
 		if (step <= 0) return null;
-		return last.t + step > nowSeconds ? last.t : null;
+		if (last.t + step <= nowSeconds) return null;
+		return { t: last.t, step };
 	}, [data, showIncomplete, nowSeconds]);
+	const lastIncompleteT = incompleteMeta?.t ?? null;
+	const incompleteProjectionScale = useMemo(() => {
+		if (!incompleteMeta || !allowProjectIncomplete || labelMode !== "bucket") return 1;
+		return getIncompleteProjectionScale(
+			incompleteMeta.t,
+			nowSeconds,
+			resolution,
+			incompleteMeta.step,
+		);
+	}, [incompleteMeta, allowProjectIncomplete, labelMode, nowSeconds, resolution]);
+	const projectsIncomplete =
+		lastIncompleteT !== null &&
+		allowProjectIncomplete &&
+		labelMode === "bucket" &&
+		incompleteProjectionScale > 1;
 	const showShimmer = lastIncompleteT !== null && !shareMode;
+	const chartData = useMemo(() => {
+		if (!projectsIncomplete || !incompleteMeta) return data;
+		const scale = incompleteProjectionScale;
+		return data.map((d) => {
+			const out: AnalyticsDatum = { ...d };
+			const isIncomplete = d.t === incompleteMeta.t;
+			for (const s of series) {
+				const actual = d[s.key];
+				if (typeof actual !== "number") continue;
+				if (isIncomplete) {
+					const projected = actual * scale;
+					out[`${s.key}__actual`] = actual;
+					out[`${s.key}__proj`] = Math.max(0, projected - actual);
+					out[s.key] = projected;
+				} else {
+					out[`${s.key}__actual`] = actual;
+					out[`${s.key}__proj`] = 0;
+				}
+			}
+			return out;
+		});
+	}, [data, series, projectsIncomplete, incompleteMeta, incompleteProjectionScale]);
 	const areaData = useMemo(() => {
-		if (!showShimmer || data.length < 2) return data;
-		const lastIdx = data.length - 1;
-		return data.map((d, i) => {
+		if (!showShimmer || chartData.length < 2) return chartData;
+		const lastIdx = chartData.length - 1;
+		return chartData.map((d, i) => {
 			const out: AnalyticsDatum = { ...d };
 			for (const s of series) {
 				out[`${s.key}__solid`] = (i < lastIdx ? d[s.key] : null) as number;
@@ -213,7 +282,42 @@ export function AnalyticsChart({
 			}
 			return out;
 		});
-	}, [data, series, showShimmer]);
+	}, [chartData, series, showShimmer]);
+	const mergeProjectedTooltipPayload = useCallback(
+		<T extends { dataKey?: unknown; value?: unknown; name?: unknown; color?: string; payload?: unknown }>(
+			payload: ReadonlyArray<T> | undefined,
+		): ReadonlyArray<T> | undefined => {
+			if (!projectsIncomplete || !payload?.length) return payload;
+			const byKey = new Map<string, T>();
+			for (const item of payload) {
+				const dataKey = String(item.dataKey ?? "");
+				if (dataKey.endsWith("__proj")) continue;
+				if (dataKey.endsWith("__actual")) {
+					const baseKey = dataKey.slice(0, -"__actual".length);
+					const seriesItem = series.find((s) => s.key === baseKey);
+					const actualVal = typeof item.value === "number" ? item.value : Number(item.value) || 0;
+					byKey.set(baseKey, {
+						...item,
+						dataKey: baseKey,
+						name: seriesItem?.label ?? item.name,
+						value: actualVal,
+						color: seriesItem?.color ?? item.color,
+					});
+					continue;
+				}
+				if (!dataKey.includes("__")) {
+					const row = item.payload as AnalyticsDatum | undefined;
+					const actual = row?.[`${dataKey}__actual`];
+					byKey.set(dataKey, {
+						...item,
+						value: typeof actual === "number" ? actual : item.value,
+					});
+				}
+			}
+			return visibleSeries.map((s) => byKey.get(s.key)).filter((item): item is T => item != null);
+		},
+		[projectsIncomplete, series, visibleSeries],
+	);
 	const xAxisFormatter = useMemo(() => {
 		if (granularity === "intraday-short") return formatTimeCompact;
 		if (granularity === "intraday") return formatDateTimeCompact;
@@ -232,14 +336,14 @@ export function AnalyticsChart({
 					<span className="grid gap-0.5">
 						<span>{label}</span>
 						<span className="font-normal text-muted-foreground">
-							{INCOMPLETE_BUCKET_NOTE}
+							{projectsIncomplete ? PROJECTED_BUCKET_NOTE : INCOMPLETE_BUCKET_NOTE}
 						</span>
 					</span>
 				);
 			}
 			return label;
 		},
-		[resolution, labelMode, lastIncompleteT, tooltipLabelFormatter],
+		[resolution, labelMode, lastIncompleteT, tooltipLabelFormatter, projectsIncomplete],
 	);
 
 	if (data.length === 0) {
@@ -254,16 +358,45 @@ export function AnalyticsChart({
 
 	const tooltip = (
 		<ChartTooltip
-			content={
-				<ChartTooltipContent
-					indicator="line"
-					labelFormatter={(_label: ReactNode, payload: ReadonlyArray<{ payload?: unknown }>) => {
-						const entry = payload?.[0]?.payload as { t?: number } | undefined;
-						return typeof entry?.t === "number" ? formatTooltipLabel(entry.t) : "";
-					}}
-					valueFormatter={(value) => formatTick(value as number)}
-				/>
-			}
+			content={({ active, payload, label }) => {
+				const mergedPayload = mergeProjectedTooltipPayload(payload);
+				const row = mergedPayload?.[0]?.payload as AnalyticsDatum | undefined;
+				const showProjectedValues =
+					projectsIncomplete && !!row && row.t === lastIncompleteT;
+				return (
+					<ChartTooltipContent
+						active={active}
+						payload={mergedPayload}
+						label={label}
+						indicator="line"
+						labelFormatter={(_label: ReactNode, items: ReadonlyArray<{ payload?: unknown }>) => {
+							const entry = items?.[0]?.payload as { t?: number } | undefined;
+							return typeof entry?.t === "number" ? formatTooltipLabel(entry.t) : "";
+						}}
+						valueFormatter={(value, name) => {
+							const actual =
+								typeof value === "number" ? value : Number(value);
+							if (!Number.isFinite(actual)) return formatTick(Number(value) || 0);
+							if (!showProjectedValues || !row) return formatTick(actual);
+							const seriesItem =
+								visibleSeries.find((s) => s.label === name) ??
+								series.find((s) => s.label === name || s.key === name);
+							if (!seriesItem) return formatTick(actual);
+							const projected = row[seriesItem.key];
+							if (typeof projected !== "number" || projected === actual) {
+								return formatTick(actual);
+							}
+							return (
+								<span className="inline-flex items-center gap-1">
+									<span>{formatTick(actual)}</span>
+									<span className="font-sans font-normal text-muted-foreground">→</span>
+									<span className="text-muted-foreground">{formatTick(projected)}</span>
+								</span>
+							);
+						}}
+					/>
+				);
+			}}
 		/>
 	);
 
@@ -325,64 +458,112 @@ export function AnalyticsChart({
 			</div>
 		) : null;
 
+	const shimmerDefs = showShimmer ? (
+		<defs>
+			{visibleSeries.map((s) => {
+				const id = `${gradientPrefix}-shimmer-${s.key}`;
+				return (
+					<pattern
+						key={id}
+						id={id}
+						patternUnits="userSpaceOnUse"
+						width="6"
+						height="6"
+						patternTransform="rotate(-45)"
+					>
+						<rect width="6" height="6" fill={s.color} />
+						<rect
+							width="3"
+							height="6"
+							fill="var(--color-background)"
+							fillOpacity="0.55"
+						/>
+					</pattern>
+				);
+			})}
+		</defs>
+	) : null;
+
 	const chartInner =
 		variant === "bar" ? (
 			<ChartContainer config={chartConfig} className="absolute inset-0 h-full w-full">
-				<BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-					{showShimmer ? (
-						<defs>
-							{visibleSeries.map((s) => {
-								const id = `${gradientPrefix}-shimmer-${s.key}`;
-								return (
-									<pattern
-										key={id}
-										id={id}
-										patternUnits="userSpaceOnUse"
-										width="6"
-										height="6"
-										patternTransform="rotate(-45)"
-									>
-										<rect width="6" height="6" fill={s.color} />
-										<rect
-											width="3"
-											height="6"
-											fill="var(--color-background)"
-											fillOpacity="0.45"
-										/>
-									</pattern>
-								);
-							})}
-						</defs>
-					) : null}
+				<BarChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+					{shimmerDefs}
 					{sharedAxes}
 					{tooltip}
-					{visibleSeries.map((s, idx) => {
-						const isLast = idx === visibleSeries.length - 1;
-						return (
-							<Bar
-								key={s.key}
-								dataKey={s.key}
-								name={s.label}
-								fill={s.color}
-								stackId={s.stackId}
-								radius={s.stackId && !isLast ? 0 : [2, 2, 0, 0]}
-								{...(shareMode ? { isAnimationActive: false } : {})}
-							>
-								{showShimmer
-									? data.map((d) => (
-											<Cell
-												key={d.t}
-												fill={
-													d.t === lastIncompleteT
-														? `url(#${gradientPrefix}-shimmer-${s.key})`
-														: s.color
-												}
-											/>
-										))
-									: null}
-							</Bar>
-						);
-					})}
+					{projectsIncomplete
+						? visibleSeries.map((s) => (
+								<Bar
+									key={`${s.key}__actual`}
+									dataKey={`${s.key}__actual`}
+									name={s.label}
+									fill={s.color}
+									stackId={s.stackId ?? s.key}
+									radius={0}
+									legendType="none"
+									{...(shareMode ? { isAnimationActive: false } : {})}
+								/>
+							))
+						: null}
+					{projectsIncomplete
+						? visibleSeries.map((s, idx) => {
+								const isLast = idx === visibleSeries.length - 1;
+								return (
+									<Bar
+										key={`${s.key}__proj`}
+										dataKey={`${s.key}__proj`}
+										name={s.label}
+										fill={s.color}
+										fillOpacity={0.35}
+										stackId={s.stackId ?? s.key}
+										radius={s.stackId && !isLast ? 0 : [2, 2, 0, 0]}
+										tooltipType="none"
+										legendType="none"
+										{...(shareMode ? { isAnimationActive: false } : {})}
+									>
+										{showShimmer
+											? chartData.map((d) => (
+													<Cell
+														key={d.t}
+														fill={
+															d.t === lastIncompleteT
+																? `url(#${gradientPrefix}-shimmer-${s.key})`
+																: s.color
+														}
+														fillOpacity={d.t === lastIncompleteT ? 0.45 : 0}
+													/>
+												))
+											: null}
+									</Bar>
+								);
+							})
+						: visibleSeries.map((s, idx) => {
+								const isLast = idx === visibleSeries.length - 1;
+								return (
+									<Bar
+										key={s.key}
+										dataKey={s.key}
+										name={s.label}
+										fill={s.color}
+										stackId={s.stackId}
+										radius={s.stackId && !isLast ? 0 : [2, 2, 0, 0]}
+										{...(shareMode ? { isAnimationActive: false } : {})}
+									>
+										{showShimmer
+											? chartData.map((d) => (
+													<Cell
+														key={d.t}
+														fill={
+															d.t === lastIncompleteT
+																? `url(#${gradientPrefix}-shimmer-${s.key})`
+																: s.color
+														}
+													/>
+												))
+											: null}
+									</Bar>
+								);
+							})}
 				</BarChart>
 			</ChartContainer>
 		) : (
@@ -421,8 +602,9 @@ export function AnalyticsChart({
 									stroke={s.color}
 									strokeWidth={2}
 									strokeDasharray="4 4"
+									strokeOpacity={projectsIncomplete ? 0.45 : 1}
 									fill={`url(#${gradientPrefix}-${s.key})`}
-									fillOpacity={0.5}
+									fillOpacity={projectsIncomplete ? 0.25 : 0.5}
 									connectNulls={false}
 									tooltipType="none"
 									legendType="none"

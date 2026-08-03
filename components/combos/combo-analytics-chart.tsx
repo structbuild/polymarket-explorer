@@ -30,6 +30,7 @@ export function ComboAnalyticsChart({
 			resolution={resolution}
 			labelMode="bucket"
 			interactiveLegend={metric.series.length > 1}
+			showIncomplete={!cumulative}
 		/>
 	);
 }

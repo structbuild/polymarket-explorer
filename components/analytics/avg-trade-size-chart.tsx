@@ -149,6 +149,7 @@ export function AvgTradeSizeChart({
 			resolution={resolution}
 			labelMode={view === "deltas" ? "bucket" : "point"}
 			showIncomplete={showIncomplete}
+			projectIncomplete={false}
 		/>
 	);
 }

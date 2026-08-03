@@ -56,6 +56,7 @@ type TimeSeriesChartSpec = {
 	wide?: boolean;
 	keepNarrow?: boolean;
 	interactiveLegend?: boolean;
+	projectIncomplete?: boolean;
 	cumulative?: {
 		title?: string;
 		series?: AnalyticsSeries[];
@@ -344,6 +345,7 @@ const EXTRA_CHART_SPECS: ChartSpec[] = [
 		series: [{ key: "avgRevenuePerUserUsd", label: "ARPU", color: COLOR_SINGLE }],
 		valueFormat: "currency",
 		keepNarrow: true,
+		projectIncomplete: false,
 	},
 	{
 		kind: "timeSeries",
@@ -354,6 +356,7 @@ const EXTRA_CHART_SPECS: ChartSpec[] = [
 		series: [{ key: "avgVolumePerUserUsd", label: "AVPU", color: COLOR_SINGLE }],
 		valueFormat: "currency",
 		keepNarrow: true,
+		projectIncomplete: false,
 	},
 	{
 		kind: "timeSeries",
@@ -658,6 +661,7 @@ export function AnalyticsChartsGrid({
 									resolution={resolution}
 									labelMode={view === "deltas" ? "bucket" : "point"}
 									showIncomplete={view === "deltas"}
+									projectIncomplete={spec.projectIncomplete}
 								/>
 							)}
 						</ShareableChartCard>

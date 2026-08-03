@@ -15,6 +15,10 @@ import { CHANGELOG_SEEN_STORAGE_KEY, getRecentChangelogIds } from "@/lib/changel
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { useTimezone } from "@/lib/hooks/use-timezone";
 import {
+	PROJECT_INCOMPLETE_EXPLAINER,
+	useProjectIncomplete,
+} from "@/lib/hooks/use-project-incomplete";
+import {
 	VOLUME_MODE_EXPLAINER,
 	VOLUME_MODE_LABELS,
 	VOLUME_MODES,
@@ -24,6 +28,7 @@ import {
 
 export function SettingsMenu() {
 	const { mode, setMode } = useVolumeMode();
+	const { enabled: projectIncomplete, setEnabled: setProjectIncomplete } = useProjectIncomplete();
 	const { theme, setTheme } = useTheme();
 	const { timezone, setTimezone } = useTimezone();
 	const [, setChangelogSeen] = useLocalStorage<string[]>(CHANGELOG_SEEN_STORAGE_KEY, []);
@@ -87,6 +92,34 @@ export function SettingsMenu() {
 								{VOLUME_MODE_LABELS[option]}
 							</ToggleGroupItem>
 						))}
+					</ToggleGroup>
+				</div>
+				<div className="-mx-2.5 border-t" />
+				<div className="flex items-center justify-between gap-2">
+					<div className="flex items-center gap-1.5">
+						<p className="text-[11px] font-medium text-foreground">Projections</p>
+						<InfoTooltip content={PROJECT_INCOMPLETE_EXPLAINER} />
+					</div>
+					<ToggleGroup
+						aria-label="Incomplete bucket projections"
+						value={projectIncomplete ? ["on"] : ["off"]}
+						onValueChange={(next) => {
+							const picked = next[0];
+							if (picked !== "on" && picked !== "off") return;
+							const enabled = picked === "on";
+							if (enabled === projectIncomplete) return;
+							posthog.capture("project_incomplete_changed", { enabled });
+							setProjectIncomplete(enabled);
+						}}
+						variant="outline"
+						size="sm"
+					>
+						<ToggleGroupItem value="on" aria-label="Projections on" className="h-6 min-w-0 px-2 text-[11px]">
+							On
+						</ToggleGroupItem>
+						<ToggleGroupItem value="off" aria-label="Projections off" className="h-6 min-w-0 px-2 text-[11px]">
+							Off
+						</ToggleGroupItem>
 					</ToggleGroup>
 				</div>
 				<div className="-mx-2.5 border-t" />
